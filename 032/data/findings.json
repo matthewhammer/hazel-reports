@@ -5,7 +5,8 @@
   "<b>Hazel's tiles take about 3.7 s for all six boxes</b> (median; 3.0 to 4.5 s), Common's first at about 2.9 s, then one box after another, as they are now made one at a time. The page keeps drawing while they load: about 58 frames a second.",
   "<b>The game calling into a script: Fumola's rule answers in about 1.6 ms, Hazel's in about 3.5 ms</b> (medians of 60 lever pulls each). The commands the rule gives then take the game about 9 ms with either, the same work the game's own JS does: a whole pull is 9.7 ms with JS, 10.7 ms with Fumola, 13.7 ms with Hazel. So a rule adds about 1 ms in Fumola and 4 ms in Hazel to an event, under a quarter of a 60 Hz frame.",
   "<b>But Hazel has one slow event in every round: 0.5 to 0.7 s</b> (502, 692, 519 ms), the first pull after the state is reset, which compiles the program; Fumola's slowest pull is 12–21 ms. That one pause is the thing a player would feel.",
-  "<b>Scrolling through the scripts and visiting each at max size runs at about 58 frames a second in all three</b>, with two or three frames over 50 ms each run; the longest single frames (0.4–1.5 s) come in the first round or the first visit, cold, in every mode, JS included."
+  "<b>Scrolling through the scripts and visiting each at max size runs at about 58 frames a second in all three</b>, with two or three frames over 50 ms each run; the longest single frames (0.4–1.5 s) come in the first round or the first visit, cold, in every mode, JS included.",
+  "<b>As the code grows, Fumola does not slow down, and Hazel does, then stops.</b> An edit (a definition added to Common) is ready again after about 125 ms in Fumola at every size, up to 16 times Common (728 lines). In Hazel it takes about 360 ms at Common's size, 435 ms at twice, 745 ms at four times; at eight times (184 lines of Common) the game's Hazel build runs out of stack (<code>Stack_overflow</code>) compiling it, and the rooms go back to their JS. The event itself barely moves with size: about 1.1 ms in Fumola and 3 ms in Hazel at every size that runs."
  ],
  "notes": [
   "One runner, three rounds each, the modes in turn: the range in brackets is the noise between rounds, and the first round is a cold start (empty caches) in every mode. Nothing here is the laptop or a phone; both are slower.",
@@ -14,9 +15,18 @@
   "JS shows no script function: its handler is the game's own code, timed whole (9.7 ms median), which is the baseline for the other two."
  ],
  "next": [
+  "Find the recursion behind Hazel's stack overflow on a long module (statics over a chain of lets, in the js_of_ocaml build), fix it on the library's branch (#2711), and add the 8x program as a test (^ticket(591)).",
   "Find and remove Hazel's first-event pause: compile the program when the tab opens or the scripts change (the game already compiles ahead under ?logic=hazel), not on the first lever pulled; then measure the first pull again.",
   "Measure the same on the laptop and on the iPad, by hand from the game's 🔬 timings once ^ticket(568) shows them, against these runner numbers.",
   "Time the other rooms' events (the world's ways, the castle's pits, placed levers), whose rules do more than the trap room's; the World rule on a big map is where ^report(30) found Hazel slow.",
   "Re-run after ^ticket(587) (the outline from Hazel) and with Hazel's tiles loaded on demand only, to see what the tiles cost the tab."
+ ],
+ "scale": [
+  "<b>Hazel's edit time grows with Common</b> (357, 435, 744 ms at 1, 2 and 4 times; one run, five edits each, so the range shown is within a run): roughly linear in the program's length, about 4 ms a line on this runner, before the game's 600 ms typing pause is added. Its whole-program analysis, the work Hazel's tiles redo after an edit, grows the same way (about 250, 300, 430 ms).",
+  "<b>At 8 times (184 lines of Common, 23 functions copied 8 times) Hazel's compile overflows the stack</b> in the library's build (js_of_ocaml), the program reported broken and every room left to its JS; at 16 times it overflows at the first compile. The shape that does it: a long chain of definitions in one module, each a let in the one before's scope. A real script would reach it at a few hundred lines. This is worth a test in the library's own suite (^ticket(591)) and a look at where the recursion is (statics over a let chain), not a game workaround.",
+  "<b>Fumola's edit time is flat</b> (125 to 132 ms medians from 69 to 728 lines): its rules are defined from the whole text each time, and the text's length does not show at this size; the cost is the instance's fixed work, not the program.",
+  "<b>The script function does not depend on the program's size</b> in either engine (Hazel 2.7 to 3.2 ms, Fumola 1.1 to 1.2 ms): an event runs one room's rule, and the copies are never called. What a bigger program costs is the edit and the load, not the play.",
+  "<b>Projection:</b> at Hazel's rate, a script twice today's whole program (about 300 lines) would take about a second and a half to be ready after each edit on this runner, more on the laptop, and would sit near the stack limit; Fumola would stay near an eighth of a second. These are one run's numbers on GitHub's computers: the shape, not the exact values, is the finding.",
+  "<b>A second run agrees on the shape</b> (run 40038452290, a slower runner throughout): Hazel's edits 492, 583, 953 ms at 1, 2 and 4 times, the same stack overflow at 8 and 16 times; Fumola's 158 to 169 ms at every size. The values move with the runner by a third; the shape does not."
  ]
 }

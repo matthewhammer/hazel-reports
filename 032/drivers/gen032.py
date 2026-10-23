@@ -9,6 +9,11 @@ STYLE = open(os.path.join(R, "..", "025", "drivers", "style.css")).read()
 RUNS = json.load(open(os.path.join(R, "data", "runs.json")))
 RUN = json.load(open(os.path.join(R, "data", "run.json")))
 FIND = json.load(open(os.path.join(R, "data", "findings.json")))
+def opt(name):
+    f = os.path.join(R, "data", name)
+    return json.load(open(f)) if os.path.exists(f) else None
+SCALE = opt("scale.json") or []
+TRAP = opt("trap-code.json")
 esc = lambda s: html.escape(str(s if s is not None else ""))
 MODES = [("js", "JS"), ("fumola", "Fumola"), ("hazel", "Hazel")]
 MODS = ["Common", "TrapRoom", "TreeRoom", "Square", "World", "Castle"]
@@ -76,6 +81,62 @@ for i, (n, a, b, k) in enumerate(ev):
               f'<text x="{EL + max(wa, wb) + 8:.1f}" y="{y + 26}" class="val">{"the game\'s own" if k == "js" else "script " + fa + " ms"}</text>')
 es.append("</svg>")
 EVENTS_SVG = "".join(es)
+# ---- as the code grows: time against the program's lines, for each measure (a line per measure, a dot per size) ----
+def scale_svg():
+    if not SCALE: return "<p class=note>(the run's data is not in yet)</p>"
+    series = [("Hazel: an edit, until ready", "hazel", lambda r: (r.get("edit") or {}).get("median"), "#7c3aed", ""),
+              ("Fumola: an edit, until ready", "fumola", lambda r: (r.get("edit") or {}).get("median"), "#0e7490", ""),
+              ("Hazel: the whole program analyzed (the tiles' work)", "hazel", lambda r: (statistics.median(r["analyze"]) if r.get("analyze") else None), "#a78bfa", "6 4"),
+              ("Hazel: the script function, one event", "hazel", lambda r: (r.get("script") or {}).get("median"), "#7c3aed", "2 3"),
+              ("Fumola: the script function, one event", "fumola", lambda r: (r.get("script") or {}).get("median"), "#0e7490", "2 3")]
+    pts = [(lab, col, dash, [(r["lines"], f(r)) for r in SCALE if r.get("eng") == eng and isinstance(f(r), (int, float))]) for lab, eng, f, col, dash in series]
+    xs = [x for _, _, _, ps in pts for x, _ in ps]; ys = [y for _, _, _, ps in pts for _, y in ps]
+    if not xs: return ""
+    import math
+    W2, H2, l, b, t, rgt = 680, 340, 60, 40, 14, 20
+    x0, x1 = 0, max(xs) * 1.05
+    y1 = max(ys) * 1.1
+    X = lambda x: l + (W2 - l - rgt) * (x - x0) / (x1 - x0)
+    Y = lambda y: H2 - b - (H2 - b - t) * y / y1
+    g = [f'<svg class="chart" viewBox="0 0 {W2} {H2 + 22 * len(pts)}" role="img" aria-label="Time against the program\'s size, for an edit until ready, Hazel\'s analysis, and one event">']
+    for i in range(6):
+        yv = y1 * i / 5; g.append(f'<line x1="{l}" x2="{W2 - rgt}" y1="{Y(yv):.1f}" y2="{Y(yv):.1f}" stroke="currentColor" opacity="0.12"/><text x="{l - 6}" y="{Y(yv) + 4:.1f}" text-anchor="end" class="val">{yv:.0f}</text>')
+    for xv in sorted(set(xs)):
+        g.append(f'<text x="{X(xv):.1f}" y="{H2 - b + 16}" text-anchor="middle" class="val">{xv}</text>')
+    g.append(f'<text x="{(l + W2 - rgt) / 2}" y="{H2 - 4}" text-anchor="middle" class="lab">the program\'s lines (Common at 1, 2, 4, 8, 16 times its size)</text><text x="12" y="{t + 4}" class="lab">ms</text>')
+    for i, (lab, col, dash, ps) in enumerate(pts):
+        ps = sorted(ps)
+        if ps:
+            g.append(f'<polyline fill="none" stroke="{col}" stroke-width="2" stroke-dasharray="{dash}" points="{" ".join(f"{X(x):.1f},{Y(y):.1f}" for x, y in ps)}"/>')
+            g += [f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="3" fill="{col}"/>' for x, y in ps]
+        ly = H2 + 14 + 22 * i
+        g.append(f'<line x1="{l}" x2="{l + 30}" y1="{ly - 4}" y2="{ly - 4}" stroke="{col}" stroke-width="2" stroke-dasharray="{dash}"/><text x="{l + 38}" y="{ly}" class="lab">{esc(lab)}</text>')
+    g.append("</svg>")
+    return "".join(g)
+def scale_table():
+    if not SCALE: return ""
+    def row(r):
+        if r.get("error"):
+            return f"<tr><td>{esc(r['eng'])}</td><td class=n>{r['k']}×</td><td class=n>{r['lines']}</td><td colspan=4><b>{esc(r['error'])}</b>: <code>{esc(r.get('why', ''))}</code></td></tr>"
+        return None
+    rows = "".join(row(r) or (f"<tr><td>{esc(r['eng'])}</td><td class=n>{r['k']}×</td><td class=n>{r['lines']}</td><td class=n>{r.get('first', '–')} ms</td>"
+                   f"<td class=n>{(r.get('edit') or {}).get('median', '–')} ms <span class=rng>({(r.get('edit') or {}).get('min', '')}–{(r.get('edit') or {}).get('max', '')})</span></td>"
+                   f"<td class=n>{(str(round(statistics.median(r['analyze']))) + ' ms') if r.get('analyze') else '–'}</td><td class=n>{(r.get('script') or {}).get('median', '–')} ms</td></tr>") for r in SCALE)
+    return f"<div class=scroll><table><tr><th>engine</th><th>size</th><th>lines</th><th>first compile</th><th>an edit, until ready (median of 5)</th><th>Hazel's analysis</th><th>script function, one event</th></tr>{rows}</table></div>"
+SCALE_SVG, SCALE_TABLE = scale_svg(), scale_table()
+# ---- the pit room: pictures and its three scripts ----
+def code_box(title, text, cls):
+    return f'<div class="code3 {cls}"><div class="code3-h">{title}</div><pre>{esc(text or "")}</pre></div>'
+ROOM = ""
+if TRAP:
+    pics = "".join(f'<figure><img src="img/{f}" alt="{esc(a)}" loading="lazy"><figcaption>{esc(a)}</figcaption></figure>' for f, a in
+                   [("trap-game.jpg", "The trap room in the game: its two red levers, the pits they open, the boulders' blue levers."),
+                    ("trap-tiles.jpg", "Its rule at max size, in Hazel's tiles, with the outline of every box at the left."),
+                    ("common-tiles.jpg", "📚 Common at max size, in its tiles: the definitions every room calls, each function's type at the left as Hazel infers it, then the program's types with their kinds and cases.")]
+                   if os.path.exists(os.path.join(R, "img", f)))
+    ROOM = (f'<div class="pics">{pics}</div>'
+            '<p>Its rule, three ways: the game\'s own JS (the functions the game runs, shown read-only), the Hazel rule and the Fumola rule, each from the run\'s page, as the game ships them. The Hazel and Fumola rules call Common\'s helpers (<code>Common.wire</code>, <code>Common.pits_open</code>, <code>Common.pit_moves</code>), and give back commands (<code>Flip</code>, <code>SetPit</code>, <code>LiftBoulder</code>, <code>DropBoulder</code>), which the game then runs, as its JS does directly.</p>'
+            f'<div class="code3s">{code_box("JS (the game&#39;s own)", TRAP.get("js"), "js")}{code_box("Hazel", TRAP.get("hazel"), "hazel")}{code_box("Fumola", TRAP.get("fumola"), "fumola")}</div>')
 answers = "".join(f"<li>{a}</li>" for a in FIND.get("answers", []))
 notes = "".join(f"<li>{a}</li>" for a in FIND.get("notes", []))
 nxt = "".join(f"<li>{a}</li>" for a in FIND.get("next", []))
@@ -87,6 +148,9 @@ PAGE = f"""<!doctype html>
 <style>{STYLE}
 td.n {{ text-align: right; white-space: nowrap; }} .rng {{ color: var(--muted); font-size: 0.85em; }}
 svg.chart {{ width: 100%; max-width: 760px; height: auto; }} svg.chart .lab, svg.chart .val {{ font: 12px system-ui, sans-serif; fill: var(--ink, currentColor); }}
+.pics {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }} .pics img {{ width: 100%; border-radius: 8px; border: 1px solid var(--line); }} .pics figcaption {{ font-size: 0.85em; color: var(--muted); }}
+.code3s {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }} .code3 pre {{ font-size: 0.78em; max-height: 34em; overflow: auto; margin: 0; padding: 8px; border-radius: 6px; background: var(--paper); white-space: pre-wrap; }}
+.code3-h {{ font-weight: 700; margin: 4px 0; }} .code3.js .code3-h {{ color: #b45309; }} .code3.hazel .code3-h {{ color: #7c3aed; }} .code3.fumola .code3-h {{ color: #0e7490; }}
 svg.chart .bar.js {{ fill: #b45309; }} svg.chart .bar.fumola {{ fill: #0e7490; }} svg.chart .bar.hazel {{ fill: #7c3aed; }}
 </style></head>
 <body><main>
@@ -94,6 +158,14 @@ svg.chart .bar.js {{ fill: #b45309; }} svg.chart .bar.fumola {{ fill: #0e7490; }
 <h1>Scripting, Three Ways, Timed</h1>
 <p class="sub">Matthew: <q>please do a report about loading the game with fumola as default, scrolling to check each script as a speed run; hazel, same speed run</q>, and <q>Oh, and JS as default too.</q> (<code class="ref"><b>^ticket(</b>588<b>)</b></code>)</p>
 <div class="headline"><p><b>Short answers.</b></p><ol class="ans">{answers}</ol></div>
+<h2 id="try">Try it</h2>
+<ul>
+<li><b>Play the branch measured here:</b> <a href="https://matthewhammer.org/hazel/mudu-preview/script-boxes-566/">a preview of Messed Up Dress Up's <code>script-boxes-566</code></a> (kids-choice-games at <code>2c93e37</code>). Open the 📜 Scripting tab, choose JS, Hazel or Fumola for every room (or room by room), open ⛶ max size, and walk into the trap room to pull its levers: the rule you chose runs them. Hazel's boxes show Hazel's tiles, which take edits.</li>
+<li><b>The game:</b> <a href="https://matthewhammer.org/kids-choice-games/dress-up/">Messed Up Dress Up</a>, as published (its <code>main</code>). The 📜 Scripting tab measured here is not in it yet: it is on the pull requests below.</li>
+<li><b>The game's pull requests,</b> stacked, in <a href="https://github.com/matthewhammer/kids-choice-games">matthewhammer/kids-choice-games</a>: <a href="https://github.com/matthewhammer/kids-choice-games/pull/1">#1</a> (the Scripting panel, the trap room's levers through a Hazel rule), <a href="https://github.com/matthewhammer/kids-choice-games/pull/2">#2</a> (more of the rooms' rules in Hazel, against plain JS), <a href="https://github.com/matthewhammer/kids-choice-games/pull/4">#4</a> (the same rules in Fumola, wasm); the three-way boxes, the outline and the tiles in each box are on the branch <a href="https://github.com/matthewhammer/kids-choice-games/tree/script-boxes-566"><code>script-boxes-566</code></a>, on top of them.</li>
+<li><b>Hazel's side:</b> <a href="https://github.com/hazelgrove/hazel/pull/2711">hazelgrove/hazel#2711</a> (Hazel as a JS library: analyze and run programs from any page) and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> (Hazel in another page's frame, stacked on it); the tiles that take edits, one module each, are the branch <code>embed-editable</code>, built at <a href="https://hazel.org/build/embed-editable/">hazel.org/build/embed-editable/</a> (its <code>#embed</code> page takes a program only from a page that frames it).</li>
+<li><b>Fumola:</b> <a href="https://fumola.org">fumola.org</a>; the game pins a build of <a href="https://github.com/Adapton/fumola">Adapton/fumola</a> with the semantics fixes of <a href="https://github.com/Adapton/fumola/pull/151">Adapton/fumola#151</a>.</li>
+</ul>
 <h2 id="ready">From the tab opened to ready</h2>
 <p>The median of {RUN.get('rounds', 3)} rounds, each from a fresh page. JS has nothing to load: its boxes show the game's own code at once. Fumola loads its wasm build and defines the rules; Hazel loads its JS library and compiles the program, and then, with the boxes in tiles (the default), makes one frame of Hazel's own app per box, one at a time.</p>
 {''.join(svg)}
@@ -106,6 +178,14 @@ svg.chart .bar.js {{ fill: #b45309; }} svg.chart .bar.fumola {{ fill: #0e7490; }
 <p class="note">Each engine: the pale bar the whole event (the game's call to the commands done), the dark bar the script function alone (the event in, the rule's answer out). JS's handler is the game's own code, so it has the whole event only. Medians of 60 pulls (three rounds of 20).</p>
 <h2 id="notes">What the numbers say</h2>
 <ul>{notes}</ul>
+<h2 id="scale">As the code grows, and as we edit</h2>
+<p>Matthew: <q>Can we project what will happen if the code gets bigger? ... what happens as we edit? Let's measure and plot response to edits that are valid logic edits (how long does the program take to complete the edit and be ready to be responsive)?</q> Common, made 1, 2, 4, 8 and 16 times its size with renamed copies of its functions, in Hazel and in Fumola. At each size, five edits, each a definition added to Common (a valid logic edit: the program changes, and stays fine), each timed from the change to the rules compiled and ready to answer the next event (the game waits 600 ms after typing stops before it starts this); Hazel's analysis of the whole program, the work its tiles redo after an edit; and one event's script function.</p>
+{SCALE_SVG}
+{SCALE_TABLE}
+<ul>{"".join(f"<li>{a}</li>" for a in FIND.get("scale", []))}</ul>
+<h2 id="room">The pit room's rule, three ways</h2>
+<p>Matthew: <q>let's also show each room with an interesting script, and an example of the three scripts for that room: pit room? include screenshot in report.</q> The trap room over the castle's dungeons, whose rule has the most to it: a red lever flips, and the pits wired to it open or shut; a blue lever gives a pit its boulder or takes it away.</p>
+{ROOM}
 <h2 id="next">What next</h2>
 <ol>{nxt}</ol>
 <h2 id="method">How this was put together</h2>
