@@ -1,0 +1,22 @@
+{
+ "answers": [
+  "<b>Opening the tab costs nothing for any of the three:</b> Common's box is there 50–70 ms after the tab opens (JS 51, Fumola 67, Hazel 68 ms in the first round; about the same after).",
+  "<b>Fumola is ready in 0.7 s the first time, under 0.1 s after</b> (695 ms, then 92 and 69 ms): the first round fetches and compiles its wasm; later rounds find it in the browser's cache. Hazel's library was already loaded when the tab opened (54–72 ms), as the game loads it at the start when the saved scripts use it.",
+  "<b>Hazel's tiles take about 3.7 s for all six boxes</b> (median; 3.0 to 4.5 s), Common's first at about 2.9 s, then one box after another, as they are now made one at a time. The page keeps drawing while they load: about 58 frames a second.",
+  "<b>The game calling into a script: Fumola's rule answers in about 1.6 ms, Hazel's in about 3.5 ms</b> (medians of 60 lever pulls each). The commands the rule gives then take the game about 9 ms with either, the same work the game's own JS does: a whole pull is 9.7 ms with JS, 10.7 ms with Fumola, 13.7 ms with Hazel. So a rule adds about 1 ms in Fumola and 4 ms in Hazel to an event, under a quarter of a 60 Hz frame.",
+  "<b>But Hazel has one slow event in every round: 0.5 to 0.7 s</b> (502, 692, 519 ms), the first pull after the state is reset, which compiles the program; Fumola's slowest pull is 12–21 ms. That one pause is the thing a player would feel.",
+  "<b>Scrolling through the scripts and visiting each at max size runs at about 58 frames a second in all three</b>, with two or three frames over 50 ms each run; the longest single frames (0.4–1.5 s) come in the first round or the first visit, cold, in every mode, JS included."
+ ],
+ "notes": [
+  "One runner, three rounds each, the modes in turn: the range in brackets is the noise between rounds, and the first round is a cold start (empty caches) in every mode. Nothing here is the laptop or a phone; both are slower.",
+  "Hazel's whole run is about 4 s longer (17.4 s against 13.1 s), and its long tasks about twice as long in total (1.3 s against 0.5–0.6 s): the six frames of Hazel's app, each a whole Hazel, loading one after another, and the first event's compile.",
+  "The script function is the hop Matthew asked about (Game Engine → Script Function): the event and the room's state turned into the engine's values, the rule run, its answer turned back into commands (scriptTyped, both ways). The commands themselves (the lever turning, the pits' lids) are the game's, and cost the same whichever engine chose them.",
+  "JS shows no script function: its handler is the game's own code, timed whole (9.7 ms median), which is the baseline for the other two."
+ ],
+ "next": [
+  "Find and remove Hazel's first-event pause: compile the program when the tab opens or the scripts change (the game already compiles ahead under ?logic=hazel), not on the first lever pulled; then measure the first pull again.",
+  "Measure the same on the laptop and on the iPad, by hand from the game's 🔬 timings once ^ticket(568) shows them, against these runner numbers.",
+  "Time the other rooms' events (the world's ways, the castle's pits, placed levers), whose rules do more than the trap room's; the World rule on a big map is where ^report(30) found Hazel slow.",
+  "Re-run after ^ticket(587) (the outline from Hazel) and with Hazel's tiles loaded on demand only, to see what the tiles cost the tab."
+ ]
+}
