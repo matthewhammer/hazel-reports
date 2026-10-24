@@ -14,6 +14,7 @@ def opt(name):
     return json.load(open(f)) if os.path.exists(f) else None
 SCALE = opt("scale.json") or []
 TRAP = opt("trap-code.json")
+CORRECT = opt("correct.json")
 esc = lambda s: html.escape(str(s if s is not None else ""))
 MODES = [("js", "JS"), ("fumola", "Fumola"), ("hazel", "Hazel")]
 MODS = ["Common", "TrapRoom", "TreeRoom", "Square", "World", "Castle"]
@@ -125,8 +126,79 @@ def scale_table():
     return f"<div class=scroll><table><tr><th>engine</th><th>size</th><th>lines</th><th>first compile</th><th>an edit, until ready (median of 5)</th><th>Hazel's analysis</th><th>script function, one event</th></tr>{rows}</table></div>"
 SCALE_SVG, SCALE_TABLE = scale_svg(), scale_table()
 # ---- the pit room: pictures and its three scripts ----
+# (Matthew, 2026-10-23: "syntax highlighting for each please") each rule's words coloured as the game's own boxes colour them
+# (scriptTokens, 25-scripting.js; the same classes and colours): keywords, constructors, strings, numbers, comments, operators
+KEYWORDS = {
+    "js": "function const let var return if else for of in new true false null undefined typeof switch case break default while do".split(),
+    "hazel": "let in fun if then else case end type module true false".split(),
+    "fumola": "func let var public private module object type switch case if else return true false null do while for in import actor".split(),
+}
+import re
+def highlight(text, lang):
+    kw = set(KEYWORDS.get(lang, []))
+    com = r"#[^#\n]*#?" if lang == "hazel" else r"//[^\n]*|/\*[\s\S]*?\*/"
+    tok = re.compile("(?P<c>" + com + r")|(?P<s>\"(?:[^\"\\\n]|\\.)*\"|'(?:[^'\\\n]|\\.)*')|(?P<n>\b\d+(?:\.\d+)?\b)|(?P<w>#?[A-Za-z_]\w*)|(?P<o>=>|->|::|\+\+|[|=<>!+\-*/%:&^~?]+)|(?P<x>[\s\S])")
+    out = []
+    for m in tok.finditer(text or ""):
+        k, w = m.lastgroup, m.group()
+        if k == "w":
+            k = "k" if w in kw else "C" if re.match(r"#?[A-Z]", w) or (lang == "fumola" and w.startswith("#")) else ""
+        elif k == "x":
+            k = ""
+        out.append(f'<span class="tk-{k}">{esc(w)}</span>' if k else esc(w))
+    return "".join(out)
+# (Matthew, 2026-10-23: "what can we say about our CI tests for 3-way functional correctness in this doc? please create a new
+# subsection") the game's two node checks, run on every push, their groups and counts from data/correct.json (a run on the laptop
+# of the commit CI ran: no browser, node only)
+def correct_html():
+    C = CORRECT
+    if not C: return ""
+    num = lambda v: "" if v is None else f"{v:,}"
+    rows = "".join(f"<tr><td>{esc(g)}</td><td class=n>{num(h) or '&mdash;'}</td><td class=n>{num(f)}</td><td>{esc(src)}</td></tr>" for g, h, f, src in C["groups"])
+    return f'''<h2 id="correct">The same answers, three ways</h2>
+<p>Matthew: <q>what can we say about our CI tests for 3-way functional correctness in this doc?</q> Speed means nothing if the
+rules disagree, so the game holds Hazel's and Fumola's rules to its own JS on every push. Its test workflow has a step
+<i>The rules three ways, JS = Hazel = Fumola</i> (<code class="ref"><b>^ticket(</b>567<b>)</b></code>), with no browser, node
+only, and two checks:</p>
+<ul>
+<li><b>Hazel against the JS:</b> <code>tools/hazelrules531.mjs</code> loads the Hazel library the game loads
+(<a href="{esc(C["hazel_lib"])}">js-library-embed</a>, build <code>{esc(C["hazel_build"])}</code>) and the game's own
+<code>25-scripting.js</code>, and builds the program as the page does. It gives every room's <code>on_event</code> every case the
+game can give that room, and compares the commands that come back with what the game's JS does in the same case:
+<b>{C["hazel_total"]:,} comparisons</b>.</li>
+<li><b>Fumola against the same expectations:</b> <code>tools/fumola_rules_check.mjs</code> loads the game's pinned Fumola wasm
+build (<code>{esc(C["fumola_build"])}</code>, the one the page loads) and the page's own <code>25-fumola.js</code>. It feeds the
+handlers the cases from the same case makers, and holds the answers to the expectations Hazel is held to, so Fumola must also give
+Hazel's answers. It runs in both of the page's Fumola modes (the World map held in Fumola, and passed in), adds edge cases written
+out one by one, and calls Common's helpers alone: <b>{C["fumola_total"]:,} comparisons</b>.</li>
+</ul>
+<table><thead><tr><th>what is compared</th><th>Hazel cases</th><th>Fumola cases (each in both modes)</th><th>the JS's answer comes from</th></tr></thead><tbody>{rows}</tbody></table>
+<p>Where the game's JS can run in node, the expected answer is that code itself, not a copy of it: the wiring
+(<code>trapWiring</code>), the placed levers (<code>leverPull</code>), the ways out (<code>wayOutOf</code>), the world's ways
+(<code>worldMeets</code>). Only the red, blue and hatch levers' outcomes are restated in the check, from their few lines of JS.
+The step is allowed to fail so that the rest of the run still goes ahead, and a last step then fails the run if the rules
+disagreed. A difference shows as a red run on the branch, after the pictures and the other checks have run.</p>
+<p>In the browser, two more checks play the same events in real pages and compare the game's state afterwards:
+<code>tools/checks/hazellogic531.mjs</code> (<code>?logic=js</code> against <code>?logic=hazel</code>) and
+<code>tools/checks/fumola542.mjs</code> (against <code>?logic=fumola</code> and <code>?logic=fumola-list</code>). They cover the
+trap room wired at random, the hatches, a room of placed levers, the pits under four lever settings, the dungeons' ladders, and a
+world walked as a player walks it. They run with the branch's other checks on GitHub.</p>
+<p><b>Where it stands:</b> at the game's <code>{esc(C["game"])}</code>, the three-way step passed on GitHub
+(run <a href="{esc(C["ci_url"])}">{esc(C["ci_run"])}</a>), and both checks print <i>all ok</i> when run in node on the laptop at
+the same commit (their output beside this report: <a href="data/rules-hazel.txt">Hazel</a>, <a href="data/rules-fumola.txt">Fumola</a>).
+Earlier runs on the branch were cancelled by the pushes that followed them, so this is the first one to reach that step since the
+outline work.</p>
+<p><b>What it does not cover:</b></p>
+<ul>
+<li>It checks the rules as the game ships them, not a box someone has edited. An edit is checked only by the game running it.</li>
+<li>Fumola is given fewer ways-out cases than Hazel (3,978 against 26,478).</li>
+<li>Its times are node's, kept only to show the order of things; the speeds in this report are the browser runs above.</li>
+<li>It does not reach the sizes where Hazel overflows its stack (<a href="#scale">As the code grows</a>).</li>
+</ul>
+<p>The same cases are the seed for unit tests in Hazel's library itself (<a href="https://github.com/hazelgrove/hazel/pull/2711">hazelgrove/hazel#2711</a>,
+<code class="ref"><b>^ticket(</b>591<b>)</b></code>), so that the library keeps giving these answers, not just this game.</p>'''
 def code_box(title, text, cls):
-    return f'<div class="code3 {cls}"><div class="code3-h">{title}</div><pre>{esc(text or "")}</pre></div>'
+    return f'<div class="code3 {cls}"><div class="code3-h">{title}</div><pre>{highlight(text, cls)}</pre></div>'
 ROOM = ""
 if TRAP:
     pics = "".join(f'<figure><img src="img/{f}" alt="{esc(a)}" loading="lazy"><figcaption>{esc(a)}</figcaption></figure>' for f, a in
@@ -137,6 +209,7 @@ if TRAP:
     ROOM = (f'<div class="pics">{pics}</div>'
             '<p>Its rule, three ways: the game\'s own JS (the functions the game runs, shown read-only), the Hazel rule and the Fumola rule, each from the run\'s page, as the game ships them. The Hazel and Fumola rules call Common\'s helpers (<code>Common.wire</code>, <code>Common.pits_open</code>, <code>Common.pit_moves</code>), and give back commands (<code>Flip</code>, <code>SetPit</code>, <code>LiftBoulder</code>, <code>DropBoulder</code>), which the game then runs, as its JS does directly.</p>'
             f'<div class="code3s">{code_box("JS (the game&#39;s own)", TRAP.get("js"), "js")}{code_box("Hazel", TRAP.get("hazel"), "hazel")}{code_box("Fumola", TRAP.get("fumola"), "fumola")}</div>')
+CORRECT_HTML = correct_html()
 answers = "".join(f"<li>{a}</li>" for a in FIND.get("answers", []))
 notes = "".join(f"<li>{a}</li>" for a in FIND.get("notes", []))
 nxt = "".join(f"<li>{a}</li>" for a in FIND.get("next", []))
@@ -150,6 +223,9 @@ td.n {{ text-align: right; white-space: nowrap; }} .rng {{ color: var(--muted); 
 svg.chart {{ width: 100%; max-width: 760px; height: auto; }} svg.chart .lab, svg.chart .val {{ font: 12px system-ui, sans-serif; fill: var(--ink, currentColor); }}
 .pics {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }} .pics img {{ width: 100%; border-radius: 8px; border: 1px solid var(--line); }} .pics figcaption {{ font-size: 0.85em; color: var(--muted); }}
 .code3s {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }} .code3 pre {{ font-size: 0.78em; max-height: 34em; overflow: auto; margin: 0; padding: 8px; border-radius: 6px; background: var(--paper); white-space: pre-wrap; }}
+.tk-k {{ color: #7c3aed; font-weight: 600; }} .tk-C {{ color: #0e7490; }} .tk-s {{ color: #b45309; }} .tk-n {{ color: #15803d; }} .tk-c {{ color: #6b7280; font-style: italic; }} .tk-o {{ color: #be185d; }}
+@media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) .tk-k {{ color: #c4b5fd; }} :root:not([data-theme="light"]) .tk-C {{ color: #67e8f9; }} :root:not([data-theme="light"]) .tk-s {{ color: #fcd34d; }} :root:not([data-theme="light"]) .tk-n {{ color: #86efac; }} :root:not([data-theme="light"]) .tk-c {{ color: #9ca3af; }} :root:not([data-theme="light"]) .tk-o {{ color: #f9a8d4; }} }}
+:root[data-theme="dark"] .tk-k {{ color: #c4b5fd; }} :root[data-theme="dark"] .tk-C {{ color: #67e8f9; }} :root[data-theme="dark"] .tk-s {{ color: #fcd34d; }} :root[data-theme="dark"] .tk-n {{ color: #86efac; }} :root[data-theme="dark"] .tk-c {{ color: #9ca3af; }} :root[data-theme="dark"] .tk-o {{ color: #f9a8d4; }}
 .code3-h {{ font-weight: 700; margin: 4px 0; }} .code3.js .code3-h {{ color: #b45309; }} .code3.hazel .code3-h {{ color: #7c3aed; }} .code3.fumola .code3-h {{ color: #0e7490; }}
 svg.chart .bar.js {{ fill: #b45309; }} svg.chart .bar.fumola {{ fill: #0e7490; }} svg.chart .bar.hazel {{ fill: #7c3aed; }}
 </style></head>
@@ -186,6 +262,7 @@ svg.chart .bar.js {{ fill: #b45309; }} svg.chart .bar.fumola {{ fill: #0e7490; }
 <h2 id="room">The pit room's rule, three ways</h2>
 <p>Matthew: <q>let's also show each room with an interesting script, and an example of the three scripts for that room: pit room? include screenshot in report.</q> The trap room over the castle's dungeons, whose rule has the most to it: a red lever flips, and the pits wired to it open or shut; a blue lever gives a pit its boulder or takes it away.</p>
 {ROOM}
+{CORRECT_HTML}
 <h2 id="next">What next</h2>
 <ol>{nxt}</ol>
 <h2 id="method">How this was put together</h2>

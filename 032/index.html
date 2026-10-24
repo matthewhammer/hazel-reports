@@ -93,6 +93,9 @@ td.n { text-align: right; white-space: nowrap; } .rng { color: var(--muted); fon
 svg.chart { width: 100%; max-width: 760px; height: auto; } svg.chart .lab, svg.chart .val { font: 12px system-ui, sans-serif; fill: var(--ink, currentColor); }
 .pics { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; } .pics img { width: 100%; border-radius: 8px; border: 1px solid var(--line); } .pics figcaption { font-size: 0.85em; color: var(--muted); }
 .code3s { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; } .code3 pre { font-size: 0.78em; max-height: 34em; overflow: auto; margin: 0; padding: 8px; border-radius: 6px; background: var(--paper); white-space: pre-wrap; }
+.tk-k { color: #7c3aed; font-weight: 600; } .tk-C { color: #0e7490; } .tk-s { color: #b45309; } .tk-n { color: #15803d; } .tk-c { color: #6b7280; font-style: italic; } .tk-o { color: #be185d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tk-k { color: #c4b5fd; } :root:not([data-theme="light"]) .tk-C { color: #67e8f9; } :root:not([data-theme="light"]) .tk-s { color: #fcd34d; } :root:not([data-theme="light"]) .tk-n { color: #86efac; } :root:not([data-theme="light"]) .tk-c { color: #9ca3af; } :root:not([data-theme="light"]) .tk-o { color: #f9a8d4; } }
+:root[data-theme="dark"] .tk-k { color: #c4b5fd; } :root[data-theme="dark"] .tk-C { color: #67e8f9; } :root[data-theme="dark"] .tk-s { color: #fcd34d; } :root[data-theme="dark"] .tk-n { color: #86efac; } :root[data-theme="dark"] .tk-c { color: #9ca3af; } :root[data-theme="dark"] .tk-o { color: #f9a8d4; }
 .code3-h { font-weight: 700; margin: 4px 0; } .code3.js .code3-h { color: #b45309; } .code3.hazel .code3-h { color: #7c3aed; } .code3.fumola .code3-h { color: #0e7490; }
 svg.chart .bar.js { fill: #b45309; } svg.chart .bar.fumola { fill: #0e7490; } svg.chart .bar.hazel { fill: #7c3aed; }
 </style><style id="anchors-css">
@@ -222,85 +225,127 @@ document.addEventListener("DOMContentLoaded", () => {
 <ul><li><b>Hazel's edit time grows with Common</b> (357, 435, 744 ms at 1, 2 and 4 times; one run, five edits each, so the range shown is within a run): roughly linear in the program's length, about 4 ms a line on this runner, before the game's 600 ms typing pause is added. Its whole-program analysis, the work Hazel's tiles redo after an edit, grows the same way (about 250, 300, 430 ms).</li><li><b>At 8 times (184 lines of Common, 23 functions copied 8 times) Hazel's compile overflows the stack</b> in the library's build (js_of_ocaml), the program reported broken and every room left to its JS; at 16 times it overflows at the first compile. The shape that does it: a long chain of definitions in one module, each a let in the one before's scope. A real script would reach it at a few hundred lines. This is worth a test in the library's own suite (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-591"><code class="ref"><b>^ticket(</b>591<b>)</b></code></a>) and a look at where the recursion is (statics over a let chain), not a game workaround.</li><li><b>Fumola's edit time is flat</b> (125 to 132 ms medians from 69 to 728 lines): its rules are defined from the whole text each time, and the text's length does not show at this size; the cost is the instance's fixed work, not the program.</li><li><b>The script function does not depend on the program's size</b> in either engine (Hazel 2.7 to 3.2 ms, Fumola 1.1 to 1.2 ms): an event runs one room's rule, and the copies are never called. What a bigger program costs is the edit and the load, not the play.</li><li><b>Projection:</b> at Hazel's rate, a script twice today's whole program (about 300 lines) would take about a second and a half to be ready after each edit on this runner, more on the laptop, and would sit near the stack limit; Fumola would stay near an eighth of a second. These are one run's numbers on GitHub's computers: the shape, not the exact values, is the finding.</li><li><b>A second run agrees on the shape</b> (run 40038452290, a slower runner throughout): Hazel's edits 492, 583, 953 ms at 1, 2 and 4 times, the same stack overflow at 8 and 16 times; Fumola's 158 to 169 ms at every size. The values move with the runner by a third; the shape does not.</li></ul>
 <h2 id="room">The pit room's rule, three ways<a class="anchor" href="#room" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="room" title="copy this section's address">copy link</button></h2>
 <p>Matthew: <q>let's also show each room with an interesting script, and an example of the three scripts for that room: pit room? include screenshot in report.</q> The trap room over the castle's dungeons, whose rule has the most to it: a red lever flips, and the pits wired to it open or shut; a blue lever gives a pit its boulder or takes it away.</p>
-<div class="pics"><figure><img src="img/trap-game.jpg" alt="The trap room in the game: its two red levers, the pits they open, the boulders&#x27; blue levers." loading="lazy"><figcaption>The trap room in the game: its two red levers, the pits they open, the boulders&#x27; blue levers.</figcaption></figure><figure><img src="img/trap-tiles.jpg" alt="Its rule at max size, in Hazel&#x27;s tiles, with the outline of every box at the left." loading="lazy"><figcaption>Its rule at max size, in Hazel&#x27;s tiles, with the outline of every box at the left.</figcaption></figure><figure><img src="img/common-tiles.jpg" alt="📚 Common at max size, in its tiles: the definitions every room calls, each function&#x27;s type at the left as Hazel infers it, then the program&#x27;s types with their kinds and cases." loading="lazy"><figcaption>📚 Common at max size, in its tiles: the definitions every room calls, each function&#x27;s type at the left as Hazel infers it, then the program&#x27;s types with their kinds and cases.</figcaption></figure></div><p>Its rule, three ways: the game's own JS (the functions the game runs, shown read-only), the Hazel rule and the Fumola rule, each from the run's page, as the game ships them. The Hazel and Fumola rules call Common's helpers (<code>Common.wire</code>, <code>Common.pits_open</code>, <code>Common.pit_moves</code>), and give back commands (<code>Flip</code>, <code>SetPit</code>, <code>LiftBoulder</code>, <code>DropBoulder</code>), which the game then runs, as its JS does directly.</p><div class="code3s"><div class="code3 js"><div class="code3-h">JS (the game&#39;s own)</div><pre>function roomLeverPull(side) {
-  if (side[0] === &quot;B&quot;) return roomBoulderPull(side.slice(1));   // (ticket 323: a blue one)
-  if (side === &quot;H&quot;) return hatchLeverPull();   // (ticket 334: a tree room&#x27;s trap door&#x27;s)
-  if (scriptEvent(&quot;TrapRoom&quot;, { tag: &quot;Pull&quot;, value: side })) return;   // (ticket 482: 📜 Scripting&#x27;s rule for the trap room, when it is on)
-  hzJs(&quot;Pull&quot;, () =&gt; roomLeverFlip(side));   // (ticket 531: timed as the rule is)
+<div class="pics"><figure><img src="img/trap-game.jpg" alt="The trap room in the game: its two red levers, the pits they open, the boulders&#x27; blue levers." loading="lazy"><figcaption>The trap room in the game: its two red levers, the pits they open, the boulders&#x27; blue levers.</figcaption></figure><figure><img src="img/trap-tiles.jpg" alt="Its rule at max size, in Hazel&#x27;s tiles, with the outline of every box at the left." loading="lazy"><figcaption>Its rule at max size, in Hazel&#x27;s tiles, with the outline of every box at the left.</figcaption></figure><figure><img src="img/common-tiles.jpg" alt="📚 Common at max size, in its tiles: the definitions every room calls, each function&#x27;s type at the left as Hazel infers it, then the program&#x27;s types with their kinds and cases." loading="lazy"><figcaption>📚 Common at max size, in its tiles: the definitions every room calls, each function&#x27;s type at the left as Hazel infers it, then the program&#x27;s types with their kinds and cases.</figcaption></figure></div><p>Its rule, three ways: the game's own JS (the functions the game runs, shown read-only), the Hazel rule and the Fumola rule, each from the run's page, as the game ships them. The Hazel and Fumola rules call Common's helpers (<code>Common.wire</code>, <code>Common.pits_open</code>, <code>Common.pit_moves</code>), and give back commands (<code>Flip</code>, <code>SetPit</code>, <code>LiftBoulder</code>, <code>DropBoulder</code>), which the game then runs, as its JS does directly.</p><div class="code3s"><div class="code3 js"><div class="code3-h">JS (the game&#39;s own)</div><pre><span class="tk-k">function</span> roomLeverPull(side) {
+  <span class="tk-k">if</span> (side[<span class="tk-n">0</span>] <span class="tk-o">===</span> <span class="tk-s">&quot;B&quot;</span>) <span class="tk-k">return</span> roomBoulderPull(side.slice(<span class="tk-n">1</span>));   <span class="tk-c">// (ticket 323: a blue one)</span>
+  <span class="tk-k">if</span> (side <span class="tk-o">===</span> <span class="tk-s">&quot;H&quot;</span>) <span class="tk-k">return</span> hatchLeverPull();   <span class="tk-c">// (ticket 334: a tree room&#x27;s trap door&#x27;s)</span>
+  <span class="tk-k">if</span> (scriptEvent(<span class="tk-s">&quot;TrapRoom&quot;</span>, { tag<span class="tk-o">:</span> <span class="tk-s">&quot;Pull&quot;</span>, value<span class="tk-o">:</span> side })) <span class="tk-k">return</span>;   <span class="tk-c">// (ticket 482: 📜 Scripting&#x27;s rule for the trap room, when it is on)</span>
+  hzJs(<span class="tk-s">&quot;Pull&quot;</span>, () <span class="tk-o">=&gt;</span> roomLeverFlip(side));   <span class="tk-c">// (ticket 531: timed as the rule is)</span>
 }
 
-function roomLeverFlip(side, lids = true) {
-  const B = state.background;
-  if (B.kind !== &quot;castleroom&quot;) return;
-  const K = castleOf(B), n = Math.max(1, Math.min(K.rooms.length, Math.round(B.castleRoom ?? 1))), key = leverKey(side, n, K.id);
-  const was = trapState(B, n, K.id).open;
-  B[key] = !leverDown(B, side, n, K.id);   // (ticket 307: never touched, it was down)
+<span class="tk-k">function</span> roomLeverFlip(side, lids <span class="tk-o">=</span> <span class="tk-k">true</span>) {
+  <span class="tk-k">const</span> <span class="tk-C">B</span> <span class="tk-o">=</span> state.background;
+  <span class="tk-k">if</span> (<span class="tk-C">B</span>.kind <span class="tk-o">!==</span> <span class="tk-s">&quot;castleroom&quot;</span>) <span class="tk-k">return</span>;
+  <span class="tk-k">const</span> <span class="tk-C">K</span> <span class="tk-o">=</span> castleOf(<span class="tk-C">B</span>), n <span class="tk-o">=</span> <span class="tk-C">Math</span>.max(<span class="tk-n">1</span>, <span class="tk-C">Math</span>.min(<span class="tk-C">K</span>.rooms.length, <span class="tk-C">Math</span>.round(<span class="tk-C">B</span>.castleRoom <span class="tk-o">??</span> <span class="tk-n">1</span>))), key <span class="tk-o">=</span> leverKey(side, n, <span class="tk-C">K</span>.id);
+  <span class="tk-k">const</span> was <span class="tk-o">=</span> trapState(<span class="tk-C">B</span>, n, <span class="tk-C">K</span>.id).open;
+  <span class="tk-C">B</span>[key] <span class="tk-o">=</span> <span class="tk-o">!</span>leverDown(<span class="tk-C">B</span>, side, n, <span class="tk-C">K</span>.id);   <span class="tk-c">// (ticket 307: never touched, it was down)</span>
   changed();
-  const up = !B[key], sd = side === &quot;L&quot; ? -1 : 1, T = trapState(B, n, K.id), now = T.open;
-  turnArm(`[data-lever=&quot;${side}&quot;] .lever-arm`, (up ? 1 : -1) * sd * LEVER_TILT, LEVER_TURN * 100 / T.speed.lever);   // (ticket 328: the room&#x27;s speeds)
-  if (!lids) return;
-  for (const j of [0, 1]) if (now[j] !== was[j]) lidSwing(`.pit-lid[data-pit-i=&quot;${j}&quot;]`, now[j], PIT_SWING * 100 / T.speed.lid);   // (ticket 307)
-  // (Matthew: &quot;opened by the red lever (trap door) while standing on it, and no falling sequence was triggered&quot;) a pit opened
-  // under the friend: in they fall, as walking onto it does, once its lid has swung most of the way
-  if (now.some((o, j) =&gt; o &amp;&amp; !was[j])) setTimeout(fallIfOverPit, 0.6 * PIT_SWING * 100 / T.speed.lid);
+  <span class="tk-k">const</span> up <span class="tk-o">=</span> <span class="tk-o">!</span><span class="tk-C">B</span>[key], sd <span class="tk-o">=</span> side <span class="tk-o">===</span> <span class="tk-s">&quot;L&quot;</span> <span class="tk-o">?</span> <span class="tk-o">-</span><span class="tk-n">1</span> <span class="tk-o">:</span> <span class="tk-n">1</span>, <span class="tk-C">T</span> <span class="tk-o">=</span> trapState(<span class="tk-C">B</span>, n, <span class="tk-C">K</span>.id), now <span class="tk-o">=</span> <span class="tk-C">T</span>.open;
+  turnArm(`[data<span class="tk-o">-</span>lever<span class="tk-o">=</span><span class="tk-s">&quot;${side}&quot;</span>] .lever<span class="tk-o">-</span>arm`, (up <span class="tk-o">?</span> <span class="tk-n">1</span> <span class="tk-o">:</span> <span class="tk-o">-</span><span class="tk-n">1</span>) <span class="tk-o">*</span> sd <span class="tk-o">*</span> <span class="tk-C">LEVER_TILT</span>, <span class="tk-C">LEVER_TURN</span> <span class="tk-o">*</span> <span class="tk-n">100</span> <span class="tk-o">/</span> <span class="tk-C">T</span>.speed.lever);   <span class="tk-c">// (ticket 328: the room&#x27;s speeds)</span>
+  <span class="tk-k">if</span> (<span class="tk-o">!</span>lids) <span class="tk-k">return</span>;
+  <span class="tk-k">for</span> (<span class="tk-k">const</span> j <span class="tk-k">of</span> [<span class="tk-n">0</span>, <span class="tk-n">1</span>]) <span class="tk-k">if</span> (now[j] <span class="tk-o">!==</span> was[j]) lidSwing(`.pit<span class="tk-o">-</span>lid[data<span class="tk-o">-</span>pit<span class="tk-o">-</span>i<span class="tk-o">=</span><span class="tk-s">&quot;${j}&quot;</span>]`, now[j], <span class="tk-C">PIT_SWING</span> <span class="tk-o">*</span> <span class="tk-n">100</span> <span class="tk-o">/</span> <span class="tk-C">T</span>.speed.lid);   <span class="tk-c">// (ticket 307)</span>
+  <span class="tk-c">// (Matthew: &quot;opened by the red lever (trap door) while standing on it, and no falling sequence was triggered&quot;) a pit opened</span>
+  <span class="tk-c">// under the friend: in they fall, as walking onto it does, once its lid has swung most of the way</span>
+  <span class="tk-k">if</span> (now.some((o, j) <span class="tk-o">=&gt;</span> o <span class="tk-o">&amp;&amp;</span> <span class="tk-o">!</span>was[j])) setTimeout(fallIfOverPit, <span class="tk-n">0.6</span> <span class="tk-o">*</span> <span class="tk-C">PIT_SWING</span> <span class="tk-o">*</span> <span class="tk-n">100</span> <span class="tk-o">/</span> <span class="tk-C">T</span>.speed.lid);
 }
 
-function roomBoulderPull(side) {
-  if (scriptEvent(&quot;TrapRoom&quot;, { tag: &quot;PullBoulder&quot;, value: side })) return;   // (ticket 531: 📜 TrapRoom&#x27;s rule, when it is on)
-  hzJs(&quot;PullBoulder&quot;, () =&gt; {
-    const B = state.background;
-    if (B.kind !== &quot;castleroom&quot;) return;
-    const K = castleOf(B), n = Math.max(1, Math.min(K.rooms.length, Math.round(B.castleRoom ?? 1)));
-    // (ticket 338) the pits this lever works: a fallen rock still on any, lifted away (each rising, and gone from the place&#x27;s
-    // things); else into each a new rock falls, which once landed is a placed rock, &quot;fallen N&quot;, dragged where one likes
-    const T0 = trapState(B, n, K.id), mine = [0, 1].filter(j =&gt; T0.wire[j] === side &amp;&amp; T0.on[j]), lift = mine.some(j =&gt; T0.covered[j]);
+<span class="tk-k">function</span> roomBoulderPull(side) {
+  <span class="tk-k">if</span> (scriptEvent(<span class="tk-s">&quot;TrapRoom&quot;</span>, { tag<span class="tk-o">:</span> <span class="tk-s">&quot;PullBoulder&quot;</span>, value<span class="tk-o">:</span> side })) <span class="tk-k">return</span>;   <span class="tk-c">// (ticket 531: 📜 TrapRoom&#x27;s rule, when it is on)</span>
+  hzJs(<span class="tk-s">&quot;PullBoulder&quot;</span>, () <span class="tk-o">=&gt;</span> {
+    <span class="tk-k">const</span> <span class="tk-C">B</span> <span class="tk-o">=</span> state.background;
+    <span class="tk-k">if</span> (<span class="tk-C">B</span>.kind <span class="tk-o">!==</span> <span class="tk-s">&quot;castleroom&quot;</span>) <span class="tk-k">return</span>;
+    <span class="tk-k">const</span> <span class="tk-C">K</span> <span class="tk-o">=</span> castleOf(<span class="tk-C">B</span>), n <span class="tk-o">=</span> <span class="tk-C">Math</span>.max(<span class="tk-n">1</span>, <span class="tk-C">Math</span>.min(<span class="tk-C">K</span>.rooms.length, <span class="tk-C">Math</span>.round(<span class="tk-C">B</span>.castleRoom <span class="tk-o">??</span> <span class="tk-n">1</span>)));
+    <span class="tk-c">// (ticket 338) the pits this lever works: a fallen rock still on any, lifted away (each rising, and gone from the place&#x27;s</span>
+    <span class="tk-c">// things); else into each a new rock falls, which once landed is a placed rock, &quot;fallen N&quot;, dragged where one likes</span>
+    <span class="tk-k">const</span> <span class="tk-C">T0</span> <span class="tk-o">=</span> trapState(<span class="tk-C">B</span>, n, <span class="tk-C">K</span>.id), mine <span class="tk-o">=</span> [<span class="tk-n">0</span>, <span class="tk-n">1</span>].filter(j <span class="tk-o">=&gt;</span> <span class="tk-C">T0</span>.wire[j] <span class="tk-o">===</span> side <span class="tk-o">&amp;&amp;</span> <span class="tk-C">T0</span>.on[j]), lift <span class="tk-o">=</span> mine.some(j <span class="tk-o">=&gt;</span> <span class="tk-C">T0</span>.covered[j]);
     roomBoulderAct(side, mine, lift);
   });
-}</pre></div><div class="code3 hazel"><div class="code3-h">Hazel</div><pre># A red lever pulled: flip it, and each pit wired to it opens or shuts. #
-# A blue lever pulled: each of its pits gets a boulder, or loses one. #
-let on_event = fun (g, e) : (Globals, Event) -&gt;
-  let w = Common.wire(g.wiring, g.draws) in
-  let (w0, w1) = w in
-  case e
-  | Pull(side) =&gt;
-    let (was0, was1) = Common.pits_open(g.lever_L, g.lever_R, w) in
-    let l = if side == L then !g.lever_L else g.lever_L in
-    let r = if side == R then !g.lever_R else g.lever_R in
-    let (now0, now1) = Common.pits_open(l, r, w) in
-    Flip(side, Common.pit_moves(0, was0, now0, Common.pit_moves(1, was1, now1, Done)))
-  | PullBoulder(side) =&gt;
-    let mine0 = w0 == side &amp;&amp; Common.nth(g.pits_on, 0) in
-    let mine1 = w1 == side &amp;&amp; Common.nth(g.pits_on, 1) in
-    let lift = (mine0 &amp;&amp; Common.nth(g.covered, 0)) || (mine1 &amp;&amp; Common.nth(g.covered, 1)) in
-    let one = fun (i, mine, k) : (Int, Bool, Cmd) -&gt; if !mine then k else if lift then LiftBoulder(i, k) else DropBoulder(i, k) in
-    one(0, mine0, one(1, mine1, Done))
-  | _ =&gt; Done
-  end</pre></div><div class="code3 fumola"><div class="code3-h">Fumola</div><pre>module TrapRoom {
-  // a blue lever&#x27;s pit i: nothing if not its own, else its rock lifted or a rock dropped
-  func one(i : Int, mine : Bool, lift : Bool, k : Common.Cmd) : Common.Cmd { if (not mine) { k } else if (lift) { #LiftBoulder(i, k) } else { #DropBoulder(i, k) } };
-  // A red lever pulled: flip it, and each pit wired to it opens or shuts.
-  // A blue lever pulled: each of its pits gets a boulder, or loses one.
-  public func on_event(g : Common.Globals, e : Common.Event) : Common.Cmd {
-    let w = Common.wire(g.wiring, g.draws);
-    let (w0, w1) = w;
-    switch (e) {
-      case (#Pull(side)) {
-        let (was0, was1) = Common.pits_open(g.lever_L, g.lever_R, w);
-        let l = if (side == #L) { not g.lever_L } else { g.lever_L };
-        let r = if (side == #R) { not g.lever_R } else { g.lever_R };
-        let (now0, now1) = Common.pits_open(l, r, w);
-        #Flip(side, Common.pit_moves(0, was0, now0, Common.pit_moves(1, was1, now1, #Done)))
+}</pre></div><div class="code3 hazel"><div class="code3-h">Hazel</div><pre><span class="tk-c"># A red lever pulled: flip it, and each pit wired to it opens or shuts. #</span>
+<span class="tk-c"># A blue lever pulled: each of its pits gets a boulder, or loses one. #</span>
+<span class="tk-k">let</span> on_event <span class="tk-o">=</span> <span class="tk-k">fun</span> (g, e) <span class="tk-o">:</span> (<span class="tk-C">Globals</span>, <span class="tk-C">Event</span>) <span class="tk-o">-&gt;</span>
+  <span class="tk-k">let</span> w <span class="tk-o">=</span> <span class="tk-C">Common</span>.wire(g.wiring, g.draws) <span class="tk-k">in</span>
+  <span class="tk-k">let</span> (w0, w1) <span class="tk-o">=</span> w <span class="tk-k">in</span>
+  <span class="tk-k">case</span> e
+  <span class="tk-o">|</span> <span class="tk-C">Pull</span>(side) <span class="tk-o">=&gt;</span>
+    <span class="tk-k">let</span> (was0, was1) <span class="tk-o">=</span> <span class="tk-C">Common</span>.pits_open(g.lever_L, g.lever_R, w) <span class="tk-k">in</span>
+    <span class="tk-k">let</span> l <span class="tk-o">=</span> <span class="tk-k">if</span> side <span class="tk-o">==</span> <span class="tk-C">L</span> <span class="tk-k">then</span> <span class="tk-o">!</span>g.lever_L <span class="tk-k">else</span> g.lever_L <span class="tk-k">in</span>
+    <span class="tk-k">let</span> r <span class="tk-o">=</span> <span class="tk-k">if</span> side <span class="tk-o">==</span> <span class="tk-C">R</span> <span class="tk-k">then</span> <span class="tk-o">!</span>g.lever_R <span class="tk-k">else</span> g.lever_R <span class="tk-k">in</span>
+    <span class="tk-k">let</span> (now0, now1) <span class="tk-o">=</span> <span class="tk-C">Common</span>.pits_open(l, r, w) <span class="tk-k">in</span>
+    <span class="tk-C">Flip</span>(side, <span class="tk-C">Common</span>.pit_moves(<span class="tk-n">0</span>, was0, now0, <span class="tk-C">Common</span>.pit_moves(<span class="tk-n">1</span>, was1, now1, <span class="tk-C">Done</span>)))
+  <span class="tk-o">|</span> <span class="tk-C">PullBoulder</span>(side) <span class="tk-o">=&gt;</span>
+    <span class="tk-k">let</span> mine0 <span class="tk-o">=</span> w0 <span class="tk-o">==</span> side <span class="tk-o">&amp;&amp;</span> <span class="tk-C">Common</span>.nth(g.pits_on, <span class="tk-n">0</span>) <span class="tk-k">in</span>
+    <span class="tk-k">let</span> mine1 <span class="tk-o">=</span> w1 <span class="tk-o">==</span> side <span class="tk-o">&amp;&amp;</span> <span class="tk-C">Common</span>.nth(g.pits_on, <span class="tk-n">1</span>) <span class="tk-k">in</span>
+    <span class="tk-k">let</span> lift <span class="tk-o">=</span> (mine0 <span class="tk-o">&amp;&amp;</span> <span class="tk-C">Common</span>.nth(g.covered, <span class="tk-n">0</span>)) <span class="tk-o">||</span> (mine1 <span class="tk-o">&amp;&amp;</span> <span class="tk-C">Common</span>.nth(g.covered, <span class="tk-n">1</span>)) <span class="tk-k">in</span>
+    <span class="tk-k">let</span> one <span class="tk-o">=</span> <span class="tk-k">fun</span> (i, mine, k) <span class="tk-o">:</span> (<span class="tk-C">Int</span>, <span class="tk-C">Bool</span>, <span class="tk-C">Cmd</span>) <span class="tk-o">-&gt;</span> <span class="tk-k">if</span> <span class="tk-o">!</span>mine <span class="tk-k">then</span> k <span class="tk-k">else</span> <span class="tk-k">if</span> lift <span class="tk-k">then</span> <span class="tk-C">LiftBoulder</span>(i, k) <span class="tk-k">else</span> <span class="tk-C">DropBoulder</span>(i, k) <span class="tk-k">in</span>
+    one(<span class="tk-n">0</span>, mine0, one(<span class="tk-n">1</span>, mine1, <span class="tk-C">Done</span>))
+  <span class="tk-o">|</span> _ <span class="tk-o">=&gt;</span> <span class="tk-C">Done</span>
+  <span class="tk-k">end</span></pre></div><div class="code3 fumola"><div class="code3-h">Fumola</div><pre><span class="tk-k">module</span> <span class="tk-C">TrapRoom</span> {
+  <span class="tk-c">// a blue lever&#x27;s pit i: nothing if not its own, else its rock lifted or a rock dropped</span>
+  <span class="tk-k">func</span> one(i <span class="tk-o">:</span> <span class="tk-C">Int</span>, mine <span class="tk-o">:</span> <span class="tk-C">Bool</span>, lift <span class="tk-o">:</span> <span class="tk-C">Bool</span>, k <span class="tk-o">:</span> <span class="tk-C">Common</span>.<span class="tk-C">Cmd</span>) <span class="tk-o">:</span> <span class="tk-C">Common</span>.<span class="tk-C">Cmd</span> { <span class="tk-k">if</span> (not mine) { k } <span class="tk-k">else</span> <span class="tk-k">if</span> (lift) { <span class="tk-C">#LiftBoulder</span>(i, k) } <span class="tk-k">else</span> { <span class="tk-C">#DropBoulder</span>(i, k) } };
+  <span class="tk-c">// A red lever pulled: flip it, and each pit wired to it opens or shuts.</span>
+  <span class="tk-c">// A blue lever pulled: each of its pits gets a boulder, or loses one.</span>
+  <span class="tk-k">public</span> <span class="tk-k">func</span> on_event(g <span class="tk-o">:</span> <span class="tk-C">Common</span>.<span class="tk-C">Globals</span>, e <span class="tk-o">:</span> <span class="tk-C">Common</span>.<span class="tk-C">Event</span>) <span class="tk-o">:</span> <span class="tk-C">Common</span>.<span class="tk-C">Cmd</span> {
+    <span class="tk-k">let</span> w <span class="tk-o">=</span> <span class="tk-C">Common</span>.wire(g.wiring, g.draws);
+    <span class="tk-k">let</span> (w0, w1) <span class="tk-o">=</span> w;
+    <span class="tk-k">switch</span> (e) {
+      <span class="tk-k">case</span> (<span class="tk-C">#Pull</span>(side)) {
+        <span class="tk-k">let</span> (was0, was1) <span class="tk-o">=</span> <span class="tk-C">Common</span>.pits_open(g.lever_L, g.lever_R, w);
+        <span class="tk-k">let</span> l <span class="tk-o">=</span> <span class="tk-k">if</span> (side <span class="tk-o">==</span> <span class="tk-C">#L</span>) { not g.lever_L } <span class="tk-k">else</span> { g.lever_L };
+        <span class="tk-k">let</span> r <span class="tk-o">=</span> <span class="tk-k">if</span> (side <span class="tk-o">==</span> <span class="tk-C">#R</span>) { not g.lever_R } <span class="tk-k">else</span> { g.lever_R };
+        <span class="tk-k">let</span> (now0, now1) <span class="tk-o">=</span> <span class="tk-C">Common</span>.pits_open(l, r, w);
+        <span class="tk-C">#Flip</span>(side, <span class="tk-C">Common</span>.pit_moves(<span class="tk-n">0</span>, was0, now0, <span class="tk-C">Common</span>.pit_moves(<span class="tk-n">1</span>, was1, now1, <span class="tk-C">#Done</span>)))
       };
-      case (#PullBoulder(side)) {
-        let mine0 = (w0 == side) and Common.nth(g.pits_on, 0);
-        let mine1 = (w1 == side) and Common.nth(g.pits_on, 1);
-        let lift = (mine0 and Common.nth(g.covered, 0)) or (mine1 and Common.nth(g.covered, 1));
-        one(0, mine0, lift, one(1, mine1, lift, #Done))
+      <span class="tk-k">case</span> (<span class="tk-C">#PullBoulder</span>(side)) {
+        <span class="tk-k">let</span> mine0 <span class="tk-o">=</span> (w0 <span class="tk-o">==</span> side) and <span class="tk-C">Common</span>.nth(g.pits_on, <span class="tk-n">0</span>);
+        <span class="tk-k">let</span> mine1 <span class="tk-o">=</span> (w1 <span class="tk-o">==</span> side) and <span class="tk-C">Common</span>.nth(g.pits_on, <span class="tk-n">1</span>);
+        <span class="tk-k">let</span> lift <span class="tk-o">=</span> (mine0 and <span class="tk-C">Common</span>.nth(g.covered, <span class="tk-n">0</span>)) or (mine1 and <span class="tk-C">Common</span>.nth(g.covered, <span class="tk-n">1</span>));
+        one(<span class="tk-n">0</span>, mine0, lift, one(<span class="tk-n">1</span>, mine1, lift, <span class="tk-C">#Done</span>))
       };
-      case _ { #Done }
+      <span class="tk-k">case</span> _ { <span class="tk-C">#Done</span> }
     }
   }
 }</pre></div></div>
+<h2 id="correct">The same answers, three ways<a class="anchor" href="#correct" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="correct" title="copy this section's address">copy link</button></h2>
+<p>Matthew: <q>what can we say about our CI tests for 3-way functional correctness in this doc?</q> Speed means nothing if the
+rules disagree, so the game holds Hazel's and Fumola's rules to its own JS on every push. Its test workflow has a step
+<i>The rules three ways, JS = Hazel = Fumola</i> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-567"><code class="ref"><b>^ticket(</b>567<b>)</b></code></a>), with no browser, node
+only, and two checks:</p>
+<ul>
+<li><b>Hazel against the JS:</b> <code>tools/hazelrules531.mjs</code> loads the Hazel library the game loads
+(<a href="https://hazel.org/build/js-library-embed/hazel-lib.js">js-library-embed</a>, build <code>0d66c36618</code>) and the game's own
+<code>25-scripting.js</code>, and builds the program as the page does. It gives every room's <code>on_event</code> every case the
+game can give that room, and compares the commands that come back with what the game's JS does in the same case:
+<b>32,761 comparisons</b>.</li>
+<li><b>Fumola against the same expectations:</b> <code>tools/fumola_rules_check.mjs</code> loads the game's pinned Fumola wasm
+build (<code>877b155851</code>, the one the page loads) and the page's own <code>25-fumola.js</code>. It feeds the
+handlers the cases from the same case makers, and holds the answers to the expectations Hazel is held to, so Fumola must also give
+Hazel's answers. It runs in both of the page's Fumola modes (the World map held in Fumola, and passed in), adds edge cases written
+out one by one, and calls Common's helpers alone: <b>20,649 comparisons</b>.</li>
+</ul>
+<table><thead><tr><th>what is compared</th><th>Hazel cases</th><th>Fumola cases (each in both modes)</th><th>the JS's answer comes from</th></tr></thead><tbody><tr><td>the trap room&#x27;s red and blue levers</td><td class=n>2,304</td><td class=n>2,304</td><td>trapWiring, the game&#x27;s own (01-state.js), with its seeded draws (10-nature.js); the levers&#x27; outcomes restated from their few lines of JS</td></tr><tr><td>the tree houses&#x27; and round room&#x27;s hatches</td><td class=n>14</td><td class=n>14</td><td>restated from the hatch lever&#x27;s JS</td></tr><tr><td>placed levers and their trap doors</td><td class=n>108</td><td class=n>108</td><td>the game&#x27;s own leverPull and leverPullApply (26-drags-and-start.js), on a stand-in square</td></tr><tr><td>the castle&#x27;s pits, where a fall lands</td><td class=n>1,560</td><td class=n>1,560</td><td>the pits line as castleroomScene draws it</td></tr><tr><td>ways out of a room</td><td class=n>26,478</td><td class=n>3,978</td><td>the game&#x27;s own wayOutOf, the 12 room kinds read from ROOM_KINDS</td></tr><tr><td>the world&#x27;s ways, square to square</td><td class=n>2,296</td><td class=n>2,296</td><td>the game&#x27;s own worldMeets</td></tr><tr><td>edges named one by one, commands written out</td><td class=n>&mdash;</td><td class=n>41</td><td>written in the check</td></tr><tr><td>Common&#x27;s helpers called alone</td><td class=n>&mdash;</td><td class=n>42</td><td>written in the check</td></tr></tbody></table>
+<p>Where the game's JS can run in node, the expected answer is that code itself, not a copy of it: the wiring
+(<code>trapWiring</code>), the placed levers (<code>leverPull</code>), the ways out (<code>wayOutOf</code>), the world's ways
+(<code>worldMeets</code>). Only the red, blue and hatch levers' outcomes are restated in the check, from their few lines of JS.
+The step is allowed to fail so that the rest of the run still goes ahead, and a last step then fails the run if the rules
+disagreed. A difference shows as a red run on the branch, after the pictures and the other checks have run.</p>
+<p>In the browser, two more checks play the same events in real pages and compare the game's state afterwards:
+<code>tools/checks/hazellogic531.mjs</code> (<code>?logic=js</code> against <code>?logic=hazel</code>) and
+<code>tools/checks/fumola542.mjs</code> (against <code>?logic=fumola</code> and <code>?logic=fumola-list</code>). They cover the
+trap room wired at random, the hatches, a room of placed levers, the pits under four lever settings, the dungeons' ladders, and a
+world walked as a player walks it. They run with the branch's other checks on GitHub.</p>
+<p><b>Where it stands:</b> at the game's <code>370f532</code>, the three-way step passed on GitHub
+(run <a href="https://github.com/matthewhammer/kids-choice-games/actions/runs/40053184542">40053184542</a>), and both checks print <i>all ok</i> when run in node on the laptop at
+the same commit (their output beside this report: <a href="data/rules-hazel.txt">Hazel</a>, <a href="data/rules-fumola.txt">Fumola</a>).
+Earlier runs on the branch were cancelled by the pushes that followed them, so this is the first one to reach that step since the
+outline work.</p>
+<p><b>What it does not cover:</b></p>
+<ul>
+<li>It checks the rules as the game ships them, not a box someone has edited. An edit is checked only by the game running it.</li>
+<li>Fumola is given fewer ways-out cases than Hazel (3,978 against 26,478).</li>
+<li>Its times are node's, kept only to show the order of things; the speeds in this report are the browser runs above.</li>
+<li>It does not reach the sizes where Hazel overflows its stack (<a href="#scale">As the code grows</a>).</li>
+</ul>
+<p>The same cases are the seed for unit tests in Hazel's library itself (<a href="https://github.com/hazelgrove/hazel/pull/2711">hazelgrove/hazel#2711</a>,
+<a href="https://matthewhammer.org/hazel/dashboard/#ticket-591"><code class="ref"><b>^ticket(</b>591<b>)</b></code></a>), so that the library keeps giving these answers, not just this game.</p>
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol><li>Find the recursion behind Hazel's stack overflow on a long module (statics over a chain of lets, in the js_of_ocaml build), fix it on the library's branch (<a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>), and add the 8x program as a test (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-591"><code class="ref"><b>^ticket(</b>591<b>)</b></code></a>).</li><li>Find and remove Hazel's first-event pause: compile the program when the tab opens or the scripts change (the game already compiles ahead under ?logic=hazel), not on the first lever pulled; then measure the first pull again.</li><li>Measure the same on the laptop and on the iPad, by hand from the game's 🔬 timings once <a href="https://matthewhammer.org/hazel/dashboard/#ticket-568"><code class="ref"><b>^ticket(</b>568<b>)</b></code></a> shows them, against these runner numbers.</li><li>Time the other rooms' events (the world's ways, the castle's pits, placed levers), whose rules do more than the trap room's; the World rule on a big map is where <a href="../030/"><code class="ref"><b>^report(</b>30<b>)</b></code></a> found Hazel slow.</li><li>Re-run after <a href="https://matthewhammer.org/hazel/dashboard/#ticket-587"><code class="ref"><b>^ticket(</b>587<b>)</b></code></a> (the outline from Hazel) and with Hazel's tiles loaded on demand only, to see what the tiles cost the tab.</li></ol>
 <h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
@@ -546,8 +591,11 @@ let on_event = fun (g, e) : (Globals, Event) -&gt;
  "status": "work in progress",
  "question": "Matthew: a speed run of the 📜 Scripting tab with Fumola, Hazel and JS as the default, and the game calling into a script, timed (^ticket(588)).",
  "files": [
+  "data/correct.json",
   "data/findings.json",
   "data/meta.json",
+  "data/rules-fumola.txt",
+  "data/rules-hazel.txt",
   "data/run.json",
   "data/runs.json",
   "data/scale.json",
@@ -874,6 +922,66 @@ let on_event = fun (g, e) : (Globals, Event) -&gt;
      "124.2 ms (121.4–146)",
      "–",
      "1.1 ms"
+    ]
+   ]
+  },
+  {
+   "section": "The same answers, three ways",
+   "section_id": "correct",
+   "columns": [
+    "what is compared",
+    "Hazel cases",
+    "Fumola cases (each in both modes)",
+    "the JS's answer comes from"
+   ],
+   "rows": [
+    [
+     "the trap room's red and blue levers",
+     "2,304",
+     "2,304",
+     "trapWiring, the game's own (01-state.js), with its seeded draws (10-nature.js); the levers' outcomes restated from their few lines of JS"
+    ],
+    [
+     "the tree houses' and round room's hatches",
+     "14",
+     "14",
+     "restated from the hatch lever's JS"
+    ],
+    [
+     "placed levers and their trap doors",
+     "108",
+     "108",
+     "the game's own leverPull and leverPullApply (26-drags-and-start.js), on a stand-in square"
+    ],
+    [
+     "the castle's pits, where a fall lands",
+     "1,560",
+     "1,560",
+     "the pits line as castleroomScene draws it"
+    ],
+    [
+     "ways out of a room",
+     "26,478",
+     "3,978",
+     "the game's own wayOutOf, the 12 room kinds read from ROOM_KINDS"
+    ],
+    [
+     "the world's ways, square to square",
+     "2,296",
+     "2,296",
+     "the game's own worldMeets"
+    ],
+    [
+     "edges named one by one, commands written out",
+     "—",
+     "41",
+     "written in the check"
+    ],
+    [
+     "Common's helpers called alone",
+     "—",
+     "42",
+     "written in the check"
     ]
    ]
   }

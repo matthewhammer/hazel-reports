@@ -1,0 +1,31 @@
+Hazel 0.1 (draft, js-library), build 0d66c36618ee709a60f91cf01fbf0b46121f2499
+compiled in 1196.6 ms; rooms: TrapRoom, TreeRoom, Square, World, Castle
+ok   red and blue levers: 2304 cases, Hazel's commands as the JS does
+ok   hatches: 14 cases
+ok   placed levers: 108 cases, the real leverPull's doors
+ok   castle pits: 1560 cases, castleroomScene's own pits
+ok   ways out: 26478 cases, the game's own wayOutOf (12 room kinds read from ROOM_KINDS)
+ok   world ways: 2296 cases, the game's own worldMeets
+
+times, 20 reps each, node v22.23.2 (ms)
+  Pull: hazel                                  p50 3.2894  p95 4.3794  max 4.379
+  Pull: js                                     p50 0.0015  p95 0.0555  max 0.056
+  PullBoulder: hazel                           p50 2.5836  p95 3.3706  max 3.371
+  PullHatch: hazel                             p50 1.0378  p95 1.8054  max 1.805
+  PullThing, 2 doors: hazel (globals copied in) p50 2.4719  p95 3.3657  max 3.366
+  PullThing, 2 doors: js (leverPull)           p50 0.0037  p95 0.1214  max 0.121
+  PullThing, 8 doors: hazel (globals copied in) p50 6.6241  p95 9.6641  max 9.664
+  PullThing, 8 doors: js (leverPull)           p50 0.0073  p95 0.0362  max 0.036
+  PullThing, 40 doors: hazel (globals copied in) p50 100.6716  p95 128.8168  max 128.817
+  PullThing, 40 doors: js (leverPull)          p50 0.0365  p95 0.0650  max 0.065
+  FallPit: hazel                               p50 2.0219  p95 3.9911  max 3.991
+  FallPit: js (the pits line, as castleroomScene draws) p50 0.0005  p95 0.0641  max 0.064
+  WayOut: hazel                                p50 2.9156  p95 6.0942  max 6.094
+  WayOut: js (wayOutOf, as castleWays draws)   p50 0.0013  p95 0.1100  max 0.110
+  Way, 3x3 map: hazel (globals copied in)      p50 2.3807  p95 3.2433  max 3.243
+  Way, 3x3 map: js (worldMeets)                p50 0.0021  p95 0.0726  max 0.073
+  Way, 8x8 map: hazel (globals copied in)      p50 10.0790  p95 12.3539  max 12.354
+  Way, 8x8 map: js (worldMeets)                p50 0.0041  p95 0.0265  max 0.026
+  Way, 16x16 map: hazel (globals copied in)    p50 40.8345  p95 46.0505  max 46.050
+  Way, 16x16 map: js (worldMeets)              p50 0.0019  p95 0.0244  max 0.024
+all ok (32761 comparisons)
