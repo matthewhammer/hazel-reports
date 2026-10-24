@@ -12,49 +12,70 @@
    "the trap room's red and blue levers",
    2304,
    2304,
+   2,
    "trapWiring, the game's own (01-state.js), with its seeded draws (10-nature.js); the levers' outcomes restated from their few lines of JS"
   ],
   [
    "the tree houses' and round room's hatches",
    14,
    14,
+   2,
    "restated from the hatch lever's JS"
   ],
   [
    "placed levers and their trap doors",
    108,
    108,
+   2,
    "the game's own leverPull and leverPullApply (26-drags-and-start.js), on a stand-in square"
   ],
   [
    "the castle's pits, where a fall lands",
    1560,
    1560,
+   2,
    "the pits line as castleroomScene draws it"
   ],
   [
    "ways out of a room",
    26478,
    3978,
+   2,
    "the game's own wayOutOf, the 12 room kinds read from ROOM_KINDS"
   ],
   [
    "the world's ways, square to square",
    2296,
    2296,
+   2,
    "the game's own worldMeets"
   ],
   [
    "edges named one by one, commands written out",
    null,
    41,
+   2,
    "written in the check"
   ],
   [
    "Common's helpers called alone",
    null,
    42,
+   1,
    "written in the check"
   ]
- ]
+ ],
+ "hazel_extra": [
+  [
+   "the program is ready (compiled, no errors)",
+   1
+  ]
+ ],
+ "fumola_extra": [
+  [
+   "the Fumola source is ASCII; the list mode holds no map; a text with a quote is refused; literals written as the page writes them",
+   5
+  ]
+ ],
+ "wayout_reason": "The Fumola check leaves out the castles of 4 rooms that Hazel's takes (it covers every castle of 1 to 3 rooms, and two long ones): with them it made about 25,000 more calls and ran a minute longer, and the rule reads a castle only through two helpers (index_of and nth_s) that the shorter castles already reach. A choice for speed, written in the check (tools/fumola_rules_check.mjs), not a gap found by it."
 }

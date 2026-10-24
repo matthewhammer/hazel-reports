@@ -154,7 +154,13 @@ def correct_html():
     C = CORRECT
     if not C: return ""
     num = lambda v: "" if v is None else f"{v:,}"
-    rows = "".join(f"<tr><td>{esc(g)}</td><td class=n>{num(h) or '&mdash;'}</td><td class=n>{num(f)}</td><td>{esc(src)}</td></tr>" for g, h, f, src in C["groups"])
+    # (Matthew, 2026-10-24: "I don't understand the final table of numbers yet") each row's cases, and the comparisons they make: a
+    # Hazel case is one call; a Fumola case one call in each of the page's two Fumola modes, but Common's helpers one call; then the
+    # checks that are not calls, and the totals, so the rows add up to the numbers in the text
+    rows = "".join(f"<tr><td>{esc(g)}</td><td class=n>{num(h) or '&mdash;'}</td><td class=n>{num(f)}</td><td class=n>{'&times; ' + str(m) + ' = ' + num(f * m) if f else ''}</td><td>{esc(src)}</td></tr>" for g, h, f, m, src in C["groups"])
+    rows += "".join(f"<tr><td>{esc(w)}</td><td class=n>{n}</td><td class=n></td><td></td><td>not a call: checked once</td></tr>" for w, n in C["hazel_extra"])
+    rows += "".join(f"<tr><td>{esc(w)}</td><td class=n></td><td class=n></td><td class=n>{n}</td><td>not a call: checked once</td></tr>" for w, n in C["fumola_extra"])
+    rows += f"<tr class=total><td><b>comparisons in all</b></td><td class=n><b>{C['hazel_total']:,}</b></td><td></td><td class=n><b>{C['fumola_total']:,}</b></td><td></td></tr>"
     return f'''<h2 id="correct">The same answers, three ways</h2>
 <p>Matthew: <q>what can we say about our CI tests for 3-way functional correctness in this doc?</q> Speed means nothing if the
 rules disagree, so the game holds Hazel's and Fumola's rules to its own JS on every push. Its test workflow has a step
@@ -172,7 +178,13 @@ handlers the cases from the same case makers, and holds the answers to the expec
 Hazel's answers. It runs in both of the page's Fumola modes (the World map held in Fumola, and passed in), adds edge cases written
 out one by one, and calls Common's helpers alone: <b>{C["fumola_total"]:,} comparisons</b>.</li>
 </ul>
-<table><thead><tr><th>what is compared</th><th>Hazel cases</th><th>Fumola cases (each in both modes)</th><th>the JS's answer comes from</th></tr></thead><tbody>{rows}</tbody></table>
+<p><b>Reading the table.</b> A case is one situation a room can be in (its globals) and one event; a comparison is one answer
+checked against the JS's answer for that case. Each Hazel case is one call, so its cases and its comparisons are the same number.
+Fumola's page has two modes (the World map held in Fumola, or passed in with each event), and every Fumola case is asked in both, so
+it makes two comparisons; Common's helpers are called once, outside either mode. A few checks are not calls at all (the program
+compiles; the boundary refuses what it cannot write), and count one each. The last row adds each column up to the totals in the
+text above.</p>
+<table><thead><tr><th>what is compared</th><th>Hazel: cases (= comparisons)</th><th>Fumola: cases</th><th>Fumola: comparisons (cases &times; modes)</th><th>the JS's answer comes from</th></tr></thead><tbody>{rows}</tbody></table>
 <p>Where the game's JS can run in node, the expected answer is that code itself, not a copy of it: the wiring
 (<code>trapWiring</code>), the placed levers (<code>leverPull</code>), the ways out (<code>wayOutOf</code>), the world's ways
 (<code>worldMeets</code>). Only the red, blue and hatch levers' outcomes are restated in the check, from their few lines of JS.
@@ -191,7 +203,7 @@ outline work.</p>
 <p><b>What it does not cover:</b></p>
 <ul>
 <li>It checks the rules as the game ships them, not a box someone has edited. An edit is checked only by the game running it.</li>
-<li>Fumola is given fewer ways-out cases than Hazel (3,978 against 26,478).</li>
+<li>Fumola's check has fewer ways-out cases than Hazel's (3,978 against 26,478), on purpose. {esc(C["wayout_reason"])}</li>
 <li>Its times are node's, kept only to show the order of things; the speeds in this report are the browser runs above.</li>
 <li>It does not reach the sizes where Hazel overflows its stack (<a href="#scale">As the code grows</a>).</li>
 </ul>
@@ -226,7 +238,7 @@ svg.chart {{ width: 100%; max-width: 760px; height: auto; }} svg.chart .lab, svg
 .tk-k {{ color: #7c3aed; font-weight: 600; }} .tk-C {{ color: #0e7490; }} .tk-s {{ color: #b45309; }} .tk-n {{ color: #15803d; }} .tk-c {{ color: #6b7280; font-style: italic; }} .tk-o {{ color: #be185d; }}
 @media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) .tk-k {{ color: #c4b5fd; }} :root:not([data-theme="light"]) .tk-C {{ color: #67e8f9; }} :root:not([data-theme="light"]) .tk-s {{ color: #fcd34d; }} :root:not([data-theme="light"]) .tk-n {{ color: #86efac; }} :root:not([data-theme="light"]) .tk-c {{ color: #9ca3af; }} :root:not([data-theme="light"]) .tk-o {{ color: #f9a8d4; }} }}
 :root[data-theme="dark"] .tk-k {{ color: #c4b5fd; }} :root[data-theme="dark"] .tk-C {{ color: #67e8f9; }} :root[data-theme="dark"] .tk-s {{ color: #fcd34d; }} :root[data-theme="dark"] .tk-n {{ color: #86efac; }} :root[data-theme="dark"] .tk-c {{ color: #9ca3af; }} :root[data-theme="dark"] .tk-o {{ color: #f9a8d4; }}
-.code3-h {{ font-weight: 700; margin: 4px 0; }} .code3.js .code3-h {{ color: #b45309; }} .code3.hazel .code3-h {{ color: #7c3aed; }} .code3.fumola .code3-h {{ color: #0e7490; }}
+.code3-h {{ font-weight: 700; margin: 4px 0; }} tr.total td {{ border-top: 2px solid var(--line); }} .code3.js .code3-h {{ color: #b45309; }} .code3.hazel .code3-h {{ color: #7c3aed; }} .code3.fumola .code3-h {{ color: #0e7490; }}
 svg.chart .bar.js {{ fill: #b45309; }} svg.chart .bar.fumola {{ fill: #0e7490; }} svg.chart .bar.hazel {{ fill: #7c3aed; }}
 </style></head>
 <body><main>

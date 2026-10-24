@@ -96,7 +96,7 @@ svg.chart { width: 100%; max-width: 760px; height: auto; } svg.chart .lab, svg.c
 .tk-k { color: #7c3aed; font-weight: 600; } .tk-C { color: #0e7490; } .tk-s { color: #b45309; } .tk-n { color: #15803d; } .tk-c { color: #6b7280; font-style: italic; } .tk-o { color: #be185d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tk-k { color: #c4b5fd; } :root:not([data-theme="light"]) .tk-C { color: #67e8f9; } :root:not([data-theme="light"]) .tk-s { color: #fcd34d; } :root:not([data-theme="light"]) .tk-n { color: #86efac; } :root:not([data-theme="light"]) .tk-c { color: #9ca3af; } :root:not([data-theme="light"]) .tk-o { color: #f9a8d4; } }
 :root[data-theme="dark"] .tk-k { color: #c4b5fd; } :root[data-theme="dark"] .tk-C { color: #67e8f9; } :root[data-theme="dark"] .tk-s { color: #fcd34d; } :root[data-theme="dark"] .tk-n { color: #86efac; } :root[data-theme="dark"] .tk-c { color: #9ca3af; } :root[data-theme="dark"] .tk-o { color: #f9a8d4; }
-.code3-h { font-weight: 700; margin: 4px 0; } .code3.js .code3-h { color: #b45309; } .code3.hazel .code3-h { color: #7c3aed; } .code3.fumola .code3-h { color: #0e7490; }
+.code3-h { font-weight: 700; margin: 4px 0; } tr.total td { border-top: 2px solid var(--line); } .code3.js .code3-h { color: #b45309; } .code3.hazel .code3-h { color: #7c3aed; } .code3.fumola .code3-h { color: #0e7490; }
 svg.chart .bar.js { fill: #b45309; } svg.chart .bar.fumola { fill: #0e7490; } svg.chart .bar.hazel { fill: #7c3aed; }
 </style><style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
@@ -321,7 +321,13 @@ handlers the cases from the same case makers, and holds the answers to the expec
 Hazel's answers. It runs in both of the page's Fumola modes (the World map held in Fumola, and passed in), adds edge cases written
 out one by one, and calls Common's helpers alone: <b>20,649 comparisons</b>.</li>
 </ul>
-<table><thead><tr><th>what is compared</th><th>Hazel cases</th><th>Fumola cases (each in both modes)</th><th>the JS's answer comes from</th></tr></thead><tbody><tr><td>the trap room&#x27;s red and blue levers</td><td class=n>2,304</td><td class=n>2,304</td><td>trapWiring, the game&#x27;s own (01-state.js), with its seeded draws (10-nature.js); the levers&#x27; outcomes restated from their few lines of JS</td></tr><tr><td>the tree houses&#x27; and round room&#x27;s hatches</td><td class=n>14</td><td class=n>14</td><td>restated from the hatch lever&#x27;s JS</td></tr><tr><td>placed levers and their trap doors</td><td class=n>108</td><td class=n>108</td><td>the game&#x27;s own leverPull and leverPullApply (26-drags-and-start.js), on a stand-in square</td></tr><tr><td>the castle&#x27;s pits, where a fall lands</td><td class=n>1,560</td><td class=n>1,560</td><td>the pits line as castleroomScene draws it</td></tr><tr><td>ways out of a room</td><td class=n>26,478</td><td class=n>3,978</td><td>the game&#x27;s own wayOutOf, the 12 room kinds read from ROOM_KINDS</td></tr><tr><td>the world&#x27;s ways, square to square</td><td class=n>2,296</td><td class=n>2,296</td><td>the game&#x27;s own worldMeets</td></tr><tr><td>edges named one by one, commands written out</td><td class=n>&mdash;</td><td class=n>41</td><td>written in the check</td></tr><tr><td>Common&#x27;s helpers called alone</td><td class=n>&mdash;</td><td class=n>42</td><td>written in the check</td></tr></tbody></table>
+<p><b>Reading the table.</b> A case is one situation a room can be in (its globals) and one event; a comparison is one answer
+checked against the JS's answer for that case. Each Hazel case is one call, so its cases and its comparisons are the same number.
+Fumola's page has two modes (the World map held in Fumola, or passed in with each event), and every Fumola case is asked in both, so
+it makes two comparisons; Common's helpers are called once, outside either mode. A few checks are not calls at all (the program
+compiles; the boundary refuses what it cannot write), and count one each. The last row adds each column up to the totals in the
+text above.</p>
+<table><thead><tr><th>what is compared</th><th>Hazel: cases (= comparisons)</th><th>Fumola: cases</th><th>Fumola: comparisons (cases &times; modes)</th><th>the JS's answer comes from</th></tr></thead><tbody><tr><td>the trap room&#x27;s red and blue levers</td><td class=n>2,304</td><td class=n>2,304</td><td class=n>&times; 2 = 4,608</td><td>trapWiring, the game&#x27;s own (01-state.js), with its seeded draws (10-nature.js); the levers&#x27; outcomes restated from their few lines of JS</td></tr><tr><td>the tree houses&#x27; and round room&#x27;s hatches</td><td class=n>14</td><td class=n>14</td><td class=n>&times; 2 = 28</td><td>restated from the hatch lever&#x27;s JS</td></tr><tr><td>placed levers and their trap doors</td><td class=n>108</td><td class=n>108</td><td class=n>&times; 2 = 216</td><td>the game&#x27;s own leverPull and leverPullApply (26-drags-and-start.js), on a stand-in square</td></tr><tr><td>the castle&#x27;s pits, where a fall lands</td><td class=n>1,560</td><td class=n>1,560</td><td class=n>&times; 2 = 3,120</td><td>the pits line as castleroomScene draws it</td></tr><tr><td>ways out of a room</td><td class=n>26,478</td><td class=n>3,978</td><td class=n>&times; 2 = 7,956</td><td>the game&#x27;s own wayOutOf, the 12 room kinds read from ROOM_KINDS</td></tr><tr><td>the world&#x27;s ways, square to square</td><td class=n>2,296</td><td class=n>2,296</td><td class=n>&times; 2 = 4,592</td><td>the game&#x27;s own worldMeets</td></tr><tr><td>edges named one by one, commands written out</td><td class=n>&mdash;</td><td class=n>41</td><td class=n>&times; 2 = 82</td><td>written in the check</td></tr><tr><td>Common&#x27;s helpers called alone</td><td class=n>&mdash;</td><td class=n>42</td><td class=n>&times; 1 = 42</td><td>written in the check</td></tr><tr><td>the program is ready (compiled, no errors)</td><td class=n>1</td><td class=n></td><td></td><td>not a call: checked once</td></tr><tr><td>the Fumola source is ASCII; the list mode holds no map; a text with a quote is refused; literals written as the page writes them</td><td class=n></td><td class=n></td><td class=n>5</td><td>not a call: checked once</td></tr><tr class=total><td><b>comparisons in all</b></td><td class=n><b>32,761</b></td><td></td><td class=n><b>20,649</b></td><td></td></tr></tbody></table>
 <p>Where the game's JS can run in node, the expected answer is that code itself, not a copy of it: the wiring
 (<code>trapWiring</code>), the placed levers (<code>leverPull</code>), the ways out (<code>wayOutOf</code>), the world's ways
 (<code>worldMeets</code>). Only the red, blue and hatch levers' outcomes are restated in the check, from their few lines of JS.
@@ -340,7 +346,7 @@ outline work.</p>
 <p><b>What it does not cover:</b></p>
 <ul>
 <li>It checks the rules as the game ships them, not a box someone has edited. An edit is checked only by the game running it.</li>
-<li>Fumola is given fewer ways-out cases than Hazel (3,978 against 26,478).</li>
+<li>Fumola's check has fewer ways-out cases than Hazel's (3,978 against 26,478), on purpose. The Fumola check leaves out the castles of 4 rooms that Hazel&#x27;s takes (it covers every castle of 1 to 3 rooms, and two long ones): with them it made about 25,000 more calls and ran a minute longer, and the rule reads a castle only through two helpers (index_of and nth_s) that the shorter castles already reach. A choice for speed, written in the check (tools/fumola_rules_check.mjs), not a gap found by it.</li>
 <li>Its times are node's, kept only to show the order of things; the speeds in this report are the browser runs above.</li>
 <li>It does not reach the sizes where Hazel overflows its stack (<a href="#scale">As the code grows</a>).</li>
 </ul>
@@ -480,7 +486,7 @@ outline work.</p>
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"Adapton/fumola#151": {"author": "matthewhammer", "comments": 0, "created": "2026-10-23T19:59:45Z", "kind": "pull", "state": "open", "title": "Fix the traps writing a game's rules found: text !=, literal patterns, whole numbers, order, escapes", "updated": "2026-10-23T19:59:45Z", "base": "main"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-10-21T22:03:19Z", "base": "js-library"}, "matthewhammer/kids-choice-games#1": {"author": "matthewhammer", "comments": 0, "created": "2026-10-20T17:43:16Z", "kind": "pull", "state": "open", "title": "🧩 Scripting: the trap room's levers through a Hazel rule", "updated": "2026-10-22T02:33:40Z", "base": "main"}, "matthewhammer/kids-choice-games#2": {"author": "matthewhammer", "comments": 0, "created": "2026-10-22T04:23:36Z", "kind": "pull", "state": "draft", "title": "🧩 Experiment: the rooms' rules in Hazel, against plain JS (ticket 531)", "updated": "2026-10-22T08:10:33Z", "base": "scripting-panel"}, "matthewhammer/kids-choice-games#4": {"author": "matthewhammer", "comments": 0, "created": "2026-10-22T19:00:07Z", "kind": "pull", "state": "draft", "title": "Dress Up: room rules in Fumola (wasm), beside Hazel and plain JS (^ticket(542))", "updated": "2026-10-22T19:11:02Z", "base": "hazel-logic-531"}}, BUILT = "2026-10-23";
+  const CACHED = {"Adapton/fumola#151": {"author": "matthewhammer", "comments": 0, "created": "2026-10-23T19:59:45Z", "kind": "pull", "state": "open", "title": "Fix the traps writing a game's rules found: text !=, literal patterns, whole numbers, order, escapes", "updated": "2026-10-23T19:59:45Z", "base": "main"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-10-21T22:03:19Z", "base": "js-library"}, "matthewhammer/kids-choice-games#1": {"author": "matthewhammer", "comments": 0, "created": "2026-10-20T17:43:16Z", "kind": "pull", "state": "open", "title": "🧩 Scripting: the trap room's levers through a Hazel rule", "updated": "2026-10-22T02:33:40Z", "base": "main"}, "matthewhammer/kids-choice-games#2": {"author": "matthewhammer", "comments": 0, "created": "2026-10-22T04:23:36Z", "kind": "pull", "state": "draft", "title": "🧩 Experiment: the rooms' rules in Hazel, against plain JS (ticket 531)", "updated": "2026-10-22T08:10:33Z", "base": "scripting-panel"}, "matthewhammer/kids-choice-games#4": {"author": "matthewhammer", "comments": 0, "created": "2026-10-22T19:00:07Z", "kind": "pull", "state": "draft", "title": "Dress Up: room rules in Fumola (wasm), beside Hazel and plain JS (^ticket(542))", "updated": "2026-10-22T19:11:02Z", "base": "hazel-logic-531"}}, BUILT = "2026-10-24";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -930,8 +936,9 @@ outline work.</p>
    "section_id": "correct",
    "columns": [
     "what is compared",
-    "Hazel cases",
-    "Fumola cases (each in both modes)",
+    "Hazel: cases (= comparisons)",
+    "Fumola: cases",
+    "Fumola: comparisons (cases × modes)",
     "the JS's answer comes from"
    ],
    "rows": [
@@ -939,49 +946,78 @@ outline work.</p>
      "the trap room's red and blue levers",
      "2,304",
      "2,304",
+     "× 2 = 4,608",
      "trapWiring, the game's own (01-state.js), with its seeded draws (10-nature.js); the levers' outcomes restated from their few lines of JS"
     ],
     [
      "the tree houses' and round room's hatches",
      "14",
      "14",
+     "× 2 = 28",
      "restated from the hatch lever's JS"
     ],
     [
      "placed levers and their trap doors",
      "108",
      "108",
+     "× 2 = 216",
      "the game's own leverPull and leverPullApply (26-drags-and-start.js), on a stand-in square"
     ],
     [
      "the castle's pits, where a fall lands",
      "1,560",
      "1,560",
+     "× 2 = 3,120",
      "the pits line as castleroomScene draws it"
     ],
     [
      "ways out of a room",
      "26,478",
      "3,978",
+     "× 2 = 7,956",
      "the game's own wayOutOf, the 12 room kinds read from ROOM_KINDS"
     ],
     [
      "the world's ways, square to square",
      "2,296",
      "2,296",
+     "× 2 = 4,592",
      "the game's own worldMeets"
     ],
     [
      "edges named one by one, commands written out",
      "—",
      "41",
+     "× 2 = 82",
      "written in the check"
     ],
     [
      "Common's helpers called alone",
      "—",
      "42",
+     "× 1 = 42",
      "written in the check"
+    ],
+    [
+     "the program is ready (compiled, no errors)",
+     "1",
+     "",
+     "",
+     "not a call: checked once"
+    ],
+    [
+     "the Fumola source is ASCII; the list mode holds no map; a text with a quote is refused; literals written as the page writes them",
+     "",
+     "",
+     "5",
+     "not a call: checked once"
+    ],
+    [
+     "comparisons in all",
+     "32,761",
+     "",
+     "20,649",
+     ""
     ]
    ]
   }
