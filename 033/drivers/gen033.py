@@ -68,6 +68,9 @@ p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-t
 p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
 nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
 nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
 .codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
 a.src code { font-size: 0.85em; }
 table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
@@ -562,7 +565,7 @@ PAGE = f"""<!doctype html>
 <p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>33<b>)</b></code> · Messed Up Dress Up's scripts · 2026-10-25 · <span class="wip">work in progress</span></p>
 <h1>Game Scripts in Hazel, a Case Study</h1>
 
-<div class="headline abstract"><p><b>Abstract.</b> {ABSTRACT}</p></div>
+<div class="headline abstract"><p><b>Abstract.</b> {re.sub(r"<code>(.*?)</code>", lambda m: "<code class=hzi>" + hazel_hl(html.unescape(m.group(1))) + "</code>", ABSTRACT)}</p></div>
 <nav class="outline" id="outline"><p><b>Outline</b></p>
 <ol class="parts">
 <li><a href="#part-1"><b>How it works today</b></a>: piecemeal, each part on its own terms
