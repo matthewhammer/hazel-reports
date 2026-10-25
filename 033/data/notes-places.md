@@ -1,0 +1,16 @@
+(research notes, 2026-10-25: every notion of "where", kids-choice-games main eee9446, dress-up/js/)
+- background kind: state.background.kind; PLACES 40 (none + 39), 20-controls.js:69-81; PLACE_GROUPS 10 (20:84-96); drawn by backgroundSvg (15:78, 7 inline) and SCENES (14:3900, 32).
+- world: state.world {id w1, name, cols, rows, start, cells, at, off, tpl, applied, unreachable} (01:621; 25-world:1045); worldsAway; worldTemplates.
+- squares: W.cells "col,row" (25-world:8); WORLD_DEFAULT 6x7, 31 squares, start 3,3 (01:619); squareName "D4" (25-world:86); cell.links {d:{world,key}}; cell.own; inside/tent/castleRoom per cell.
+- INSIDES 14 under 9 outsides (25-world:25): house>livingroom; treehouse>treeroom,treetop; witch>witchroom; clearing>healerroom; campsite>tent; waterfall>cave,caveroom; castle>castleroom; lake>underwater; hut>hutroom,hutbed,hutpotion,hutcenter. ELSEWHERE 4: imagination, emptyroom, bubblespace, bubbleroom (25-world:28); off-grid ids, W.off[placeKey].
+- castles: CASTLES N, M, D (01:74); B.castle; B.castleRoom 1..13 (ROOM_MAX 01:111); ROOM_KINDS 12; defaults N 5 rooms, M 2, D 3 (01:276); room 0 = outside.
+- tree: B.houses 1..6 (default 4), B.inside = house n, treetop above topHouse; hatchHouse 0 top / n; hatchKey hatchShutTop / hatchShut<n> (26:592-593); bridges, ladders.
+- tents: CAMP_TENTS 3, B.tent; grass hut: B.hutRooms 1..6, one inside.
+- pictures: framedSvg data-to=kind (11:212), PICTURE_CHOICES 15, nesting 2 deep.
+- passages: thing kind "passage", dest {world,key,kind} or {world,off,...}, twin uid (25-world:1183-1232).
+- people: state.person; peopleAway[id].place {world,key,x,y} (no inside/room part); templates (template flag, personSetTemplate).
+- things: background.things[i] {kind, uid?, x, z, ...}; script Thing.at = index (position-derived); uid exists for levers/trapdoors.
+- moving: enterScene(door) 26:1541 (passage > world way > door by kind; refuses kinds outside SCENES/PICTURE_CHOICES, so sea/deepsea unreachable by door); worldKeep re-homes (25-world:1320); worldWalk/worldMeets/worldTarget; castle wayOutOf/roomExits/castleWays; pits to dungeons; ladders/bridges/hatch in tree; back chip = trips stack {kind,inside,tent,castleRoom,figX,figY,to,worldAt,worldId}.
+- address-like today: squareName, worldName, cell.links, person.place, passage dest, worldHome "sq:<world>:<key>" / "off:<world>:<placeKey>", placeKey castleroom:<castle>:<n> / treeroom:<n> / tent:<n> / kind (25-world:1312), objPlace castleroom:<style>, climbPlace, stillPlace, story key at|kind|castleRoom, setting keys castleRoom{n}{id}, hatchShut{n}, r{n}pic{i}.
+- stale refs: worldMove/Shift/Remove don't update person.place or trips[].worldAt; worldShift's worldHome rewrite never matches.
+- vocabulary clashes: background/place/scene/kind/square/cell/room/inside/house/home/way-door-portal-passage (room = castle rooms, tree room, furnishing ROOMS, NORTH_ROOMS indoor, hutRooms, SCRIPT_ROOMS modules).

@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rules, Rooms and Addresses</title>
+<meta name="description" content="Writing Messed Up Dress Up's game rules in Hazel: what a rule sees today (Event, Cmd, Globals), why Globals is a per-rule view, and a proposal: one address for every place, thing and person, with Globals, RuleState and Cmd built on it.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz { background: color-mix(in srgb, var(--accent) 6%, var(--paper)); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.45; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 10px; } details[data-pic] .pic img { max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+</style><style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>33<b>)</b></code> · Messed Up Dress Up's scripts · 2026-10-25 · <span class="wip">work in progress</span></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Rules, Rooms and Addresses</h1>
+<p class="sub">Matthew: <q>the current structure of Globals, and how it's not as global as it sounds --- it's really a subset of all globals, tailored
+for that rule</q>; <q>why doesn't each room define its own version, call it "RoomState"</q>; <q>Having a unified notion of "place", perhaps as a kind of
+path</q>; and <q>places and objects and people could all have unique IDs that are human readable [and] not ambiguous in a global keyspace</q>.
+For readers who know Hazel: how its types meet a game's rules, as they are in
+<a href="https://matthewhammer.org/kids-choice-games/dress-up/">Messed Up Dress Up</a> at <code>eee9446</code> (0.0.429), and how they could be.
+The game's guide for its young players is a different thing: <a href="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/">its Game Scripts Guide</a>.
+(<a href="https://matthewhammer.org/hazel/dashboard/#ticket-609"><code class="ref"><b>^ticket(</b>609<b>)</b></code></a>)</p>
+<div class="headline"><p><b>Short answers.</b></p><ol class="ans"><li><b>A rule is a pure function, <code>on_event : (Globals, Event) -&gt; Cmd</code>, one per room module</b> (TrapRoom, TreeRoom, Square, World, Castle), called by the game for the events that room handles. <code>Event</code> has 7 constructors, <code>Cmd</code> 12, each command but <code>Done</code> carrying the rest of the list; <code>Wait(ms, rest)</code> and <code>Say</code> are the game's, the others each room's own.</li><li><b><code>Globals</code> is not global.</b> Its 16 fields are the union of five rooms' needs; each room fills only its own (1 to 6 of them) and the rest are defaults. The tree room's <code>hatch : Bool</code> is the trap door of whichever house the friend is in: the game picks the house, the rule never sees which. Of 80 room-by-field cells, 17 are filled.</li><li><b>Each room should say its own state: <code>RuleState</code>,</b> one type per room, and a real <code>Globals</code>, the whole game's state, which any rule may read (for debugging, diagnostics, or mechanics that cross rooms) but only commands change.</li><li><b>The game names "where" eleven ways that overlap:</b> background, kind, scene, place, square, cell, room (six meanings), inside, off the grid, house, home. Its ids are mostly positions: a thing is its index in a list, a pit is 0 or 1, a house is 1 to 6, a castle room 1 to 13, and the same number means different things in different fields.</li><li><b>One address for every place, thing and person,</b> a path of <code>kind(name)</code> steps: <code>world(start).square(E4).castle(N).room(3).lever(L)</code>. Readable, and unambiguous in one keyspace because every step names its kind. It is a Fumola symbol as it stands. The default world has 60 place addresses and 68 placed things; all are listed in the <a href="#appendix">appendix</a>.</li><li><b>A thing keeps the name it was made with</b> (Adapton's identity names, not positions), and where it is becomes a field: placed in a place, or set aside in the world's buffer, to be put back as itself. Templates are kinds, placed nowhere.</li></ol></div>
+
+<h2 id="call">A rule, today<a class="anchor" href="#call" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="call" title="copy this section's address">copy link</button></h2>
+<p>The game is plain JS. Five of its rooms can hand an event to a rule written in Hazel (or Fumola, or left to the game's own JS), chosen room by room in
+its 📜 Scripting tab. The Hazel program is one file of modules: <code>Common</code> (shared helpers) and one module per room, each with an
+<code>on_event</code>. The game loads Hazel's JS library (<a href="https://github.com/hazelgrove/hazel/pull/2711">hazelgrove/hazel#2711</a>), builds the
+program once per edit, and calls a room's function when its event happens (<a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/25-scripting.js#L760"><code>scriptEvent</code></a>).</p>
+<figure id="fig-call"><svg class="fig" viewBox="0 0 900 250" role="img" aria-label="A rule's call: the game, the room's view, the Hazel rule, the game acting, and the log's three snapshots"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0 0 L10 5 L0 10 z"/></marker></defs><rect class="game" x="10" y="20" width="200" height="120" rx="10"/><text x="22" y="42" font-weight="700">the game (JS)</text><text class="mono small" x="22" y="62">a lever pulled, a door,</text><text class="mono small" x="22" y="78">a way off the square</text><text class="mono small" x="22" y="94">→ Event</text><text class="mono small" x="22" y="110">PullHatch(1)</text><rect class="game" x="250" y="20" width="190" height="120" rx="10"/><text x="262" y="42" font-weight="700">the room&#x27;s view</text><text class="mono small" x="262" y="62">SCRIPT_ACTS[room].globals()</text><text class="mono small" x="262" y="78">16 fields, most at</text><text class="mono small" x="262" y="94">defaults; for the tree</text><text class="mono small" x="262" y="110">room: hatch only</text><rect class="hz" x="480" y="20" width="190" height="120" rx="10"/><text x="492" y="42" font-weight="700">the rule (Hazel)</text><text class="mono small" x="492" y="62">TreeRoom.on_event</text><text class="mono small" x="492" y="78">  : (Globals, Event)</text><text class="mono small" x="492" y="94">      -&gt; Cmd</text><text class="mono small" x="492" y="110">SetHatch(1, false, Done)</text><rect class="game" x="710" y="20" width="180" height="120" rx="10"/><text x="722" y="42" font-weight="700">the game acts</text><text class="mono small" x="722" y="62">act.SetHatch(n, shut)</text><text class="mono small" x="722" y="78">hatchSet(...)</text><text class="mono small" x="722" y="94">swings, walks, waits</text><text class="mono small" x="722" y="110">then the event ends</text><path class="arrow" d="M210 80 L248 80"/><path class="arrow" d="M440 80 L478 80"/><path class="arrow" d="M670 80 L708 80"/><rect class="snap" x="250" y="175" width="180" height="40" rx="8"/><text x="262" y="200">🪵 1 pre event</text><path class="arrow" d="M340 140 L340 173"/><rect class="snap" x="480" y="175" width="180" height="40" rx="8"/><text x="492" y="200">🪵 2 post rule</text><path class="arrow" d="M570 140 L570 173"/><rect class="snap" x="710" y="175" width="180" height="40" rx="8"/><text x="722" y="200">🪵 3 post event</text><path class="arrow" d="M800 140 L800 173"/><text class="small" x="10" y="240">the log keeps the view three times: built before the call, with the answer applied to a copy, rebuilt when the event is over</text></svg><figcaption>Figure 1. One event, end to end. The game builds the room's view of its state, the Hazel rule answers a <code>Cmd</code>, and the game acts it out, one command at a time. The event log keeps the view three times, which is how the 📜 tab shows what an event changed.</figcaption></figure>
+<p>The types, as the game declares them at the top of the program (<a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/25-scripting.js#L98"><code>25-scripting.js:98-102</code></a>), and one room's whole rule:</p>
+<pre class="hz">type Event =
+  + Pull(Side) + PullBoulder(Side) + PullHatch(Int) + PullThing(Int)
+  + FallPit(Int) + WayOut(Int) + Way(Dir)
+
+type Cmd =
+  + Done + Flip(Side, Cmd) + Say(String, Cmd) + SetPit(Int, Bool, Cmd)
+  + DropBoulder(Int, Cmd) + LiftBoulder(Int, Cmd) + SetHatch(Int, Bool, Cmd)
+  + OpenDoor(Int, Bool, Cmd) + DropRock(Int, Bool, Cmd) + Wait(Int, Cmd)
+  + GoRoom(Int, Cmd) + GoSquare(Int, Int, Dir, Cmd)
+
+type Thing = (at = Int, uid = String, kind = String, on = Bool, works = [String],
+              does = String, open = Bool, boulder = Bool)
+type Cell = (col = Int, row = Int, kind = Place, ways = [Dir])
+
+type Globals = (lever_L = Bool, lever_R = Bool, wiring = Wiring, draws = [Float],
+                pits_on = [Bool], covered = [Bool], hatch = Bool, things = [Thing],
+                rooms = [Room], exits = [Exit], out = Out, at_col = Int,
+                at_row = Int, cols = Int, rows = Int, cells = [Cell])
+
+# the tree room&#x27;s rule, whole #
+module TreeRoom = {
+  let on_event = fun (g : Globals, e : Event) : Cmd -&gt;
+    case e
+    | PullHatch(n) =&gt; SetHatch(n, !g.hatch, Done)
+    | _ =&gt; Done
+    end
+}</pre>
+<p>A few things a Hazel reader should know about how these meet the game:</p>
+<ul>
+<li><b>A <code>Cmd</code> is a list spelled as a sum:</b> every command carries the rest, ending in <code>Done</code>. The game walks it
+(<a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/25-scripting.js#L600"><code>scriptRun</code></a>); <code>Wait(ms, rest)</code> holds the rest for later, so a rule can describe a timed sequence without a clock
+of its own. An unknown command stops the walk.</li>
+<li><b>The boundary is typed both ways.</b> The game's state is JS text and numbers; <a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/25-scripting.js#L75"><code>scriptTypedGlobals</code></a> turns strings into
+the sums (<code>Wiring</code>, <code>Room</code>, <code>Out</code>, <code>Place</code>, <code>Dir</code>), and <a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/25-scripting.js#L85"><code>scriptUntypedCmd</code></a>
+turns commands back. So the JS object has 17 fields and the rule sees 16: <code>out</code> and <code>out_room</code> become one <code>Out</code>.</li>
+<li><b>A rule has no randomness or clock:</b> the trap room's two random draws come in as <code>draws</code>, drawn by the game from a seed it keeps.</li>
+<li><b>One error anywhere sends every Hazel room back to the JS</b> (the program must be whole to run), and a rule that throws is said in the game and skipped.</li>
+</ul>
+
+<h2 id="not-global">Globals is a per-rule view<a class="anchor" href="#not-global" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="not-global" title="copy this section's address">copy link</button></h2>
+<p>Each room registers three functions (<a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/25-scripting.js#L636"><code>SCRIPT_ACTS</code></a>): <code>here</code> (is this event mine?), <code>globals</code>
+(build my view) and <code>act</code> (how my commands change the game). The view is a <code>Globals</code> with the room's own fields filled from the game
+and every other field at a default (<a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/25-scripting.js#L634"><code>scriptNoGlobals</code></a>):</p>
+<figure id="fig-grid"><svg class="fig" viewBox="0 0 866 300" role="img" aria-label="Which of Globals' 16 fields each of the five rooms fills"><text class="mono" transform="translate(137.0,82) rotate(-50)">lever_L</text><text class="mono" transform="translate(183.0,82) rotate(-50)">lever_R</text><text class="mono" transform="translate(229.0,82) rotate(-50)">wiring</text><text class="mono" transform="translate(275.0,82) rotate(-50)">draws</text><text class="mono" transform="translate(321.0,82) rotate(-50)">pits_on</text><text class="mono" transform="translate(367.0,82) rotate(-50)">covered</text><text class="mono" transform="translate(413.0,82) rotate(-50)">hatch</text><text class="mono" transform="translate(459.0,82) rotate(-50)">things</text><text class="mono" transform="translate(505.0,82) rotate(-50)">rooms</text><text class="mono" transform="translate(551.0,82) rotate(-50)">exits</text><text class="mono" transform="translate(597.0,82) rotate(-50)">out</text><text class="mono" transform="translate(643.0,82) rotate(-50)">at_col</text><text class="mono" transform="translate(689.0,82) rotate(-50)">at_row</text><text class="mono" transform="translate(735.0,82) rotate(-50)">cols</text><text class="mono" transform="translate(781.0,82) rotate(-50)">rows</text><text class="mono" transform="translate(827.0,82) rotate(-50)">cells</text><text x="100" y="112" text-anchor="end" font-weight="600">TrapRoom</text><rect class="on" x="116" y="96" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="162" y="96" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="208" y="96" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="254" y="96" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="300" y="96" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="346" y="96" width="34" height="22" rx="5" opacity="1"/><rect class="off" x="392" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="438" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="484" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="530" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="576" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="622" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="668" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="714" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="760" y="96" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="806" y="96" width="34" height="22" rx="5" opacity="0.55"/><text x="100" y="146" text-anchor="end" font-weight="600">TreeRoom</text><rect class="off" x="116" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="162" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="208" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="254" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="300" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="346" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="on" x="392" y="130" width="34" height="22" rx="5" opacity="1"/><rect class="off" x="438" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="484" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="530" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="576" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="622" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="668" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="714" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="760" y="130" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="806" y="130" width="34" height="22" rx="5" opacity="0.55"/><text x="100" y="180" text-anchor="end" font-weight="600">Square</text><rect class="off" x="116" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="162" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="208" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="254" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="300" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="346" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="392" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="on" x="438" y="164" width="34" height="22" rx="5" opacity="1"/><rect class="off" x="484" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="530" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="576" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="622" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="668" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="714" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="760" y="164" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="806" y="164" width="34" height="22" rx="5" opacity="0.55"/><text x="100" y="214" text-anchor="end" font-weight="600">World</text><rect class="off" x="116" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="162" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="208" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="254" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="300" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="346" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="392" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="438" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="484" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="530" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="576" y="198" width="34" height="22" rx="5" opacity="0.55"/><rect class="on" x="622" y="198" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="668" y="198" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="714" y="198" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="760" y="198" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="806" y="198" width="34" height="22" rx="5" opacity="1"/><text x="100" y="248" text-anchor="end" font-weight="600">Castle</text><rect class="off" x="116" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="162" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="208" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="254" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="300" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="346" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="392" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="438" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="on" x="484" y="232" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="530" y="232" width="34" height="22" rx="5" opacity="1"/><rect class="on" x="576" y="232" width="34" height="22" rx="5" opacity="1"/><rect class="off" x="622" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="668" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="714" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="760" y="232" width="34" height="22" rx="5" opacity="0.55"/><rect class="off" x="806" y="232" width="34" height="22" rx="5" opacity="0.55"/><text class="small" x="110" y="288">filled from the game: 16 of 80 cells; every other field is scriptNoGlobals' default (false, 0, [], "auto")</text></svg><figcaption>Figure 2. Which of the 16 fields each room fills. Purple: filled from the game for that room; grey: a default the rule should not read. No field is filled for two rooms.</figcaption></figure>
+<div class=scroll><table class=t><tr><th>module</th><th>its events</th><th>its commands</th><th>Globals fields it fills</th><th>which instance</th></tr><tr><td><b>TrapRoom</b></td><td class=addr>Pull(L|R), PullBoulder(side)</td><td class=addr>Flip, SetPit, DropBoulder, LiftBoulder</td><td class=addr>lever_L, lever_R, wiring, draws, pits_on, covered</td><td>the trap room of the castle shown, room n</td></tr><tr><td><b>TreeRoom</b></td><td class=addr>PullHatch(n)</td><td class=addr>SetHatch(n, shut)</td><td class=addr>hatch</td><td>the house the friend is in: hatchHouse(), 0 for the top</td></tr><tr><td><b>Square</b></td><td class=addr>PullThing(i)</td><td class=addr>OpenDoor(at, open), DropRock(at, down)</td><td class=addr>things</td><td>this place&#x27;s levers and trap doors, at = index in its list</td></tr><tr><td><b>World</b></td><td class=addr>Way(d)</td><td class=addr>GoSquare(col, row, side)</td><td class=addr>at_col, at_row, cols, rows, cells</td><td>the world shown, every square</td></tr><tr><td><b>Castle</b></td><td class=addr>FallPit(0|1), WayOut(n)</td><td class=addr>GoRoom(r)</td><td class=addr>rooms, exits, out</td><td>the castle shown, room n&#x27;s way out</td></tr></table></div>
+<p><b>The tree room shows it best.</b> A tree has up to six houses and a round room at the top, each with its own trap door
+(<code>hatchShut1</code> to <code>hatchShut6</code>, <code>hatchShutTop</code>). The rule gets one <code>hatch : Bool</code>: the door of the house the
+friend is in, picked by the game (<a class="src" href="https://github.com/matthewhammer/kids-choice-games/blob/eee9446/dress-up/js/26-drags-and-start.js#L592"><code>hatchHouse</code></a>). The event carries the house's number, <code>PullHatch(1)</code>, and the
+command repeats it, <code>SetHatch(1, false, Done)</code>, but the state does not: the game checks the number matches and refuses the command if not.
+So the rule's <code>hatch</code> is "this hatch", resolved by context, and a rule cannot ask about any other.</p>
+<p>The other rooms work the same way. The trap room's levers are the trap room of the castle shown; the square's things are the list of the place the friend is in,
+each known by its index in that list (<code>at</code>); the castle's <code>out</code> is the way out of the room the friend is in. Nothing in
+<code>Globals</code> says which castle, square or house: the game knows, and the rule is written as if there were only one.</p>
+<p class="note">Two things the game's own guide says otherwise: <code>pits_on</code> is whether each pit is there at all, not whether it is open (that the
+rule works out from the levers and the wiring), and "17 fields" counts the JS object, not what the rule sees.</p>
+
+<h2 id="roomstate">RuleState, and a real Globals<a class="anchor" href="#roomstate" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="roomstate" title="copy this section's address">copy link</button></h2>
+<p>The fix the view asks for is to say what it is. <b>Each room's rule takes its own state type</b>, named for it: the tree room a hatch, the trap room its
+levers and pits, the world its squares. No default fields, nothing for a rule to misread, and a rule's type says what it depends on. Matthew's name for
+the sum of them is <code>RuleState</code>.</p>
+<p><b>A real <code>Globals</code> is then the whole game,</b> read-only to rules. For a rule that wants to look further (is the other castle's trap set?
+where is the friend?), for diagnostics, and for the log: the same addresses in every rule's state and in <code>Globals</code> let a tool show a change
+anywhere. Rules still change the game only through commands, so the game stays the one place state changes.</p>
+<p>Both need a way to say <i>which</i> hatch, lever or room, in one keyspace. That is the next three sections.</p>
+
+<h2 id="words">Where, in eleven words<a class="anchor" href="#words" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="words" title="copy this section's address">copy link</button></h2>
+<p>The game grew in waves, and each wave named where the friend is in its own way. None was renamed after, so they overlap:</p>
+<figure id="fig-words"><svg class="fig" viewBox="0 0 900 280" role="img" aria-label="The game's words for where, as they came in"><line x1="70" y1="20" x2="70" y2="266" stroke="var(--line)" stroke-width="2"/><circle cx="70" cy="31" r="5" class="on"/><text class="small" x="10" y="36">10-09</text><text x="88" y="36" font-weight="700">background</text><text class="small" x="300" y="36">state.background.kind: the picture behind the friend</text><circle cx="70" cy="61" r="5" class="on"/><text class="small" x="10" y="66">10-12</text><text x="88" y="66" font-weight="700">kind / scene</text><text class="small" x="300" y="66">SCENES, backgroundSvg; a &#x27;kind of place&#x27; in the picker</text><circle cx="70" cy="91" r="5" class="on"/><text class="small" x="10" y="96">10-14</text><text x="88" y="96" font-weight="700">castle, room</text><text class="small" x="300" y="96">castleRoom n; ROOM_KINDS styles; &#x27;room&#x27; for 6 more things</text><circle cx="70" cy="121" r="5" class="on"/><text class="small" x="10" y="126">10-15</text><text x="88" y="126" font-weight="700">tree house n</text><text class="small" x="300" y="126">B.inside = the house; hatchShut{n}</text><circle cx="70" cy="151" r="5" class="on"/><text class="small" x="10" y="156">10-17</text><text x="88" y="156" font-weight="700">world, square</text><text class="small" x="300" y="156">state.world, W.cells[&quot;c,r&quot;], D4 in the UI; cells in code</text><circle cx="70" cy="181" r="5" class="on"/><text class="small" x="10" y="186">10-18</text><text x="88" y="186" font-weight="700">inside, off the grid</text><text class="small" x="300" y="186">INSIDES, ELSEWHERE, W.off[placeKey]</text><circle cx="70" cy="211" r="5" class="on"/><text class="small" x="10" y="216">10-19</text><text x="88" y="216" font-weight="700">place</text><text class="small" x="300" y="216">PLACES, placeKey, person.place: in code, never in the UI&#x27;s words</text><circle cx="70" cy="241" r="5" class="on"/><text class="small" x="10" y="246">10-21</text><text x="88" y="246" font-weight="700">Room (scripts)</text><text class="small" x="300" y="246">SCRIPT_ROOMS: TrapRoom, TreeRoom, Square, World, Castle</text></svg><figcaption>Figure 3. The words for where, roughly as they came in (October 2026), and what each means now in the code.</figcaption></figure>
+<div class=scroll><table class=t><tr><th>word</th><th>in the code</th><th>in the game's UI</th></tr><tr><td><b>background</b></td><td>state.background (the place and the friend&#x27;s spot in it), backgroundSvg</td><td>🏞️ Background tab</td></tr><tr><td><b>kind</b></td><td>B.kind and cell.kind (a place); ROOM_KINDS (castle room styles); thing.kind</td><td>&quot;kind of place&quot; (a group)</td></tr><tr><td><b>place</b></td><td>PLACES, placeKey, objPlace, person.place; castlePlaces (table seats)</td><td>&quot;🗺️ the place&quot;, &quot;not in any place&quot;</td></tr><tr><td><b>scene</b></td><td>SCENES, *Scene functions, SCENE (stage geometry)</td><td>hardly</td></tr><tr><td><b>square / cell</b></td><td>squareName, Square (script), GoSquare / W.cells, cellKeys</td><td>square, D4 / never &quot;cell&quot;</td></tr><tr><td><b>room</b></td><td>castle rooms; treeroom; ROOMS (furnishing); NORTH_ROOMS (indoor); hutRooms (huts); SCRIPT_ROOMS (modules)</td><td>&quot;🚪 room n is&quot;, &quot;🦇 cave room&quot;</td></tr><tr><td><b>inside</b></td><td>INSIDES; B.inside (= the tree house&#x27;s number)</td><td>&quot;inside the castle&quot;, &quot;🚪 off the grid&quot;</td></tr><tr><td><b>house</b></td><td>B.houses, data-house (tree houses); kind &quot;house&quot; (the family&#x27;s)</td><td>&quot;🏡 house n&quot; vs &quot;🏠 house and yard&quot;</td></tr><tr><td><b>home</b></td><td>worldHome, passageHome</td><td>&quot;🏠 home&quot; (a group of places)</td></tr><tr><td><b>world</b></td><td>state.world (one grid), worldsAway</td><td>🗺️ World design, &quot;🌍 world N&quot;</td></tr></table></div>
+<p><b>"Place" is the code's word and never the UI's;</b> the UI says background, square and room. And the ids are positions: a placed thing is its index in
+its place's list (and only a trap door or a cave passage has a uid, a random string); a pit is 0 or 1; a house is 1 to 6; a castle room 1 to 13; a
+square is <code>"c,r"</code> in code and <code>D4</code> on screen. A <code>1</code> in a command can be a house, a pit, a room or a list index, depending on
+the command. Several keys already work like addresses, spelled differently each time: <code>placeKey</code> is <code>castleroom:N:3</code>,
+<code>worldHome</code> is <code>off:w1:tent:2</code>, a person's place is <code>{world, key}</code> with no room part, and a setting's key spells its owner
+into its name (<code>castleLeverL_3N</code>).</p>
+
+<h2 id="places">Every place, as a path<a class="anchor" href="#places" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="places" title="copy this section's address">copy link</button></h2>
+<p>Read from the game itself (its default world and its tables of insides, castles and room styles, in node at <code>eee9446</code>), with every trap door,
+hatch and passage open:</p>
+<figure id="fig-world"><svg class="fig" viewBox="0 0 772 624" role="img" aria-label="The default world: 31 squares, their kinds, their ways, and how many places are inside each"><text x="71.0" y="20" text-anchor="middle" class="small">A</text><text x="153.0" y="20" text-anchor="middle" class="small">B</text><text x="235.0" y="20" text-anchor="middle" class="small">C</text><text x="317.0" y="20" text-anchor="middle" class="small">D</text><text x="399.0" y="20" text-anchor="middle" class="small">E</text><text x="481.0" y="20" text-anchor="middle" class="small">F</text><text x="18" y="75.0" text-anchor="middle" class="small">1</text><text x="18" y="157.0" text-anchor="middle" class="small">2</text><text x="18" y="239.0" text-anchor="middle" class="small">3</text><text x="18" y="321.0" text-anchor="middle" class="small">4</text><text x="18" y="403.0" text-anchor="middle" class="small">5</text><text x="18" y="485.0" text-anchor="middle" class="small">6</text><text x="18" y="567.0" text-anchor="middle" class="small">7</text><line x1="71.0" y1="71.0" x2="112.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="71.0" x2="71.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="71.0" x2="194.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="71.0" x2="194.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="71.0" x2="112.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="71.0" x2="112.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="71.0" x2="276.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="71.0" x2="235.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="71.0" x2="194.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="71.0" x2="358.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="71.0" x2="276.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="71.0" x2="276.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="71.0" x2="358.0" y2="71.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="153.0" x2="71.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="153.0" x2="112.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="153.0" x2="71.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="153.0" x2="194.0" y2="153.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="153.0" x2="194.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="153.0" x2="153.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="235.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="276.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="276.0" y2="153.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="276.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="235.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="194.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="194.0" y2="153.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="153.0" x2="194.0" y2="112.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="153.0" x2="358.0" y2="153.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="153.0" x2="358.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="153.0" x2="317.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="153.0" x2="276.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="153.0" x2="276.0" y2="153.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="153.0" x2="399.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="153.0" x2="358.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="153.0" x2="358.0" y2="153.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="235.0" x2="71.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="235.0" x2="71.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="235.0" x2="153.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="235.0" x2="194.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="235.0" x2="194.0" y2="235.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="235.0" x2="194.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="235.0" x2="153.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="235.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="276.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="276.0" y2="235.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="276.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="235.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="194.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="194.0" y2="235.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="235.0" x2="194.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="235.0" x2="317.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="235.0" x2="358.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="235.0" x2="358.0" y2="235.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="235.0" x2="317.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="235.0" x2="276.0" y2="235.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="235.0" x2="276.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="235.0" x2="399.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="235.0" x2="358.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="235.0" x2="358.0" y2="235.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="235.0" x2="358.0" y2="194.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="317.0" x2="71.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="317.0" x2="153.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="317.0" x2="194.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="317.0" x2="194.0" y2="317.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="317.0" x2="194.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="317.0" x2="153.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="317.0" x2="112.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="317.0" x2="112.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="317.0" x2="235.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="317.0" x2="276.0" y2="317.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="317.0" x2="276.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="317.0" x2="235.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="317.0" x2="194.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="317.0" x2="194.0" y2="317.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="317.0" x2="194.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="317.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="358.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="358.0" y2="317.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="358.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="317.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="276.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="276.0" y2="317.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="317.0" x2="276.0" y2="276.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="317.0" x2="399.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="317.0" x2="358.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="317.0" x2="358.0" y2="317.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="399.0" x2="112.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="399.0" x2="112.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="399.0" x2="112.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="399.0" x2="71.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="399.0" x2="153.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="399.0" x2="194.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="399.0" x2="194.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="399.0" x2="194.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="399.0" x2="153.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="399.0" x2="112.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="399.0" x2="112.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="235.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="276.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="276.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="276.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="235.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="194.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="194.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="399.0" x2="194.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="317.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="358.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="358.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="358.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="317.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="276.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="276.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="399.0" x2="276.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="399.0" x2="399.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="399.0" x2="440.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="399.0" x2="358.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="399.0" x2="358.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="399.0" x2="358.0" y2="358.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="481.0" y1="399.0" x2="440.0" y2="399.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="481.0" x2="71.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="481.0" x2="112.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="71.0" y1="481.0" x2="112.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="481.0" x2="153.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="481.0" x2="194.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="481.0" x2="194.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="481.0" x2="153.0" y2="522.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="481.0" x2="112.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="153.0" y1="481.0" x2="112.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="481.0" x2="235.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="481.0" x2="276.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="481.0" x2="276.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="481.0" x2="194.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="235.0" y1="481.0" x2="194.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="481.0" x2="317.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="481.0" x2="358.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="481.0" x2="358.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="481.0" x2="276.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="317.0" y1="481.0" x2="276.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="481.0" x2="358.0" y2="481.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><line x1="399.0" y1="481.0" x2="358.0" y2="440.0" stroke="var(--muted)" stroke-width="1.2" opacity="0.6"/><rect x="38" y="38" width="66" height="66" rx="8" fill="#1e3a8a" opacity="0.85"/><text x="71.0" y="63" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">A1</text><text x="71.0" y="78" text-anchor="middle" class="kindtxt" style="fill:#fff">deepsea</text><rect x="120" y="38" width="66" height="66" rx="8" fill="#3b82f6" opacity="0.85"/><text x="153.0" y="63" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">B1</text><text x="153.0" y="78" text-anchor="middle" class="kindtxt" style="fill:#fff">sea</text><rect x="202" y="38" width="66" height="66" rx="8" fill="#3b82f6" opacity="0.85"/><text x="235.0" y="63" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">C1</text><text x="235.0" y="78" text-anchor="middle" class="kindtxt" style="fill:#fff">sea</text><rect x="284" y="38" width="66" height="66" rx="8" fill="#3b82f6" opacity="0.85"/><text x="317.0" y="63" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">D1</text><text x="317.0" y="78" text-anchor="middle" class="kindtxt" style="fill:#fff">sea</text><rect x="366" y="38" width="66" height="66" rx="8" fill="#3b82f6" opacity="0.85"/><text x="399.0" y="63" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">E1</text><text x="399.0" y="78" text-anchor="middle" class="kindtxt" style="fill:#fff">sea</text><rect x="38" y="120" width="66" height="66" rx="8" fill="#1e3a8a" opacity="0.85"/><text x="71.0" y="145" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">A2</text><text x="71.0" y="160" text-anchor="middle" class="kindtxt" style="fill:#fff">deepsea</text><rect x="120" y="120" width="66" height="66" rx="8" fill="#7c3aed" opacity="0.85"/><text x="153.0" y="145" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">B2</text><text x="153.0" y="160" text-anchor="middle" class="kindtxt" style="fill:#fff">witch</text><text x="153.0" y="175" text-anchor="middle" class="kindtxt" style="fill:#fff">+1 inside</text><rect x="202" y="120" width="66" height="66" rx="8" fill="#fcd34d" opacity="0.85"/><text x="235.0" y="145" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">C2</text><text x="235.0" y="160" text-anchor="middle" class="kindtxt" style="fill:#fff">beach</text><rect x="284" y="120" width="66" height="66" rx="8" fill="#78716c" opacity="0.85"/><text x="317.0" y="145" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">D2</text><text x="317.0" y="160" text-anchor="middle" class="kindtxt" style="fill:#fff">mountains</text><rect x="366" y="120" width="66" height="66" rx="8" fill="#b45309" opacity="0.85"/><text x="399.0" y="145" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">E2</text><text x="399.0" y="160" text-anchor="middle" class="kindtxt" style="fill:#fff">treehouse</text><text x="399.0" y="175" text-anchor="middle" class="kindtxt" style="fill:#fff">+5 inside</text><rect x="38" y="202" width="66" height="66" rx="8" fill="#1e3a8a" opacity="0.85"/><text x="71.0" y="227" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">A3</text><text x="71.0" y="242" text-anchor="middle" class="kindtxt" style="fill:#fff">deepsea</text><rect x="120" y="202" width="66" height="66" rx="8" fill="#15803d" opacity="0.85"/><text x="153.0" y="227" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">B3</text><text x="153.0" y="242" text-anchor="middle" class="kindtxt" style="fill:#fff">forest</text><rect x="202" y="202" width="66" height="66" rx="8" fill="#a8a29e" opacity="0.85"/><text x="235.0" y="227" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">C3</text><text x="235.0" y="242" text-anchor="middle" class="kindtxt" style="fill:#fff">crossing</text><rect x="284" y="202" width="66" height="66" rx="8" fill="#4d7c0f" opacity="0.85"/><text x="317.0" y="227" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">D3</text><text x="317.0" y="242" text-anchor="middle" class="kindtxt" style="fill:#fff">woodpath</text><rect x="366" y="202" width="66" height="66" rx="8" fill="#a3e635" opacity="0.85"/><text x="399.0" y="227" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">E3</text><text x="399.0" y="242" text-anchor="middle" class="kindtxt" style="fill:#fff">fairyforest</text><rect x="38" y="284" width="66" height="66" rx="8" fill="#1e3a8a" opacity="0.85"/><text x="71.0" y="309" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">A4</text><text x="71.0" y="324" text-anchor="middle" class="kindtxt" style="fill:#fff">deepsea</text><rect x="120" y="284" width="66" height="66" rx="8" fill="#a8a29e" opacity="0.85"/><text x="153.0" y="309" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">B4</text><text x="153.0" y="324" text-anchor="middle" class="kindtxt" style="fill:#fff">crossing</text><rect x="202" y="284" width="66" height="66" rx="8" fill="#60a5fa" opacity="0.85"/><text x="235.0" y="309" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">C4</text><text x="235.0" y="324" text-anchor="middle" class="kindtxt" style="fill:#fff">lake</text><text x="235.0" y="339" text-anchor="middle" class="kindtxt" style="fill:#fff">+1 inside</text><rect x="284" y="284" width="66" height="66" rx="8" fill="#86efac" opacity="0.85"/><text x="317.0" y="309" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">D4</text><text x="317.0" y="324" text-anchor="middle" class="kindtxt" style="fill:#fff">clearing</text><text x="317.0" y="339" text-anchor="middle" class="kindtxt" style="fill:#fff">+1 inside</text><rect x="366" y="284" width="66" height="66" rx="8" fill="#e11d48" opacity="0.85"/><text x="399.0" y="309" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">E4</text><text x="399.0" y="324" text-anchor="middle" class="kindtxt" style="fill:#fff">castle</text><text x="399.0" y="339" text-anchor="middle" class="kindtxt" style="fill:#fff">+5 inside</text><rect x="38" y="366" width="66" height="66" rx="8" fill="#38bdf8" opacity="0.85"/><text x="71.0" y="391" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">A5</text><text x="71.0" y="406" text-anchor="middle" class="kindtxt" style="fill:#fff">waterfall</text><text x="71.0" y="421" text-anchor="middle" class="kindtxt" style="fill:#fff">+2 inside</text><rect x="120" y="366" width="66" height="66" rx="8" fill="#ea580c" opacity="0.85"/><text x="153.0" y="391" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">B5</text><text x="153.0" y="406" text-anchor="middle" class="kindtxt" style="fill:#fff">campsite</text><text x="153.0" y="421" text-anchor="middle" class="kindtxt" style="fill:#fff">+2 inside</text><rect x="202" y="366" width="66" height="66" rx="8" fill="#a8a29e" opacity="0.85"/><text x="235.0" y="391" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">C5</text><text x="235.0" y="406" text-anchor="middle" class="kindtxt" style="fill:#fff">crossing</text><rect x="284" y="366" width="66" height="66" rx="8" fill="#f97316" opacity="0.85"/><text x="317.0" y="391" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">D5</text><text x="317.0" y="406" text-anchor="middle" class="kindtxt" style="fill:#fff">house</text><text x="317.0" y="421" text-anchor="middle" class="kindtxt" style="fill:#fff">+1 inside</text><rect x="366" y="366" width="66" height="66" rx="8" fill="#b45309" opacity="0.85"/><text x="399.0" y="391" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">E5</text><text x="399.0" y="406" text-anchor="middle" class="kindtxt" style="fill:#fff">treehouse</text><text x="399.0" y="421" text-anchor="middle" class="kindtxt" style="fill:#fff">+5 inside</text><rect x="448" y="366" width="66" height="66" rx="8" fill="#15803d" opacity="0.85"/><text x="481.0" y="391" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">F5</text><text x="481.0" y="406" text-anchor="middle" class="kindtxt" style="fill:#fff">forest</text><rect x="38" y="448" width="66" height="66" rx="8" fill="#15803d" opacity="0.85"/><text x="71.0" y="473" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">A6</text><text x="71.0" y="488" text-anchor="middle" class="kindtxt" style="fill:#fff">forest</text><rect x="120" y="448" width="66" height="66" rx="8" fill="#a8a29e" opacity="0.85"/><text x="153.0" y="473" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">B6</text><text x="153.0" y="488" text-anchor="middle" class="kindtxt" style="fill:#fff">crossing</text><rect x="202" y="448" width="66" height="66" rx="8" fill="#6b7280" opacity="0.85"/><text x="235.0" y="473" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">C6</text><text x="235.0" y="488" text-anchor="middle" class="kindtxt" style="fill:#fff">cemetery</text><rect x="284" y="448" width="66" height="66" rx="8" fill="#60a5fa" opacity="0.85"/><text x="317.0" y="473" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">D6</text><text x="317.0" y="488" text-anchor="middle" class="kindtxt" style="fill:#fff">lake</text><text x="317.0" y="503" text-anchor="middle" class="kindtxt" style="fill:#fff">+1 inside</text><rect x="366" y="448" width="66" height="66" rx="8" fill="#e11d48" opacity="0.85"/><text x="399.0" y="473" text-anchor="middle" class="kindtxt" style="fill:#fff;font-weight:700">E6</text><text x="399.0" y="488" text-anchor="middle" class="kindtxt" style="fill:#fff">castle</text><text x="399.0" y="503" text-anchor="middle" class="kindtxt" style="fill:#fff">+5 inside</text><text x="546" y="40" font-weight="700">the default world, "start"</text><text x="546" y="64" class="small">31 squares on a 6 × 7 grid</text><text x="546" y="84" class="small">140 ways between them (lines)</text><text x="546" y="104" class="small">60 places counting the insides</text><text x="546" y="124" class="small">+ 4 off the grid: imagination, emptyroom, bubblespace, bubbleroom</text><text x="546" y="144" class="small">start: D4</text></svg><figcaption>Figure 4. The default world. Each square is a place of some kind; 140 ways lead between squares (the lines); 29 more places are inside squares: castle rooms, tree houses, tents, the cave, the living room and the rest. The world can grow to 12 × 12 and hold more worlds; this is the one a new game starts in.</figcaption></figure>
+<p>Every move between places the game allows is a move along this tree or across it: the ways between squares; a door to an inside and back; a ladder, bridge
+or hatch between tree houses; a pit from the trap room to a dungeon; a cave passage, which may lead to any place in any world; a picture you step into.
+Each lands in exactly one node, so one path from the world down names any place a walk can reach:</p>
+<figure id="fig-tree"><svg class="fig" viewBox="0 0 900 314" role="img" aria-label="Two squares' places as a tree of addresses, each with its key in the game today"><text class="mono" x="14" y="26" style="fill:var(--accent);font-weight:600">world(start)</text><text class="small" x="430" y="26">state.world (id w1, name &quot;start&quot;)</text><path d="M24 32 L24 50 L36 50" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="40" y="54" style="fill:var(--accent);font-weight:600">.square(E4)</text><text class="small" x="430" y="54">W.cells[&quot;4,3&quot;], kind castle</text><path d="M50 60 L50 78 L62 78" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="66" y="82" style="fill:var(--accent);font-weight:600">.castle(N)</text><text class="small" x="430" y="82">B.castle = &quot;N&quot; (from the square&#x27;s own settings)</text><path d="M76 88 L76 106 L88 106" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="92" y="110" style="fill:var(--accent);font-weight:600">.room(3)</text><text class="small" x="430" y="110">B.castleRoom = 3, style castleRoom3N = &quot;trap&quot;</text><path d="M102 116 L102 134 L114 134" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="118" y="138" style="fill:var(--accent);font-weight:600">.lever(L)</text><text class="small" x="430" y="138">B.castleLeverL_3N (no id: a key spelled from parts)</text><path d="M102 144 L102 162 L114 162" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="118" y="166" style="fill:var(--accent);font-weight:600">.pit(1)</text><text class="small" x="430" y="166">B.castlePitOn0_3N, the left pit: 0 in code, 1 here</text><path d="M24 172 L24 190 L36 190" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="40" y="194" style="fill:var(--accent);font-weight:600">.square(E2)</text><text class="small" x="430" y="194">W.cells[&quot;4,1&quot;], kind treehouse</text><path d="M50 200 L50 218 L62 218" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="66" y="222" style="fill:var(--accent);font-weight:600">.house(1)</text><text class="small" x="430" y="222">B.inside = 1 (treeroom), room1 = its furnishing</text><path d="M76 228 L76 246 L88 246" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="92" y="250" style="fill:var(--accent);font-weight:600">.hatch</text><text class="small" x="430" y="250">B.hatchShut1 (the script sees hatch = Bool)</text><path d="M50 256 L50 274 L62 274" stroke="var(--line)" stroke-width="1.5" fill="none"/><text class="mono" x="66" y="278" style="fill:var(--accent);font-weight:600">.top</text><text class="small" x="430" y="278">kind treetop; hatchShutTop; PullHatch(0)</text><text class="small" x="430" y="12" style="font-weight:700">where it lives in the game today</text></svg><figcaption>Figure 5. Two squares' places as addresses, each beside where the game keeps it today.</figcaption></figure>
+
+<h2 id="ids">Names that can't collide<a class="anchor" href="#ids" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="ids" title="copy this section's address">copy link</button></h2>
+<figure id="fig-addr"><svg class="fig" viewBox="0 0 760 145" role="img" aria-label="An address drawn as a path of kind(name) steps, with its Fumola symbol and Hazel value"><rect class="hz" x="10" y="20" width="120.39999999999999" height="40" rx="20"/><text class="mono" x="24" y="45"><tspan style="fill:var(--muted)">world</tspan>(<tspan style="font-weight:700">start</tspan>)</text><text x="134.39999999999998" y="46" style="fill:var(--muted)">.</text><rect class="hz" x="146.39999999999998" y="20" width="104.0" height="40" rx="20"/><text class="mono" x="160.39999999999998" y="45"><tspan style="fill:var(--muted)">square</tspan>(<tspan style="font-weight:700">E4</tspan>)</text><text x="254.39999999999998" y="46" style="fill:var(--muted)">.</text><rect class="hz" x="266.4" y="20" width="95.8" height="40" rx="20"/><text class="mono" x="280.4" y="45"><tspan style="fill:var(--muted)">castle</tspan>(<tspan style="font-weight:700">N</tspan>)</text><text x="366.2" y="46" style="fill:var(--muted)">.</text><rect class="hz" x="378.2" y="20" width="79.39999999999999" height="40" rx="20"/><text class="mono" x="392.2" y="45"><tspan style="fill:var(--muted)">room</tspan>(<tspan style="font-weight:700">3</tspan>)</text><text x="461.59999999999997" y="46" style="fill:var(--muted)">.</text><rect class="hz" x="473.59999999999997" y="20" width="87.6" height="40" rx="20"/><text class="mono" x="487.59999999999997" y="45"><tspan style="fill:var(--muted)">lever</tspan>(<tspan style="font-weight:700">L</tspan>)</text><text class="mono small" x="10" y="90">Fumola, the same symbol: `world(`start).`square(`E4).`castle(`N).`room(3).`lever(`L)</text><text class="mono small" x="10" y="110">Hazel, as data:  [Step("world", "start"), Step("square", "E4"), Step("castle", "N"), Step("room", "3"), Step("lever", "L")]</text><text class="small" x="10" y="132">every step names its kind, so room(3) and lever(3) can never be confused, at any depth</text></svg><figcaption>Figure 6. An address is a path of <code>kind(name)</code> steps. Its kinds keep the keyspace one: <code>room(3)</code> and <code>lever(3)</code> are different names wherever they appear.</figcaption></figure>
+<p><b>Human readable:</b> each step is a word and a name a player would use (<code>square(E4)</code>, <code>castle(N)</code>, <code>lever(L)</code>).
+<b>Unambiguous:</b> the kind is part of every step, and a name only has to be unique among its owner's children of that kind, so places, things and people
+share one keyspace with no global counter.</p>
+<p><b>This is Fumola's symbol, as it stands.</b> In <a href="https://fumola.org/#names-are-values">Fumola, names are values</a>: an identifier is a
+symbol, a number is a symbol, and symbols compose by application and nest, <code>`adapton(`settings)</code>; Fumola's <code>Symbol</code> has exactly these
+cases (<code>Id</code>, <code>Nat</code>, <code>Call</code>, <code>Dot</code>). And its <a href="https://fumola.org/#space-and-time">space</a> is the same move
+an address makes: a cell <code>`x</code> named inside the region <code>`region</code> is <code>`region(`x)</code>, so a callee names freely without colliding
+with its caller, as a room names its levers without knowing which castle it is in.</p>
+<p><b>Identity, not position.</b> <a href="https://adapton.org">Adapton</a> names a node so it keeps its name when its contents change; the alternative,
+naming by content, cannot say "same node, new value" (Fumola's notes, <i>What is a cache key a function of?</i>). Names derived from position are worse
+than either: an address survives only as long as the shape it addresses, which in Fumola's mergeSort measurements turned a repair of 23 to 25 nodes into
+139. The game's list indexes are such names: delete the first thing in a place and every <code>PullThing(i)</code> after it means a different thing. So:</p>
+<ul>
+<li><b>Places are named by where they are,</b> and do not move: <code>world(start).square(E4).castle(N).room(3)</code>.</li>
+<li><b>A thing or person is named once, when it is made,</b> by its owner and a name unique there (<code>lever(L)</code>, or the next free
+<code>shell(10)</code>), and keeps that name for good: it is an id, not a location.</li>
+<li><b>Where it is now is a field:</b> <code>Placed(owner)</code>, <code>SetAside</code> (the world's buffer of things taken out, to be put back as
+themselves), or <code>Carried(person)</code>.</li>
+<li><b>A template is a kind,</b> placed nowhere: <code>place(castleroom).style(trap)</code>, <code>lever</code>, <code>person(costume(ninja))</code>.
+Making an instance from it mints a name; putting a set-aside one back does not.</li>
+</ul>
+<figure id="fig-life"><svg class="fig" viewBox="0 0 900 200" role="img" aria-label="A thing's life: a template, made and placed, moved, set aside and put back, keeping its name"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0 0 L10 5 L0 10 z"/></marker></defs><rect class="box" x="20" y="30" width="250" height="80" rx="12"/><text x="34" y="55" font-weight="700">template</text><text class="small" x="34" y="75">a kind, placed nowhere:</text><text class="small" x="34" y="91">lever, `ninja, room(trap)</text><rect class="hz" x="320" y="30" width="250" height="80" rx="12"/><text x="334" y="55" font-weight="700">placed</text><text class="small" x="334" y="75">owned by a place:</text><text class="small" x="334" y="91">...room(3).lever(L)</text><rect class="snap" x="620" y="30" width="250" height="80" rx="12"/><text x="634" y="55" font-weight="700">set aside</text><text class="small" x="634" y="75">in the world&#x27;s buffer,</text><text class="small" x="634" y="91">still itself, no owner</text><path class="arrow" d="M270 70 L318 70"/><text class="small" x="276" y="62">make</text><path class="arrow" d="M570 60 L618 60"/><text class="small" x="572" y="52">take out</text><path class="arrow" d="M618 90 L572 90"/><text class="small" x="574" y="104">put back</text><path class="arrow" d="M445 110 C445 170 460 170 445 112"/><text class="small" x="470" y="160">move: a new owner, the same name</text><text class="small" x="20" y="190">a thing keeps the name it was made with; where it is (owner, or the buffer) is a field that changes</text></svg><figcaption>Figure 7. An instance's life. It is made from a template and placed, may move to another owner, and may be set aside and put back, with the same name throughout. The game does this for people today (<code>state.peopleAway</code>, each with an optional place); a thing taken out of a place is simply gone.</figcaption></figure>
+<figure id="fig-store"><svg class="fig" viewBox="0 0 900 190" role="img" aria-label="Fumola's store by space and time, beside MUDU's state by space only"><rect class="box" x="20" y="20" width="400" height="150" rx="12"/><text x="36" y="44" font-weight="700">Fumola's store</text><text class="small" x="36" y="66">a cell is named by space and by time, both nesting symbols:</text><text class="mono small" x="36" y="90">space  `region(`x)   (a callee names freely)</text><text class="mono small" x="36" y="110">time   a revision: a read answers the greatest</text><text class="mono small" x="36" y="126">       comparable earlier write</text><text class="small" x="36" y="152">so one name carries a history, not one value</text><rect class="hz" x="470" y="20" width="410" height="150" rx="12"/><text x="486" y="44" font-weight="700">MUDU's state, as proposed</text><text class="small" x="486" y="66">the space half only: every place, thing and person</text><text class="small" x="486" y="84">at a nested address, world(start).square(E4)...</text><text class="small" x="486" y="106">no symbolic time, for now: one current state; the</text><text class="small" x="486" y="124">log's three snapshots per event are the nearest</text><text class="small" x="486" y="142">thing to time, and where it would come in</text></svg><figcaption>Figure 8. Fumola has a store whose cells are named by space and by time, each a nesting symbol. The game's state would use the space half: the current state, at nested addresses. It needs no symbolic time yet; the event log's three snapshots per event are where time would come in.</figcaption></figure>
+
+<h2 id="types">Globals, RuleState and Cmd, proposed<a class="anchor" href="#types" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="types" title="copy this section's address">copy link</button></h2>
+<p>In Hazel. First the addresses and what they name:</p>
+<pre class="hz"># a step of an address: its kind and its name within its owner #
+type Step = (kind = String, name = String)
+# world(start).square(E4).castle(N).room(3).lever(L) #
+type Addr = [Step]
+
+# where an instance is: owned by a place, set aside in the world&#x27;s
+   buffer, or carried by a person #
+type Where = + Placed(Addr) + SetAside + Carried(Addr)
+
+type Setting = + B(Bool) + I(Int) + F(Float) + S(String) + A(Addr)
+
+# a placed thing or person: its name for good, its template, where it is now #
+type Instance = (id = Addr, template = String, where = Where,
+                 settings = [(String, Setting)])
+
+# a place: its address, its template, its ways, and what it owns #
+type Way = (dir = Dir, to = Addr, via = + Open + Door(Addr) + Shut(Addr))
+type PlaceState = (id = Addr, template = String, ways = [Way], owns = [Addr])</pre>
+<p>Then the whole game, each room's own state, and commands and events by address:</p>
+<pre class="hz"># the whole game, as any rule may read it #
+type Globals = (
+  friend = (id = Addr, at = Addr),      # the person being played, and where #
+  places = [PlaceState],
+  instances = [Instance],               # every thing and person made #
+  set_aside = [Addr],                   # the world&#x27;s buffer, re-placeable #
+  draws = [Float]                       # the event&#x27;s random draws #
+)
+
+# what each room&#x27;s rule is about: its own, named, typed #
+type TrapRoomState = (here = Addr,
+  levers = [(id = Addr, up = Bool)], wiring = Wiring,
+  pits = [(id = Addr, there = Bool, covered = Bool)])
+type TreeRoomState = (here = Addr, hatch = (id = Addr, shut = Bool))
+type SquareState = (here = Addr, levers = [Instance], doors = [Instance])
+type WorldState = (here = Addr, squares = [PlaceState])
+type CastleState = (here = Addr, rooms = [PlaceState], out = Out)
+
+type RuleState =
+  + Trap(TrapRoomState) + Tree(TreeRoomState) + Square(SquareState)
+  + World(WorldState) + Castle(CastleState)
+
+# the event names what happened to, by address #
+type Event = + Pull(Addr) + Fall(Addr) + Leave(Addr, Dir) + Arrive(Addr)
+
+# commands name what they act on, by address #
+type Cmd =
+  + Done + Say(String, Cmd) + Wait(Int, Cmd)
+  + Flip(Addr, Cmd)                     # a lever #
+  + Swing(Addr, Bool, Cmd)              # a hatch, a pit&#x27;s lid, a door: open? #
+  + Set(Addr, String, Setting, Cmd)     # any setting of any instance #
+  + Move(Addr, Where, Cmd)              # an instance to a new owner, or aside #
+  + Go(Addr, Cmd)                       # the friend, to a place #
+
+# a rule: its room&#x27;s state, the whole game to read, the event #
+let on_event : (RuleState, Globals, Event) -&gt; Cmd</pre>
+<p>The commands get fewer and more general: one <code>Swing</code> for every hatch, lid and door, one <code>Set</code> for any setting, and
+<code>Move</code>, which today's rules cannot do at all. Each names its target, so the game's <code>act</code> no longer has to check that a number means what
+the rule meant. Today's, beside them:</p>
+<div class=scroll><table class=t><tr><th>today</th><th>proposed</th></tr><tr><td class=addr>PullHatch(1)</td><td class=addr>Pull(world(start).square(E2).house(1).hatch)</td></tr><tr><td class=addr>SetHatch(1, false, Done)</td><td class=addr>Swing(…house(1).hatch, true, Done)</td></tr><tr><td class=addr>Pull(L) in the trap room</td><td class=addr>Pull(world(start).square(E4).castle(N).room(3).lever(L))</td></tr><tr><td class=addr>Flip(L, Done)</td><td class=addr>Flip(…room(3).lever(L), Done)</td></tr><tr><td class=addr>SetPit(0, true, …)</td><td class=addr>Swing(…room(3).pit(1), true, …)</td></tr><tr><td class=addr>PullThing(4)   (the 5th thing in the list)</td><td class=addr>Pull(…square(B6).lever(2))   (a name kept when the list changes)</td></tr><tr><td class=addr>OpenDoor(7, true, …)</td><td class=addr>Swing(…square(B6).trapdoor(1), true, …)</td></tr><tr><td class=addr>GoRoom(0, …)   (0 = out of the castle)</td><td class=addr>Go(world(start).square(E4), …)</td></tr><tr><td class=addr>GoSquare(3, 3, S, …)</td><td class=addr>Go(world(start).square(D4), …)</td></tr><tr><td class=addr>(none: a rule cannot move a thing)</td><td class=addr>Move(…lever(2), SetAside, …)</td></tr></table></div>
+<p>The tree room's rule becomes <code>| Pull(h) =&gt; Swing(h, !s.hatch.shut, Done)</code> with <code>s : TreeRoomState</code>: the same one line, now
+saying which hatch.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>Decide the address syntax</b> (the dotted <code>kind(name)</code> path above) and the list of kinds, from the vocabulary table: one word each for a world,
+a square, an inside, a room.</li>
+<li><b>Give every placed thing a name</b> when it is placed (and the default world's 68 things one each), and keep it through moves; a thing's index stops
+being its id.</li>
+<li><b>Write <code>RuleState</code> for the tree room first,</b> the smallest, with the game building it from addresses, beside today's
+<code>Globals</code>; then the trap room.</li>
+<li><b>Add the world's buffer</b> of set-aside things, as <code>peopleAway</code> is for people.</li>
+<li><b>Show addresses in the event log,</b> so a change reads <code>…house(1).hatch: shut → open</code>.</li>
+</ul>
+
+<h2 id="how">How this was put together<a class="anchor" href="#how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="how" title="copy this section's address">copy link</button></h2>
+<p>Written on 2026-10-25 by Claude, for Matthew, from <a href="https://matthewhammer.org/hazel/dashboard/#ticket-609"><code class="ref"><b>^ticket(</b>609<b>)</b></code></a>. The game was read at
+<code>eee9446</code> (Messed Up Dress Up 0.0.429). The default world, the insides, castles and room styles were read from the game's own tables, run in node
+(<code>data/places.json</code>); Figure 4 and the appendix are drawn from that file. The rooms' fields and types were read from
+<code>dress-up/js/25-scripting.js</code> and <code>25-fumola.js</code>. The pictures in the appendix are the game's own drawings, from the
+<a href="https://matthewhammer.org/dress-up-pictures/">dress-up-pictures</a> archive's newest run; things got a folder of their own there for this report.</p>
+
+<h2 id="appendix">Appendix: every address<a class="anchor" href="#appendix" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="appendix" title="copy this section's address">copy link</button></h2>
+<p>Every place and placed thing of the default world, then the templates: places, castle room styles and people. Open a row to see the game's drawing of it
+(fetched from the archive only then). A thing's number here is its order among its kind in that place, as a name would be minted; the game today knows it only
+by its index in the place's list.</p>
+<h3 class="grp" id="apx-places">places <span class="what">(64)</span><a class="anchor" href="#apx-places" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="apx-places" title="copy this section's address">copy link</button></h3>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/deepsea.svg"><summary><span class="addr">world(start).square(A1)</span><span class="what">a square: deepsea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/sea.svg"><summary><span class="addr">world(start).square(B1)</span><span class="what">a square: sea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/sea.svg"><summary><span class="addr">world(start).square(C1)</span><span class="what">a square: sea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/sea.svg"><summary><span class="addr">world(start).square(D1)</span><span class="what">a square: sea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/sea.svg"><summary><span class="addr">world(start).square(E1)</span><span class="what">a square: sea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/deepsea.svg"><summary><span class="addr">world(start).square(A2)</span><span class="what">a square: deepsea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/witch.svg"><summary><span class="addr">world(start).square(B2)</span><span class="what">a square: witch</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/witchroom.svg"><summary><span class="addr">world(start).square(B2).witchroom</span><span class="what">witchroom</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/beach.svg"><summary><span class="addr">world(start).square(C2)</span><span class="what">a square: beach</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/mountains.svg"><summary><span class="addr">world(start).square(D2)</span><span class="what">a square: mountains</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treehouse.svg"><summary><span class="addr">world(start).square(E2)</span><span class="what">a square: treehouse</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E2).house(1)</span><span class="what">tree house 1&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E2).house(2)</span><span class="what">tree house 2&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E2).house(3)</span><span class="what">tree house 3&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E2).house(4)</span><span class="what">tree house 4&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treetop.svg"><summary><span class="addr">world(start).square(E2).top</span><span class="what">the round room at the top</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/deepsea.svg"><summary><span class="addr">world(start).square(A3)</span><span class="what">a square: deepsea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/forest.svg"><summary><span class="addr">world(start).square(B3)</span><span class="what">a square: forest</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/crossing.svg"><summary><span class="addr">world(start).square(C3)</span><span class="what">a square: crossing</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/woodpath.svg"><summary><span class="addr">world(start).square(D3)</span><span class="what">a square: woodpath</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/fairyforest.svg"><summary><span class="addr">world(start).square(E3)</span><span class="what">a square: fairyforest</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/deepsea.svg"><summary><span class="addr">world(start).square(A4)</span><span class="what">a square: deepsea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/crossing.svg"><summary><span class="addr">world(start).square(B4)</span><span class="what">a square: crossing</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/lake.svg"><summary><span class="addr">world(start).square(C4)</span><span class="what">a square: lake</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/underwater.svg"><summary><span class="addr">world(start).square(C4).underwater</span><span class="what">underwater</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/clearing.svg"><summary><span class="addr">world(start).square(D4)</span><span class="what">a square: clearing</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/healerroom.svg"><summary><span class="addr">world(start).square(D4).healerroom</span><span class="what">healerroom</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castle.svg"><summary><span class="addr">world(start).square(E4)</span><span class="what">a square: castle</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--king.svg"><summary><span class="addr">world(start).square(E4).castle(N).room(1)</span><span class="what">N&#x27;s castle, room 1: king</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--greenhouse.svg"><summary><span class="addr">world(start).square(E4).castle(N).room(2)</span><span class="what">N&#x27;s castle, room 2: greenhouse</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--trap.svg"><summary><span class="addr">world(start).square(E4).castle(N).room(3)</span><span class="what">N&#x27;s castle, room 3: trap</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--dungeon1.svg"><summary><span class="addr">world(start).square(E4).castle(N).room(4)</span><span class="what">N&#x27;s castle, room 4: dungeon1</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--dungeon2.svg"><summary><span class="addr">world(start).square(E4).castle(N).room(5)</span><span class="what">N&#x27;s castle, room 5: dungeon2</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/waterfall.svg"><summary><span class="addr">world(start).square(A5)</span><span class="what">a square: waterfall</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/cave.svg"><summary><span class="addr">world(start).square(A5).cave</span><span class="what">the cave behind the falls</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/caveroom.svg"><summary><span class="addr">world(start).square(A5).cave.room</span><span class="what">the cave&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/campsite.svg"><summary><span class="addr">world(start).square(B5)</span><span class="what">a square: campsite</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/tent.svg"><summary><span class="addr">world(start).square(B5).tent(1)</span><span class="what">tent 1</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/tent.svg"><summary><span class="addr">world(start).square(B5).tent(2)</span><span class="what">tent 2</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/crossing.svg"><summary><span class="addr">world(start).square(C5)</span><span class="what">a square: crossing</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/house.svg"><summary><span class="addr">world(start).square(D5)</span><span class="what">a square: house</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/livingroom.svg"><summary><span class="addr">world(start).square(D5).livingroom</span><span class="what">livingroom</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treehouse.svg"><summary><span class="addr">world(start).square(E5)</span><span class="what">a square: treehouse</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E5).house(1)</span><span class="what">tree house 1&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E5).house(2)</span><span class="what">tree house 2&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E5).house(3)</span><span class="what">tree house 3&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">world(start).square(E5).house(4)</span><span class="what">tree house 4&#x27;s room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treetop.svg"><summary><span class="addr">world(start).square(E5).top</span><span class="what">the round room at the top</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/forest.svg"><summary><span class="addr">world(start).square(F5)</span><span class="what">a square: forest</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/forest.svg"><summary><span class="addr">world(start).square(A6)</span><span class="what">a square: forest</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/crossing.svg"><summary><span class="addr">world(start).square(B6)</span><span class="what">a square: crossing</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/cemetery.svg"><summary><span class="addr">world(start).square(C6)</span><span class="what">a square: cemetery</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/lake.svg"><summary><span class="addr">world(start).square(D6)</span><span class="what">a square: lake</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/underwater.svg"><summary><span class="addr">world(start).square(D6).underwater</span><span class="what">underwater</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castle.svg"><summary><span class="addr">world(start).square(E6)</span><span class="what">a square: castle</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--king.svg"><summary><span class="addr">world(start).square(E6).castle(N).room(1)</span><span class="what">N&#x27;s castle, room 1: king</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--greenhouse.svg"><summary><span class="addr">world(start).square(E6).castle(N).room(2)</span><span class="what">N&#x27;s castle, room 2: greenhouse</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--trap.svg"><summary><span class="addr">world(start).square(E6).castle(N).room(3)</span><span class="what">N&#x27;s castle, room 3: trap</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--dungeon1.svg"><summary><span class="addr">world(start).square(E6).castle(N).room(4)</span><span class="what">N&#x27;s castle, room 4: dungeon1</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--dungeon2.svg"><summary><span class="addr">world(start).square(E6).castle(N).room(5)</span><span class="what">N&#x27;s castle, room 5: dungeon2</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/imagination.svg"><summary><span class="addr">world(start).elsewhere(imagination)</span><span class="what">off the grid</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/emptyroom.svg"><summary><span class="addr">world(start).elsewhere(emptyroom)</span><span class="what">off the grid</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/bubblespace.svg"><summary><span class="addr">world(start).elsewhere(bubblespace)</span><span class="what">off the grid</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/bubbleroom.svg"><summary><span class="addr">world(start).elsewhere(bubbleroom)</span><span class="what">off the grid</span></summary><div class="pic"></div></details>
+<h3 class="grp" id="apx-things">things <span class="what">(68)</span><a class="anchor" href="#apx-things" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="apx-things" title="copy this section's address">copy link</button></h3>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(1)</span><span class="what">a shell, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(2)</span><span class="what">a shell, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(3)</span><span class="what">a shell, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(4)</span><span class="what">a shell, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(5)</span><span class="what">a shell, the 5th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(6)</span><span class="what">a shell, the 6th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(7)</span><span class="what">a shell, the 7th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(8)</span><span class="what">a shell, the 8th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/shell.svg"><summary><span class="addr">world(start).square(A1).shell(9)</span><span class="what">a shell, the 9th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/seagrass.svg"><summary><span class="addr">world(start).square(A2).seagrass(1)</span><span class="what">a seagrass, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/seafan.svg"><summary><span class="addr">world(start).square(A2).seafan(1)</span><span class="what">a seafan, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/sealettuce.svg"><summary><span class="addr">world(start).square(A2).sealettuce(1)</span><span class="what">a sealettuce, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/coral.svg"><summary><span class="addr">world(start).square(A2).coral(1)</span><span class="what">a coral, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/chest.svg"><summary><span class="addr">world(start).square(A4).chest(1)</span><span class="what">a chest, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/chest.svg"><summary><span class="addr">world(start).square(A4).chest(2)</span><span class="what">a chest, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/chest.svg"><summary><span class="addr">world(start).square(A4).chest(3)</span><span class="what">a chest, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/chest.svg"><summary><span class="addr">world(start).square(A4).chest(4)</span><span class="what">a chest, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/kelp.svg"><summary><span class="addr">world(start).square(A4).kelp(1)</span><span class="what">a kelp, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/kelp.svg"><summary><span class="addr">world(start).square(A4).kelp(2)</span><span class="what">a kelp, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/kelp.svg"><summary><span class="addr">world(start).square(A4).kelp(3)</span><span class="what">a kelp, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/kelp.svg"><summary><span class="addr">world(start).square(A4).kelp(4)</span><span class="what">a kelp, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/kelp.svg"><summary><span class="addr">world(start).square(A4).kelp(5)</span><span class="what">a kelp, the 5th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/kelp.svg"><summary><span class="addr">world(start).square(A4).kelp(6)</span><span class="what">a kelp, the 6th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/starfish.svg"><summary><span class="addr">world(start).square(A4).starfish(1)</span><span class="what">a starfish, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/seafish.svg"><summary><span class="addr">world(start).square(A4).seafish(1)</span><span class="what">a seafish, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/pine.svg"><summary><span class="addr">world(start).square(C4).pine(1)</span><span class="what">a pine, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/pine.svg"><summary><span class="addr">world(start).square(C4).pine(2)</span><span class="what">a pine, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A5).rock(1)</span><span class="what">a rock, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A5).rock(2)</span><span class="what">a rock, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A5).rock(3)</span><span class="what">a rock, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A5).rock(4)</span><span class="what">a rock, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A5).rock(5)</span><span class="what">a rock, the 5th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A5).rock(6)</span><span class="what">a rock, the 6th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/tree.svg"><summary><span class="addr">world(start).square(A5).tree(1)</span><span class="what">a tree, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/pine.svg"><summary><span class="addr">world(start).square(A5).pine(1)</span><span class="what">a pine, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/pine.svg"><summary><span class="addr">world(start).square(A5).pine(2)</span><span class="what">a pine, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/pine.svg"><summary><span class="addr">world(start).square(A5).pine(3)</span><span class="what">a pine, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/pine.svg"><summary><span class="addr">world(start).square(A5).pine(4)</span><span class="what">a pine, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(1)</span><span class="what">a rock, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(2)</span><span class="what">a rock, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(3)</span><span class="what">a rock, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(4)</span><span class="what">a rock, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(5)</span><span class="what">a rock, the 5th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(6)</span><span class="what">a rock, the 6th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(7)</span><span class="what">a rock, the 7th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(8)</span><span class="what">a rock, the 8th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(9)</span><span class="what">a rock, the 9th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(10)</span><span class="what">a rock, the 10th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(11)</span><span class="what">a rock, the 11th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(12)</span><span class="what">a rock, the 12th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(13)</span><span class="what">a rock, the 13th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(14)</span><span class="what">a rock, the 14th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(F5).rock(15)</span><span class="what">a rock, the 15th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(1)</span><span class="what">a rock, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(2)</span><span class="what">a rock, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(3)</span><span class="what">a rock, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(4)</span><span class="what">a rock, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(5)</span><span class="what">a rock, the 5th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(6)</span><span class="what">a rock, the 6th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(7)</span><span class="what">a rock, the 7th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(8)</span><span class="what">a rock, the 8th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(A6).rock(9)</span><span class="what">a rock, the 9th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(B6).rock(1)</span><span class="what">a rock, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(B6).rock(2)</span><span class="what">a rock, the 2nd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(B6).rock(3)</span><span class="what">a rock, the 3rd placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/rock.svg"><summary><span class="addr">world(start).square(B6).rock(4)</span><span class="what">a rock, the 4th placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/tree.svg"><summary><span class="addr">world(start).square(B6).tree(1)</span><span class="what">a tree, the 1st placed here</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/things/tree.svg"><summary><span class="addr">world(start).square(B6).tree(2)</span><span class="what">a tree, the 2nd placed here</span></summary><div class="pic"></div></details>
+<h3 class="grp" id="apx-templates-places">templates: places <span class="what">(51)</span><a class="anchor" href="#apx-templates-places" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="apx-templates-places" title="copy this section's address">copy link</button></h3>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/emptyroom.svg"><summary><span class="addr">place(emptyroom)</span><span class="what">🔲 empty room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/bubblespace.svg"><summary><span class="addr">place(bubblespace)</span><span class="what">🫧 bubble space</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/bubbleroom.svg"><summary><span class="addr">place(bubbleroom)</span><span class="what">🫧 the bubble room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/imagination.svg"><summary><span class="addr">place(imagination)</span><span class="what">💭 our imagination</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/forest.svg"><summary><span class="addr">place(forest)</span><span class="what">🌲 forest</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/underwater.svg"><summary><span class="addr">place(underwater)</span><span class="what">🐠 underwater</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/deepsea.svg"><summary><span class="addr">place(deepsea)</span><span class="what">🪸 deep sea</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/beach.svg"><summary><span class="addr">place(beach)</span><span class="what">🏖️ beach</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/sea.svg"><summary><span class="addr">place(sea)</span><span class="what">🌊 open water</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/witch.svg"><summary><span class="addr">place(witch)</span><span class="what">🧙 witch&#x27;s woods</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/cemetery.svg"><summary><span class="addr">place(cemetery)</span><span class="what">🌿 cemetery</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/lake.svg"><summary><span class="addr">place(lake)</span><span class="what">🦆 lake</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/house.svg"><summary><span class="addr">place(house)</span><span class="what">🏠 house and yard</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/farmyard.svg"><summary><span class="addr">place(farmyard)</span><span class="what">🚜 farm yard</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treehouse.svg"><summary><span class="addr">place(treehouse)</span><span class="what">🌳 tree house</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treeroom.svg"><summary><span class="addr">place(treeroom)</span><span class="what">🪜 inside the tree house</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/treetop.svg"><summary><span class="addr">place(treetop)</span><span class="what">⭕ the round room at the top of the tree</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/livingroom.svg"><summary><span class="addr">place(livingroom)</span><span class="what">🛋️ living room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/witchroom.svg"><summary><span class="addr">place(witchroom)</span><span class="what">🧙 inside the witch&#x27;s hut</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/clearing.svg"><summary><span class="addr">place(clearing)</span><span class="what">🌲 forest clearing</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/healerroom.svg"><summary><span class="addr">place(healerroom)</span><span class="what">🌿 inside the healer&#x27;s hut</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/fairyforest.svg"><summary><span class="addr">place(fairyforest)</span><span class="what">🧚 fairy forest</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/mountains.svg"><summary><span class="addr">place(mountains)</span><span class="what">⛰️ mountain trail</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/waterfall.svg"><summary><span class="addr">place(waterfall)</span><span class="what">💦 jungle waterfall</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/campsite.svg"><summary><span class="addr">place(campsite)</span><span class="what">🏕️ camp site</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/tent.svg"><summary><span class="addr">place(tent)</span><span class="what">⛺ inside a tent</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/cave.svg"><summary><span class="addr">place(cave)</span><span class="what">🪨 cave behind the falls</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/caveroom.svg"><summary><span class="addr">place(caveroom)</span><span class="what">🦇 cave room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/woodpath.svg"><summary><span class="addr">place(woodpath)</span><span class="what">🥾 path through the woods</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/pasture.svg"><summary><span class="addr">place(pasture)</span><span class="what">🌾 pasture</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/crossing.svg"><summary><span class="addr">place(crossing)</span><span class="what">🛤️ forest crossing</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castle.svg"><summary><span class="addr">place(castle)</span><span class="what">🏰 castle</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom.svg"><summary><span class="addr">place(castleroom)</span><span class="what">🚪 inside the castle</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/hut.svg"><summary><span class="addr">place(hut)</span><span class="what">🛖 grass hut</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/hutroom.svg"><summary><span class="addr">place(hutroom)</span><span class="what">🛋️ inside the grass hut</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/hutbed.svg"><summary><span class="addr">place(hutbed)</span><span class="what">🛏️ the grass hut&#x27;s bedroom</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/hutpotion.svg"><summary><span class="addr">place(hutpotion)</span><span class="what">🧪 the grass hut&#x27;s potion room</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/hutcenter.svg"><summary><span class="addr">place(hutcenter)</span><span class="what">🔥 the grass hut&#x27;s center</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/desert.svg"><summary><span class="addr">place(desert)</span><span class="what">🏜️ desert</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--king.svg"><summary><span class="addr">place(castleroom).style(king)</span><span class="what">👑 king&#x27;s room, exits: side</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--greenhouse.svg"><summary><span class="addr">place(castleroom).style(greenhouse)</span><span class="what">🌿 greenhouse, exits: all</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--trap.svg"><summary><span class="addr">place(castleroom).style(trap)</span><span class="what">🕳️ trap room, exits: trap</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--dungeon1.svg"><summary><span class="addr">place(castleroom).style(dungeon1)</span><span class="what">🗝️ dungeon, exits: ladder</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--dungeon2.svg"><summary><span class="addr">place(castleroom).style(dungeon2)</span><span class="what">⛓️ deep dungeon, exits: ladder</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--hallway.svg"><summary><span class="addr">place(castleroom).style(hallway)</span><span class="what">🕯️ hallway, exits: hall</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--catroom.svg"><summary><span class="addr">place(castleroom).style(catroom)</span><span class="what">🐈 cat room, exits: side</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--stable.svg"><summary><span class="addr">place(castleroom).style(stable)</span><span class="what">🐴 stable, exits: side</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--dining.svg"><summary><span class="addr">place(castleroom).style(dining)</span><span class="what">🍽️ dining room, exits: long</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--kitchen.svg"><summary><span class="addr">place(castleroom).style(kitchen)</span><span class="what">🍲 kitchen, exits: side</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--smithy.svg"><summary><span class="addr">place(castleroom).style(smithy)</span><span class="what">⚒️ smithy, exits: side</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/backgrounds/castleroom--spiral.svg"><summary><span class="addr">place(castleroom).style(spiral)</span><span class="what">🌀 spiral staircase, exits: spiral</span></summary><div class="pic"></div></details>
+<h3 class="grp" id="apx-templates-people">templates: people <span class="what">(36)</span><a class="anchor" href="#apx-templates-people" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="apx-templates-people" title="copy this section's address">copy link</button></h3>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/body/_default.svg"><summary><span class="addr">person(friend)</span><span class="what">the friend at the defaults, no costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--tiger.svg"><summary><span class="addr">person(costume(tiger))</span><span class="what">a person in the tiger costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--cat.svg"><summary><span class="addr">person(costume(cat))</span><span class="what">a person in the cat costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--lion.svg"><summary><span class="addr">person(costume(lion))</span><span class="what">a person in the lion costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--bear.svg"><summary><span class="addr">person(costume(bear))</span><span class="what">a person in the bear costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--falcon.svg"><summary><span class="addr">person(costume(falcon))</span><span class="what">a person in the falcon costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--raccoon.svg"><summary><span class="addr">person(costume(raccoon))</span><span class="what">a person in the raccoon costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--bobcat.svg"><summary><span class="addr">person(costume(bobcat))</span><span class="what">a person in the bobcat costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--leopard.svg"><summary><span class="addr">person(costume(leopard))</span><span class="what">a person in the leopard costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--eagle.svg"><summary><span class="addr">person(costume(eagle))</span><span class="what">a person in the eagle costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--cheetah.svg"><summary><span class="addr">person(costume(cheetah))</span><span class="what">a person in the cheetah costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--jaguar.svg"><summary><span class="addr">person(costume(jaguar))</span><span class="what">a person in the jaguar costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--moth.svg"><summary><span class="addr">person(costume(moth))</span><span class="what">a person in the moth costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--falconsuit.svg"><summary><span class="addr">person(costume(falconsuit))</span><span class="what">a person in the falconsuit costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--eaglesuit.svg"><summary><span class="addr">person(costume(eaglesuit))</span><span class="what">a person in the eaglesuit costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--wolf.svg"><summary><span class="addr">person(costume(wolf))</span><span class="what">a person in the wolf costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--deer.svg"><summary><span class="addr">person(costume(deer))</span><span class="what">a person in the deer costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--dragon.svg"><summary><span class="addr">person(costume(dragon))</span><span class="what">a person in the dragon costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--sasquatch.svg"><summary><span class="addr">person(costume(sasquatch))</span><span class="what">a person in the sasquatch costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--witch.svg"><summary><span class="addr">person(costume(witch))</span><span class="what">a person in the witch costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--fairy.svg"><summary><span class="addr">person(costume(fairy))</span><span class="what">a person in the fairy costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--ghost.svg"><summary><span class="addr">person(costume(ghost))</span><span class="what">a person in the ghost costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--gnome.svg"><summary><span class="addr">person(costume(gnome))</span><span class="what">a person in the gnome costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--wizard.svg"><summary><span class="addr">person(costume(wizard))</span><span class="what">a person in the wizard costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--monk.svg"><summary><span class="addr">person(costume(monk))</span><span class="what">a person in the monk costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--robin.svg"><summary><span class="addr">person(costume(robin))</span><span class="what">a person in the robin costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--knight.svg"><summary><span class="addr">person(costume(knight))</span><span class="what">a person in the knight costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--queen.svg"><summary><span class="addr">person(costume(queen))</span><span class="what">a person in the queen costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--king.svg"><summary><span class="addr">person(costume(king))</span><span class="what">a person in the king costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--robot.svg"><summary><span class="addr">person(costume(robot))</span><span class="what">a person in the robot costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--cowgirl.svg"><summary><span class="addr">person(costume(cowgirl))</span><span class="what">a person in the cowgirl costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--cowboy.svg"><summary><span class="addr">person(costume(cowboy))</span><span class="what">a person in the cowboy costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--ninja.svg"><summary><span class="addr">person(costume(ninja))</span><span class="what">a person in the ninja costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--giraffe.svg"><summary><span class="addr">person(costume(giraffe))</span><span class="what">a person in the giraffe costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--scuba.svg"><summary><span class="addr">person(costume(scuba))</span><span class="what">a person in the scuba costume</span></summary><div class="pic"></div></details>
+<details data-pic="https://matthewhammer.org/dress-up-pictures/pictures/costume/kind--diver.svg"><summary><span class="addr">person(costume(diver))</span><span class="what">a person in the diver costume</span></summary><div class="pic"></div></details>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/033/data"><code>033/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main>
+<script>
+// (the appendix: a picture is fetched only when its row is opened: the page loads names and links, nothing more)
+for (const d of document.querySelectorAll('details[data-pic]')) d.addEventListener('toggle', () => {
+  const box = d.querySelector('.pic');
+  if (!d.open || box.firstChild) return;
+  const u = d.dataset.pic, img = document.createElement('img');
+  img.alt = d.querySelector('.addr').textContent; img.src = u;
+  img.onerror = () => { box.textContent = 'no picture in the archive yet: ' + u; };
+  const a = document.createElement('a'); a.href = u; a.append(img); box.append(a);
+});
+</script>
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}}, BUILT = "2026-10-25";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    const b = li.querySelector("b, strong");
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 33,
+ "title": "Rules, Rooms and Addresses",
+ "date": "2026-10-25",
+ "kind": "design",
+ "status": "work in progress",
+ "question": "Matthew: how Messed Up Dress Up's game rules are written in Hazel today (Event, Cmd, Globals), why Globals is a per-rule view, and a proposal: one address for every place, thing and person, and Globals, RuleState and Cmd built on it (^ticket(609)).",
+ "files": [
+  "data/meta.json",
+  "data/notes-places.md",
+  "data/notes-scripts.md",
+  "data/places.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Globals is a per-rule view",
+   "section_id": "not-global",
+   "columns": [
+    "module",
+    "its events",
+    "its commands",
+    "Globals fields it fills",
+    "which instance"
+   ],
+   "rows": [
+    [
+     "TrapRoom",
+     "Pull(L|R), PullBoulder(side)",
+     "Flip, SetPit, DropBoulder, LiftBoulder",
+     "lever_L, lever_R, wiring, draws, pits_on, covered",
+     "the trap room of the castle shown, room n"
+    ],
+    [
+     "TreeRoom",
+     "PullHatch(n)",
+     "SetHatch(n, shut)",
+     "hatch",
+     "the house the friend is in: hatchHouse(), 0 for the top"
+    ],
+    [
+     "Square",
+     "PullThing(i)",
+     "OpenDoor(at, open), DropRock(at, down)",
+     "things",
+     "this place's levers and trap doors, at = index in its list"
+    ],
+    [
+     "World",
+     "Way(d)",
+     "GoSquare(col, row, side)",
+     "at_col, at_row, cols, rows, cells",
+     "the world shown, every square"
+    ],
+    [
+     "Castle",
+     "FallPit(0|1), WayOut(n)",
+     "GoRoom(r)",
+     "rooms, exits, out",
+     "the castle shown, room n's way out"
+    ]
+   ]
+  },
+  {
+   "section": "Where, in eleven words",
+   "section_id": "words",
+   "columns": [
+    "word",
+    "in the code",
+    "in the game's UI"
+   ],
+   "rows": [
+    [
+     "background",
+     "state.background (the place and the friend's spot in it), backgroundSvg",
+     "🏞️ Background tab"
+    ],
+    [
+     "kind",
+     "B.kind and cell.kind (a place); ROOM_KINDS (castle room styles); thing.kind",
+     "\"kind of place\" (a group)"
+    ],
+    [
+     "place",
+     "PLACES, placeKey, objPlace, person.place; castlePlaces (table seats)",
+     "\"🗺️ the place\", \"not in any place\""
+    ],
+    [
+     "scene",
+     "SCENES, *Scene functions, SCENE (stage geometry)",
+     "hardly"
+    ],
+    [
+     "square / cell",
+     "squareName, Square (script), GoSquare / W.cells, cellKeys",
+     "square, D4 / never \"cell\""
+    ],
+    [
+     "room",
+     "castle rooms; treeroom; ROOMS (furnishing); NORTH_ROOMS (indoor); hutRooms (huts); SCRIPT_ROOMS (modules)",
+     "\"🚪 room n is\", \"🦇 cave room\""
+    ],
+    [
+     "inside",
+     "INSIDES; B.inside (= the tree house's number)",
+     "\"inside the castle\", \"🚪 off the grid\""
+    ],
+    [
+     "house",
+     "B.houses, data-house (tree houses); kind \"house\" (the family's)",
+     "\"🏡 house n\" vs \"🏠 house and yard\""
+    ],
+    [
+     "home",
+     "worldHome, passageHome",
+     "\"🏠 home\" (a group of places)"
+    ],
+    [
+     "world",
+     "state.world (one grid), worldsAway",
+     "🗺️ World design, \"🌍 world N\""
+    ]
+   ]
+  },
+  {
+   "section": "Globals, RuleState and Cmd, proposed",
+   "section_id": "types",
+   "columns": [
+    "today",
+    "proposed"
+   ],
+   "rows": [
+    [
+     "PullHatch(1)",
+     "Pull(world(start).square(E2).house(1).hatch)"
+    ],
+    [
+     "SetHatch(1, false, Done)",
+     "Swing(…house(1).hatch, true, Done)"
+    ],
+    [
+     "Pull(L) in the trap room",
+     "Pull(world(start).square(E4).castle(N).room(3).lever(L))"
+    ],
+    [
+     "Flip(L, Done)",
+     "Flip(…room(3).lever(L), Done)"
+    ],
+    [
+     "SetPit(0, true, …)",
+     "Swing(…room(3).pit(1), true, …)"
+    ],
+    [
+     "PullThing(4) (the 5th thing in the list)",
+     "Pull(…square(B6).lever(2)) (a name kept when the list changes)"
+    ],
+    [
+     "OpenDoor(7, true, …)",
+     "Swing(…square(B6).trapdoor(1), true, …)"
+    ],
+    [
+     "GoRoom(0, …) (0 = out of the castle)",
+     "Go(world(start).square(E4), …)"
+    ],
+    [
+     "GoSquare(3, 3, S, …)",
+     "Go(world(start).square(D4), …)"
+    ],
+    [
+     "(none: a rule cannot move a thing)",
+     "Move(…lever(2), SetAside, …)"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/033/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body></html>

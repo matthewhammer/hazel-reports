@@ -1,0 +1,161 @@
+[
+ {
+  "section": "Globals is a per-rule view",
+  "section_id": "not-global",
+  "columns": [
+   "module",
+   "its events",
+   "its commands",
+   "Globals fields it fills",
+   "which instance"
+  ],
+  "rows": [
+   [
+    "TrapRoom",
+    "Pull(L|R), PullBoulder(side)",
+    "Flip, SetPit, DropBoulder, LiftBoulder",
+    "lever_L, lever_R, wiring, draws, pits_on, covered",
+    "the trap room of the castle shown, room n"
+   ],
+   [
+    "TreeRoom",
+    "PullHatch(n)",
+    "SetHatch(n, shut)",
+    "hatch",
+    "the house the friend is in: hatchHouse(), 0 for the top"
+   ],
+   [
+    "Square",
+    "PullThing(i)",
+    "OpenDoor(at, open), DropRock(at, down)",
+    "things",
+    "this place's levers and trap doors, at = index in its list"
+   ],
+   [
+    "World",
+    "Way(d)",
+    "GoSquare(col, row, side)",
+    "at_col, at_row, cols, rows, cells",
+    "the world shown, every square"
+   ],
+   [
+    "Castle",
+    "FallPit(0|1), WayOut(n)",
+    "GoRoom(r)",
+    "rooms, exits, out",
+    "the castle shown, room n's way out"
+   ]
+  ]
+ },
+ {
+  "section": "Where, in eleven words",
+  "section_id": "words",
+  "columns": [
+   "word",
+   "in the code",
+   "in the game's UI"
+  ],
+  "rows": [
+   [
+    "background",
+    "state.background (the place and the friend's spot in it), backgroundSvg",
+    "🏞️ Background tab"
+   ],
+   [
+    "kind",
+    "B.kind and cell.kind (a place); ROOM_KINDS (castle room styles); thing.kind",
+    "\"kind of place\" (a group)"
+   ],
+   [
+    "place",
+    "PLACES, placeKey, objPlace, person.place; castlePlaces (table seats)",
+    "\"🗺️ the place\", \"not in any place\""
+   ],
+   [
+    "scene",
+    "SCENES, *Scene functions, SCENE (stage geometry)",
+    "hardly"
+   ],
+   [
+    "square / cell",
+    "squareName, Square (script), GoSquare / W.cells, cellKeys",
+    "square, D4 / never \"cell\""
+   ],
+   [
+    "room",
+    "castle rooms; treeroom; ROOMS (furnishing); NORTH_ROOMS (indoor); hutRooms (huts); SCRIPT_ROOMS (modules)",
+    "\"🚪 room n is\", \"🦇 cave room\""
+   ],
+   [
+    "inside",
+    "INSIDES; B.inside (= the tree house's number)",
+    "\"inside the castle\", \"🚪 off the grid\""
+   ],
+   [
+    "house",
+    "B.houses, data-house (tree houses); kind \"house\" (the family's)",
+    "\"🏡 house n\" vs \"🏠 house and yard\""
+   ],
+   [
+    "home",
+    "worldHome, passageHome",
+    "\"🏠 home\" (a group of places)"
+   ],
+   [
+    "world",
+    "state.world (one grid), worldsAway",
+    "🗺️ World design, \"🌍 world N\""
+   ]
+  ]
+ },
+ {
+  "section": "Globals, RuleState and Cmd, proposed",
+  "section_id": "types",
+  "columns": [
+   "today",
+   "proposed"
+  ],
+  "rows": [
+   [
+    "PullHatch(1)",
+    "Pull(world(start).square(E2).house(1).hatch)"
+   ],
+   [
+    "SetHatch(1, false, Done)",
+    "Swing(…house(1).hatch, true, Done)"
+   ],
+   [
+    "Pull(L) in the trap room",
+    "Pull(world(start).square(E4).castle(N).room(3).lever(L))"
+   ],
+   [
+    "Flip(L, Done)",
+    "Flip(…room(3).lever(L), Done)"
+   ],
+   [
+    "SetPit(0, true, …)",
+    "Swing(…room(3).pit(1), true, …)"
+   ],
+   [
+    "PullThing(4) (the 5th thing in the list)",
+    "Pull(…square(B6).lever(2)) (a name kept when the list changes)"
+   ],
+   [
+    "OpenDoor(7, true, …)",
+    "Swing(…square(B6).trapdoor(1), true, …)"
+   ],
+   [
+    "GoRoom(0, …) (0 = out of the castle)",
+    "Go(world(start).square(E4), …)"
+   ],
+   [
+    "GoSquare(3, 3, S, …)",
+    "Go(world(start).square(D4), …)"
+   ],
+   [
+    "(none: a rule cannot move a thing)",
+    "Move(…lever(2), SetAside, …)"
+   ]
+  ]
+ }
+]
