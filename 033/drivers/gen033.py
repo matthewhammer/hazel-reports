@@ -10,6 +10,30 @@ R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STYLE = open(os.path.join(R, "..", "025", "drivers", "style.css")).read()
 P = json.load(open(os.path.join(R, "data", "places.json")))
 esc = html.escape
+
+import re
+HZ_KW = {"type", "let", "fun", "case", "end", "module", "in", "if", "then", "else", "test", "true", "false"}
+def hazel_hl(t):
+    out, i = [], 0
+    pat = re.compile(r'(#[^#]*#)|("(?:[^"\\]|\\.)*")|(\b[0-9]+(?:\.[0-9]+)?\b)|(\b[A-Za-z_][A-Za-z0-9_]*\b)|(->|=>|::|\+|\||[=:,.()\[\]!<>*/-])', re.M)
+    for m in pat.finditer(t):
+        out.append(esc(t[i:m.start()])); i = m.end(); g = m.group(0)
+        if m.group(1): out.append(f'<span class="hc">{esc(g)}</span>')
+        elif m.group(2): out.append(f'<span class="hs">{esc(g)}</span>')
+        elif m.group(3): out.append(f'<span class="hn">{esc(g)}</span>')
+        elif m.group(4): out.append(f'<span class="{"hk" if g in HZ_KW else "hC" if g[0].isupper() else "hv"}">{esc(g)}</span>')
+        else: out.append(f'<span class="ho">{esc(g)}</span>')
+    out.append(esc(t[i:])); return "".join(out)
+FU_KW = {"module", "let", "return", "import", "type", "public", "force", "func", "thunk", "switch", "case", "prim", "if", "else", "var", "for", "in", "with", "within", "do", "assert", "goto", "space", "time", "debug_show"}
+def fumola_hl(t):
+    out, i = [], 0
+    pat = re.compile(r'(//.*$)|("(?:[^"\\]|\\.)*")|(`[A-Za-z_][A-Za-z0-9_]*)|(#[A-Za-z_][A-Za-z0-9_]*)|(@[A-Za-z_][A-Za-z0-9_]*)|(\b[A-Za-z_][A-Za-z0-9_]*\b)|([0-9]+)', re.M)
+    for m in pat.finditer(t):
+        out.append(esc(t[i:m.start()])); i = m.end(); g = m.group(0)
+        cls = "fc" if m.group(1) else "fs" if m.group(2) else "fy" if m.group(3) else "ft" if m.group(4) else "fy" if m.group(5) else (
+              "fk" if g in FU_KW else "fT" if g[0].isupper() else "fv") if m.group(6) else "fv"
+        out.append(f'<span class="{cls}">{esc(g)}</span>')
+    out.append(esc(t[i:])); return "".join(out)
 GAME = "eee9446"
 PICS = "https://matthewhammer.org/dress-up-pictures/pictures/"
 KCG = "https://github.com/matthewhammer/kids-choice-games/blob/" + GAME + "/dress-up/js/"
@@ -34,7 +58,13 @@ svg.fig .ahead { fill: var(--muted); }
 svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
 svg.fig .kindtxt { font-size: 10.5px; }
 figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
-pre.hz { background: color-mix(in srgb, var(--accent) 6%, var(--paper)); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.45; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
 a.src code { font-size: 0.85em; }
 table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
 .addr { font: 0.86em ui-monospace, monospace; }
@@ -156,10 +186,8 @@ def svg_address():
         b.append(f'<text class="mono" x="{x + 14}" y="45"><tspan style="fill:var(--muted)">{k}</tspan>(<tspan style="font-weight:700">{v}</tspan>)</text>')
         if i < len(steps) - 1: b.append(f'<text x="{x + w + 4}" y="46" style="fill:var(--muted)">.</text>')
         x += w + 16
-    b.append(f'<text class="mono small" x="10" y="90">Fumola, the same symbol: `world(`start).`square(`E4).`castle(`N).`room(3).`lever(`L)</text>')
-    b.append(f'<text class="mono small" x="10" y="110">Hazel, as data:  [Step("world", "start"), Step("square", "E4"), Step("castle", "N"), Step("room", "3"), Step("lever", "L")]</text>')
-    b.append(f'<text class="small" x="10" y="132">every step names its kind, so room(3) and lever(3) can never be confused, at any depth</text>')
-    return f'<svg class="fig" viewBox="0 0 {max(x, 760)} 145" role="img" aria-label="An address drawn as a path of kind(name) steps, with its Fumola symbol and Hazel value">{"".join(b)}</svg>'
+    b.append(f'<text class="small" x="10" y="92">every step names its kind, so room(3) and lever(3) can never be confused, at any depth</text>')
+    return f'<svg class="fig" viewBox="0 0 {max(x, 760)} 105" role="img" aria-label="An address drawn as a path of kind(name) steps, with its Fumola symbol and Hazel value">{"".join(b)}</svg>'
 
 def svg_life():
     W, H = 900, 200
@@ -447,7 +475,7 @@ its 📜 Scripting tab. The Hazel program is one file of modules: <code>Common</
 program once per edit, and calls a room's function when its event happens ({src("25-scripting.js", 760, "scriptEvent")}).</p>
 {fig(svg_call(), "Figure 1. One event, end to end. The game builds the room's view of its state, the Hazel rule answers a <code>Cmd</code>, and the game acts it out, one command at a time. The event log keeps the view three times, which is how the 📜 tab shows what an event changed.", "fig-call")}
 <p>The types, as the game declares them at the top of the program ({src("25-scripting.js", 98, "25-scripting.js:98-102")}), and one room's whole rule:</p>
-<pre class="hz">{esc(TODAY_TYPES)}</pre>
+<pre class="hz">{hazel_hl(TODAY_TYPES)}</pre>
 <p>A few things a Hazel reader should know about how these meet the game:</p>
 <ul>
 <li><b>A <code>Cmd</code> is a list spelled as a sum:</b> every command carries the rest, ending in <code>Done</code>. The game walks it
@@ -510,6 +538,10 @@ Each lands in exactly one node, so one path from the world down names any place 
 
 <h2 id="ids">Names that can't collide</h2>
 {fig(svg_address(), "Figure 6. An address is a path of <code>kind(name)</code> steps. Its kinds keep the keyspace one: <code>room(3)</code> and <code>lever(3)</code> are different names wherever they appear.", "fig-addr")}
+<p class="codecap">The same address in Fumola, a symbol (application nests, <code>Dot</code> joins):</p>
+<pre class="fu wrap">{fumola_hl("`world(`start).`square(`E4).`castle(`N).`room(3).`lever(`L)")}</pre>
+<p class="codecap">and in Hazel, as data (the type is in <a href="#types">the proposal</a>):</p>
+<pre class="hz wrap">{hazel_hl('[(kind = "world", name = "start"), (kind = "square", name = "E4"),' + chr(10) + ' (kind = "castle", name = "N"), (kind = "room", name = "3"),' + chr(10) + ' (kind = "lever", name = "L")]')}</pre>
 <p><b>Human readable:</b> each step is a word and a name a player would use (<code>square(E4)</code>, <code>castle(N)</code>, <code>lever(L)</code>).
 <b>Unambiguous:</b> the kind is part of every step, and a name only has to be unique among its owner's children of that kind, so places, things and people
 share one keyspace with no global counter.</p>
@@ -536,9 +568,9 @@ Making an instance from it mints a name; putting a set-aside one back does not.<
 
 <h2 id="types">Globals, RuleState and Cmd, proposed</h2>
 <p>In Hazel. First the addresses and what they name:</p>
-<pre class="hz">{esc(PROPOSED_ADDR)}</pre>
+<pre class="hz">{hazel_hl(PROPOSED_ADDR)}</pre>
 <p>Then the whole game, each room's own state, and commands and events by address:</p>
-<pre class="hz">{esc(PROPOSED_GLOBALS)}</pre>
+<pre class="hz">{hazel_hl(PROPOSED_GLOBALS)}</pre>
 <p>The commands get fewer and more general: one <code>Swing</code> for every hatch, lid and door, one <code>Set</code> for any setting, and
 <code>Move</code>, which today's rules cannot do at all. Each names its target, so the game's <code>act</code> no longer has to check that a number means what
 the rule meant. Today's, beside them:</p>
