@@ -9,6 +9,10 @@ page's <!-- reports: begin --> and <!-- reports: end --> markers, as links
 to reports/NNN/. Idempotent: run it whenever a report is
 published, after updating the series index."""
 import os, re, sys
+# (RETIRED 2026-10-25, Matthew: "https://matthewhammer.org/hazel/#reports let's not include the list here, and just use the
+# thumbnail list going forward ... this one https://matthewhammer.org/hazel/reports/") the Hazel page links to the series
+# index instead of listing the reports; nothing to write
+sys.exit("hazel_page.py is retired: the Hazel page links to reports/ (the thumbnail list); update the series index only")
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 page = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else "~/matthewhammer.github.io/hazel/index.html")
