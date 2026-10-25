@@ -562,6 +562,7 @@ PAGE = f"""<!doctype html>
 <p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>33<b>)</b></code> · Messed Up Dress Up's scripts · 2026-10-25 · <span class="wip">work in progress</span></p>
 <h1>Rules, Rooms and Addresses</h1>
 
+<div class="headline abstract"><p><b>Abstract.</b> {ABSTRACT}</p></div>
 <nav class="outline" id="outline"><p><b>Outline</b></p>
 <ol class="parts">
 <li><a href="#part-1"><b>How it works today</b></a>: piecemeal, each part on its own terms
@@ -578,7 +579,6 @@ PAGE = f"""<!doctype html>
 <li><a href="#next">What next</a> · <a href="#how">How this was put together</a> · <a href="#appendix">Appendix: every address</a></li>
 </ol></nav>
 
-<div class="headline abstract"><p><b>Abstract.</b> {ABSTRACT}</p></div>
 <p class="intro">This is written for readers who know Hazel and want to see what writing a game's rules in it involves. Part 1 shows the rules and their
 types as they run today, in <a href="https://matthewhammer.org/kids-choice-games/dress-up/">the game</a> at <code>{GAME}</code> (0.0.429); Part 2 tells how
 they came to be that way; Part 3 proposes what to change, in Hazel. The game's own guide for its young players is
