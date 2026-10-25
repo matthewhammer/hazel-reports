@@ -77,7 +77,10 @@ details[data-pic] summary { cursor: pointer; list-style: none; display: flex; ga
 details[data-pic] summary::-webkit-details-marker { display: none; }
 details[data-pic] summary .addr { color: var(--accent); }
 details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
-details[data-pic] .pic { margin: 6px 0 10px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 h3.grp { margin-top: 1.2em; }
 """
 DEFS = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0 0 L10 5 L0 10 z"/></marker></defs>'
@@ -298,24 +301,16 @@ def appendix_rows():
     return rows
 
 # ---------------------------------------------------------------- the words
-ANSWERS = [
- "<b>A rule is a pure function, <code>on_event : (Globals, Event) -&gt; Cmd</code>, one per room module</b> (TrapRoom, TreeRoom, Square, World, Castle), "
- "called by the game for the events that room handles. <code>Event</code> has 7 constructors, <code>Cmd</code> 12, each command but <code>Done</code> carrying the rest "
- "of the list; <code>Wait(ms, rest)</code> and <code>Say</code> are the game's, the others each room's own.",
- "<b><code>Globals</code> is not global.</b> Its 16 fields are the union of five rooms' needs; each room fills only its own (1 to 6 of them) and the rest are "
- "defaults. The tree room's <code>hatch : Bool</code> is the trap door of whichever house the friend is in: the game picks the house, the rule never sees which. "
- "Of 80 room-by-field cells, 17 are filled.",
- "<b>Each room should say its own state: <code>RuleState</code>,</b> one type per room, and a real <code>Globals</code>, the whole game's state, which any rule "
- "may read (for debugging, diagnostics, or mechanics that cross rooms) but only commands change.",
- "<b>The game names \"where\" eleven ways that overlap:</b> background, kind, scene, place, square, cell, room (six meanings), inside, off the grid, house, "
- "home. Its ids are mostly positions: a thing is its index in a list, a pit is 0 or 1, a house is 1 to 6, a castle room 1 to 13, and the same number means "
- "different things in different fields.",
- f"<b>One address for every place, thing and person,</b> a game <code>Symbol</code>, text or a number or one applied to another (Fumola's binary call): <code>world(start)(square(E4))(castle(N))(room(3))(lever(L))</code>. "
- f"Readable, and unambiguous in one keyspace because every step names its kind. It is a Fumola symbol as it stands. The default world has "
- f"{P['addresses_in_world']} place addresses and {sum(len(t['things']) for t in P['squares'])} placed things; all are listed in the <a href=\"#appendix\">appendix</a>.",
- "<b>A thing keeps the name it was made with</b> (Adapton's identity names, not positions), and where it is becomes a field: placed in a place, "
- "or set aside in the world's buffer, to be put back as itself. Templates are kinds, placed nowhere.",
-]
+ABSTRACT = ("Messed Up Dress Up, a game made with M and N, lets five of its rooms hand their events to rules written in Hazel. "
+ "Each rule is a function, <code>on_event : (Globals, Event) -&gt; Cmd</code>, but its <code>Globals</code> is not the game's state: the game builds it "
+ "fresh for each room, fills that room's few fields, leaves the rest at defaults, and decides by context which castle, house or lever is meant, "
+ "out of the rule's sight. That is no one's design; it is what is left by waves of features, each added the day the kids asked for it, each "
+ "bringing its own words and numbers for <i>where</i> (a background, a square, a room, an inside, a list index), and none reworked after. "
+ "This report follows that story and then proposes a more holistic model: every place, thing and person gets one readable name, a "
+ "<code>Symbol</code> made of names, numbers and Fumola's binary call, like <code>world(start)(square(E4))(castle(N))(room(3))</code>; "
+ "a thing keeps its name as it moves or is set aside, as Adapton's names keep their identity; and the rules' types, a <code>RuleState</code> per "
+ "room, a whole-game <code>Globals</code>, and a <code>Cmd</code> that names what it acts on, are built on those names. An appendix lists every "
+ "name in the game's first world, with its settings as a Hazel record and every picture the game's archive has of it.")
 
 TODAY_TYPES = """type Event =
   + Pull(Side) + PullBoulder(Side) + PullHatch(Int) + PullThing(Int)
@@ -443,33 +438,117 @@ def rooms_table():
     return ("<div class=scroll><table class=t><tr><th>module</th><th>its events</th><th>its commands</th><th>Globals fields it fills</th><th>which instance</th></tr>" +
             "".join(f"<tr><td><b>{a}</b></td><td class=addr>{esc(b)}</td><td class=addr>{esc(c)}</td><td class=addr>{esc(d)}</td><td>{esc(e)}</td></tr>" for a, b, c, d, e in ROOMS_TABLE) + "</table></div>")
 
+PARAMS = json.load(open(os.path.join(R, "data", "params.json")))
+ARCH = os.path.expanduser("~/dress-up-pictures/pictures")
+def ctor(v):
+    c = re.sub(r"[^A-Za-z0-9]+", " ", str(v)).title().replace(" ", "")
+    return ("V" + c) if not c or c[0].isdigit() else c
+def hz_field(r):
+    t = r["t"]
+    if "bool" in t: ty = "Bool"
+    elif "range" in t: ty = "Int"
+    elif "color" in t: ty = "String"
+    elif "choice" in t and t["choice"]:
+        cs = list(dict.fromkeys(ctor(v) for v in t["choice"]))
+        ty = "(" + " ".join("+ " + c for c in cs) + ")"
+    else: ty = "String"
+    lab = re.sub(r"[^\w ,'()-]", "", r.get("label") or "").strip()
+    return f"  {r['key']} = {ty}" + (f",  # {lab} #" if lab else ",")
+def hz_record(name, rows):
+    if not rows: return ""
+    body = "\n".join(hz_field(r) for r in rows)
+    body = body[:body.rfind(",")] + body[body.rfind(",") + 1:] if body.endswith(",") else re.sub(r",(  #[^#]*#)$", r"\1", body)
+    return f"type {name} = (\n{body}\n)"
+def tname(k): return ctor(k)
+def place_type(k): return hz_record(tname(k) + "Place", PARAMS["places"].get(k, []))
+def costume_type(k): return hz_record(tname(k) + "Costume", PARAMS["costumes"].get(k, []))
+def thing_type(k): return hz_record(tname(k), PARAMS["things"].get(k, []))
+# every picture the archive has of a place, a costume or a thing: from its manifest, and each menu picture's saved settings
+GAL = {}
+def gal(key, e):
+    if e.get("svg"): GAL.setdefault(key, []).append([e["svg"], e.get("thumb") or "", e.get("label") or e["name"]])
+if os.path.exists(os.path.join(ARCH, "manifest.json")):
+    for e in json.load(open(os.path.join(ARCH, "manifest.json"))):
+        fo, nm = e["folder"], e["name"]
+        if not e.get("svg"): continue
+        if fo.startswith("backgrounds"): gal("place:" + nm, e)
+        elif fo == "seats" or fo == "moves": gal("place:" + nm.split("--")[1], e)
+        elif fo in ("things", "things-alone"): gal("thing:" + nm, e)
+        elif fo in ("background-menus", "costume") and e.get("settings"):
+            try: st = json.load(open(os.path.join(ARCH, e["settings"])))
+            except Exception: continue
+            st = st.get("state", st)
+            if fo == "background-menus":
+                b = st.get("background", {}); k = b.get("kind")
+                if k == "castleroom":
+                    n = b.get("castleRoom", 1); style = b.get(f"castleRoom{n}{b.get('castle', 'N')}")
+                    if style: gal("place:castleroom--" + style, e)
+                if k and k != "none": gal("place:" + k, e)
+            else:
+                k = st.get("costume", {}).get("kind")
+                if k and k != "none": gal("costume:" + k, e)
+def anchor(a): return "a-" + re.sub(r"[^A-Za-z0-9]+", "-", a).strip("-")
+
 APX = appendix_rows()
+def gal_key(pic):
+    m = re.match(r"backgrounds/(.+)\.svg$", pic)
+    if m: return "place:" + m.group(1)
+    m = re.match(r"things/(.+)\.svg$", pic)
+    if m: return "thing:" + m.group(1)
+    m = re.match(r"costume/kind--(.+)\.svg$", pic)
+    if m: return "costume:" + m.group(1)
+    return ""
+def type_of(key):
+    kind, _, k = key.partition(":")
+    if kind == "place": return place_type(k.split("--")[0])
+    if kind == "thing": return thing_type(k)
+    if kind == "costume": return costume_type(k)
+    return ""
 def appendix_html():
-    groups, out = [], []
+    groups, out, keys = [], [], set()
     for g, a, w, pic in APX:
         if g not in groups: groups.append(g)
     for g in groups:
         rows = [(a, w, pic) for gg, a, w, pic in APX if gg == g]
-        out.append(f'<h3 class="grp" id="apx-{g.split(":")[0].replace(" ", "-")}{"-" + g.split(": ")[1] if ": " in g else ""}">{esc(g)} <span class="what">({len(rows)})</span></h3>')
+        out.append(f'<h3 class="grp" id="apx-{re.sub(r"[^a-z]+", "-", g)}">{esc(g)} <span class="what">({len(rows)})</span></h3>')
         for a, w, pic in rows:
+            k = gal_key(pic); keys.add(k)
             alone = pic.replace("things/", "things-alone/") if pic.startswith("things/") else ""
-            out.append(f'<details data-pic="{esc(PICS + pic)}"' + (f' data-alone="{esc(PICS + alone)}"' if alone else "") + '><summary><span class="addr">{esc(a)}</span><span class="what">{esc(w)}</span></summary><div class="pic"></div></details>')
+            out.append(f'<details id="{anchor(a)}" data-pic="{esc(PICS + pic)}"' + (f' data-alone="{esc(PICS + alone)}"' if alone else "") + f' data-key="{esc(k)}">'
+                       f'<summary><span class="addr">{esc(a)}</span><span class="what">{esc(w)}</span><button type="button" class="copylink" title="copy a link to this entry">copy link</button></summary><div class="pic"></div></details>')
+    data = {}
+    for k in sorted(x for x in keys if x):
+        t = type_of(k)
+        data[k] = {"type": hazel_hl(t) if t else "", "pics": GAL.get(k, [])}
+    blob = json.dumps({"base": PICS, "entries": data}, ensure_ascii=False).replace("</", "<\\/")
+    out.append(f'<script type="application/json" id="apx-data">{blob}</script>')
     return "\n".join(out)
 APX_JS = """<script>
-// (the appendix: a picture is fetched only when its row is opened: the page loads names and links, nothing more)
-for (const d of document.querySelectorAll('details[data-pic]')) d.addEventListener('toggle', () => {
-  const box = d.querySelector('.pic');
-  if (!d.open || box.firstChild) return;
-  // (a thing: alone and cropped, beside it in the empty room for its size)
-  for (const [u, cap] of (d.dataset.alone ? [[d.dataset.alone, 'alone'], [d.dataset.pic, 'in the empty room, for its size']] : [[d.dataset.pic, '']])) {
-    const fig = document.createElement('figure'), img = document.createElement('img'), a = document.createElement('a');
-    img.alt = d.querySelector('.addr').textContent + (cap ? ', ' + cap : ''); img.src = u;
-    img.onerror = () => { fig.textContent = 'no picture in the archive yet: ' + u; };
-    a.href = u; a.append(img); fig.append(a);
-    if (cap) { const c = document.createElement('figcaption'); c.textContent = cap; fig.append(c); }
-    box.append(fig);
-  }
+// (the appendix: names and links load with the page; a row's record type and its pictures only when it is opened)
+const APX = JSON.parse(document.getElementById('apx-data').textContent);
+const pic = (u, cap, cls) => { const f = document.createElement('figure'), a = document.createElement('a'), i = document.createElement('img');
+  i.src = u; i.alt = cap; i.onerror = () => { f.textContent = 'not in the archive yet: ' + u; }; if (cls) f.className = cls;
+  a.href = u.replace('/thumbs/', '/').replace(/\\.webp$/, '.svg'); a.append(i); f.append(a);
+  if (cap) { const c = document.createElement('figcaption'); c.textContent = cap; f.append(c); } return f; };
+function fill(d) {
+  const box = d.querySelector('.pic'); if (box.firstChild) return;
+  const main = document.createElement('div'); main.className = 'main';
+  for (const [u, cap] of (d.dataset.alone ? [[d.dataset.alone, 'alone'], [d.dataset.pic, 'in the empty room, for its size']] : [[d.dataset.pic, '']])) main.append(pic(u, cap));
+  box.append(main);
+  const e = APX.entries[d.dataset.key];
+  if (e && e.type) { const p = document.createElement('pre'); p.className = 'hz'; p.innerHTML = e.type; const c = document.createElement('p'); c.className = 'codecap'; c.textContent = 'its settings, as a Hazel record type (from the game\\'s own menus):'; box.append(c, p); }
+  const more = e ? e.pics.filter(p => APX.base + p[0] !== d.dataset.pic && APX.base + p[0] !== d.dataset.alone) : [];
+  if (more.length) { const c = document.createElement('p'); c.className = 'codecap'; c.textContent = more.length + ' more pictures of it in the archive (each a setting changed, an overlay, a seat or a climb):'; const g = document.createElement('div'); g.className = 'gallery';
+    for (const [svg, th, lab] of more) g.append(pic(APX.base + (th || svg), lab, 'small')); box.append(c, g); }
+}
+for (const d of document.querySelectorAll('details[data-pic]')) d.addEventListener('toggle', () => { if (d.open) fill(d); });
+for (const b of document.querySelectorAll('button.copylink')) b.addEventListener('click', ev => {
+  ev.preventDefault(); ev.stopPropagation();
+  const id = b.closest('details').id, u = location.origin + location.pathname + '#' + id;
+  navigator.clipboard.writeText(u).then(() => { b.textContent = 'copied'; setTimeout(() => b.textContent = 'copy link', 1500); });
 });
+const openHash = () => { const d = location.hash && document.getElementById(location.hash.slice(1)); if (d && d.matches('details[data-pic]')) { d.open = true; fill(d); d.scrollIntoView(); } };
+openHash(); addEventListener('hashchange', openHash);
 </script>"""
 
 nthings = sum(len(t["things"]) for t in P["squares"])
@@ -482,13 +561,7 @@ PAGE = f"""<!doctype html>
 <body><main>
 <p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>33<b>)</b></code> · Messed Up Dress Up's scripts · 2026-10-25 · <span class="wip">work in progress</span></p>
 <h1>Rules, Rooms and Addresses</h1>
-<p class="sub">Matthew: <q>the current structure of Globals, and how it's not as global as it sounds --- it's really a subset of all globals, tailored
-for that rule</q>; <q>why doesn't each room define its own version, call it "RoomState"</q>; <q>Having a unified notion of "place", perhaps as a kind of
-path</q>; and <q>places and objects and people could all have unique IDs that are human readable [and] not ambiguous in a global keyspace</q>.
-For readers who know Hazel: how its types meet a game's rules, as they are in
-<a href="https://matthewhammer.org/kids-choice-games/dress-up/">Messed Up Dress Up</a> at <code>{GAME}</code> (0.0.429), and how they could be.
-The game's guide for its young players is a different thing: <a href="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/">its Game Scripts Guide</a>.
-(<code class="ref"><b>^ticket(</b>609<b>)</b></code>)</p>
+
 <nav class="outline" id="outline"><p><b>Outline</b></p>
 <ol class="parts">
 <li><a href="#part-1"><b>How it works today</b></a>: piecemeal, each part on its own terms
@@ -504,10 +577,12 @@ The game's guide for its young players is a different thing: <a href="https://ma
 <li><a href="#types">Globals, RuleState and Cmd, proposed</a>, in Hazel, with today's commands beside them</li></ol></li>
 <li><a href="#next">What next</a> · <a href="#how">How this was put together</a> · <a href="#appendix">Appendix: every address</a></li>
 </ol></nav>
-<p class="intro">Messed Up Dress Up lets five of its rooms hand events to rules written in Hazel. This report is for readers who know Hazel: it says what those
-rules see and answer today, how the game's model of places and things came to be the patchwork it is, and a more unified model, one address for every place,
-thing and person, with the rules' types built on it.</p>
-<div class="headline"><p><b>Short answers.</b></p><ol class="ans">{"".join(f"<li>{a}</li>" for a in ANSWERS)}</ol></div>
+
+<div class="headline abstract"><p><b>Abstract.</b> {ABSTRACT}</p></div>
+<p class="intro">This is written for readers who know Hazel and want to see what writing a game's rules in it involves. Part 1 shows the rules and their
+types as they run today, in <a href="https://matthewhammer.org/kids-choice-games/dress-up/">the game</a> at <code>{GAME}</code> (0.0.429); Part 2 tells how
+they came to be that way; Part 3 proposes what to change, in Hazel. The game's own guide for its young players is
+<a href="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/">a different document</a>.</p>
 
 <p class="part" id="part-1"><span>Part 1</span> How it works today</p>
 <p class="partsub">Piecemeal: each part works on its own terms, and they do not yet share a model.</p>
