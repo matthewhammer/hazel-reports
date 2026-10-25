@@ -306,7 +306,7 @@ ABSTRACT = ("This is a case study of game scripts written in Hazel. Messed Up Dr
  "<code>Globals</code> is not the game's state but a view the game builds fresh for each room, that room's few fields filled and the rest at defaults, "
  "with which castle, house or lever is meant decided by context, out of the rule's sight. No one designed it so; it is what waves of features left, each "
  "added the day the kids asked, each with its own words and numbers for <i>where</i> (a background, a square, a room, an inside, a list index), none "
- "reworked after. From the case comes a more holistic model: every place, thing and person gets one readable name, a <code>Symbol</code> of names, "
+ "reworked after.</p><p>From the case comes a more holistic model: every place, thing and person gets one readable name, a <code>Symbol</code> of names, "
  "numbers and Fumola's binary call, like <code>world(start)(square(E4))(castle(N))(room(3))</code>; a thing keeps its name as it moves or is set aside, "
  "as Adapton's names keep their identity; and the rules' types, a <code>RuleState</code> per room, a whole-game <code>Globals</code> and a "
  "<code>Cmd</code> that names what it acts on, are built on those names. An appendix lists every name in the game's first world, with its settings as "
