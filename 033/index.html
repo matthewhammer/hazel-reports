@@ -5,7 +5,7 @@
 <!-- theme: head end -->
 <!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rules, Rooms and Addresses</title>
+<title>Game Scripts in Hazel, a Case Study</title>
 <meta name="description" content="Writing Messed Up Dress Up's game rules in Hazel: what a rule sees today (Event, Cmd, Globals), why Globals is a per-rule view, and a proposal: one address for every place, thing and person, with Globals, RuleState and Cmd built on it.">
 <style>  :root {
     --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 <!-- listen: end -->
-<h1>Rules, Rooms and Addresses</h1>
+<h1>Game Scripts in Hazel, a Case Study</h1>
 
 <div class="headline abstract"><p><b>Abstract.</b> Messed Up Dress Up, a game made with M and N, lets five of its rooms hand their events to rules written in Hazel. Each rule is a function, <code>on_event : (Globals, Event) -&gt; Cmd</code>, but its <code>Globals</code> is not the game's state: the game builds it fresh for each room, fills that room's few fields, leaves the rest at defaults, and decides by context which castle, house or lever is meant, out of the rule's sight. That is no one's design; it is what is left by waves of features, each added the day the kids asked for it, each bringing its own words and numbers for <i>where</i> (a background, a square, a room, an inside, a list index), and none reworked after. This report follows that story and then proposes a more holistic model: every place, thing and person gets one readable name, a <code>Symbol</code> made of names, numbers and Fumola's binary call, like <code>world(start)(square(E4))(castle(N))(room(3))</code>; a thing keeps its name as it moves or is set aside, as Adapton's names keep their identity; and the rules' types, a <code>RuleState</code> per room, a whole-game <code>Globals</code>, and a <code>Cmd</code> that names what it acts on, are built on those names. An appendix lists every name in the game's first world, with its settings as a Hazel record and every picture the game's archive has of it.</p></div>
 <nav class="outline" id="outline"><p><b>Outline</b></p>
@@ -1032,7 +1032,7 @@ openHash(); addEventListener('hashchange', openHash);
 <script type="application/json" id="report-data">
 {
  "report": 33,
- "title": "Rules, Rooms and Addresses",
+ "title": "Game Scripts in Hazel, a Case Study",
  "date": "2026-10-25",
  "kind": "design",
  "status": "work in progress",

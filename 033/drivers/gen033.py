@@ -555,12 +555,12 @@ nthings = sum(len(t["things"]) for t in P["squares"])
 PAGE = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rules, Rooms and Addresses</title>
+<title>Game Scripts in Hazel, a Case Study</title>
 <meta name="description" content="Writing Messed Up Dress Up's game rules in Hazel: what a rule sees today (Event, Cmd, Globals), why Globals is a per-rule view, and a proposal: one address for every place, thing and person, with Globals, RuleState and Cmd built on it.">
 <style>{STYLE}{FIGCSS}</style></head>
 <body><main>
 <p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>33<b>)</b></code> · Messed Up Dress Up's scripts · 2026-10-25 · <span class="wip">work in progress</span></p>
-<h1>Rules, Rooms and Addresses</h1>
+<h1>Game Scripts in Hazel, a Case Study</h1>
 
 <div class="headline abstract"><p><b>Abstract.</b> {ABSTRACT}</p></div>
 <nav class="outline" id="outline"><p><b>Outline</b></p>
