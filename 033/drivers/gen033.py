@@ -64,6 +64,10 @@ pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } 
 pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
 pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
 pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
 .codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
 a.src code { font-size: 0.85em; }
 table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
@@ -466,8 +470,28 @@ For readers who know Hazel: how its types meet a game's rules, as they are in
 <a href="https://matthewhammer.org/kids-choice-games/dress-up/">Messed Up Dress Up</a> at <code>{GAME}</code> (0.0.429), and how they could be.
 The game's guide for its young players is a different thing: <a href="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/">its Game Scripts Guide</a>.
 (<code class="ref"><b>^ticket(</b>609<b>)</b></code>)</p>
+<nav class="outline" id="outline"><p><b>Outline</b></p>
+<ol class="parts">
+<li><a href="#part-1"><b>How it works today</b></a>: piecemeal, each part on its own terms
+<ol><li><a href="#call">A rule, today</a>: <code>Event</code>, <code>Cmd</code> and <code>Globals</code>, and one event end to end</li>
+<li><a href="#not-global">Globals is a per-rule view</a>: each room fills its own fields; the game picks which hatch</li>
+<li><a href="#where-today">Where, today</a>: the default world, eleven words, and numbers for names</li></ol></li>
+<li><a href="#part-2"><b>How it got this way</b></a>
+<ol><li><a href="#waves">Waves of features</a>: dressing up, doors, castles, tree houses, a world, things, rules</li></ol></li>
+<li><a href="#part-3"><b>A more holistic approach</b></a>
+<ol><li><a href="#roomstate">RuleState, and a real Globals</a></li>
+<li><a href="#paths">Every place, as a path</a></li>
+<li><a href="#ids">Names that can't collide</a>: addresses, Fumola's symbols, Adapton's identity names, templates, the set-aside buffer</li>
+<li><a href="#types">Globals, RuleState and Cmd, proposed</a>, in Hazel, with today's commands beside them</li></ol></li>
+<li><a href="#next">What next</a> · <a href="#how">How this was put together</a> · <a href="#appendix">Appendix: every address</a></li>
+</ol></nav>
+<p class="intro">Messed Up Dress Up lets five of its rooms hand events to rules written in Hazel. This report is for readers who know Hazel: it says what those
+rules see and answer today, how the game's model of places and things came to be the patchwork it is, and a more unified model, one address for every place,
+thing and person, with the rules' types built on it.</p>
 <div class="headline"><p><b>Short answers.</b></p><ol class="ans">{"".join(f"<li>{a}</li>" for a in ANSWERS)}</ol></div>
 
+<p class="part" id="part-1"><span>Part 1</span> How it works today</p>
+<p class="partsub">Piecemeal: each part works on its own terms, and they do not yet share a model.</p>
 <h2 id="call">A rule, today</h2>
 <p>The game is plain JS. Five of its rooms can hand an event to a rule written in Hazel (or Fumola, or left to the game's own JS), chosen room by room in
 its 📜 Scripting tab. The Hazel program is one file of modules: <code>Common</code> (shared helpers) and one module per room, each with an
@@ -505,6 +529,46 @@ each known by its index in that list (<code>at</code>); the castle's <code>out</
 <p class="note">Two things the game's own guide says otherwise: <code>pits_on</code> is whether each pit is there at all, not whether it is open (that the
 rule works out from the levers and the wiring), and "17 fields" counts the JS object, not what the rule sees.</p>
 
+<h2 id="where-today">Where, today: eleven words, and numbers for names</h2>
+<p>Read from the game itself (its default world and its tables of insides, castles and room styles, in node at <code>{GAME}</code>), with every trap door,
+hatch and passage open:</p>
+{fig(svg_world(), f"Figure 3. The default world. Each square is a place of some kind; {P['square_ways']} ways lead between squares (the lines); "
+ f"{P['addresses_in_world'] - len(P['squares'])} more places are inside squares: castle rooms, tree houses, tents, the cave, the living room and the rest. "
+ "The world can grow to 12 × 12 and hold more worlds; this is the one a new game starts in.", "fig-world")}
+{vocab_table()}
+<p><b>"Place" is the code's word and never the UI's;</b> the UI says background, square and room. And the ids are positions: a placed thing is its index in
+its place's list (and only a trap door or a cave passage has a uid, a random string); a pit is 0 or 1; a house is 1 to 6; a castle room 1 to 13; a
+square is <code>"c,r"</code> in code and <code>D4</code> on screen. A <code>1</code> in a command can be a house, a pit, a room or a list index, depending on
+the command. Several keys already work like addresses, spelled differently each time: <code>placeKey</code> is <code>castleroom:N:3</code>,
+<code>worldHome</code> is <code>off:w1:tent:2</code>, a person's place is <code>{{world, key}}</code> with no room part, and a setting's key spells its owner
+into its name (<code>castleLeverL_3N</code>).</p>
+
+<p class="part" id="part-2"><span>Part 2</span> How it got this way</p>
+<p class="partsub">Waves of features and game experiences, each with its own words and keys.</p>
+<h2 id="waves">Waves of features</h2>
+<p>Messed Up Dress Up was made with M and N, a feature at a time, each released the day it worked, as they asked for it (the game's own rule: features
+first, released at once). Each wave brought its own experience and, with it, its own way to say where the friend is, and none went back to rework the ones before:</p>
+<ol>
+<li><b>Dressing up, in front of a picture.</b> The first game was a friend to dress; <code>state.background.kind</code> was the picture behind them, one of a list
+(<code>PLACES</code>, its group chips <q>kind of place</q>). A place was a picture, and a picture had no inside.</li>
+<li><b>Places you can walk into.</b> Doors came next, each door a <code>data-to</code> naming a kind: the house's living room, the witch's room, the cave. An inside
+was just another kind, reached by a door; "back" was a stack of where you had been (<code>trips</code>).</li>
+<li><b>Castles and their rooms</b>, for N's and M's castle designs: three castles by whose they are, rooms by number (1 to 13) with styles
+(<code>ROOM_KINDS</code>), and each room's settings spelled into its keys (<code>castleLeverL_3N</code>). The trap room's levers and pits came with them, numbered 0 and 1.</li>
+<li><b>Tree houses</b>: up to six houses by number, a round room on top, bridges, ladders and hatches; <code>B.inside</code> became "which house".</li>
+<li><b>A world to walk:</b> a grid of squares, each a place kind (<code>W.cells["c,r"]</code>, <code>D4</code> on screen), ways between squares, then other
+worlds, insides kept "off the grid", cave passages that link any two places, and people placed in squares (<code>person.place {{world, key}}</code>, no room).</li>
+<li><b>Things placed in places:</b> rocks, levers, trap doors, each an entry in its place's list, known by its index; a trap door and a passage got a random uid
+so a lever and its twin could find them.</li>
+<li><b>Rules in Hazel and Fumola</b>, for five rooms: each rule needed some of the game's state, and the simplest thing that worked was one record type with
+every room's fields, filled per room. That is <code>Globals</code>.</li>
+</ol>
+{fig(svg_words(), "Figure 4. The words for where, roughly as they came in (October 2026), and what each means now in the code.", "fig-words")}
+<p>Each step was the right size for its day, and the game kept working. The cost is what <a href="#where-today">Part 1</a> shows: eleven overlapping
+words, ids that are positions, and a rule's state that is shaped for the game's convenience rather than the rule's. Nothing in it is wrong for one room; it
+does not add up for a game that a rule, a log, or a second game should be able to read as a whole.</p>
+<p class="part" id="part-3"><span>Part 3</span> A more holistic approach</p>
+<p class="partsub">One model of where everything is, and rule types built on it.</p>
 <h2 id="roomstate">RuleState, and a real Globals</h2>
 <p>The fix the view asks for is to say what it is. <b>Each room's rule takes its own state type</b>, named for it: the tree room a hatch, the trap room its
 levers and pits, the world its squares. No default fields, nothing for a rule to misread, and a rule's type says what it depends on. Matthew's name for
@@ -514,23 +578,7 @@ where is the friend?), for diagnostics, and for the log: the same addresses in e
 anywhere. Rules still change the game only through commands, so the game stays the one place state changes.</p>
 <p>Both need a way to say <i>which</i> hatch, lever or room, in one keyspace. That is the next three sections.</p>
 
-<h2 id="words">Where, in eleven words</h2>
-<p>The game grew in waves, and each wave named where the friend is in its own way. None was renamed after, so they overlap:</p>
-{fig(svg_words(), "Figure 3. The words for where, roughly as they came in (October 2026), and what each means now in the code.", "fig-words")}
-{vocab_table()}
-<p><b>"Place" is the code's word and never the UI's;</b> the UI says background, square and room. And the ids are positions: a placed thing is its index in
-its place's list (and only a trap door or a cave passage has a uid, a random string); a pit is 0 or 1; a house is 1 to 6; a castle room 1 to 13; a
-square is <code>"c,r"</code> in code and <code>D4</code> on screen. A <code>1</code> in a command can be a house, a pit, a room or a list index, depending on
-the command. Several keys already work like addresses, spelled differently each time: <code>placeKey</code> is <code>castleroom:N:3</code>,
-<code>worldHome</code> is <code>off:w1:tent:2</code>, a person's place is <code>{{world, key}}</code> with no room part, and a setting's key spells its owner
-into its name (<code>castleLeverL_3N</code>).</p>
-
-<h2 id="places">Every place, as a path</h2>
-<p>Read from the game itself (its default world and its tables of insides, castles and room styles, in node at <code>{GAME}</code>), with every trap door,
-hatch and passage open:</p>
-{fig(svg_world(), f"Figure 4. The default world. Each square is a place of some kind; {P['square_ways']} ways lead between squares (the lines); "
- f"{P['addresses_in_world'] - len(P['squares'])} more places are inside squares: castle rooms, tree houses, tents, the cave, the living room and the rest. "
- "The world can grow to 12 × 12 and hold more worlds; this is the one a new game starts in.", "fig-world")}
+<h2 id="paths">Every place, as a path</h2>
 <p>Every move between places the game allows is a move along this tree or across it: the ways between squares; a door to an inside and back; a ladder, bridge
 or hatch between tree houses; a pit from the trap room to a dungeon; a cave passage, which may lead to any place in any world; a picture you step into.
 Each lands in exactly one node, so one path from the world down names any place a walk can reach:</p>
