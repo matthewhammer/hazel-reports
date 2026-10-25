@@ -2,7 +2,9 @@
 """^report(30): two days of game scripts in Hazel, for Messed Up Dress Up (MUDU), since the 2026-10-21 meeting with Cyrus:
 where the goal stands. Numbers from GitHub runs whose rows are in 030/data/ (map_vs_shipped, map_vs_fumola, map_setup,
 map_setup_walks, fast_path), and from earlier reports, cited by link."""
-import os, json, glob, statistics, html
+import os, json, glob, statistics, html, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
+from codehl import HL, HL_CSS   # (2026-10-25, Matthew: "update with syntax highlighting": the rules in colour, as ^report(33)'s code)
 
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STYLE = open(os.path.join(R, "..", "025", "drivers", "style.css")).read()
@@ -125,7 +127,7 @@ RULES = json.load(open(os.path.join(D, "rules.json")))
 ENG = [("js", "JS"), ("hazel", "🧩 Hazel"), ("fumola", "🍄 Fumola")]
 def rule_box(key, title, texts, note=""):
     chips = "".join(f'<button type="button" data-eng="{e}" aria-pressed="{str(e == "hazel").lower()}">{lab}</button>' for e, lab in ENG if e in texts)
-    pres = "".join(f'<pre class="code rule" data-eng="{e}"{"" if e == "hazel" else " hidden"}>{html.escape(texts[e])}</pre>' for e, _ in ENG if e in texts)
+    pres = "".join(f'<pre class="code rule {HL[e][1]}" data-eng="{e}"{"" if e == "hazel" else " hidden"}>{HL[e][0](texts[e])}</pre>' for e, _ in ENG if e in texts)
     return f'<div class="rulebox" id="rule-{key}"><div class="rb-head"><b>{title}</b><span class="chips">{chips}</span></div>{note}{pres}</div>'
 def js_text(parts):
     return "\n\n".join(f"// {p['file'] or '?'}: {p['name']}\n{p['text']}" for p in parts)
@@ -167,7 +169,7 @@ svg .bar.good {{ fill: var(--good); }} svg .bar.warn {{ fill: var(--warn); }} sv
 .rulebox .chips {{ display: inline-flex; gap: 4px; }}
 .rulebox .chips button {{ font: inherit; font-size: 0.85em; padding: 1px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg, transparent); color: var(--ink); cursor: pointer; }}
 .rulebox .chips button[aria-pressed="true"] {{ border-color: var(--accent); color: var(--accent); font-weight: 600; }}
-.rulebox pre.rule {{ white-space: pre; overflow: auto; max-height: 30em; font-size: 0.8em; margin: 6px 0 2px; }}
+.rulebox pre.rule {{ white-space: pre; overflow: auto; max-height: 30em; font-size: 0.8em; margin: 6px 0 2px; }}{HL_CSS}
 .tag {{ display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; font-size: 0.8em; white-space: nowrap; }}
 </style></head>
 <body><main>
