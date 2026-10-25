@@ -77,7 +77,7 @@ details[data-pic] summary { cursor: pointer; list-style: none; display: flex; ga
 details[data-pic] summary::-webkit-details-marker { display: none; }
 details[data-pic] summary .addr { color: var(--accent); }
 details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
-details[data-pic] .pic { margin: 6px 0 10px; } details[data-pic] .pic img { max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+details[data-pic] .pic { margin: 6px 0 10px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 h3.grp { margin-top: 1.2em; }
 """
 DEFS = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0 0 L10 5 L0 10 z"/></marker></defs>'
@@ -161,15 +161,15 @@ def svg_world():
 def svg_tree():
     # one square's places as a tree, the castle at E4 and the tree house at E2, with today's keys beside the proposed address
     rows = [(0, "world(start)", "state.world (id w1, name \"start\")"),
-            (1, ".square(E4)", "W.cells[\"4,3\"], kind castle"),
-            (2, ".castle(N)", "B.castle = \"N\" (from the square's own settings)"),
-            (3, ".room(3)", "B.castleRoom = 3, style castleRoom3N = \"trap\""),
-            (4, ".lever(L)", "B.castleLeverL_3N (no id: a key spelled from parts)"),
-            (4, ".pit(1)", "B.castlePitOn0_3N, the left pit: 0 in code, 1 here"),
-            (1, ".square(E2)", "W.cells[\"4,1\"], kind treehouse"),
-            (2, ".house(1)", "B.inside = 1 (treeroom), room1 = its furnishing"),
-            (3, ".hatch", "B.hatchShut1 (the script sees hatch = Bool)"),
-            (2, ".top", "kind treetop; hatchShutTop; PullHatch(0)")]
+            (1, "(square(E4))", "W.cells[\"4,3\"], kind castle"),
+            (2, "(castle(N))", "B.castle = \"N\" (from the square's own settings)"),
+            (3, "(room(3))", "B.castleRoom = 3, style castleRoom3N = \"trap\""),
+            (4, "(lever(L))", "B.castleLeverL_3N (no id: a key spelled from parts)"),
+            (4, "(pit(1))", "B.castlePitOn0_3N, the left pit: 0 in code, 1 here"),
+            (1, "(square(E2))", "W.cells[\"4,1\"], kind treehouse"),
+            (2, "(house(1))", "B.inside = 1 (treeroom), room1 = its furnishing"),
+            (3, "(hatch)", "B.hatchShut1 (the script sees hatch = Bool)"),
+            (2, "(top)", "kind treetop; hatchShutTop; PullHatch(0)")]
     W, H = 900, 34 + 28 * len(rows)
     b = []
     for i, (lvl, a, today) in enumerate(rows):
@@ -182,16 +182,24 @@ def svg_tree():
     return f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-label="Two squares\' places as a tree of addresses, each with its key in the game today">{"".join(b)}</svg>'
 
 def svg_address():
-    steps = [("world", "start"), ("square", "E4"), ("castle", "N"), ("room", "3"), ("lever", "L")]
-    b, x = [], 10
-    for i, (k, v) in enumerate(steps):
-        w = 22 + 8.2 * (len(k) + len(v) + 2)
-        b.append(f'<rect class="hz" x="{x}" y="20" width="{w}" height="40" rx="20"/>')
-        b.append(f'<text class="mono" x="{x + 14}" y="45"><tspan style="fill:var(--muted)">{k}</tspan>(<tspan style="font-weight:700">{v}</tspan>)</text>')
-        if i < len(steps) - 1: b.append(f'<text x="{x + w + 4}" y="46" style="fill:var(--muted)">.</text>')
-        x += w + 16
-    b.append(f'<text class="small" x="10" y="92">every step names its kind, so room(3) and lever(3) can never be confused, at any depth</text>')
-    return f'<svg class="fig" viewBox="0 0 {max(x, 760)} 105" role="img" aria-label="An address drawn as a path of kind(name) steps, with its Fumola symbol and Hazel value">{"".join(b)}</svg>'
+    # world(start)(square(E4))(castle(N)) as Fumola's binary call: each Call node an owner applied to what it owns, each leaf text or a number
+    W, H = 900, 300
+    b = []
+    def node(x, y, label, cls):
+        w = 14 + 8.2 * len(label)
+        b.append(f'<rect class="{cls}" x="{x - w / 2}" y="{y - 15}" width="{w}" height="30" rx="15"/><text class="mono" x="{x}" y="{y + 5}" text-anchor="middle">{esc(label)}</text>')
+    def edge(x1, y1, x2, y2): b.append(f'<line x1="{x1}" y1="{y1 + 15}" x2="{x2}" y2="{y2 - 15}" stroke="var(--muted)" stroke-width="1.4"/>')
+    # Call(Call(Call(world(start)), ...)): the spine down the left, each argument a small Call(kind, name)
+    spine = [("Call", 470, 30), ("Call", 330, 95), ("Call", 190, 160)]
+    args = [("castle(N)", 620, 95), ("square(E4)", 470, 160), ("world(start)", 110, 225), ]
+    for (lab, x, y) in spine: node(x, y, lab, "box")
+    edge(470, 30, 330, 95); edge(470, 30, 620, 95); edge(330, 95, 190, 160); edge(330, 95, 470, 160); edge(190, 160, 110, 225)
+    for (lab, x, y) in args: node(x, y, lab, "hz")
+    # one argument opened up: castle(N) = Call(Text("castle"), Text("N"))
+    node(620, 160, "Call", "box"); edge(620, 95, 620, 160)
+    node(560, 225, 'Text("castle")', "snap"); node(690, 225, 'Text("N")', "snap"); edge(620, 160, 560, 225); edge(620, 160, 690, 225)
+    b.append(f'<text class="small" x="10" y="282">world(start)(square(E4))(castle(N)): one binary form, Call(S1, S2), makes both a step (castle(N)) and the path (an owner applied to what it owns)</text>')
+    return f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-label="A game symbol as a tree of binary calls">{"".join(b)}</svg>'
 
 def svg_life():
     W, H = 900, 200
@@ -238,7 +246,7 @@ def svg_store():
     b.append('<text class="small" x="36" y="152">so one name carries a history, not one value</text>')
     b.append('<rect class="hz" x="470" y="20" width="410" height="150" rx="12"/><text x="486" y="44" font-weight="700">MUDU\'s state, as proposed</text>')
     b.append('<text class="small" x="486" y="66">the space half only: every place, thing and person</text>')
-    b.append('<text class="small" x="486" y="84">at a nested address, world(start).square(E4)...</text>')
+    b.append('<text class="small" x="486" y="84">at a nested address, world(start)(square(E4))...</text>')
     b.append('<text class="small" x="486" y="106">no symbolic time, for now: one current state; the</text>')
     b.append('<text class="small" x="486" y="124">log\'s three snapshots per event are the nearest</text>')
     b.append('<text class="small" x="486" y="142">thing to time, and where it would come in</text>')
@@ -255,33 +263,33 @@ def appendix_rows():
     N = P["castles"]["N"]
     counts = {}
     for t in P["squares"]:
-        sq = f"world(start).square({t['square']})"
+        sq = f"world(start)(square({t['square']}))"
         rows.append(("places", sq, f"a square: {t['kind']}" + (f", named {t['name']}" if t["name"] else ""), picture_of(t["kind"])))
         k = t["kind"]
         for (ik, which, kids) in t["insides"]:
             if k == "castle":
                 style = N[which - 1]
-                a = f"{sq}.castle(N).room({which})"
+                a = f"{sq}(castle(N))(room({which}))"
                 rows.append(("places", a, f"N's castle, room {which}: {style}", picture_of("castleroom", style)))
             elif k == "waterfall":
-                a = f"{sq}.cave"; rows.append(("places", a, "the cave behind the falls", picture_of("cave")))
-                rows.append(("places", a + ".room", "the cave's room", picture_of("caveroom")))
+                a = f"{sq}(cave)"; rows.append(("places", a, "the cave behind the falls", picture_of("cave")))
+                rows.append(("places", a + "(room)", "the cave's room", picture_of("caveroom")))
             else:
-                a = f"{sq}.{ik}" + (f"({which})" if which is not None else "")
+                a = f"{sq}(" + ik + (f"({which})" if which is not None else "") + ")"
                 rows.append(("places", a, {"house": f"tree house {which}'s room", "top": "the round room at the top", "tent": f"tent {which}"}.get(ik, ik), picture_of(INSIDE_KIND.get(ik, ik))))
                 for (kk, _, _) in kids:
                     pass
         for th in t["things"]:
             counts.setdefault((sq, th), 0); counts[(sq, th)] += 1
             n = counts[(sq, th)]
-            rows.append(("things", f"{sq}.{th}({n})", f"a {th}, the {n}{'st' if n == 1 else 'nd' if n == 2 else 'rd' if n == 3 else 'th'} placed here", f"things/{th}.svg"))
+            rows.append(("things", f"{sq}({th}({n}))", f"a {th}, the {n}{'st' if n == 1 else 'nd' if n == 2 else 'rd' if n == 3 else 'th'} placed here", f"things/{th}.svg"))
     for e in P["elsewhere"]:
-        rows.append(("places", f"world(start).elsewhere({e})", "off the grid", picture_of(e)))
+        rows.append(("places", f"world(start)(elsewhere({e}))", "off the grid", picture_of(e)))
     for kind, label in P["places"]:
         if kind == "none": continue
         rows.append(("templates: places", f"place({kind})", label, picture_of(kind)))
     for st, v in P["room_kinds"].items():
-        rows.append(("templates: places", f"place(castleroom).style({st})", (v.get("label") or st) + f", exits: {v['exits']}", picture_of("castleroom", st)))
+        rows.append(("templates: places", f"place(castleroom)(style({st}))", (v.get("label") or st) + f", exits: {v['exits']}", picture_of("castleroom", st)))
     COST = ["tiger", "cat", "lion", "bear", "falcon", "raccoon", "bobcat", "leopard", "eagle", "cheetah", "jaguar", "moth", "falconsuit", "eaglesuit", "wolf", "deer",
             "dragon", "sasquatch", "witch", "fairy", "ghost", "gnome", "wizard", "monk", "robin", "knight", "queen", "king", "robot", "cowgirl", "cowboy", "ninja",
             "giraffe", "scuba", "diver"]
@@ -302,7 +310,7 @@ ANSWERS = [
  "<b>The game names \"where\" eleven ways that overlap:</b> background, kind, scene, place, square, cell, room (six meanings), inside, off the grid, house, "
  "home. Its ids are mostly positions: a thing is its index in a list, a pit is 0 or 1, a house is 1 to 6, a castle room 1 to 13, and the same number means "
  "different things in different fields.",
- f"<b>One address for every place, thing and person,</b> a path of <code>kind(name)</code> steps: <code>world(start).square(E4).castle(N).room(3).lever(L)</code>. "
+ f"<b>One address for every place, thing and person,</b> a game <code>Symbol</code>, text or a number or one applied to another (Fumola's binary call): <code>world(start)(square(E4))(castle(N))(room(3))(lever(L))</code>. "
  f"Readable, and unambiguous in one keyspace because every step names its kind. It is a Fumola symbol as it stands. The default world has "
  f"{P['addresses_in_world']} place addresses and {sum(len(t['things']) for t in P['squares'])} placed things; all are listed in the <a href=\"#appendix\">appendix</a>.",
  "<b>A thing keeps the name it was made with</b> (Adapton's identity names, not positions), and where it is becomes a field: placed in a place, "
@@ -337,71 +345,76 @@ module TreeRoom = {
     end
 }"""
 
-PROPOSED_ADDR = """# a step of an address: its kind and its name within its owner #
-type Step = (kind = String, name = String)
-# world(start).square(E4).castle(N).room(3).lever(L) #
-type Addr = [Step]
+PROPOSED_ADDR = """# a game symbol, as Fumola's: text, a number, or one applied to another #
+type Symbol = + Text(String) + Num(Int) + Call(Symbol, Symbol)
 
-# where an instance is: owned by a place, set aside in the world's
-   buffer, or carried by a person #
-type Where = + Placed(Addr) + SetAside + Carried(Addr)
+# supposed: Hazel parses a symbol from its text and prints it back, so
+   rules, saves and logs write world(start)(square(E4)) #
+# parse_sym : String -> Symbol    "a(b)(c)" is Call(Call(a, b), c) #
+# print_sym : Symbol -> String    print_sym(parse_sym(t)) == t #
 
-type Setting = + B(Bool) + I(Int) + F(Float) + S(String) + A(Addr)
+# lever(L) is Call(Text("lever"), Text("L"));
+   world(start)(square(E4)) is Call(world(start), square(E4)):
+   an owner applied to what it owns, as Fumola's `region(`x) #
+
+type Where = + Placed(Symbol) + SetAside + Carried(Symbol)
+
+type Setting = + B(Bool) + I(Int) + F(Float) + S(String) + A(Symbol)
 
 # a placed thing or person: its name for good, its template, where it is now #
-type Instance = (id = Addr, template = String, where = Where,
+type Instance = (id = Symbol, template = String, where = Where,
                  settings = [(String, Setting)])
 
 # a place: its address, its template, its ways, and what it owns #
-type Way = (dir = Dir, to = Addr, via = + Open + Door(Addr) + Shut(Addr))
-type PlaceState = (id = Addr, template = String, ways = [Way], owns = [Addr])"""
+type Way = (dir = Dir, to = Symbol, via = + Open + Door(Symbol) + Shut(Symbol))
+type PlaceState = (id = Symbol, template = String, ways = [Way], owns = [Symbol])"""
 
 PROPOSED_GLOBALS = """# the whole game, as any rule may read it #
 type Globals = (
-  friend = (id = Addr, at = Addr),      # the person being played, and where #
+  friend = (id = Symbol, at = Symbol),      # the person being played, and where #
   places = [PlaceState],
   instances = [Instance],               # every thing and person made #
-  set_aside = [Addr],                   # the world's buffer, re-placeable #
+  set_aside = [Symbol],                   # the world's buffer, re-placeable #
   draws = [Float]                       # the event's random draws #
 )
 
 # what each room's rule is about: its own, named, typed #
-type TrapRoomState = (here = Addr,
-  levers = [(id = Addr, up = Bool)], wiring = Wiring,
-  pits = [(id = Addr, there = Bool, covered = Bool)])
-type TreeRoomState = (here = Addr, hatch = (id = Addr, shut = Bool))
-type SquareState = (here = Addr, levers = [Instance], doors = [Instance])
-type WorldState = (here = Addr, squares = [PlaceState])
-type CastleState = (here = Addr, rooms = [PlaceState], out = Out)
+type TrapRoomState = (here = Symbol,
+  levers = [(id = Symbol, up = Bool)], wiring = Wiring,
+  pits = [(id = Symbol, there = Bool, covered = Bool)])
+type TreeRoomState = (here = Symbol, hatch = (id = Symbol, shut = Bool))
+type SquareState = (here = Symbol, levers = [Instance], doors = [Instance])
+type WorldState = (here = Symbol, squares = [PlaceState])
+type CastleState = (here = Symbol, rooms = [PlaceState], out = Out)
 
 type RuleState =
   + Trap(TrapRoomState) + Tree(TreeRoomState) + Square(SquareState)
   + World(WorldState) + Castle(CastleState)
 
 # the event names what happened to, by address #
-type Event = + Pull(Addr) + Fall(Addr) + Leave(Addr, Dir) + Arrive(Addr)
+type Event = + Pull(Symbol) + Fall(Symbol) + Leave(Symbol, Dir) + Arrive(Symbol)
 
 # commands name what they act on, by address #
 type Cmd =
   + Done + Say(String, Cmd) + Wait(Int, Cmd)
-  + Flip(Addr, Cmd)                     # a lever #
-  + Swing(Addr, Bool, Cmd)              # a hatch, a pit's lid, a door: open? #
-  + Set(Addr, String, Setting, Cmd)     # any setting of any instance #
-  + Move(Addr, Where, Cmd)              # an instance to a new owner, or aside #
-  + Go(Addr, Cmd)                       # the friend, to a place #
+  + Flip(Symbol, Cmd)                     # a lever #
+  + Swing(Symbol, Bool, Cmd)              # a hatch, a pit's lid, a door: open? #
+  + Set(Symbol, String, Setting, Cmd)     # any setting of any instance #
+  + Move(Symbol, Where, Cmd)              # an instance to a new owner, or aside #
+  + Go(Symbol, Cmd)                       # the friend, to a place #
 
 # a rule: its room's state, the whole game to read, the event #
 let on_event : (RuleState, Globals, Event) -> Cmd"""
 
-MAPPING = [("PullHatch(1)", "Pull(world(start).square(E2).house(1).hatch)"),
+MAPPING = [("PullHatch(1)", "Pull(world(start)(square(E2))(house(1))(hatch))"),
            ("SetHatch(1, false, Done)", "Swing(…house(1).hatch, true, Done)"),
-           ("Pull(L) in the trap room", "Pull(world(start).square(E4).castle(N).room(3).lever(L))"),
+           ("Pull(L) in the trap room", "Pull(world(start)(square(E4))(castle(N))(room(3))(lever(L)))"),
            ("Flip(L, Done)", "Flip(…room(3).lever(L), Done)"),
            ("SetPit(0, true, …)", "Swing(…room(3).pit(1), true, …)"),
            ("PullThing(4)   (the 5th thing in the list)", "Pull(…square(B6).lever(2))   (a name kept when the list changes)"),
            ("OpenDoor(7, true, …)", "Swing(…square(B6).trapdoor(1), true, …)"),
-           ("GoRoom(0, …)   (0 = out of the castle)", "Go(world(start).square(E4), …)"),
-           ("GoSquare(3, 3, S, …)", "Go(world(start).square(D4), …)"),
+           ("GoRoom(0, …)   (0 = out of the castle)", "Go(world(start)(square(E4)), …)"),
+           ("GoSquare(3, 3, S, …)", "Go(world(start)(square(D4)), …)"),
            ("(none: a rule cannot move a thing)", "Move(…lever(2), SetAside, …)")]
 
 def mapping_table():
@@ -439,17 +452,23 @@ def appendix_html():
         rows = [(a, w, pic) for gg, a, w, pic in APX if gg == g]
         out.append(f'<h3 class="grp" id="apx-{g.split(":")[0].replace(" ", "-")}{"-" + g.split(": ")[1] if ": " in g else ""}">{esc(g)} <span class="what">({len(rows)})</span></h3>')
         for a, w, pic in rows:
-            out.append(f'<details data-pic="{esc(PICS + pic)}"><summary><span class="addr">{esc(a)}</span><span class="what">{esc(w)}</span></summary><div class="pic"></div></details>')
+            alone = pic.replace("things/", "things-alone/") if pic.startswith("things/") else ""
+            out.append(f'<details data-pic="{esc(PICS + pic)}"' + (f' data-alone="{esc(PICS + alone)}"' if alone else "") + '><summary><span class="addr">{esc(a)}</span><span class="what">{esc(w)}</span></summary><div class="pic"></div></details>')
     return "\n".join(out)
 APX_JS = """<script>
 // (the appendix: a picture is fetched only when its row is opened: the page loads names and links, nothing more)
 for (const d of document.querySelectorAll('details[data-pic]')) d.addEventListener('toggle', () => {
   const box = d.querySelector('.pic');
   if (!d.open || box.firstChild) return;
-  const u = d.dataset.pic, img = document.createElement('img');
-  img.alt = d.querySelector('.addr').textContent; img.src = u;
-  img.onerror = () => { box.textContent = 'no picture in the archive yet: ' + u; };
-  const a = document.createElement('a'); a.href = u; a.append(img); box.append(a);
+  // (a thing: alone and cropped, beside it in the empty room for its size)
+  for (const [u, cap] of (d.dataset.alone ? [[d.dataset.alone, 'alone'], [d.dataset.pic, 'in the empty room, for its size']] : [[d.dataset.pic, '']])) {
+    const fig = document.createElement('figure'), img = document.createElement('img'), a = document.createElement('a');
+    img.alt = d.querySelector('.addr').textContent + (cap ? ', ' + cap : ''); img.src = u;
+    img.onerror = () => { fig.textContent = 'no picture in the archive yet: ' + u; };
+    a.href = u; a.append(img); fig.append(a);
+    if (cap) { const c = document.createElement('figcaption'); c.textContent = cap; fig.append(c); }
+    box.append(fig);
+  }
 });
 </script>"""
 
@@ -585,17 +604,17 @@ Each lands in exactly one node, so one path from the world down names any place 
 {fig(svg_tree(), "Figure 5. Two squares' places as addresses, each beside where the game keeps it today.", "fig-tree")}
 
 <h2 id="ids">Names that can't collide</h2>
-{fig(svg_address(), "Figure 6. An address is a path of <code>kind(name)</code> steps. Its kinds keep the keyspace one: <code>room(3)</code> and <code>lever(3)</code> are different names wherever they appear.", "fig-addr")}
-<p class="codecap">The same address in Fumola, a symbol (application nests, <code>Dot</code> joins):</p>
-<pre class="fu wrap">{fumola_hl("`world(`start).`square(`E4).`castle(`N).`room(3).`lever(`L)")}</pre>
-<p class="codecap">and in Hazel, as data (the type is in <a href="#types">the proposal</a>):</p>
-<pre class="hz wrap">{hazel_hl('[(kind = "world", name = "start"), (kind = "square", name = "E4"),' + chr(10) + ' (kind = "castle", name = "N"), (kind = "room", name = "3"),' + chr(10) + ' (kind = "lever", name = "L")]')}</pre>
-<p><b>Human readable:</b> each step is a word and a name a player would use (<code>square(E4)</code>, <code>castle(N)</code>, <code>lever(L)</code>).
-<b>Unambiguous:</b> the kind is part of every step, and a name only has to be unique among its owner's children of that kind, so places, things and people
+{fig(svg_address(), "Figure 6. A game symbol is text, a number, or one symbol applied to another, <code>S1(S2)</code>. A step is a call (<code>castle(N)</code>), and so is a path: the owner applied to what it owns, left to right.", "fig-addr")}
+<p class="codecap">In Fumola, the same symbol, as it stands (its <code>Call</code>):</p>
+<pre class="fu wrap">{fumola_hl("`world(`start)(`square(`E4))(`castle(`N))(`room(3))(`lever(`L))")}</pre>
+<p class="codecap">In Hazel, a symbol is written as that text and parsed to the tree: parentheses, names and numbers, nothing else, and no constructor names in a rule:</p>
+<pre class="hz wrap">{hazel_hl('let lever_L = parse_sym("world(start)(square(E4))(castle(N))(room(3))(lever(L))") in' + chr(10) + 'let room_3 = parse_sym("world(start)(square(E4))(castle(N))(room(3))") in' + chr(10) + 'print_sym(lever_L) == "world(start)(square(E4))(castle(N))(room(3))(lever(L))"')}</pre>
+<p><b>Human readable:</b> as text, each step is a word and a name a player would use (<code>square(E4)</code>, <code>castle(N)</code>, <code>lever(L)</code>).
+<b>Unambiguous:</b> the kind is part of every step (the first half of its call), and a name only has to be unique among its owner's children of that kind, so places, things and people
 share one keyspace with no global counter.</p>
 <p><b>This is Fumola's symbol, as it stands.</b> In <a href="https://fumola.org/#names-are-values">Fumola, names are values</a>: an identifier is a
 symbol, a number is a symbol, and symbols compose by application and nest, <code>`adapton(`settings)</code>; Fumola's <code>Symbol</code> has exactly these
-cases (<code>Id</code>, <code>Nat</code>, <code>Call</code>, <code>Dot</code>). And its <a href="https://fumola.org/#space-and-time">space</a> is the same move
+cases (<code>Id</code>, <code>Nat</code>, <code>Call</code>, and others besides); a game symbol needs only those three: names, numbers and parentheses. And its <a href="https://fumola.org/#space-and-time">space</a> is the same move
 an address makes: a cell <code>`x</code> named inside the region <code>`region</code> is <code>`region(`x)</code>, so a callee names freely without colliding
 with its caller, as a room names its levers without knowing which castle it is in.</p>
 <p><b>Identity, not position.</b> <a href="https://adapton.org">Adapton</a> names a node so it keeps its name when its contents change; the alternative,
@@ -603,7 +622,7 @@ naming by content, cannot say "same node, new value" (Fumola's notes, <i>What is
 than either: an address survives only as long as the shape it addresses, which in Fumola's mergeSort measurements turned a repair of 23 to 25 nodes into
 139. The game's list indexes are such names: delete the first thing in a place and every <code>PullThing(i)</code> after it means a different thing. So:</p>
 <ul>
-<li><b>Places are named by where they are,</b> and do not move: <code>world(start).square(E4).castle(N).room(3)</code>.</li>
+<li><b>Places are named by where they are,</b> and do not move: <code>world(start)(square(E4))(castle(N))(room(3))</code>.</li>
 <li><b>A thing or person is named once, when it is made,</b> by its owner and a name unique there (<code>lever(L)</code>, or the next free
 <code>shell(10)</code>), and keeps that name for good: it is an id, not a location.</li>
 <li><b>Where it is now is a field:</b> <code>Placed(owner)</code>, <code>SetAside</code> (the world's buffer of things taken out, to be put back as
@@ -628,13 +647,14 @@ saying which hatch.</p>
 
 <h2 id="next">What next</h2>
 <ul>
-<li><b>Decide the address syntax</b> (the dotted <code>kind(name)</code> path above) and the list of kinds, from the vocabulary table: one word each for a world,
+<li><b>Decide the symbol syntax</b> (calls, <code>world(start)(square(E4))</code>, as above) and the list of kinds, from the vocabulary table: one word each for a world,
 a square, an inside, a room.</li>
 <li><b>Give every placed thing a name</b> when it is placed (and the default world's {nthings} things one each), and keep it through moves; a thing's index stops
 being its id.</li>
 <li><b>Write <code>RuleState</code> for the tree room first,</b> the smallest, with the game building it from addresses, beside today's
 <code>Globals</code>; then the trap room.</li>
 <li><b>Add the world's buffer</b> of set-aside things, as <code>peopleAway</code> is for people.</li>
+<li><b>Parse and print symbols in Hazel</b> (<code>parse_sym</code>, <code>print_sym</code>, supposed here): a rule writes <code>parse_sym("world(start)(square(E4))")</code> and gets the tree, with no constructor names.</li>
 <li><b>Show addresses in the event log,</b> so a change reads <code>…house(1).hatch: shut → open</code>.</li>
 </ul>
 
