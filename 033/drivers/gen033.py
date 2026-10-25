@@ -373,7 +373,7 @@ type Globals = (
   places = [PlaceState],
   instances = [Instance],               # every thing and person made #
   set_aside = [Symbol],                   # the world's buffer, re-placeable #
-  draws = [Float]                       # the event's random draws #
+  random_numbers = [Float]              # the event's random numbers (today's draws) #
 )
 
 # what each room's rule is about: its own, named, typed #
