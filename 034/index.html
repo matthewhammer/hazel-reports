@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>An Official Hazel JS Library?</title>
+<meta name="description" content="The pros and cons of making Hazel-as-a-JS-library official: what Messed Up Dress Up's game scripting has shown, what else it would serve, and what it would cost Hazel to keep.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+</style><style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>34<b>)</b></code> · Hazel as a JS library · 2026-10-26 · <span class="wip">work in progress</span> · after <a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a></p>
+<h1>An Official Hazel JS Library?</h1>
+<p class="intro">Since 2026-10-20 a game in daily use, <a href="https://matthewhammer.org/kids-choice-games/dress-up/">Messed Up Dress Up</a> (MUDU), runs its rules in Hazel through a draft library, <code>hazel-lib.js</code> (<a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, with <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> stacked on it). Should Hazel make such a library official: a supported way for any web page to analyze, run and show Hazel programs? This report lays out what the draft does, what the game has taught us, the uses beyond it, and the costs.</p>
+
+<div class="headline">
+<p><b>Short answers.</b></p>
+<ol class="ans">
+<li><p><b>What it is today:</b> one script, 643 KB over the wire (2.7 MB unpacked; the full app is 1.7 MB), that puts <code>window.Hazel</code> on a page: <code>analyze</code> and <code>run</code> a text, <code>analyzeProgram</code> and <code>runProgram</code> for a program of named modules, with Hazel values coming back as plain JS values and JS functions going in and out both ways. Plus an embed mode: Hazel's own tiles in an <code>&lt;iframe&gt;</code>, showing (and, on a further branch, editing) a program the page posts.</p></li>
+<li><p><b>For:</b> it already works for a real, typed, event-driven use; it is small to keep (one OCaml module and a doc over the existing evaluator); and it opens Hazel to every page that wants live, typed, hole-tolerant code: lessons, docs, games, other editors.</p></li>
+<li><p><b>Against:</b> an API is a promise. It fixes how Hazel values look in JS, ties pages to builds that today are branch URLs with no versions, runs on the page's own thread, and puts an evaluator in pages that may run code they did not write.</p></li>
+<li><p><b>Suggestion:</b> make it official in two steps: first merge <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> as an <i>experimental</i> library (labelled so, built on <code>dev</code>), then promise stability only for the small core (<code>analyze</code>, <code>run</code>, the value mapping) once a second user besides MUDU has used it.</p></li>
+</ol>
+</div>
+
+<h2 id="today">What the draft library does</h2>
+<table class="t">
+<tr><th>Call</th><th>What it gives</th></tr>
+<tr><td><code>Hazel.analyze(text)</code></td><td><code>{errors}</code>: the program's error messages.</td></tr>
+<tr><td><code>Hazel.run(text)</code></td><td><code>{errors, value}</code>. Errors do not stop a run: Hazel evaluates around its holes, so the page decides which errors it accepts.</td></tr>
+<tr><td><code>Hazel.analyzeProgram(spec)</code>, <code>runProgram(spec)</code></td><td>A program from named modules' texts (one editor each), a preamble and a tail; errors, holes and unfinished brackets per module; <code>ok</code> when there are none.</td></tr>
+<tr><td>Values</td><td>numbers, booleans, strings; lists as arrays; <code>()</code> as <code>null</code>; labeled tuples as objects; constructors as <code>{tag, value}</code>; functions as JS functions, called with converted arguments.</td></tr>
+<tr><td>Embed mode (<code>index.html#embed</code>)</td><td>Hazel's own tiles and error marks for a program the page posts, read-only on #2719; selectable and editable, with themes, fonts, line numbers and go-to-definition, on the <code>embed-editable</code> branch (12 commits, no PR yet).</td></tr>
+</table>
+<p class="note">Sources: <code>docs/hazel-as-a-js-library.md</code> on #2719's branch; <code>src/web/HazelLibCore.re</code>; 17 test cases (<code>HazelLib</code>), under node with the rest of the suite. Sizes measured 2026-10-26 from hazel.org's branch builds.</p>
+
+<h2 id="mudu">What the game has shown</h2>
+<p>MUDU's 📜 Scripting panel gives five kinds of room a rule each: a function from the game's event (a lever pulled, a way taken) to a tree of commands the game carries out (<a href="../033/">^report(33)</a> describes the rules and their types). The same rules can be written in Hazel (the default), in JS, or in Fumola, which makes a fair comparison.</p>
+<ul class="ev">
+<li><b>Types earn their keep.</b> The rules' vocabulary is sums (<code>Pull(L)</code>, <code>Way(N)</code>, a room's exits), checked where a rule's parameter is annotated, so a rule that returns the wrong command is an error in the editor, not a bug in play. The JS version of the same rule has no such check.</li>
+<li><b>Holes are a feature in a game.</b> A rule half written still runs: the game falls back to its built-in behaviour while <code>ok</code> is false, so kids can edit while they play.</li>
+<li><b>Calls cost more than they should.</b> <a href="../025/">^report(25)</a> took one call apart: the World room's rule, 40 ms a call at a 16×16 map against 0.003 ms for the same rule in JS. Every call pays a floor that grows with its argument (8.5 ms at 16×16), because the library turns the JS argument into Hazel syntax and evaluates it back into the value it already was; and a typed helper re-checked its annotation on every step, which <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> removes (144 ms to 20.6 ms). Passing the rule only what it needs made it flat (0.9 ms).</li>
+<li><b>Reading can be slow.</b> Reading the program is 21 to 81 ms for the panel's modules (well formed), but up to 1.8 s when a module has an unclosed bracket, because only the recovering parser can read it (its time grows with the square of the module's length). The first load of the library and its first analysis took about a second (the game's own log: "analyzed and run in 1148 ms").</li>
+<li><b>What the game had to build itself:</b> the outline of a program (modules, types, functions) from regexes over the text, and which row a click lands on. Modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>) already know these; the open question on #2711 is how the library should take #2469 as a dependency.</li>
+<li><b>Gaps found by use:</b> constructors declared in one module were not usable in the next ("Constructor is not defined"), fixed separately by <a href="https://github.com/hazelgrove/hazel/pull/2729">#2729</a>; and a constructor from JS whose tag the sum lacks, which a fix kept on one laptop (<code>js-library-tagcheck</code>) makes stay stuck under its ascription.</li>
+</ul>
+
+<h2 id="beyond">Uses beyond the game</h2>
+<table class="t">
+<tr><th>Use</th><th>What the library gives it</th></tr>
+<tr><td>Teaching pages and courses</td><td>Exercises checked in the student's page: <code>analyze</code> for type errors, <code>run</code> for tests, without hosting the whole Hazel app.</td></tr>
+<tr><td>Docs and papers with live examples</td><td>An example's value computed from its text where it is shown, so it cannot go stale; the embed frame to show it as tiles.</td></tr>
+<tr><td>Other games and toys</td><td>MUDU's pattern, rules as typed functions from events to commands, for any game that wants players to script it.</td></tr>
+<tr><td>Other editors</td><td>A notebook, a slide tool or a web IDE with Hazel cells: the embed frame for the tiles, the library for the values.</td></tr>
+<tr><td>Livelits in other pages</td><td>A livelit's model and view as Hazel values a host page can drive (today they live only inside Hazel).</td></tr>
+<tr><td>Testing and tooling</td><td>Scripts that run Hazel programs under node (the library's own tests already do), for checks in other projects' CI.</td></tr>
+</table>
+
+<h2 id="pros">For making it official</h2>
+<ul class="ev">
+<li><b>It is small and mostly done.</b> One module over the existing statics and evaluator, a doc and tests. Merging costs little review; keeping it costs a test run.</li>
+<li><b>It shows Hazel where people are.</b> Hazel's ideas (holes that still run, typed edit states) are hardest to show in the abstract; a page that runs a kid's half-written rule is an easy demonstration.</li>
+<li><b>Real use finds real bugs.</b> MUDU's daily use found the module-constructor gap and the JS constructor check within days.</li>
+<li><b>Official means findable.</b> A stable URL and a version beat a branch build named in someone's code; today a page must point at <code>hazel.org/build/&lt;branch&gt;/</code>, which moves when the branch does.</li>
+</ul>
+
+<h2 id="cons">Against, or costs to plan for</h2>
+<ul class="ev">
+<li><b>An API is a promise.</b> The JS shape of Hazel values (<code>{tag, value}</code>, tuples as arrays, labeled tuples as objects) becomes hard to change once pages depend on it. Hazel's own types keep moving (modules, labeled tuples, type functions).</li>
+<li><b>Versions and builds.</b> Branch builds have no versions. An official library needs releases (a version in the file, <code>Hazel.version</code> already says "0.1 (draft)"), and a place that keeps old ones, or pages break when <code>dev</code> moves.</li>
+<li><b>The call boundary.</b> Converting a JS value by building Hazel syntax and evaluating it is the floor under every call (<a href="../025/">^report(25)</a>); an official library should hand Hazel values in directly, and say how big an argument a call should take.</li>
+<li><b>Size and the main thread.</b> 643 KB is fine for a game, heavy for a docs page with one example; and the library runs on the page's own thread, so a slow analysis (the 1.8 s case) freezes the page. Hazel's app already has an evaluation worker; the library does not use one yet.</li>
+<li><b>Running code a page did not write.</b> A page that runs a visitor's Hazel program runs it with the page's own rights, as any in-page evaluator would. The library should say so, and a worker would help here too.</li>
+<li><b>Two surfaces to keep in step.</b> The embed frame is Hazel's whole app in a mode; every change to the app can change the frame. Its messages need the same care as the library's calls.</li>
+<li><b>Team time.</b> Someone has to own it: answer issues, review changes, decide what is in the stable core.</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol class="opts">
+<li id="step-1"><b>Ready #2711:</b> move the stranded constructor fix onto it, bring its description up to date (the editor in a page moved to #2719 and beyond), and take it out of draft.</li>
+<li id="step-2"><b>Open a PR for the embed frame's 12 commits</b> (<code>embed-editable</code>), stacked on #2719, so the whole of what MUDU uses is under review.</li>
+<li id="step-3"><b>Decide the #2469 question</b> (outline and navigation from modular editors) before the library grows its own.</li>
+<li id="step-4a"><b>Convert JS values directly</b> into Hazel values at the call boundary, not through syntax re-evaluated (<a href="../025/">^report(25)</a>'s floor), and merge <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a>, which the game's typed rules need.</li>
+<li id="step-4"><b>Run analysis in a worker</b> in the library, as the app does, so a slow read never freezes a page.</li>
+<li id="step-5"><b>Version it:</b> a build per release at a stable URL, <code>Hazel.version</code> a real number, and the stable core named in the doc.</li>
+<li id="step-6"><b>Find a second user</b> (a course page, or the docs' own examples) before promising stability beyond the core.</li>
+</ol>
+
+<h2 id="how">How this was put together</h2>
+<p class="note">From the branches' code and docs (#2711, #2719, <code>embed-editable</code>), <a href="../025/">^report(25)</a>'s measurements of a call, MUDU's own use of them (its <code>25-scripting.js</code> and event log), and sizes fetched from hazel.org's branch builds on 2026-10-26. The timing figures are the doc's own, measured under node on a laptop; nothing new was measured for this draft.</p>
+<h2>Updates</h2>
+<p class="note">2026-10-26: first draft, from ^ticket(635), for Matthew to read before it goes out.</p>
+</main>
+<script>
+// (the appendix: names and links load with the page; a row's record type and its pictures only when it is opened)
+const APX = JSON.parse(document.getElementById('apx-data').textContent);
+const pic = (u, cap, cls) => { const f = document.createElement('figure'), a = document.createElement('a'), i = document.createElement('img');
+  i.src = u; i.alt = cap; i.onerror = () => { f.textContent = 'not in the archive yet: ' + u; }; if (cls) f.className = cls;
+  a.href = u.replace('/thumbs/', '/').replace(/\.webp$/, '.svg'); a.append(i); f.append(a);
+  if (cap) { const c = document.createElement('figcaption'); c.textContent = cap; f.append(c); } return f; };
+function fill(d) {
+  const box = d.querySelector('.pic'); if (box.firstChild) return;
+  const main = document.createElement('div'); main.className = 'main';
+  for (const [u, cap] of (d.dataset.alone ? [[d.dataset.alone, 'alone'], [d.dataset.pic, 'in the empty room, for its size']] : [[d.dataset.pic, '']])) main.append(pic(u, cap));
+  box.append(main);
+  const e = APX.entries[d.dataset.key];
+  if (e && e.type) { const p = document.createElement('pre'); p.className = 'hz'; p.innerHTML = e.type; const c = document.createElement('p'); c.className = 'codecap'; c.textContent = 'its settings, as a Hazel record type (from the game\'s own menus):'; box.append(c, p); }
+  const more = e ? e.pics.filter(p => APX.base + p[0] !== d.dataset.pic && APX.base + p[0] !== d.dataset.alone) : [];
+  if (more.length) { const c = document.createElement('p'); c.className = 'codecap'; c.textContent = more.length + ' more pictures of it in the archive (each a setting changed, an overlay, a seat or a climb):'; const g = document.createElement('div'); g.className = 'gallery';
+    for (const [svg, th, lab] of more) g.append(pic(APX.base + (th || svg), lab, 'small')); box.append(c, g); }
+}
+for (const d of document.querySelectorAll('details[data-pic]')) d.addEventListener('toggle', () => { if (d.open) fill(d); });
+for (const b of document.querySelectorAll('button.copylink')) b.addEventListener('click', ev => {
+  ev.preventDefault(); ev.stopPropagation();
+  const id = b.closest('details').id, u = location.origin + location.pathname + '#' + id;
+  navigator.clipboard.writeText(u).then(() => { b.textContent = 'copied'; setTimeout(() => b.textContent = 'copy link', 1500); });
+});
+const openHash = () => { const d = location.hash && document.getElementById(location.hash.slice(1)); if (d && d.matches('details[data-pic]')) { d.open = true; fill(d); d.scrollIntoView(); } };
+openHash(); addEventListener('hashchange', openHash);
+</script>
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}}, BUILT = "2026-10-25";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    const b = li.querySelector("b, strong");
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 33,
+ "title": "Game Scripts in Hazel, a Case Study",
+ "date": "2026-10-25",
+ "kind": "design",
+ "status": "work in progress",
+ "question": "Matthew: how Messed Up Dress Up's game rules are written in Hazel today (Event, Cmd, Globals), why Globals is a per-rule view, and a proposal: one address for every place, thing and person, and Globals, RuleState and Cmd built on it (^ticket(609)).",
+ "files": [
+  "data/meta.json",
+  "data/notes-places.md",
+  "data/notes-scripts.md",
+  "data/params.json",
+  "data/places.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Globals is a per-rule view",
+   "section_id": "not-global",
+   "columns": [
+    "module",
+    "its events",
+    "its commands",
+    "Globals fields it fills",
+    "which instance"
+   ],
+   "rows": [
+    [
+     "TrapRoom",
+     "Pull(L|R), PullBoulder(side)",
+     "Flip, SetPit, DropBoulder, LiftBoulder",
+     "lever_L, lever_R, wiring, draws, pits_on, covered",
+     "the trap room of the castle shown, room n"
+    ],
+    [
+     "TreeRoom",
+     "PullHatch(n)",
+     "SetHatch(n, shut)",
+     "hatch",
+     "the house the friend is in: hatchHouse(), 0 for the top"
+    ],
+    [
+     "Square",
+     "PullThing(i)",
+     "OpenDoor(at, open), DropRock(at, down)",
+     "things",
+     "this place's levers and trap doors, at = index in its list"
+    ],
+    [
+     "World",
+     "Way(d)",
+     "GoSquare(col, row, side)",
+     "at_col, at_row, cols, rows, cells",
+     "the world shown, every square"
+    ],
+    [
+     "Castle",
+     "FallPit(0|1), WayOut(n)",
+     "GoRoom(r)",
+     "rooms, exits, out",
+     "the castle shown, room n's way out"
+    ]
+   ]
+  },
+  {
+   "section": "Where, today: eleven words, and numbers for names",
+   "section_id": "where-today",
+   "columns": [
+    "word",
+    "in the code",
+    "in the game's UI"
+   ],
+   "rows": [
+    [
+     "background",
+     "state.background (the place and the friend's spot in it), backgroundSvg",
+     "🏞️ Background tab"
+    ],
+    [
+     "kind",
+     "B.kind and cell.kind (a place); ROOM_KINDS (castle room styles); thing.kind",
+     "\"kind of place\" (a group)"
+    ],
+    [
+     "place",
+     "PLACES, placeKey, objPlace, person.place; castlePlaces (table seats)",
+     "\"🗺️ the place\", \"not in any place\""
+    ],
+    [
+     "scene",
+     "SCENES, *Scene functions, SCENE (stage geometry)",
+     "hardly"
+    ],
+    [
+     "square / cell",
+     "squareName, Square (script), GoSquare / W.cells, cellKeys",
+     "square, D4 / never \"cell\""
+    ],
+    [
+     "room",
+     "castle rooms; treeroom; ROOMS (furnishing); NORTH_ROOMS (indoor); hutRooms (huts); SCRIPT_ROOMS (modules)",
+     "\"🚪 room n is\", \"🦇 cave room\""
+    ],
+    [
+     "inside",
+     "INSIDES; B.inside (= the tree house's number)",
+     "\"inside the castle\", \"🚪 off the grid\""
+    ],
+    [
+     "house",
+     "B.houses, data-house (tree houses); kind \"house\" (the family's)",
+     "\"🏡 house n\" vs \"🏠 house and yard\""
+    ],
+    [
+     "home",
+     "worldHome, passageHome",
+     "\"🏠 home\" (a group of places)"
+    ],
+    [
+     "world",
+     "state.world (one grid), worldsAway",
+     "🗺️ World design, \"🌍 world N\""
+    ]
+   ]
+  },
+  {
+   "section": "Globals, RuleState and Cmd, proposed",
+   "section_id": "types",
+   "columns": [
+    "today",
+    "proposed"
+   ],
+   "rows": [
+    [
+     "PullHatch(1)",
+     "Pull(world(start)(square(E2))(house(1))(hatch))"
+    ],
+    [
+     "SetHatch(1, false, Done)",
+     "Swing(…house(1).hatch, true, Done)"
+    ],
+    [
+     "Pull(L) in the trap room",
+     "Pull(world(start)(square(E4))(castle(N))(room(3))(lever(L)))"
+    ],
+    [
+     "Flip(L, Done)",
+     "Flip(…room(3).lever(L), Done)"
+    ],
+    [
+     "SetPit(0, true, …)",
+     "Swing(…room(3).pit(1), true, …)"
+    ],
+    [
+     "PullThing(4) (the 5th thing in the list)",
+     "Pull(…square(B6).lever(2)) (a name kept when the list changes)"
+    ],
+    [
+     "OpenDoor(7, true, …)",
+     "Swing(…square(B6).trapdoor(1), true, …)"
+    ],
+    [
+     "GoRoom(0, …) (0 = out of the castle)",
+     "Go(world(start)(square(E4)), …)"
+    ],
+    [
+     "GoSquare(3, 3, S, …)",
+     "Go(world(start)(square(D4)), …)"
+    ],
+    [
+     "(none: a rule cannot move a thing)",
+     "Move(…lever(2), SetAside, …)"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/033/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body></html>
