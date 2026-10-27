@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paying Only for What Is Watched</title>
+<meta name="description" content="Hazel's evaluator pays for its live features (probes, the stepper, results kept across edits) on every pass, even where none is in use. Eight ways to stop paying for them there, each with what it saves, what it would cost the features, and how much code it touches.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>35<b>)</b></code> · Hazel's evaluator · 2026-10-26 · <span class="wip">work in progress</span> · after <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Paying Only for What Is Watched</h1>
+<p class="sub"><a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a> found that a Hazel step costs about 15 Fumola steps, and that most of the difference is the machinery Hazel's evaluator runs around each rule for its live features, paid even where no feature is in use. What could be done about it, what would each option cost those features, and which should come first? Ideas for Cyrus and Matthew to weigh.</p>
+
+<div class="headline">
+<p><b>Short answers.</b></p>
+<ol class="ans">
+<li><div class="row"><p><b>Where the time goes:</b> on a loop, the rule itself is 7% of a call. The five stages that wrap every pass and their trampolines are 37%, garbage collection 36%. For a reference to a held list it is 66% stages and trampolines, and for a list loop 46% minting fresh ids (before the fix in <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s trials). Probes, the stepper and reuse across edits need that machinery. The library's calls and a game's rules use none of them, yet pay it all (<a href="#where">Figure 1</a>).</p>
+<figure class="mini"><svg viewBox="0 0 300 92" width="100%" role="img" aria-label="A loop: the rule 7%, stages and trampolines 37%, garbage collection 36%, the rest 20%">
+<text x="0" y="12" font-size="12" fill="var(--ink)">count(5000), a loop: where a call's time goes</text>
+<rect x="0.0" y="20" width="21.1" height="30" fill="var(--good)" opacity="0.85"/>
+<text x="2.0" y="66" font-size="11.5" fill="var(--ink)">the rule 7%</text>
+<rect x="21.1" y="20" width="110.2" height="30" fill="var(--accent)" opacity="0.85"/>
+<text x="24.1" y="40" font-size="13" font-weight="700" fill="#fff">37%</text>
+<text x="23.1" y="84" font-size="11.5" fill="var(--ink)">stages + trampolines</text>
+<rect x="131.3" y="20" width="109.2" height="30" fill="var(--warn)" opacity="0.85"/>
+<text x="134.3" y="40" font-size="13" font-weight="700" fill="#fff">36%</text>
+<text x="133.3" y="66" font-size="11.5" fill="var(--ink)">garbage</text>
+<rect x="240.5" y="20" width="59.5" height="30" fill="var(--cx)" opacity="0.85"/>
+<text x="243.5" y="40" font-size="13" font-weight="700" fill="#fff">20%</text>
+<text x="242.5" y="84" font-size="11.5" fill="var(--ink)">the rest</text>
+</svg><figcaption>A loop's profile in four parts; the rule is the small green one. All three programs in <a href="#fig1">Figure 1</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>The cheapest option is built and measured:</b> a fast path that returns a term already final without its five stages, when nothing is probed, reused or published (<a href="#i1">idea 1</a>). A third fewer passes on a loop (14,009 to 9,007), about 8% less time, and a held list of 3,000 referred to 32x faster (3.9 to 0.122 ms). Every evaluator test passes unchanged, and it costs no feature anything.</p>
+<figure class="mini"><svg viewBox="0 0 300 150" width="100%" role="img" aria-label="Before and after the fast path">
+<text x="0" y="16" font-size="11.5" fill="var(--ink)">count(1000) passes</text>
+<rect x="0" y="21" width="230" height="10" fill="var(--cx)"/><text x="236" y="30" font-size="11" fill="var(--muted)">14,009</text>
+<rect x="0" y="34" width="147.9" height="10" fill="var(--good)"/><text x="153.9" y="43" font-size="11" font-weight="600" fill="var(--good)">9,007</text>
+<text x="0" y="64" font-size="11.5" fill="var(--ink)">count(1000) ms</text>
+<rect x="0" y="69" width="230" height="10" fill="var(--cx)"/><text x="236" y="78" font-size="11" fill="var(--muted)">39.2 ms</text>
+<rect x="0" y="82" width="212.4" height="10" fill="var(--good)"/><text x="218.4" y="91" font-size="11" font-weight="600" fill="var(--good)">36.2 ms</text>
+<text x="0" y="112" font-size="11.5" fill="var(--ink)">h_ref(3,000) ms</text>
+<rect x="0" y="117" width="230" height="10" fill="var(--cx)"/><text x="236" y="126" font-size="11" fill="var(--muted)">3.9 ms</text>
+<rect x="0" y="130" width="7.2" height="10" fill="var(--good)"/><text x="13.2" y="139" font-size="11" font-weight="600" fill="var(--good)">0.122 ms</text>
+</svg><figcaption>Before (grey) and after (green) the fast path; <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s runs on GitHub, median of four jobs.</figcaption></figure></div></li>
+<li><p><b>Next cheapest, not yet tried:</b> when a step is taken, take the next one in place instead of going back through all five stages (<a href="#i2">idea 2</a>). Today every pass that steps re-enters the whole stack, and on the library's path nothing in the stack can use it. About 30 lines, under the same conditions as idea 1. Its saving is an estimate, at most the stages' and trampolines' share of what the fast path leaves.</p></li>
+<li><p><b>The question for Cyrus:</b> beyond these two, the options split. Either the library gets <b>a second, plain driver</b> for the same rules (<a href="#i3">idea 3</a>: no stages at all, guarded by running every evaluator test through both), or the one driver learns to <b>pay per term only for what watches it</b> (<a href="#i6">idea 6</a>: helps the editor too, but every live feature must be kept working through the rewrite). Values as a type of their own, as Fumola has them (<a href="#i8">idea 8</a>), removes the cause, but it is a research-sized change.</p></li>
+<li><p><b>Suggested order:</b> land idea 1, try idea 2, then measure what is left before choosing between 3 and 6. Ids and allocation (<a href="#i4">ideas 4</a> and <a href="#i5">5</a>) are worth a trial each, since garbage collection is the largest single share on a loop.</p></li>
+</ol>
+</div>
+
+<h2 id="where">Where the time goes<a class="anchor" href="#where" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="where" title="copy this section's address">copy link</button></h2>
+<p>Hazel's evaluator asks for each subterm's value by calling itself, on a trampoline so that deep recursion does not overflow JavaScript's stack. Every call passes through the same stages before the rule for the term is applied (<code>src/language/dynamics/Evaluator.re</code>, read here at <code>baa35eab57</code>):</p>
+<ul>
+<li><b>eval_5, state merge:</b> at the top level, a fresh state record for the term, appended to its parent's after.</li>
+<li><b>eval_4, reuse:</b> was this term's value kept from the previous run? On a hit, the kept value and state are spliced in; on a miss at the top level, an entry is made for the next run.</li>
+<li><b>eval_3, probe sample:</b> is this term probed? If so, open an observation span before and close it, with the value, after.</li>
+<li><b>eval_2, until final:</b> take one step; if the result is not final, evaluate it again <em>from the top, through all five stages</em>.</li>
+<li><b>eval_1, effects:</b> apply the step's effects to the state (stack frames, tests, probe data): a new state record each pass, with the step count one higher. Then the reuse map is updated.</li>
+<li><b>eval_0:</b> the rule itself (<code>Transition.re</code>), with the stages above as its way of evaluating subterms.</li>
+</ul>
+<p>Each stage binds its result with a <code>let.trampoline</code>, so one pass makes about five trampoline closures and continuations, plus the state records. These stages are what make probes, the stepper and reuse across edits work. They run on every pass, including passes over numbers and lists that are already values, and including programs that use none of those features.</p>
+<figure class="fig" id="fig1"><div class="figscroll"><svg viewBox="0 0 900 242" width="100%" role="img" aria-label="Three stacked bars, where each program's time goes">
+<text x="0" y="13" font-size="13" fill="var(--ink)">count(5000), a loop · 2,836 ms profiled</text>
+<rect x="0.0" y="18" width="224.8" height="34" fill="var(--accent)" opacity="0.85"><title>stages: 25.0%</title></rect>
+<text x="5.0" y="33" font-size="11.5" fill="#fff">stages</text><text x="5.0" y="47" font-size="11.5" font-weight="600" fill="#fff">25%</text>
+<rect x="224.8" y="18" width="105.7" height="34" fill="var(--accent2)" opacity="0.85"><title>trampolines: 11.7%</title></rect>
+<text x="229.8" y="33" font-size="11.5" fill="#fff">trampolines</text><text x="229.8" y="47" font-size="11.5" font-weight="600" fill="#fff">12%</text>
+<rect x="330.5" y="18" width="327.7" height="34" fill="var(--warn)" opacity="0.85"><title>garbage collection: 36.4%</title></rect>
+<text x="335.5" y="33" font-size="11.5" fill="#fff">garbage collection</text><text x="335.5" y="47" font-size="11.5" font-weight="600" fill="#fff">36%</text>
+<rect x="658.2" y="18" width="36.2" height="34" fill="var(--bad)" opacity="0.85"><title>fresh ids: 4.0%</title></rect>
+<text x="661.2" y="40" font-size="11" font-weight="600" fill="#fff">4</text>
+<rect x="694.4" y="18" width="0.2" height="34" fill="#a16207" opacity="0.85"><title>pushing types: 0.0%</title></rect>
+<rect x="694.5" y="18" width="11.2" height="34" fill="#64748b" opacity="0.85"><title>terms: 1.2%</title></rect>
+<rect x="705.8" y="18" width="64.7" height="34" fill="#0f766e" opacity="0.85"><title>environments: 7.2%</title></rect>
+<text x="708.8" y="40" font-size="11" font-weight="600" fill="#fff">7</text>
+<rect x="770.5" y="18" width="63.4" height="34" fill="var(--good)" opacity="0.85"><title>the rule: 7.0%</title></rect>
+<text x="773.5" y="40" font-size="11" font-weight="600" fill="#fff">7</text>
+<rect x="833.9" y="18" width="66.1" height="34" fill="var(--cx)" opacity="0.85"><title>else: 7.3%</title></rect>
+<text x="838.9" y="33" font-size="11.5" fill="#fff">else</text><text x="838.9" y="47" font-size="11.5" font-weight="600" fill="#fff">7%</text>
+<text x="0" y="77" font-size="13" fill="var(--ink)">sumbuild(1000), a list built and summed · 2,508 ms profiled</text>
+<rect x="0.0" y="82" width="51.8" height="34" fill="var(--accent)" opacity="0.85"><title>stages: 5.8%</title></rect>
+<text x="5.0" y="97" font-size="11.5" fill="#fff">stages</text><text x="5.0" y="111" font-size="11.5" font-weight="600" fill="#fff">6%</text>
+<rect x="51.8" y="82" width="31.2" height="34" fill="var(--accent2)" opacity="0.85"><title>trampolines: 3.5%</title></rect>
+<text x="54.8" y="104" font-size="11" font-weight="600" fill="#fff">3</text>
+<rect x="83.1" y="82" width="142.7" height="34" fill="var(--warn)" opacity="0.85"><title>garbage collection: 15.8%</title></rect>
+<text x="88.1" y="97" font-size="11.5" fill="#fff">garbage collection</text><text x="88.1" y="111" font-size="11.5" font-weight="600" fill="#fff">16%</text>
+<rect x="225.7" y="82" width="415.5" height="34" fill="var(--bad)" opacity="0.85"><title>fresh ids: 46.2%</title></rect>
+<text x="230.7" y="97" font-size="11.5" fill="#fff">fresh ids</text><text x="230.7" y="111" font-size="11.5" font-weight="600" fill="#fff">46%</text>
+<rect x="641.2" y="82" width="84.1" height="34" fill="#a16207" opacity="0.85"><title>pushing types: 9.3%</title></rect>
+<text x="644.2" y="104" font-size="11" font-weight="600" fill="#fff">9</text>
+<rect x="725.3" y="82" width="65.7" height="34" fill="#64748b" opacity="0.85"><title>terms: 7.3%</title></rect>
+<text x="730.3" y="97" font-size="11.5" fill="#fff">terms</text><text x="730.3" y="111" font-size="11.5" font-weight="600" fill="#fff">7%</text>
+<rect x="791.0" y="82" width="20.6" height="34" fill="#0f766e" opacity="0.85"><title>environments: 2.3%</title></rect>
+<rect x="811.6" y="82" width="26.9" height="34" fill="var(--good)" opacity="0.85"><title>the rule: 3.0%</title></rect>
+<text x="814.6" y="104" font-size="11" font-weight="600" fill="#fff">3</text>
+<rect x="838.5" y="82" width="61.5" height="34" fill="var(--cx)" opacity="0.85"><title>else: 6.8%</title></rect>
+<text x="843.5" y="97" font-size="11.5" fill="#fff">else</text><text x="843.5" y="111" font-size="11.5" font-weight="600" fill="#fff">7%</text>
+<text x="0" y="141" font-size="13" fill="var(--ink)">h_ref, one reference to a held list of 3,000 · 1,238 ms profiled</text>
+<rect x="0.0" y="146" width="392.7" height="34" fill="var(--accent)" opacity="0.85"><title>stages: 43.6%</title></rect>
+<text x="5.0" y="161" font-size="11.5" fill="#fff">stages</text><text x="5.0" y="175" font-size="11.5" font-weight="600" fill="#fff">44%</text>
+<rect x="392.7" y="146" width="202.1" height="34" fill="var(--accent2)" opacity="0.85"><title>trampolines: 22.4%</title></rect>
+<text x="397.7" y="161" font-size="11.5" fill="#fff">trampolines</text><text x="397.7" y="175" font-size="11.5" font-weight="600" fill="#fff">22%</text>
+<rect x="594.7" y="146" width="122.9" height="34" fill="var(--warn)" opacity="0.85"><title>garbage collection: 13.7%</title></rect>
+<text x="597.7" y="168" font-size="11" font-weight="600" fill="#fff">14</text>
+<rect x="717.7" y="146" width="1.1" height="34" fill="var(--bad)" opacity="0.85"><title>fresh ids: 0.1%</title></rect>
+<rect x="718.7" y="146" width="13.1" height="34" fill="#64748b" opacity="0.85"><title>terms: 1.5%</title></rect>
+<rect x="731.9" y="146" width="2.0" height="34" fill="#0f766e" opacity="0.85"><title>environments: 0.2%</title></rect>
+<rect x="733.9" y="146" width="59.9" height="34" fill="var(--good)" opacity="0.85"><title>the rule: 6.7%</title></rect>
+<text x="736.9" y="168" font-size="11" font-weight="600" fill="#fff">7</text>
+<rect x="793.7" y="146" width="106.2" height="34" fill="var(--cx)" opacity="0.85"><title>else: 11.8%</title></rect>
+<text x="798.7" y="161" font-size="11.5" fill="#fff">else</text><text x="798.7" y="175" font-size="11.5" font-weight="600" fill="#fff">12%</text>
+<rect x="0" y="204" width="12" height="12" fill="var(--accent)" opacity="0.85"/><text x="17" y="215" font-size="12" fill="var(--ink)">stages: ideas 1, 2, 3, 6</text>
+<rect x="225" y="204" width="12" height="12" fill="var(--accent2)" opacity="0.85"/><text x="242" y="215" font-size="12" fill="var(--ink)">trampolines: ideas 1, 2, 3, 4</text>
+<rect x="450" y="204" width="12" height="12" fill="var(--warn)" opacity="0.85"/><text x="467" y="215" font-size="12" fill="var(--ink)">garbage collection: idea 4</text>
+<rect x="675" y="204" width="12" height="12" fill="var(--bad)" opacity="0.85"/><text x="692" y="215" font-size="12" fill="var(--ink)">fresh ids: idea 5</text>
+</svg></div>
+<figcaption>Figure 1. Where a Hazel call's time goes, by the OCaml file each profile sample's code came from (js_of_ocaml's runtime helpers counted with their caller). These are <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s profiles of the calls alone, set-up excluded, on a build that keeps OCaml's names (<code>embed-520</code>'s dev build, 2026-10-21, whose evaluator is the same shape as the timing build's). Profiled times run long, so read the shares, not the milliseconds. Under the bars: which of the ideas below aims at each part.</figcaption></figure>
+<table>
+<tr><th>part of the time</th><th class="n">count(5000)</th><th class="n">sumbuild(1000)</th><th class="n">h_ref(3,000)</th></tr>
+<tr><td>the evaluator's stages (Evaluator.re, EvaluatorState.re, IncrEval.re)</td><td class="n">25.0%</td><td class="n">5.8%</td><td class="n">43.6%</td></tr>
+<tr><td>trampolines (Trampoline.re)</td><td class="n">11.7%</td><td class="n">3.5%</td><td class="n">22.4%</td></tr>
+<tr><td>garbage collection</td><td class="n">36.4%</td><td class="n">15.8%</td><td class="n">13.7%</td></tr>
+<tr><td>fresh ids (Id.re)</td><td class="n">4.0%</td><td class="n">46.2%</td><td class="n">0.1%</td></tr>
+<tr><td>pushing types through values (Ascriptions.re)</td><td class="n">0.0%</td><td class="n">9.3%</td><td class="n">0.0%</td></tr>
+<tr><td>terms and their ids (IdTagged.re, DHExp.re, Exp.re, ...)</td><td class="n">1.2%</td><td class="n">7.3%</td><td class="n">1.5%</td></tr>
+<tr><td>environments (Environment.re)</td><td class="n">7.2%</td><td class="n">2.3%</td><td class="n">0.2%</td></tr>
+<tr><td>the step's rule (Transition.re, PatternMatch.re, Unboxing.re)</td><td class="n">7.0%</td><td class="n">3.0%</td><td class="n">6.7%</td></tr>
+<tr><td>everything else</td><td class="n">7.3%</td><td class="n">6.8%</td><td class="n">11.8%</td></tr>
+<tr><td>total, profiled</td><td class="n">2,836 ms</td><td class="n">2,508 ms</td><td class="n">1,238 ms</td></tr>
+</table>
+<p>The list loop's ids and re-typing are a separate story, already fixed on a trial branch (<a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>, <a href="../029/#re-type">#re-type</a>: <code>sumbuild</code> of 3,000 went from 6.1 s to 0.69 s). This report is about the rest: the cost every pass pays for features that are not in use.</p>
+
+<h2 id="ideas">The ideas<a class="anchor" href="#ideas" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="ideas" title="copy this section's address">copy link</button></h2>
+<p>For each: what it removes, what is known about the saving (<span class="meas">measured</span>, or an <span class="est">estimate</span> from Figure 1's shares, as an upper bound), what it would cost the live features, and how much code it touches. Line counts are from the files at <code>baa35eab57</code>.</p>
+<div class="scroll"><table class="ideas">
+<tr><th>idea</th><th>removes</th><th>saving</th><th>costs the features</th><th>touches</th></tr>
+<tr><td><a href="#i1">1. fast path for values</a></td><td>the five stages, for a term already final</td><td><span class="meas">measured:</span> a third of a loop's passes, ~8% of its time; a held list's reference 32x</td><td>nothing: taken only when no feature is in use</td><td>~90 lines, Evaluator.re</td></tr>
+<tr><td><a href="#i2">2. step in place</a></td><td>re-entering the stages after each step</td><td><span class="est">estimate:</span> at most ~37% of a loop (stages and trampolines), likely much less</td><td>nothing: the same conditions as 1</td><td>~30 lines, Evaluator.re</td></tr>
+<tr><td><a href="#i3">3. a plain driver</a></td><td>all stages and the state record, for the library's calls</td><td><span class="est">estimate:</span> at most ~37% of a loop, plus some of the garbage</td><td>nothing in the editor; a second driver to keep in agreement</td><td>~150 new lines; Transition.re shared, unchanged</td></tr>
+<tr><td><a href="#i4">4. fewer allocations a pass</a></td><td>a state record and ~5 closures each pass</td><td><span class="est">unknown:</span> garbage collection is 36% of a loop</td><td>nothing; internal</td><td>EvaluatorState.re (300), Evaluator.re (768)</td></tr>
+<tr><td><a href="#i5">5. cheaper ids</a></td><td>a UUID made a JS string per fresh id</td><td><span class="est">estimate:</span> 4% of a loop; less than 46% of the list loop since the re-typing fix</td><td>none, if saved files still read</td><td>Id.re, used everywhere; saved files hold ids</td></tr>
+<tr><td><a href="#i6">6. pay per watched term</a></td><td>the stages' layers, where a term is not watched</td><td><span class="est">estimate:</span> most of 2's and 3's, in the editor too</td><td>all features must keep working through a rewrite</td><td>the stages, ~350 lines of Evaluator.re</td></tr>
+<tr><td><a href="#i7">7. remember finals</a></td><td>visiting a value again, by identity</td><td><span class="est">estimate:</span> the editor's share of what 1 saves</td><td>none known; memory for the table</td><td>~60 lines, Evaluator.re</td></tr>
+<tr><td><a href="#i8">8. values as their own type</a></td><td>the cause: values are expressions, so they are visited</td><td><span class="est">estimate:</span> all re-visits, by construction</td><td>the stepper shows values as expressions; probes sample them</td><td>Transition.re (1,412), Unboxing, PatternMatch, Substitution, the stepper</td></tr>
+</table></div>
+
+<h3 id="i1">1. A fast path for values (built, measured)<a class="anchor" href="#i1" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i1" title="copy this section's address">copy link</button></h3>
+<p>When an evaluation has no probe targets, no previous run to reuse and no outbox to publish to (the library's calls and an app's update; the editor always has statics, so it never takes this path), a term that is already final is returned at once: an atom, a constructor, a function's closure, or a list or tuple of these, followed 16 levels deep. The step count goes up by the passes the stages would have made, so it reads the same. On trial branches <code>trial/r25-fastpath</code> (with pass counters) and <code>trial/r25-fastpath-best</code> (<code>baa35eab57</code>, for times), CI green on both. <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s <a href="../029/#fix-fast-path">table</a> has every program. The loop gets about 8% faster for a third fewer passes, because a pass that finds a value is cheaper than one that steps. The reference to a held list drops to 7 passes at every size, since the library writes the held list into the function as a literal and the fast path now skips it whole.</p>
+
+<h3 id="i2">2. Step in place (not yet tried)<a class="anchor" href="#i2" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i2" title="copy this section's address">copy link</button></h3>
+<p>In <code>eval_2_until_final</code>, a step whose result is not final evaluates the result through <code>evaluate</code>, which runs the five stages again from <code>eval_5</code>: a fresh state record and merge at the top level, a reuse check, and a probe lookup, each with its trampoline bind. With no targets, no previous run and no outbox, none of those stages can do anything for the stepped term. So under idea 1's conditions, <code>eval_2</code> could loop on <code>eval_1</code> directly until the term is final. On a loop nearly every pass left after idea 1 is a step (9,007 of <code>count(1000)</code>'s), so this is where the remaining stage cost sits. The saving is at most the stages' and trampolines' share (37% of a loop), less what each step must still do. It needs a trial before any number is claimed. With probes present it must not apply: a delegating step re-evaluates the same probed term inside its result, and the stages are what notice.</p>
+
+<h3 id="i3">3. A plain driver for the library<a class="anchor" href="#i3" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i3" title="copy this section's address">copy link</button></h3>
+<p><code>Transition.re</code>'s rules are already written once over an evaluation mode (<code>Transition(EvaluatorEVMode)</code>), with the stages supplied as the mode's way of evaluating subterms. A second mode could evaluate subterms directly, keeping only a step count and the tests' results: no state record per pass, no reuse map, no observation trace. The library's <code>run</code> and its calls would use it, and the editor would keep the full driver. The rules stay shared, so they cannot drift apart. The drivers could, so the guard is a differential test: every evaluator test is run through both drivers, and the values and step counts must agree. The saving is again bounded by the stages' and trampolines' share, plus whatever garbage the state records make. Ideas 1 and 2 recover part of it without a second driver, so measure after them.</p>
+
+<h3 id="i4">4. Fewer allocations a pass<a class="anchor" href="#i4" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i4" title="copy this section's address">copy link</button></h3>
+<p>Each pass copies the state record (about ten fields) to raise the step count by one, in <code>EvaluatorState.update</code>, and makes the stages' trampoline closures. Garbage collection is the largest single share of a loop (36%). Holding the step count in a mutable cell for the duration of an evaluation, and fusing the stages' binds where no stage has work, would cut both. This is invisible to the features, but the state record is shared with the stepper and the trace, so the change is spread out. Try it on a trial branch and read the garbage share again.</p>
+
+<h3 id="i5">5. Cheaper ids<a class="anchor" href="#i5" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i5" title="copy this section's address">copy link</button></h3>
+<p>A fresh id is a random 128-bit UUID, and under js_of_ocaml its bytes are made into a JS string. That was 46% of the list loop before the re-typing fix minted fewer, and is 4% of a loop. An id that is an integer, or a string from the start, would cost less. But ids are keys across the whole editor and are saved in files, so the change would be wide. Measure the list loop again with the re-typing fix first: what is left may not be worth it.</p>
+
+<h3 id="i6">6. Pay per watched term<a class="anchor" href="#i6" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i6" title="copy this section's address">copy link</button></h3>
+<p>Ideas 1 and 2 switch the stages off only when no feature is in use anywhere. The editor always has some feature in use, but it watches few terms: a handful of probes, and reuse only at the top level, outside function bodies (the code already says so: <q>Function bodies are not incremental-cache boundaries</q>). Folding the five stages into one function that checks once whether anything watches this term, and takes the plain way when nothing does, would bring most of ideas 2 and 3 to the editor as well. This is the larger rewrite: every live feature must keep working through it, and the evaluator's probe, stepper and reuse tests are the guard.</p>
+
+<h3 id="i7">7. Remember finals<a class="anchor" href="#i7" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i7" title="copy this section's address">copy link</button></h3>
+<p>Remember by physical identity every term the evaluator has found final (with <code>Util.IdentityTable</code>, as the <code>has_type</code> memo of <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> does), and return it at once when asked again, before the stages. For the library's path, idea 1 and keeping closures whole (<a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s <a href="../029/#fix-world-held">first fixes</a>) already cover this, so what remains is the editor's path, where idea 1 does not apply. It has not been measured there.</p>
+
+<h3 id="i8">8. Values as their own type<a class="anchor" href="#i8" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="i8" title="copy this section's address">copy link</button></h3>
+<p>Fumola's machine keeps values as a type of their own, beside expressions, so a value is never evaluated again: a large part of why its step is cheap (<a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>, <a href="../029/#fumola-step">#fumola-step</a>). In Hazel a value is an expression that happens to be final, so the evaluator visits it to find that out, and ideas 1, 2 and 7 each avoid one kind of visit. A separate value type would remove the cause. But the rules (1,412 lines), unboxing, pattern matching and substitution all work on expressions, the stepper shows values as expressions, and probes sample them. That is a research direction, to weigh once the cheaper ideas show how much is left.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>Open idea 1's fast path as a PR (today on trial branches stacked on <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s builds), with its tests unchanged and <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s table as its evidence.</li>
+<li>Try idea 2, stepping in place, on a trial branch over the fast path, and time it on GitHub's runners on <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s programs (<code>count</code>, <code>fib</code>, <code>h_walk</code>, <code>sumbuild</code>), both builds alternating on each runner.</li>
+<li>Profile the loop again on that build: what share is left in the stages, the trampolines and the garbage. That number decides between a plain driver (idea 3) and paying per watched term (idea 6).</li>
+<li>Try idea 4's step counter in a mutable cell, and read the garbage share before and after.</li>
+<li>Time the list loop with the re-typing fix alone, to see whether cheaper ids (idea 5) still matter.</li>
+<li>Ask Cyrus which shape is welcome in the evaluator: a second driver beside the editor's, or one driver that pays per watched term.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>No new measurements. The profiles and the fast path's numbers are <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s: its profiles of the calls alone on <code>embed-520</code>'s dev build (2026-10-21; <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/029/data">029/data</a>, <code>prof_*.json</code>), and its fast-path table from GitHub's runners, four jobs with the two builds alternating on each runner, median of the jobs (<a href="../029/#fix-fast-path">#fix-fast-path</a>). The description of the stages and the line counts come from reading <code>Evaluator.re</code>, <code>EvaluatorState.re</code> and the files named, at <code>baa35eab57</code> (<code>trial/r25-fastpath-best</code>). Every saving marked as an estimate is an upper bound read off Figure 1's shares, not a measurement: steps are not time, and these need trials before any number is claimed. Figure 1 is drawn by <code>035/gen035.py</code> from <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s files.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/035/data"><code>035/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main>
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 3, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-22T15:31:32Z", "base": "dev"}}, BUILT = "2026-10-26";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    const b = li.querySelector("b, strong");
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 35,
+ "title": "Paying Only for What Is Watched",
+ "date": "2026-10-26",
+ "kind": "ideation",
+ "status": "work in progress",
+ "question": "Report 29 found a Hazel step costs about 15 Fumola steps, mostly the evaluator's machinery for its live features, paid even where none is in use. Options to stop paying for it there, each with its saving, its cost to the features, and the code it touches. (^ticket(554))",
+ "measurements": "None new. Figure 1 and its table are report 29's profiles of the calls alone (prof_*.json here, copied from 029/data); the fast path's numbers are report 29's #fix-fast-path table (GitHub runners, four jobs, builds alternating, median of jobs).",
+ "builds": [
+  {
+   "what": "Hazel dev build, profiles (names kept)",
+   "branch": "embed-520",
+   "date": "2026-10-21"
+  },
+  {
+   "what": "Hazel library with the fast path, times; the code read for this report",
+   "branch": "trial/r25-fastpath-best",
+   "commit": "baa35eab57"
+  },
+  {
+   "what": "Hazel library baseline, times",
+   "branch": "trial/r25-best",
+   "commit": "bce9b4e5d1"
+  },
+  {
+   "what": "Hazel library with the fast path, pass counts",
+   "branch": "trial/r25-fastpath",
+   "commit": "134843b6f9"
+  }
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Where the time goes",
+   "section_id": "where",
+   "columns": [
+    "part of the time",
+    "count(5000)",
+    "sumbuild(1000)",
+    "h_ref(3,000)"
+   ],
+   "rows": [
+    [
+     "the evaluator's stages (Evaluator.re, EvaluatorState.re, IncrEval.re)",
+     "25.0%",
+     "5.8%",
+     "43.6%"
+    ],
+    [
+     "trampolines (Trampoline.re)",
+     "11.7%",
+     "3.5%",
+     "22.4%"
+    ],
+    [
+     "garbage collection",
+     "36.4%",
+     "15.8%",
+     "13.7%"
+    ],
+    [
+     "fresh ids (Id.re)",
+     "4.0%",
+     "46.2%",
+     "0.1%"
+    ],
+    [
+     "pushing types through values (Ascriptions.re)",
+     "0.0%",
+     "9.3%",
+     "0.0%"
+    ],
+    [
+     "terms and their ids (IdTagged.re, DHExp.re, Exp.re, ...)",
+     "1.2%",
+     "7.3%",
+     "1.5%"
+    ],
+    [
+     "environments (Environment.re)",
+     "7.2%",
+     "2.3%",
+     "0.2%"
+    ],
+    [
+     "the step's rule (Transition.re, PatternMatch.re, Unboxing.re)",
+     "7.0%",
+     "3.0%",
+     "6.7%"
+    ],
+    [
+     "everything else",
+     "7.3%",
+     "6.8%",
+     "11.8%"
+    ],
+    [
+     "total, profiled",
+     "2,836 ms",
+     "2,508 ms",
+     "1,238 ms"
+    ]
+   ]
+  },
+  {
+   "section": "The ideas",
+   "section_id": "ideas",
+   "columns": [
+    "idea",
+    "removes",
+    "saving",
+    "costs the features",
+    "touches"
+   ],
+   "rows": [
+    [
+     "1. fast path for values",
+     "the five stages, for a term already final",
+     "measured: a third of a loop's passes, ~8% of its time; a held list's reference 32x",
+     "nothing: taken only when no feature is in use",
+     "~90 lines, Evaluator.re"
+    ],
+    [
+     "2. step in place",
+     "re-entering the stages after each step",
+     "estimate: at most ~37% of a loop (stages and trampolines), likely much less",
+     "nothing: the same conditions as 1",
+     "~30 lines, Evaluator.re"
+    ],
+    [
+     "3. a plain driver",
+     "all stages and the state record, for the library's calls",
+     "estimate: at most ~37% of a loop, plus some of the garbage",
+     "nothing in the editor; a second driver to keep in agreement",
+     "~150 new lines; Transition.re shared, unchanged"
+    ],
+    [
+     "4. fewer allocations a pass",
+     "a state record and ~5 closures each pass",
+     "unknown: garbage collection is 36% of a loop",
+     "nothing; internal",
+     "EvaluatorState.re (300), Evaluator.re (768)"
+    ],
+    [
+     "5. cheaper ids",
+     "a UUID made a JS string per fresh id",
+     "estimate: 4% of a loop; less than 46% of the list loop since the re-typing fix",
+     "none, if saved files still read",
+     "Id.re, used everywhere; saved files hold ids"
+    ],
+    [
+     "6. pay per watched term",
+     "the stages' layers, where a term is not watched",
+     "estimate: most of 2's and 3's, in the editor too",
+     "all features must keep working through a rewrite",
+     "the stages, ~350 lines of Evaluator.re"
+    ],
+    [
+     "7. remember finals",
+     "visiting a value again, by identity",
+     "estimate: the editor's share of what 1 saves",
+     "none known; memory for the table",
+     "~60 lines, Evaluator.re"
+    ],
+    [
+     "8. values as their own type",
+     "the cause: values are expressions, so they are visited",
+     "estimate: all re-visits, by construction",
+     "the stepper shows values as expressions; probes sample them",
+     "Transition.re (1,412), Unboxing, PatternMatch, Substitution, the stepper"
+    ]
+   ]
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/prof_count_5000.json",
+  "data/prof_h_ref_3000.json",
+  "data/prof_sumbuild_1000.json",
+  "data/tables.json"
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/035/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body></html>

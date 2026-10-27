@@ -1,0 +1,98 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 035 · Hazel's evaluator · 2026-10-26 · <span class="wip">work in progress</span> · after report 029</p>
+<h1>Paying Only for What Is Watched</h1>
+<p class="sub">Report 029 found that a Hazel step costs about 15 Fumola steps, and that most of the difference is the machinery Hazel's evaluator runs around each rule for its live features, paid even where no feature is in use. What could be done about it, what would each option cost those features, and which should come first? Ideas for Cyrus and Matthew to weigh.</p>
+
+<div class="headline">
+<p><b>Short answers.</b></p>
+<ol class="ans">
+<li><div class="row"><p><b>Where the time goes:</b> on a loop, the rule itself is 7% of a call. The five stages that wrap every pass and their trampolines are 37%, garbage collection 36%. For a reference to a held list it is 66% stages and trampolines, and for a list loop 46% minting fresh ids (before the fix in report 029's trials). Probes, the stepper and reuse across edits need that machinery. The library's calls and a game's rules use none of them, yet pay it all (<a href="#where">Figure 1</a>).</p>
+<figure class="mini">{{FIG_LOOP}}<figcaption>A loop's profile in four parts; the rule is the small green one. All three programs in <a href="#fig1">Figure 1</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>The cheapest option is built and measured:</b> a fast path that returns a term already final without its five stages, when nothing is probed, reused or published (<a href="#i1">idea 1</a>). A third fewer passes on a loop (14,009 to 9,007), about 8% less time, and a held list of 3,000 referred to 32x faster (3.9 to 0.122 ms). Every evaluator test passes unchanged, and it costs no feature anything.</p>
+<figure class="mini">{{FIG_FAST}}<figcaption>Before (grey) and after (green) the fast path; report 029's runs on GitHub, median of four jobs.</figcaption></figure></div></li>
+<li><p><b>Next cheapest, not yet tried:</b> when a step is taken, take the next one in place instead of going back through all five stages (<a href="#i2">idea 2</a>). Today every pass that steps re-enters the whole stack, and on the library's path nothing in the stack can use it. About 30 lines, under the same conditions as idea 1. Its saving is an estimate, at most the stages' and trampolines' share of what the fast path leaves.</p></li>
+<li><p><b>The question for Cyrus:</b> beyond these two, the options split. Either the library gets <b>a second, plain driver</b> for the same rules (<a href="#i3">idea 3</a>: no stages at all, guarded by running every evaluator test through both), or the one driver learns to <b>pay per term only for what watches it</b> (<a href="#i6">idea 6</a>: helps the editor too, but every live feature must be kept working through the rewrite). Values as a type of their own, as Fumola has them (<a href="#i8">idea 8</a>), removes the cause, but it is a research-sized change.</p></li>
+<li><p><b>Suggested order:</b> land idea 1, try idea 2, then measure what is left before choosing between 3 and 6. Ids and allocation (<a href="#i4">ideas 4</a> and <a href="#i5">5</a>) are worth a trial each, since garbage collection is the largest single share on a loop.</p></li>
+</ol>
+</div>
+
+<h2 id="where">Where the time goes</h2>
+<p>Hazel's evaluator asks for each subterm's value by calling itself, on a trampoline so that deep recursion does not overflow JavaScript's stack. Every call passes through the same stages before the rule for the term is applied (<code>src/language/dynamics/Evaluator.re</code>, read here at <code>baa35eab57</code>):</p>
+<ul>
+<li><b>eval_5, state merge:</b> at the top level, a fresh state record for the term, appended to its parent's after.</li>
+<li><b>eval_4, reuse:</b> was this term's value kept from the previous run? On a hit, the kept value and state are spliced in; on a miss at the top level, an entry is made for the next run.</li>
+<li><b>eval_3, probe sample:</b> is this term probed? If so, open an observation span before and close it, with the value, after.</li>
+<li><b>eval_2, until final:</b> take one step; if the result is not final, evaluate it again <em>from the top, through all five stages</em>.</li>
+<li><b>eval_1, effects:</b> apply the step's effects to the state (stack frames, tests, probe data): a new state record each pass, with the step count one higher. Then the reuse map is updated.</li>
+<li><b>eval_0:</b> the rule itself (<code>Transition.re</code>), with the stages above as its way of evaluating subterms.</li>
+</ul>
+<p>Each stage binds its result with a <code>let.trampoline</code>, so one pass makes about five trampoline closures and continuations, plus the state records. These stages are what make probes, the stepper and reuse across edits work. They run on every pass, including passes over numbers and lists that are already values, and including programs that use none of those features.</p>
+<figure class="fig" id="fig1"><div class="figscroll">{{FIG_BARS}}</div>
+<figcaption>Figure 1. Where a Hazel call's time goes, by the OCaml file each profile sample's code came from (js_of_ocaml's runtime helpers counted with their caller). These are report 029's profiles of the calls alone, set-up excluded, on a build that keeps OCaml's names (<code>embed-520</code>'s dev build, 2026-10-21, whose evaluator is the same shape as the timing build's). Profiled times run long, so read the shares, not the milliseconds. Under the bars: which of the ideas below aims at each part.</figcaption></figure>
+<table>
+<tr><th>part of the time</th><th class="n">count(5000)</th><th class="n">sumbuild(1000)</th><th class="n">h_ref(3,000)</th></tr>
+<tr><td>the evaluator's stages (Evaluator.re, EvaluatorState.re, IncrEval.re)</td><td class="n">25.0%</td><td class="n">5.8%</td><td class="n">43.6%</td></tr>
+<tr><td>trampolines (Trampoline.re)</td><td class="n">11.7%</td><td class="n">3.5%</td><td class="n">22.4%</td></tr>
+<tr><td>garbage collection</td><td class="n">36.4%</td><td class="n">15.8%</td><td class="n">13.7%</td></tr>
+<tr><td>fresh ids (Id.re)</td><td class="n">4.0%</td><td class="n">46.2%</td><td class="n">0.1%</td></tr>
+<tr><td>pushing types through values (Ascriptions.re)</td><td class="n">0.0%</td><td class="n">9.3%</td><td class="n">0.0%</td></tr>
+<tr><td>terms and their ids (IdTagged.re, DHExp.re, Exp.re, ...)</td><td class="n">1.2%</td><td class="n">7.3%</td><td class="n">1.5%</td></tr>
+<tr><td>environments (Environment.re)</td><td class="n">7.2%</td><td class="n">2.3%</td><td class="n">0.2%</td></tr>
+<tr><td>the step's rule (Transition.re, PatternMatch.re, Unboxing.re)</td><td class="n">7.0%</td><td class="n">3.0%</td><td class="n">6.7%</td></tr>
+<tr><td>everything else</td><td class="n">7.3%</td><td class="n">6.8%</td><td class="n">11.8%</td></tr>
+<tr><td>total, profiled</td><td class="n">2,836 ms</td><td class="n">2,508 ms</td><td class="n">1,238 ms</td></tr>
+</table>
+<p>The list loop's ids and re-typing are a separate story, already fixed on a trial branch (report 029, <a href="../029/#re-type">#re-type</a>: <code>sumbuild</code> of 3,000 went from 6.1 s to 0.69 s). This report is about the rest: the cost every pass pays for features that are not in use.</p>
+
+<h2 id="ideas">The ideas</h2>
+<p>For each: what it removes, what is known about the saving (<span class="meas">measured</span>, or an <span class="est">estimate</span> from Figure 1's shares, as an upper bound), what it would cost the live features, and how much code it touches. Line counts are from the files at <code>baa35eab57</code>.</p>
+<div class="scroll"><table class="ideas">
+<tr><th>idea</th><th>removes</th><th>saving</th><th>costs the features</th><th>touches</th></tr>
+<tr><td><a href="#i1">1. fast path for values</a></td><td>the five stages, for a term already final</td><td><span class="meas">measured:</span> a third of a loop's passes, ~8% of its time; a held list's reference 32x</td><td>nothing: taken only when no feature is in use</td><td>~90 lines, Evaluator.re</td></tr>
+<tr><td><a href="#i2">2. step in place</a></td><td>re-entering the stages after each step</td><td><span class="est">estimate:</span> at most ~37% of a loop (stages and trampolines), likely much less</td><td>nothing: the same conditions as 1</td><td>~30 lines, Evaluator.re</td></tr>
+<tr><td><a href="#i3">3. a plain driver</a></td><td>all stages and the state record, for the library's calls</td><td><span class="est">estimate:</span> at most ~37% of a loop, plus some of the garbage</td><td>nothing in the editor; a second driver to keep in agreement</td><td>~150 new lines; Transition.re shared, unchanged</td></tr>
+<tr><td><a href="#i4">4. fewer allocations a pass</a></td><td>a state record and ~5 closures each pass</td><td><span class="est">unknown:</span> garbage collection is 36% of a loop</td><td>nothing; internal</td><td>EvaluatorState.re (300), Evaluator.re (768)</td></tr>
+<tr><td><a href="#i5">5. cheaper ids</a></td><td>a UUID made a JS string per fresh id</td><td><span class="est">estimate:</span> 4% of a loop; less than 46% of the list loop since the re-typing fix</td><td>none, if saved files still read</td><td>Id.re, used everywhere; saved files hold ids</td></tr>
+<tr><td><a href="#i6">6. pay per watched term</a></td><td>the stages' layers, where a term is not watched</td><td><span class="est">estimate:</span> most of 2's and 3's, in the editor too</td><td>all features must keep working through a rewrite</td><td>the stages, ~350 lines of Evaluator.re</td></tr>
+<tr><td><a href="#i7">7. remember finals</a></td><td>visiting a value again, by identity</td><td><span class="est">estimate:</span> the editor's share of what 1 saves</td><td>none known; memory for the table</td><td>~60 lines, Evaluator.re</td></tr>
+<tr><td><a href="#i8">8. values as their own type</a></td><td>the cause: values are expressions, so they are visited</td><td><span class="est">estimate:</span> all re-visits, by construction</td><td>the stepper shows values as expressions; probes sample them</td><td>Transition.re (1,412), Unboxing, PatternMatch, Substitution, the stepper</td></tr>
+</table></div>
+
+<h3 id="i1">1. A fast path for values (built, measured)</h3>
+<p>When an evaluation has no probe targets, no previous run to reuse and no outbox to publish to (the library's calls and an app's update; the editor always has statics, so it never takes this path), a term that is already final is returned at once: an atom, a constructor, a function's closure, or a list or tuple of these, followed 16 levels deep. The step count goes up by the passes the stages would have made, so it reads the same. On trial branches <code>trial/r25-fastpath</code> (with pass counters) and <code>trial/r25-fastpath-best</code> (<code>baa35eab57</code>, for times), CI green on both. Report 029's <a href="../029/#fix-fast-path">table</a> has every program. The loop gets about 8% faster for a third fewer passes, because a pass that finds a value is cheaper than one that steps. The reference to a held list drops to 7 passes at every size, since the library writes the held list into the function as a literal and the fast path now skips it whole.</p>
+
+<h3 id="i2">2. Step in place (not yet tried)</h3>
+<p>In <code>eval_2_until_final</code>, a step whose result is not final evaluates the result through <code>evaluate</code>, which runs the five stages again from <code>eval_5</code>: a fresh state record and merge at the top level, a reuse check, and a probe lookup, each with its trampoline bind. With no targets, no previous run and no outbox, none of those stages can do anything for the stepped term. So under idea 1's conditions, <code>eval_2</code> could loop on <code>eval_1</code> directly until the term is final. On a loop nearly every pass left after idea 1 is a step (9,007 of <code>count(1000)</code>'s), so this is where the remaining stage cost sits. The saving is at most the stages' and trampolines' share (37% of a loop), less what each step must still do. It needs a trial before any number is claimed. With probes present it must not apply: a delegating step re-evaluates the same probed term inside its result, and the stages are what notice.</p>
+
+<h3 id="i3">3. A plain driver for the library</h3>
+<p><code>Transition.re</code>'s rules are already written once over an evaluation mode (<code>Transition(EvaluatorEVMode)</code>), with the stages supplied as the mode's way of evaluating subterms. A second mode could evaluate subterms directly, keeping only a step count and the tests' results: no state record per pass, no reuse map, no observation trace. The library's <code>run</code> and its calls would use it, and the editor would keep the full driver. The rules stay shared, so they cannot drift apart. The drivers could, so the guard is a differential test: every evaluator test is run through both drivers, and the values and step counts must agree. The saving is again bounded by the stages' and trampolines' share, plus whatever garbage the state records make. Ideas 1 and 2 recover part of it without a second driver, so measure after them.</p>
+
+<h3 id="i4">4. Fewer allocations a pass</h3>
+<p>Each pass copies the state record (about ten fields) to raise the step count by one, in <code>EvaluatorState.update</code>, and makes the stages' trampoline closures. Garbage collection is the largest single share of a loop (36%). Holding the step count in a mutable cell for the duration of an evaluation, and fusing the stages' binds where no stage has work, would cut both. This is invisible to the features, but the state record is shared with the stepper and the trace, so the change is spread out. Try it on a trial branch and read the garbage share again.</p>
+
+<h3 id="i5">5. Cheaper ids</h3>
+<p>A fresh id is a random 128-bit UUID, and under js_of_ocaml its bytes are made into a JS string. That was 46% of the list loop before the re-typing fix minted fewer, and is 4% of a loop. An id that is an integer, or a string from the start, would cost less. But ids are keys across the whole editor and are saved in files, so the change would be wide. Measure the list loop again with the re-typing fix first: what is left may not be worth it.</p>
+
+<h3 id="i6">6. Pay per watched term</h3>
+<p>Ideas 1 and 2 switch the stages off only when no feature is in use anywhere. The editor always has some feature in use, but it watches few terms: a handful of probes, and reuse only at the top level, outside function bodies (the code already says so: <q>Function bodies are not incremental-cache boundaries</q>). Folding the five stages into one function that checks once whether anything watches this term, and takes the plain way when nothing does, would bring most of ideas 2 and 3 to the editor as well. This is the larger rewrite: every live feature must keep working through it, and the evaluator's probe, stepper and reuse tests are the guard.</p>
+
+<h3 id="i7">7. Remember finals</h3>
+<p>Remember by physical identity every term the evaluator has found final (with <code>Util.IdentityTable</code>, as the <code>has_type</code> memo of #2681 does), and return it at once when asked again, before the stages. For the library's path, idea 1 and keeping closures whole (report 029's <a href="../029/#fix-world-held">first fixes</a>) already cover this, so what remains is the editor's path, where idea 1 does not apply. It has not been measured there.</p>
+
+<h3 id="i8">8. Values as their own type</h3>
+<p>Fumola's machine keeps values as a type of their own, beside expressions, so a value is never evaluated again: a large part of why its step is cheap (report 029, <a href="../029/#fumola-step">#fumola-step</a>). In Hazel a value is an expression that happens to be final, so the evaluator visits it to find that out, and ideas 1, 2 and 7 each avoid one kind of visit. A separate value type would remove the cause. But the rules (1,412 lines), unboxing, pattern matching and substitution all work on expressions, the stepper shows values as expressions, and probes sample them. That is a research direction, to weigh once the cheaper ideas show how much is left.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Open idea 1's fast path as a PR (today on trial branches stacked on report 029's builds), with its tests unchanged and report 029's table as its evidence.</li>
+<li>Try idea 2, stepping in place, on a trial branch over the fast path, and time it on GitHub's runners on report 029's programs (<code>count</code>, <code>fib</code>, <code>h_walk</code>, <code>sumbuild</code>), both builds alternating on each runner.</li>
+<li>Profile the loop again on that build: what share is left in the stages, the trampolines and the garbage. That number decides between a plain driver (idea 3) and paying per watched term (idea 6).</li>
+<li>Try idea 4's step counter in a mutable cell, and read the garbage share before and after.</li>
+<li>Time the list loop with the re-typing fix alone, to see whether cheaper ids (idea 5) still matter.</li>
+<li>Ask Cyrus which shape is welcome in the evaluator: a second driver beside the editor's, or one driver that pays per watched term.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>No new measurements. The profiles and the fast path's numbers are report 029's: its profiles of the calls alone on <code>embed-520</code>'s dev build (2026-10-21; <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/029/data">029/data</a>, <code>prof_*.json</code>), and its fast-path table from GitHub's runners, four jobs with the two builds alternating on each runner, median of the jobs (<a href="../029/#fix-fast-path">#fix-fast-path</a>). The description of the stages and the line counts come from reading <code>Evaluator.re</code>, <code>EvaluatorState.re</code> and the files named, at <code>baa35eab57</code> (<code>trial/r25-fastpath-best</code>). Every saving marked as an estimate is an upper bound read off Figure 1's shares, not a measurement: steps are not time, and these need trials before any number is claimed. Figure 1 is drawn by <code>035/gen035.py</code> from report 029's files.</p>
+</main>
+</body></html>

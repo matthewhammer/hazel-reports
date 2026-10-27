@@ -1,0 +1,143 @@
+[
+ {
+  "section": "Where the time goes",
+  "section_id": "where",
+  "columns": [
+   "part of the time",
+   "count(5000)",
+   "sumbuild(1000)",
+   "h_ref(3,000)"
+  ],
+  "rows": [
+   [
+    "the evaluator's stages (Evaluator.re, EvaluatorState.re, IncrEval.re)",
+    "25.0%",
+    "5.8%",
+    "43.6%"
+   ],
+   [
+    "trampolines (Trampoline.re)",
+    "11.7%",
+    "3.5%",
+    "22.4%"
+   ],
+   [
+    "garbage collection",
+    "36.4%",
+    "15.8%",
+    "13.7%"
+   ],
+   [
+    "fresh ids (Id.re)",
+    "4.0%",
+    "46.2%",
+    "0.1%"
+   ],
+   [
+    "pushing types through values (Ascriptions.re)",
+    "0.0%",
+    "9.3%",
+    "0.0%"
+   ],
+   [
+    "terms and their ids (IdTagged.re, DHExp.re, Exp.re, ...)",
+    "1.2%",
+    "7.3%",
+    "1.5%"
+   ],
+   [
+    "environments (Environment.re)",
+    "7.2%",
+    "2.3%",
+    "0.2%"
+   ],
+   [
+    "the step's rule (Transition.re, PatternMatch.re, Unboxing.re)",
+    "7.0%",
+    "3.0%",
+    "6.7%"
+   ],
+   [
+    "everything else",
+    "7.3%",
+    "6.8%",
+    "11.8%"
+   ],
+   [
+    "total, profiled",
+    "2,836 ms",
+    "2,508 ms",
+    "1,238 ms"
+   ]
+  ]
+ },
+ {
+  "section": "The ideas",
+  "section_id": "ideas",
+  "columns": [
+   "idea",
+   "removes",
+   "saving",
+   "costs the features",
+   "touches"
+  ],
+  "rows": [
+   [
+    "1. fast path for values",
+    "the five stages, for a term already final",
+    "measured: a third of a loop's passes, ~8% of its time; a held list's reference 32x",
+    "nothing: taken only when no feature is in use",
+    "~90 lines, Evaluator.re"
+   ],
+   [
+    "2. step in place",
+    "re-entering the stages after each step",
+    "estimate: at most ~37% of a loop (stages and trampolines), likely much less",
+    "nothing: the same conditions as 1",
+    "~30 lines, Evaluator.re"
+   ],
+   [
+    "3. a plain driver",
+    "all stages and the state record, for the library's calls",
+    "estimate: at most ~37% of a loop, plus some of the garbage",
+    "nothing in the editor; a second driver to keep in agreement",
+    "~150 new lines; Transition.re shared, unchanged"
+   ],
+   [
+    "4. fewer allocations a pass",
+    "a state record and ~5 closures each pass",
+    "unknown: garbage collection is 36% of a loop",
+    "nothing; internal",
+    "EvaluatorState.re (300), Evaluator.re (768)"
+   ],
+   [
+    "5. cheaper ids",
+    "a UUID made a JS string per fresh id",
+    "estimate: 4% of a loop; less than 46% of the list loop since the re-typing fix",
+    "none, if saved files still read",
+    "Id.re, used everywhere; saved files hold ids"
+   ],
+   [
+    "6. pay per watched term",
+    "the stages' layers, where a term is not watched",
+    "estimate: most of 2's and 3's, in the editor too",
+    "all features must keep working through a rewrite",
+    "the stages, ~350 lines of Evaluator.re"
+   ],
+   [
+    "7. remember finals",
+    "visiting a value again, by identity",
+    "estimate: the editor's share of what 1 saves",
+    "none known; memory for the table",
+    "~60 lines, Evaluator.re"
+   ],
+   [
+    "8. values as their own type",
+    "the cause: values are expressions, so they are visited",
+    "estimate: all re-visits, by construction",
+    "the stepper shows values as expressions; probes sample them",
+    "Transition.re (1,412), Unboxing, PatternMatch, Substitution, the stepper"
+   ]
+  ]
+ }
+]
