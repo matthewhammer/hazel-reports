@@ -20,7 +20,7 @@ def run(*cmd, cwd=ROOT):
 
 
 run("python3", f"{nnn}/drivers/gen{nnn}.py")
-for tool in ("report_refs", "link_prs", "add_theme"):
+for tool in ("report_refs", "link_prs", "add_theme", "add_anchors"):
     run("python3", f"tools/{tool}.py", f"{nnn}/index.html")
 run("python3", "tools/theme_variants.py", f"{nnn}/img/thumb.svg")
 

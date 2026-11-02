@@ -1,0 +1,2491 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What an Undo Costs</title>
+<meta name="description" content="How an edit, an undo and a redo in Hazel grow with the program: in proportion to it, about 1.10 to 1.16 on a log-log plot, from 800 to 6,400 definitions. Where the time goes, two fixes on #2635, why an undo costs more than an edit, and what O(log n) would take.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  .o1 { color: var(--good); font-weight: 600; } .on { color: var(--bad); font-weight: 600; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>36<b>)</b></code> · the editor and undo · 2026-11-02 · <span class="wip">work in progress</span> · after <a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>What an Undo Costs</h1>
+<p class="sub">How do the times of an edit, an undo and a redo grow with the size of the program? Where does that time go? And what would it take for each to cost O(log n) in the program's size, rather than O(n)? Matthew's question (2026-11-02), for the meeting with Cyrus on 2026-11-04. Measured on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (livelits &times; modular editors), in Node, on a program of <i>n</i> definitions at five sizes.</p>
+
+<div class="headline">
+<p><b>Short answers.</b> A program of <i>n</i> top-level definitions, an edit in the middle one, then undos and redos, each through the app's own update loop; medians of 12 steps. The method is at the end.</p>
+<ol class="ans">
+<li><div class="row"><p><b>Every step grows in proportion to the program.</b> At 6,400 definitions, after the fixes below, an edit takes 106 ms, an undo 292 and a redo 184, and the statics refresh after each about 78 more. From 800 to 6,400 definitions, doubling the program multiplies each step's time by 2.1 to 2.2: a slope of 1.10 to 1.16 on a log-log plot, a little steeper than linear (<a href="#scaling">Figure 1</a>).</p>
+<figure class="mini"><svg viewBox="0 0 300 168" width="100%" role="img" aria-label="After the fixes: edit, undo and redo time rise in proportion to the program, 400 to 6,400 definitions">
+<line x1="40" x2="248" y1="119.5" y2="119.5" stroke="var(--line)"/><text x="36" y="123.5" font-size="10" text-anchor="end" fill="var(--muted)">10 ms</text>
+<line x1="40" x2="248" y1="57.9" y2="57.9" stroke="var(--line)"/><text x="36" y="61.9" font-size="10" text-anchor="end" fill="var(--muted)">100 ms</text>
+<text x="40.0" y="152" font-size="10" text-anchor="middle" fill="var(--muted)">400</text>
+<text x="248.0" y="152" font-size="10" text-anchor="middle" fill="var(--muted)">6,400</text>
+<text x="144.0" y="165" font-size="10" text-anchor="middle" fill="var(--muted)">definitions</text>
+<polyline points="40.0,118.2 92.0,119.5 144.0,98.4 196.0,80.5 248.0,56.2" fill="none" stroke="var(--accent2)" stroke-width="2.4"/><circle cx="40.0" cy="118.2" r="2.6" fill="var(--accent2)"/><circle cx="92.0" cy="119.5" r="2.6" fill="var(--accent2)"/><circle cx="144.0" cy="98.4" r="2.6" fill="var(--accent2)"/><circle cx="196.0" cy="80.5" r="2.6" fill="var(--accent2)"/><circle cx="248.0" cy="56.2" r="2.6" fill="var(--accent2)"/><text x="254.0" y="65.2" font-size="10.5" font-weight="700" fill="var(--accent2)">edit 106</text>
+<polyline points="40.0,103.0 92.0,90.5 144.0,71.1 196.0,53.0 248.0,29.2" fill="none" stroke="var(--accent)" stroke-width="2.4"/><circle cx="40.0" cy="103.0" r="2.6" fill="var(--accent)"/><circle cx="92.0" cy="90.5" r="2.6" fill="var(--accent)"/><circle cx="144.0" cy="71.1" r="2.6" fill="var(--accent)"/><circle cx="196.0" cy="53.0" r="2.6" fill="var(--accent)"/><circle cx="248.0" cy="29.2" r="2.6" fill="var(--accent)"/><text x="254.0" y="31.2" font-size="10.5" font-weight="700" fill="var(--accent)">undo 292</text>
+<polyline points="40.0,112.5 92.0,106.1 144.0,81.7 196.0,62.3 248.0,41.7" fill="none" stroke="var(--warn)" stroke-width="2.4"/><circle cx="40.0" cy="112.5" r="2.6" fill="var(--warn)"/><circle cx="92.0" cy="106.1" r="2.6" fill="var(--warn)"/><circle cx="144.0" cy="81.7" r="2.6" fill="var(--warn)"/><circle cx="196.0" cy="62.3" r="2.6" fill="var(--warn)"/><circle cx="248.0" cy="41.7" r="2.6" fill="var(--warn)"/><text x="254.0" y="42.7" font-size="10.5" font-weight="700" fill="var(--warn)">redo 184</text>
+</svg><figcaption>After the fixes, log-log. All of it, before and after, in <a href="#fig1">Figure 1</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>The incremental caches work; the passes around them do not scale.</b> Whatever <i>n</i>, a step parses 1 or 2 definitions again, re-measures 1 or 2 chunks of layout, and compares 2 definitions' heads in statics. What grows with <i>n</i> is the passes over every definition around that work: rebuilding the top-level term (38% of the time at 3,200 definitions), statics' walk down the chain of definitions (20%), the outline (15%, on undo and redo only), and layout's walk (6%) (<a href="#where">Figure 3</a>). The undo history itself costs almost nothing: a snapshot is pushed and popped at the head of a list, and an older, compacted snapshot restores as fast as the newest, whole one.</p>
+<figure class="mini"><svg viewBox="0 0 300 96" width="100%" role="img" aria-label="After the fixes, at 3,200 definitions: top-level term 38%, statics 20%, the outline 15%, the rest 27%">
+<text x="0" y="12" font-size="11.5" fill="var(--ink)">3,200 definitions: where a step's time goes</text>
+<rect x="0.0" y="20" width="113.1" height="30" fill="var(--accent2)" opacity="0.88"/>
+<text x="3.0" y="40" font-size="12.5" font-weight="700" fill="#fff">38%</text>
+<text x="2.0" y="66" font-size="11" fill="var(--ink)">the top-level term</text>
+<rect x="113.1" y="20" width="61.2" height="30" fill="var(--accent)" opacity="0.88"/>
+<text x="116.1" y="40" font-size="12.5" font-weight="700" fill="#fff">20%</text>
+<text x="115.1" y="84" font-size="11" fill="var(--ink)">statics' chain</text>
+<rect x="174.3" y="20" width="45.6" height="30" fill="var(--warn)" opacity="0.88"/>
+<text x="177.3" y="40" font-size="12.5" font-weight="700" fill="#fff">15%</text>
+<text x="176.3" y="66" font-size="11" fill="var(--ink)">the outline</text>
+<rect x="220.0" y="20" width="80.0" height="30" fill="var(--cx)" opacity="0.88"/>
+<text x="223.0" y="40" font-size="12.5" font-weight="700" fill="var(--ink)">27%</text>
+<text x="222.0" y="84" font-size="11" fill="var(--ink)">the rest</text>
+</svg><figcaption>One profile of the 12 steps at 3,200 definitions, after the fixes; <a href="#fig3">Figure 3</a> has the one before.</figcaption></figure></div></li>
+<li><div class="row"><p><b>An undo costs 2.7 to 3.0 edits, a redo 1.6 to 2.0.</b> A restored snapshot takes a second frame, which rebuilds the outline from scratch: its memo of recent programs misses on the restored one. That is about 26 ms of each undo and redo at 3,200 definitions: most of the 42 ms a redo costs beyond an edit, but only a third of an undo's 77. The rest of an undo's extra is not explained yet (<a href="#twice">Figure 4</a>).</p>
+<figure class="mini"><svg viewBox="0 0 300 136" width="100%" role="img" aria-label="At 3,200 definitions after the fixes: an edit, a redo and an undo, each with its statics refresh; the outline is part of the redo and the undo">
+<text x="52" y="20.0" font-size="11" text-anchor="end" fill="var(--ink)">an edit</text><rect x="58" y="6" width="51.7" height="20" fill="var(--accent2)" opacity="0.9"/>
+<rect x="109.7" y="6" width="37.8" height="20" fill="var(--cx)"/><text x="152.5" y="20.0" font-size="10.5" fill="var(--ink)"><tspan font-weight="700">43</tspan> + 32 ms</text>
+<text x="52" y="54.0" font-size="11" text-anchor="end" fill="var(--ink)">a redo</text><rect x="58" y="40" width="102.1" height="20" fill="var(--warn)" opacity="0.9"/>
+<rect x="128.4" y="40" width="31.7" height="20" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="160.1" y="40" width="37.8" height="20" fill="var(--cx)"/><text x="203.0" y="54.0" font-size="10.5" fill="var(--ink)"><tspan font-weight="700">85</tspan> + 32 ms</text>
+<text x="52" y="88.0" font-size="11" text-anchor="end" fill="var(--ink)">an undo</text><rect x="58" y="74" width="144.2" height="20" fill="var(--accent)" opacity="0.9"/>
+<rect x="170.5" y="74" width="31.7" height="20" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="202.2" y="74" width="37.8" height="20" fill="var(--cx)"/><text x="245.0" y="88.0" font-size="10.5" fill="var(--ink)"><tspan font-weight="700">120</tspan> + 32 ms</text>
+<rect x="58" y="110" width="10" height="10" fill="none" stroke="var(--ink)" stroke-dasharray="3 2"/><text x="72" y="119" font-size="10.5" fill="var(--muted)">the outline, about 26 ms</text><rect x="208" y="110" width="10" height="10" fill="var(--cx)"/><text x="222" y="119" font-size="10.5" fill="var(--muted)">statics after it</text>
+</svg><figcaption>At 3,200 definitions, after the fixes: each step, then its statics.</figcaption></figure></div></li>
+<li><div class="row"><p><b>Two cheap fixes, now on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, took 31–46% off at the two largest sizes.</b> The auto-probe rebuilt the whole top level's skeleton on every frame, because its memo was keyed on a segment that every edit replaces (394552d5d0). And completion suggestions were computed after every typed digit, though none can start with one (bfa36a6ede). Both were whole-program passes, and both are gone. Each step is still linear (<a href="#fixes">the fixes</a>).</p>
+<figure class="mini"><svg viewBox="0 0 300 150" width="100%" role="img" aria-label="Before and after the two fixes at 6,400 definitions, for an edit, an undo and a redo">
+<text x="0" y="14" font-size="11.5" fill="var(--ink)">an edit, 6,400 definitions</text>
+<rect x="0" y="19" width="85.1" height="10" fill="var(--cx)"/><text x="90.1" y="28" font-size="11" fill="var(--muted)">163 ms</text>
+<rect x="0" y="32" width="55.6" height="10" fill="var(--accent2)"/><text x="60.6" y="41" font-size="11" font-weight="700" fill="var(--accent2)">106 ms, 35% less</text>
+<text x="0" y="62" font-size="11.5" fill="var(--ink)">an undo, 6,400 definitions</text>
+<rect x="0" y="67" width="220.0" height="10" fill="var(--cx)"/><text x="225.0" y="76" font-size="11" fill="var(--muted)">422 ms</text>
+<rect x="0" y="80" width="152.7" height="10" fill="var(--accent)"/><text x="157.7" y="89" font-size="11" font-weight="700" fill="var(--accent)">292 ms, 31% less</text>
+<text x="0" y="110" font-size="11.5" fill="var(--ink)">a redo, 6,400 definitions</text>
+<rect x="0" y="115" width="177.5" height="10" fill="var(--cx)"/><text x="182.5" y="124" font-size="11" fill="var(--muted)">340 ms</text>
+<rect x="0" y="128" width="95.8" height="10" fill="var(--warn)"/><text x="100.8" y="137" font-size="11" font-weight="700" fill="var(--warn)">184 ms, 46% less</text>
+</svg><figcaption>Before (grey) and after the fixes, at 6,400 definitions.</figcaption></figure></div></li>
+<li><div class="row"><p><b>O(log n) needs the top level as a balanced tree, not a chain.</b> The top level is a chain of nested lets, <i>n</i> deep: changing a definition in the middle rebuilds every let around it, however good the caches. With the definitions in a balanced tree whose nodes keep summaries (the names a subtree binds, its rows of layout, its part of the skeleton), each pass touches only the <i>log n</i> nodes on the changed definition's path. And since the previous version shares every other node, a snapshot can keep its derived data, so an undo becomes a swap of roots (<a href="#logn">Figure 5</a>).</p>
+<figure class="mini"><svg viewBox="0 0 300 150" width="100%" role="img" aria-label="Left: the top level as a chain of nested lets; changing definition 9 rebuilds the 9 lets around it. Right: the same 16 definitions in a balanced tree; changing definition 9 rebuilds the 4 nodes on its path, and the old root still shares every other node.">
+<line x1="9.4" y1="120.0" x2="18.8" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="28.1" y1="120.0" x2="18.8" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="46.9" y1="120.0" x2="56.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="65.6" y1="120.0" x2="56.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="84.4" y1="120.0" x2="93.8" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="103.1" y1="120.0" x2="93.8" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="121.9" y1="120.0" x2="131.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="140.6" y1="120.0" x2="131.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="159.4" y1="120.0" x2="168.8" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="178.1" y1="120.0" x2="168.8" y2="94.0" stroke="var(--accent)" stroke-width="2.4"/>
+<line x1="196.9" y1="120.0" x2="206.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="215.6" y1="120.0" x2="206.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="234.4" y1="120.0" x2="243.8" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="253.1" y1="120.0" x2="243.8" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="271.9" y1="120.0" x2="281.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="290.6" y1="120.0" x2="281.2" y2="94.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="18.8" y1="94.0" x2="37.5" y2="68.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="56.2" y1="94.0" x2="37.5" y2="68.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="93.8" y1="94.0" x2="112.5" y2="68.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="131.2" y1="94.0" x2="112.5" y2="68.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="168.8" y1="94.0" x2="187.5" y2="68.0" stroke="var(--accent)" stroke-width="2.4"/>
+<line x1="206.2" y1="94.0" x2="187.5" y2="68.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="243.8" y1="94.0" x2="262.5" y2="68.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="281.2" y1="94.0" x2="262.5" y2="68.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="37.5" y1="68.0" x2="75.0" y2="42.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="112.5" y1="68.0" x2="75.0" y2="42.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="187.5" y1="68.0" x2="225.0" y2="42.0" stroke="var(--accent)" stroke-width="2.4"/>
+<line x1="262.5" y1="68.0" x2="225.0" y2="42.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="75.0" y1="42.0" x2="150.0" y2="16.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="225.0" y1="42.0" x2="150.0" y2="16.0" stroke="var(--accent)" stroke-width="2.4"/>
+<circle cx="9.4" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="28.1" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="46.9" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="65.6" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="84.4" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="103.1" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="121.9" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="140.6" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="159.4" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="178.1" cy="120.0" r="6" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.4"/>
+<circle cx="196.9" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="215.6" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="234.4" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="253.1" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="271.9" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="290.6" cy="120.0" r="6" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="18.8" cy="94.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="56.2" cy="94.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="93.8" cy="94.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="131.2" cy="94.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="168.8" cy="94.0" r="5" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.4"/>
+<circle cx="206.2" cy="94.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="243.8" cy="94.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="281.2" cy="94.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="37.5" cy="68.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="112.5" cy="68.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="187.5" cy="68.0" r="5" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.4"/>
+<circle cx="262.5" cy="68.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="75.0" cy="42.0" r="5" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.4"/>
+<circle cx="225.0" cy="42.0" r="5" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.4"/>
+<circle cx="150.0" cy="16.0" r="5" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="0" y="146" font-size="11" fill="var(--muted)">16 definitions: an edit to one rebuilds its path, 4 nodes + 1</text>
+</svg><figcaption>A change rebuilds only its path. <a href="#fig5">Figure 5</a> sets it beside today's chain.</figcaption></figure></div></li>
+</ol>
+</div>
+
+<h2 id="question">The question<a class="anchor" href="#question" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="question" title="copy this section's address">copy link</button></h2>
+<p>An edit in Hazel's editor is meant to cost time in proportion to what it changes. Matthew's question on 2026-11-02 was whether that is true of undo. It seemed to cost O(<i>n</i>) in the size of the program. Could an edit and an undo each cost O(log <i>n</i>)? The question is for the meeting with Cyrus on 2026-11-04. A related question, how much structure sharing is lost as values go to the evaluation worker and back, is not measured here.</p>
+<p><a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a> measured what the undo history <em>keeps</em>, in a browser on the Full Body slide: whole versions of the editor's state, about 92 MB an edit on <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>, until Andrew Blinn's compaction of snapshots (6010128b7d) was ported there. <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> had it already and keeps about 8 MB an edit; keeping the newest undo and redo entries whole (032fe3aca6) followed. This report measures what an undo <em>costs in time</em>, and how that grows with the program.</p>
+
+<h2 id="undo">How an undo works today<a class="anchor" href="#undo" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="undo" title="copy this section's address">copy link</button></h2>
+<p>The undo history (<code>src/web/app/History.re</code>, at bfa36a6ede) is two lists of page models, the undo stack and the redo stack, capped at 250 entries. An edit pushes the model from before it onto the undo stack. Pushing compacts the entry below the new head: it drops the derived caches (syntax, statics, evaluation results) and keeps the zippers, the editor's own representation of the text and the caret. The newest entry stays whole. An undo pops the head and restores it:</p>
+<ul>
+<li><b>Syntax is rebuilt against the live caches.</b> <code>Page.carry_over</code> hands the restored model the live editor's parse and layout caches, which hit for every piece the step did not change. So 1 or 2 definitions are parsed again, whatever the size of the program.</li>
+<li><b>A second frame realizes the view.</b> The restore schedules <code>RealizeView</code>, which rebuilds the outline of the program: the tree of its definitions that the sidebar and the agent read.</li>
+<li><b>Statics wait for the typing debounce,</b> as after a keystroke, and re-analyze incrementally: the definitions are walked in order and their heads compared with the previous version's, and only those that changed are analyzed again.</li>
+</ul>
+<figure class="fig" id="fig2"><div class="figscroll"><svg viewBox="0 0 940 330" width="100%" role="img" aria-label="What an edit and an undo run, box by box: the parts that touch only the changed definition are O(1), green; the passes over every definition are O(n), red. An undo adds a second frame that rebuilds the outline.">
+<text x="0" y="20" font-size="13" font-weight="700" fill="var(--ink)">An edit</text>
+<rect x="0" y="30" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--good)" stroke-width="2"/>
+<text x="8" y="47" font-size="12" font-weight="700" fill="var(--ink)">the keystroke</text>
+<text x="132" y="47" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--good)">O(1)</text>
+<text x="8" y="64" font-size="11" fill="var(--muted)">the zipper edited at</text>
+<text x="8" y="78" font-size="11" fill="var(--muted)">the caret</text>
+<line x1="140" x2="154" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M152,63.0 L158,67.0 L152,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="158" y="30" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--good)" stroke-width="2"/>
+<text x="166" y="47" font-size="12" font-weight="700" fill="var(--ink)">parse</text>
+<text x="290" y="47" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--good)">O(1)</text>
+<text x="166" y="64" font-size="11" fill="var(--muted)">the changed definition</text>
+<text x="166" y="78" font-size="11" fill="var(--muted)">parsed again: 1</text>
+<line x1="298" x2="312" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M310,63.0 L316,67.0 L310,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="316" y="30" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--bad)" stroke-width="2"/>
+<text x="324" y="47" font-size="12" font-weight="700" fill="var(--ink)">the top-level term</text>
+<text x="448" y="47" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--bad)">O(n)</text>
+<text x="324" y="64" font-size="11" fill="var(--muted)">rebuilt from every</text>
+<text x="324" y="78" font-size="11" fill="var(--muted)">definition</text>
+<line x1="456" x2="470" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M468,63.0 L474,67.0 L468,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="474" y="30" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--bad)" stroke-width="2"/>
+<text x="482" y="47" font-size="12" font-weight="700" fill="var(--ink)">layout</text>
+<text x="606" y="47" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--bad)">O(n)</text>
+<text x="482" y="64" font-size="11" fill="var(--muted)">1 chunk measured; the</text>
+<text x="482" y="78" font-size="11" fill="var(--muted)">walk over the rest</text>
+<line x1="614" x2="628" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M626,63.0 L632,67.0 L626,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="632" y="30" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--bad)" stroke-width="2"/>
+<text x="640" y="47" font-size="12" font-weight="700" fill="var(--ink)">statics, debounced</text>
+<text x="764" y="47" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--bad)">O(n)</text>
+<text x="640" y="64" font-size="11" fill="var(--muted)">2 heads compared;</text>
+<text x="640" y="78" font-size="11" fill="var(--muted)">the chain walked</text>
+<text x="0" y="166" font-size="13" font-weight="700" fill="var(--ink)">An undo</text>
+<rect x="0" y="176" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--good)" stroke-width="2"/>
+<text x="8" y="193" font-size="12" font-weight="700" fill="var(--ink)">pop a snapshot</text>
+<text x="132" y="193" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--good)">O(1)</text>
+<text x="8" y="210" font-size="11" fill="var(--muted)">the stack&#x27;s head; it</text>
+<text x="8" y="224" font-size="11" fill="var(--muted)">holds zippers, no caches</text>
+<line x1="140" x2="154" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M152,209.0 L158,213.0 L152,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="158" y="176" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--good)" stroke-width="2"/>
+<text x="166" y="193" font-size="12" font-weight="700" fill="var(--ink)">parse</text>
+<text x="290" y="193" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--good)">O(1)</text>
+<text x="166" y="210" font-size="11" fill="var(--muted)">against the live caches:</text>
+<text x="166" y="224" font-size="11" fill="var(--muted)">2 definitions again</text>
+<line x1="298" x2="312" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M310,209.0 L316,213.0 L310,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="316" y="176" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--bad)" stroke-width="2"/>
+<text x="324" y="193" font-size="12" font-weight="700" fill="var(--ink)">the top-level term</text>
+<text x="448" y="193" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--bad)">O(n)</text>
+<text x="324" y="210" font-size="11" fill="var(--muted)">rebuilt from every</text>
+<text x="324" y="224" font-size="11" fill="var(--muted)">definition</text>
+<line x1="456" x2="470" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M468,209.0 L474,213.0 L468,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="474" y="176" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--bad)" stroke-width="2"/>
+<text x="482" y="193" font-size="12" font-weight="700" fill="var(--ink)">layout</text>
+<text x="606" y="193" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--bad)">O(n)</text>
+<text x="482" y="210" font-size="11" fill="var(--muted)">1 or 2 chunks; the</text>
+<text x="482" y="224" font-size="11" fill="var(--muted)">walk over the rest</text>
+<line x1="614" x2="628" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4"/><path d="M626,209.0 L632,213.0 L626,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="632" y="176" width="140" height="74" rx="8" fill="var(--paper)" stroke="var(--bad)" stroke-width="2"/>
+<text x="640" y="193" font-size="12" font-weight="700" fill="var(--ink)">statics, debounced</text>
+<text x="764" y="193" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--bad)">O(n)</text>
+<text x="640" y="210" font-size="11" fill="var(--muted)">2 heads compared;</text>
+<text x="640" y="224" font-size="11" fill="var(--muted)">the chain walked</text>
+<rect x="790" y="176" width="146" height="74" rx="8" fill="var(--paper)" stroke="var(--bad)" stroke-width="2"/>
+<text x="798" y="193" font-size="12" font-weight="700" fill="var(--ink)">frame 2: the outline</text>
+<text x="928" y="193" font-size="11.5" font-weight="700" text-anchor="end" fill="var(--bad)">O(n)</text>
+<text x="798" y="210" font-size="11" fill="var(--muted)">RealizeView: rebuilt</text>
+<text x="798" y="224" font-size="11" fill="var(--muted)">from scratch (a miss)</text>
+<line x1="772" x2="790" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="3 3"/>
+<text x="0" y="292" font-size="11.5" fill="var(--muted)">Green, O(1): touches only the changed definition, whatever the size of the program. Red, O(n): a pass over every definition.</text><text x="0" y="310" font-size="11.5" fill="var(--muted)">The statics refresh runs after the typing debounce, for an edit and an undo alike; it is timed separately below.</text>
+</svg></div>
+<figcaption>Figure 2. What an edit and an undo run, as the probe below counted and profiled them. The work on the changed definition is constant; each pass over every definition is linear. Read from <code>History.re</code>, <code>Page.re</code>, <code>MakeTerm.re</code>, <code>DefStatics.re</code> and <code>Workspace.re</code> at bfa36a6ede.</figcaption></figure>
+
+<h2 id="scaling">How it grows<a class="anchor" href="#scaling" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="scaling" title="copy this section's address">copy link</button></h2>
+<p>The probe builds a program of <i>n</i> definitions, <code>let v0 = 0 in let v1 = v0 + 1 in &hellip; v<i>n</i>-1</code>. It moves the caret into the middle definition and types four digits there, then undoes four times and redoes four times. Each step goes through the app's own update loop, with each frame told whether it was an edit, as the app's main loop tells it. Then comes the statics refresh that the typing debounce would run. Evaluation is off. Sizes 400 to 6,400, three runs of four steps of each kind for each build.</p>
+<figure class="fig" id="fig1"><div class="figscroll"><svg viewBox="0 0 900 272" width="100%" role="img" aria-label="Three log-log plots, edit, undo and redo time against program size from 400 to 6,400 definitions, before and after the fixes; every line rises in proportion to the program">
+<text x="44" y="14" font-size="13" font-weight="700" fill="var(--accent2)">an edit</text>
+<line x1="44" x2="278" y1="186.8" y2="186.8" stroke="var(--line)"/><text x="39" y="190.8" font-size="10.5" text-anchor="end" fill="var(--muted)">10 ms</text>
+<line x1="44" x2="278" y1="143.6" y2="143.6" stroke="var(--line)"/><text x="39" y="147.6" font-size="10.5" text-anchor="end" fill="var(--muted)">30 ms</text>
+<line x1="44" x2="278" y1="96.4" y2="96.4" stroke="var(--line)"/><text x="39" y="100.4" font-size="10.5" text-anchor="end" fill="var(--muted)">100 ms</text>
+<line x1="44" x2="278" y1="53.2" y2="53.2" stroke="var(--line)"/><text x="39" y="57.2" font-size="10.5" text-anchor="end" fill="var(--muted)">300 ms</text>
+<text x="44.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">400</text>
+<text x="102.5" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">800</text>
+<text x="161.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">1,600</text>
+<text x="219.5" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">3,200</text>
+<text x="278.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">6,400</text>
+<text x="161.0" y="246" font-size="10.5" text-anchor="middle" fill="var(--muted)">definitions in the program</text>
+<polyline points="44.0,184.9 102.5,180.6 161.0,176.7 219.5,173.2 278.0,169.9" fill="none" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="2 4"/><text x="276.0" y="183.9" font-size="10.5" text-anchor="end" fill="var(--good)">if it grew as log n</text>
+<polyline points="44.0,173.6 102.5,167.1 161.0,138.7 219.5,109.0 278.0,77.2" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4"/>
+<circle cx="44.0" cy="173.6" r="2.6" fill="var(--muted)"><title>before the fixes, 400 definitions: 14 ms</title></circle>
+<text x="44.0" y="166.6" font-size="10" text-anchor="middle" fill="var(--muted)">14</text>
+<circle cx="102.5" cy="167.1" r="2.6" fill="var(--muted)"><title>before the fixes, 800 definitions: 16.5 ms</title></circle>
+<text x="102.5" y="160.1" font-size="10" text-anchor="middle" fill="var(--muted)">16.5</text>
+<circle cx="161.0" cy="138.7" r="2.6" fill="var(--muted)"><title>before the fixes, 1,600 definitions: 34 ms</title></circle>
+<text x="161.0" y="131.7" font-size="10" text-anchor="middle" fill="var(--muted)">34</text>
+<circle cx="219.5" cy="109.0" r="2.6" fill="var(--muted)"><title>before the fixes, 3,200 definitions: 72 ms</title></circle>
+<text x="219.5" y="102.0" font-size="10" text-anchor="middle" fill="var(--muted)">72</text>
+<circle cx="278.0" cy="77.2" r="2.6" fill="var(--muted)"><title>before the fixes, 6,400 definitions: 163 ms</title></circle>
+<text x="278.0" y="70.2" font-size="10" text-anchor="middle" fill="var(--muted)">163</text>
+<polyline points="44.0,184.9 102.5,186.8 161.0,155.8 219.5,129.5 278.0,93.9" fill="none" stroke="var(--accent2)" stroke-width="2.6"/>
+<circle cx="44.0" cy="184.9" r="3.2" fill="var(--accent2)"><title>after the fixes, 400 definitions: 10.5 ms</title></circle>
+<text x="44.0" y="199.9" font-size="11" text-anchor="middle" fill="var(--accent2)" font-weight="700">10.5</text>
+<circle cx="102.5" cy="186.8" r="3.2" fill="var(--accent2)"><title>after the fixes, 800 definitions: 10 ms</title></circle>
+<text x="102.5" y="201.8" font-size="11" text-anchor="middle" fill="var(--accent2)" font-weight="700">10</text>
+<circle cx="161.0" cy="155.8" r="3.2" fill="var(--accent2)"><title>after the fixes, 1,600 definitions: 22 ms</title></circle>
+<text x="161.0" y="170.8" font-size="11" text-anchor="middle" fill="var(--accent2)" font-weight="700">22</text>
+<circle cx="219.5" cy="129.5" r="3.2" fill="var(--accent2)"><title>after the fixes, 3,200 definitions: 43 ms</title></circle>
+<text x="219.5" y="144.5" font-size="11" text-anchor="middle" fill="var(--accent2)" font-weight="700">43</text>
+<circle cx="278.0" cy="93.9" r="3.2" fill="var(--accent2)"><title>after the fixes, 6,400 definitions: 106 ms</title></circle>
+<text x="278.0" y="108.9" font-size="11" text-anchor="middle" fill="var(--accent2)" font-weight="700">106</text>
+<text x="344" y="14" font-size="13" font-weight="700" fill="var(--accent)">an undo</text>
+<line x1="344" x2="578" y1="186.8" y2="186.8" stroke="var(--line)"/><text x="339" y="190.8" font-size="10.5" text-anchor="end" fill="var(--muted)">10 ms</text>
+<line x1="344" x2="578" y1="143.6" y2="143.6" stroke="var(--line)"/><text x="339" y="147.6" font-size="10.5" text-anchor="end" fill="var(--muted)">30 ms</text>
+<line x1="344" x2="578" y1="96.4" y2="96.4" stroke="var(--line)"/><text x="339" y="100.4" font-size="10.5" text-anchor="end" fill="var(--muted)">100 ms</text>
+<line x1="344" x2="578" y1="53.2" y2="53.2" stroke="var(--line)"/><text x="339" y="57.2" font-size="10.5" text-anchor="end" fill="var(--muted)">300 ms</text>
+<text x="344.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">400</text>
+<text x="402.5" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">800</text>
+<text x="461.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">1,600</text>
+<text x="519.5" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">3,200</text>
+<text x="578.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">6,400</text>
+<text x="461.0" y="246" font-size="10.5" text-anchor="middle" fill="var(--muted)">definitions in the program</text>
+<polyline points="344.0,162.6 402.5,158.3 461.0,154.4 519.5,150.9 578.0,147.7" fill="none" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="2 4"/><text x="576.0" y="161.7" font-size="10.5" text-anchor="end" fill="var(--good)">if it grew as log n</text>
+<polyline points="344.0,154.1 402.5,134.4 461.0,105.4 519.5,74.2 578.0,39.9" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4"/>
+<circle cx="344.0" cy="154.1" r="2.6" fill="var(--muted)"><title>before the fixes, 400 definitions: 23 ms</title></circle>
+<text x="344.0" y="147.1" font-size="10" text-anchor="middle" fill="var(--muted)">23</text>
+<circle cx="402.5" cy="134.4" r="2.6" fill="var(--muted)"><title>before the fixes, 800 definitions: 38 ms</title></circle>
+<text x="402.5" y="127.4" font-size="10" text-anchor="middle" fill="var(--muted)">38</text>
+<circle cx="461.0" cy="105.4" r="2.6" fill="var(--muted)"><title>before the fixes, 1,600 definitions: 80 ms</title></circle>
+<text x="461.0" y="98.4" font-size="10" text-anchor="middle" fill="var(--muted)">80</text>
+<circle cx="519.5" cy="74.2" r="2.6" fill="var(--muted)"><title>before the fixes, 3,200 definitions: 176 ms</title></circle>
+<text x="519.5" y="67.2" font-size="10" text-anchor="middle" fill="var(--muted)">176</text>
+<circle cx="578.0" cy="39.9" r="2.6" fill="var(--muted)"><title>before the fixes, 6,400 definitions: 422 ms</title></circle>
+<text x="578.0" y="32.9" font-size="10" text-anchor="middle" fill="var(--muted)">422</text>
+<polyline points="344.0,162.6 402.5,144.3 461.0,115.8 519.5,89.2 578.0,54.2" fill="none" stroke="var(--accent)" stroke-width="2.6"/>
+<circle cx="344.0" cy="162.6" r="3.2" fill="var(--accent)"><title>after the fixes, 400 definitions: 18.5 ms</title></circle>
+<text x="344.0" y="177.6" font-size="11" text-anchor="middle" fill="var(--accent)" font-weight="700">18.5</text>
+<circle cx="402.5" cy="144.3" r="3.2" fill="var(--accent)"><title>after the fixes, 800 definitions: 30 ms</title></circle>
+<text x="402.5" y="159.3" font-size="11" text-anchor="middle" fill="var(--accent)" font-weight="700">30</text>
+<circle cx="461.0" cy="115.8" r="3.2" fill="var(--accent)"><title>after the fixes, 1,600 definitions: 61 ms</title></circle>
+<text x="461.0" y="130.8" font-size="11" text-anchor="middle" fill="var(--accent)" font-weight="700">61</text>
+<circle cx="519.5" cy="89.2" r="3.2" fill="var(--accent)"><title>after the fixes, 3,200 definitions: 120 ms</title></circle>
+<text x="519.5" y="104.2" font-size="11" text-anchor="middle" fill="var(--accent)" font-weight="700">120</text>
+<circle cx="578.0" cy="54.2" r="3.2" fill="var(--accent)"><title>after the fixes, 6,400 definitions: 292 ms</title></circle>
+<text x="578.0" y="69.2" font-size="11" text-anchor="middle" fill="var(--accent)" font-weight="700">292</text>
+<text x="644" y="14" font-size="13" font-weight="700" fill="var(--warn)">a redo</text>
+<line x1="644" x2="878" y1="186.8" y2="186.8" stroke="var(--line)"/><text x="639" y="190.8" font-size="10.5" text-anchor="end" fill="var(--muted)">10 ms</text>
+<line x1="644" x2="878" y1="143.6" y2="143.6" stroke="var(--line)"/><text x="639" y="147.6" font-size="10.5" text-anchor="end" fill="var(--muted)">30 ms</text>
+<line x1="644" x2="878" y1="96.4" y2="96.4" stroke="var(--line)"/><text x="639" y="100.4" font-size="10.5" text-anchor="end" fill="var(--muted)">100 ms</text>
+<line x1="644" x2="878" y1="53.2" y2="53.2" stroke="var(--line)"/><text x="639" y="57.2" font-size="10.5" text-anchor="end" fill="var(--muted)">300 ms</text>
+<text x="644.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">400</text>
+<text x="702.5" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">800</text>
+<text x="761.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">1,600</text>
+<text x="819.5" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">3,200</text>
+<text x="878.0" y="229" font-size="10.5" text-anchor="middle" fill="var(--muted)">6,400</text>
+<text x="761.0" y="246" font-size="10.5" text-anchor="middle" fill="var(--muted)">definitions in the program</text>
+<polyline points="644.0,176.5 702.5,172.2 761.0,168.3 819.5,164.8 878.0,161.5" fill="none" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="2 4"/><text x="876.0" y="175.5" font-size="10.5" text-anchor="end" fill="var(--good)">if it grew as log n</text>
+<polyline points="644.0,168.3 702.5,144.3 761.0,114.5 819.5,86.1 878.0,48.3" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4"/>
+<circle cx="644.0" cy="168.3" r="2.6" fill="var(--muted)"><title>before the fixes, 400 definitions: 16 ms</title></circle>
+<text x="644.0" y="161.3" font-size="10" text-anchor="middle" fill="var(--muted)">16</text>
+<circle cx="702.5" cy="144.3" r="2.6" fill="var(--muted)"><title>before the fixes, 800 definitions: 30 ms</title></circle>
+<text x="702.5" y="137.3" font-size="10" text-anchor="middle" fill="var(--muted)">30</text>
+<circle cx="761.0" cy="114.5" r="2.6" fill="var(--muted)"><title>before the fixes, 1,600 definitions: 63 ms</title></circle>
+<text x="761.0" y="107.5" font-size="10" text-anchor="middle" fill="var(--muted)">63</text>
+<circle cx="819.5" cy="86.1" r="2.6" fill="var(--muted)"><title>before the fixes, 3,200 definitions: 130 ms</title></circle>
+<text x="819.5" y="79.1" font-size="10" text-anchor="middle" fill="var(--muted)">130</text>
+<circle cx="878.0" cy="48.3" r="2.6" fill="var(--muted)"><title>before the fixes, 6,400 definitions: 340 ms</title></circle>
+<text x="878.0" y="41.3" font-size="10" text-anchor="middle" fill="var(--muted)">340</text>
+<polyline points="644.0,176.5 702.5,167.1 761.0,131.4 819.5,102.7 878.0,72.5" fill="none" stroke="var(--warn)" stroke-width="2.6"/>
+<circle cx="644.0" cy="176.5" r="3.2" fill="var(--warn)"><title>after the fixes, 400 definitions: 13 ms</title></circle>
+<text x="644.0" y="191.5" font-size="11" text-anchor="middle" fill="var(--warn)" font-weight="700">13</text>
+<circle cx="702.5" cy="167.1" r="3.2" fill="var(--warn)"><title>after the fixes, 800 definitions: 16.5 ms</title></circle>
+<text x="702.5" y="182.1" font-size="11" text-anchor="middle" fill="var(--warn)" font-weight="700">16.5</text>
+<circle cx="761.0" cy="131.4" r="3.2" fill="var(--warn)"><title>after the fixes, 1,600 definitions: 41 ms</title></circle>
+<text x="761.0" y="146.4" font-size="11" text-anchor="middle" fill="var(--warn)" font-weight="700">41</text>
+<circle cx="819.5" cy="102.7" r="3.2" fill="var(--warn)"><title>after the fixes, 3,200 definitions: 85 ms</title></circle>
+<text x="819.5" y="117.7" font-size="11" text-anchor="middle" fill="var(--warn)" font-weight="700">85</text>
+<circle cx="878.0" cy="72.5" r="3.2" fill="var(--warn)"><title>after the fixes, 6,400 definitions: 184 ms</title></circle>
+<text x="878.0" y="87.5" font-size="11" text-anchor="middle" fill="var(--warn)" font-weight="700">184</text>
+<line x1="44" x2="70" y1="266" y2="266" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4"/><text x="76" y="270" font-size="11" fill="var(--muted)">before the fixes (2cab658ef1)</text><line x1="260" x2="286" y1="266" y2="266" stroke="var(--ink)" stroke-width="2.6"/><text x="292" y="270" font-size="11" fill="var(--ink)">after (bfa36a6ede)</text>
+</svg></div>
+<figcaption>Figure 1. The time of one step against the number of definitions, both on log scales, so a straight line of slope 1 is linear growth. The statics refresh after each step is not included (it is in the table). Grey dashed: before the fixes; coloured: after. The green dotted line is not a measurement: it is how a step would grow if it cost O(log <i>n</i>), drawn from the first point. Medians of 12 steps; the after column's ranges are in the table.</figcaption></figure>
+<div class="scroll"><table>
+<tr><th>definitions</th><th class="n">an edit, before</th><th class="n">after</th><th class="n">an undo, before</th><th class="n">after</th><th class="n">a redo, before</th><th class="n">after</th><th class="n">statics, after</th><th class="n">building the program</th></tr>
+<tr><td class="n">400</td><td class="n">14</td><td class="n"><b>10.5</b> <span class="note">(7–14)</span></td><td class="n">23</td><td class="n"><b>18.5</b> <span class="note">(14–39)</span></td><td class="n">16</td><td class="n"><b>13</b> <span class="note">(8–23)</span></td><td class="n">5</td><td class="n">173</td></tr>
+<tr><td class="n">800</td><td class="n">16.5</td><td class="n"><b>10</b> <span class="note">(9–23)</span></td><td class="n">38</td><td class="n"><b>30</b> <span class="note">(22–36)</span></td><td class="n">30</td><td class="n"><b>16.5</b> <span class="note">(13–25)</span></td><td class="n">7</td><td class="n">251</td></tr>
+<tr><td class="n">1,600</td><td class="n">34</td><td class="n"><b>22</b> <span class="note">(20–40)</span></td><td class="n">80</td><td class="n"><b>61</b> <span class="note">(49–77)</span></td><td class="n">63</td><td class="n"><b>41</b> <span class="note">(34–70)</span></td><td class="n">17</td><td class="n">685</td></tr>
+<tr><td class="n">3,200</td><td class="n">72</td><td class="n"><b>43</b> <span class="note">(40–83)</span></td><td class="n">176</td><td class="n"><b>120</b> <span class="note">(104–205)</span></td><td class="n">130</td><td class="n"><b>85</b> <span class="note">(62–148)</span></td><td class="n">32</td><td class="n">1,007</td></tr>
+<tr><td class="n">6,400</td><td class="n">163</td><td class="n"><b>106</b> <span class="note">(85–204)</span></td><td class="n">422</td><td class="n"><b>292</b> <span class="note">(244–337)</span></td><td class="n">340</td><td class="n"><b>184</b> <span class="note">(166–469)</span></td><td class="n">78</td><td class="n">2,637</td></tr>
+</table></div>
+<p class="note">Milliseconds per step, medians of 12 (3 runs &times; 4 steps); the after column's range in brackets. "Statics, after" is the median refresh after each of the 36 steps at that size. "Building the program" is the first run's initial build of the editor, for scale.</p>
+<p>Two things in the spread are worth knowing. The first edit of each run takes about twice as long as the other three. The last redo takes longer than the other redos: about 40 ms more at 3,200 definitions, and up to 300 more at 6,400. Neither is explained yet; medians of 12 are robust to both. Runs of the same two builds this morning (800 to 3,200 definitions) were 20 to 70% slower at every size, for both builds alike. That is the laptop's spread between sessions, larger than the fixes' effect at the small sizes, so compare within a session: this morning's gap between the builds was 25 to 45% at the larger sizes, much as here.</p>
+
+<h2 id="where">Where the time goes<a class="anchor" href="#where" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="where" title="copy this section's address">copy link</button></h2>
+<figure class="fig" id="fig3"><div class="figscroll"><svg viewBox="0 0 900 210" width="100%" role="img" aria-label="Two stacked bars of profiled time at 3,200 definitions, before and after the fixes: the auto-probe root and completions are gone after; the top-level term, statics, the outline and the rest remain">
+<text x="0" y="14" font-size="13" fill="var(--ink)">before the fixes · 1,823 ms profiled, 12 steps and their statics</text>
+<rect x="0.0" y="20" width="260.2" height="40" fill="var(--accent2)" opacity="0.88"><title>the top-level term: 527 ms, 29%</title></rect>
+<text x="5.0" y="36" font-size="11.5" fill="#fff">the top-level term</text><text x="5.0" y="52" font-size="11.5" font-weight="700" fill="#fff">527 ms · 29%</text>
+<rect x="260.2" y="20" width="142.7" height="40" fill="var(--accent)" opacity="0.88"><title>statics' chain: 289 ms, 16%</title></rect>
+<text x="265.2" y="36" font-size="11.5" fill="#fff">statics' chain</text><text x="265.2" y="52" font-size="11.5" font-weight="700" fill="#fff">289 ms · 16%</text>
+<rect x="402.9" y="20" width="103.7" height="40" fill="var(--warn)" opacity="0.88"><title>the outline: 210 ms, 12%</title></rect>
+<text x="407.9" y="36" font-size="11.5" fill="#fff">the outline</text><text x="407.9" y="52" font-size="11.5" font-weight="700" fill="#fff">210 ms · 12%</text>
+<rect x="506.5" y="20" width="120.5" height="40" fill="var(--bad)" opacity="0.88"><title>auto-probe root: 244 ms, 13%</title></rect>
+<text x="511.5" y="36" font-size="11.5" fill="#fff">auto-probe root</text><text x="511.5" y="52" font-size="11.5" font-weight="700" fill="#fff">244 ms · 13%</text>
+<rect x="627.0" y="20" width="87.9" height="40" fill="#a16207" opacity="0.88"><title>completions: 178 ms, 10%</title></rect>
+<text x="632.0" y="36" font-size="11.5" fill="#fff">completions</text><text x="632.0" y="52" font-size="11.5" font-weight="700" fill="#fff">178 ms · 10%</text>
+<rect x="714.9" y="20" width="185.1" height="40" fill="var(--cx)" opacity="0.88"><title>the rest: 375 ms, 21%</title></rect>
+<text x="719.9" y="36" font-size="11.5" fill="var(--ink)">the rest</text><text x="719.9" y="52" font-size="11.5" font-weight="700" fill="var(--ink)">375 ms · 21%</text>
+<text x="0" y="98" font-size="13" fill="var(--ink)">after · 1,387 ms profiled, 12 steps and their statics</text>
+<rect x="0.0" y="104" width="258.2" height="40" fill="var(--accent2)" opacity="0.88"><title>the top-level term: 523 ms, 38%</title></rect>
+<text x="5.0" y="120" font-size="11.5" fill="#fff">the top-level term</text><text x="5.0" y="136" font-size="11.5" font-weight="700" fill="#fff">523 ms · 38%</text>
+<rect x="258.2" y="104" width="139.7" height="40" fill="var(--accent)" opacity="0.88"><title>statics' chain: 283 ms, 20%</title></rect>
+<text x="263.2" y="120" font-size="11.5" fill="#fff">statics' chain</text><text x="263.2" y="136" font-size="11.5" font-weight="700" fill="#fff">283 ms · 20%</text>
+<rect x="397.9" y="104" width="104.2" height="40" fill="var(--warn)" opacity="0.88"><title>the outline: 211 ms, 15%</title></rect>
+<text x="402.9" y="120" font-size="11.5" fill="#fff">the outline</text><text x="402.9" y="136" font-size="11.5" font-weight="700" fill="#fff">211 ms · 15%</text>
+<rect x="502.1" y="104" width="182.7" height="40" fill="var(--cx)" opacity="0.88"><title>the rest: 370 ms, 27%</title></rect>
+<text x="507.1" y="120" font-size="11.5" fill="var(--ink)">the rest</text><text x="507.1" y="136" font-size="11.5" font-weight="700" fill="var(--ink)">370 ms · 27%</text>
+<rect x="0" y="166" width="12" height="12" fill="var(--accent2)" opacity="0.88"/><text x="17" y="176" font-size="11.5" fill="var(--ink)">the top-level term</text>
+<rect x="168.6" y="166" width="12" height="12" fill="var(--accent)" opacity="0.88"/><text x="185.6" y="176" font-size="11.5" fill="var(--ink)">statics' chain</text>
+<rect x="308.4" y="166" width="12" height="12" fill="var(--warn)" opacity="0.88"/><text x="325.4" y="176" font-size="11.5" fill="var(--ink)">the outline</text>
+<rect x="426.59999999999997" y="166" width="12" height="12" fill="var(--bad)" opacity="0.88"/><text x="443.59999999999997" y="176" font-size="11.5" fill="var(--ink)">auto-probe root</text>
+<rect x="573.5999999999999" y="166" width="12" height="12" fill="#a16207" opacity="0.88"/><text x="590.5999999999999" y="176" font-size="11.5" fill="var(--ink)">completions</text>
+<rect x="691.8" y="166" width="12" height="12" fill="var(--cx)" opacity="0.88"/><text x="708.8" y="176" font-size="11.5" fill="var(--ink)">the rest</text>
+</svg></div>
+<figcaption>Figure 3. One CPU profile of the probe's 12 steps and their statics refreshes at 3,200 definitions, for each build, split into parts of the call tree that do not overlap. Profiled times run long, so read the shares. The auto-probe's root and completions, 23% of the time before the fixes, are gone after; the rest is the same work.</figcaption></figure>
+<div class="scroll"><table>
+<tr><th>part of the time</th><th>where</th><th class="n">before</th><th class="n">after</th></tr>
+<tr><td>rebuilding the top-level term</td><td><code>MakeTerm.go_incr (src/haz3lcore/lang/MakeTerm.re:3382)</code></td><td class="n">527 ms · 29%</td><td class="n">523 ms · 38%</td></tr>
+<tr><td>statics&#x27; walk down the chain</td><td><code>DefStatics.calc (src/haz3lcore/derived/DefStatics.re:1934)</code></td><td class="n">289 ms · 16%</td><td class="n">283 ms · 20%</td></tr>
+<tr><td>the outline, rebuilt (undo and redo only)</td><td><code>Outline.of_source (src/haz3lcore/tiles/Outline.re:290)</code></td><td class="n">210 ms · 12%</td><td class="n">211 ms · 15%</td></tr>
+<tr><td>the auto-probe&#x27;s program root</td><td><code>AutoProbePerform.program_root_id (src/haz3lcore/AutoProbePerform.re:188)</code></td><td class="n">244 ms · 13%</td><td class="n">under 78 ms</td></tr>
+<tr><td>completion suggestions</td><td><code>TyDi.suggest (src/haz3lcore/TyDi/TyDi.re:57)</code></td><td class="n">178 ms · 10%</td><td class="n">under 78 ms</td></tr>
+<tr><td>the rest</td><td>garbage collection, the probe's own frames, and everything below the list</td><td class="n">375 ms · 21%</td><td class="n">370 ms · 27%</td></tr>
+<tr><td><b>total</b></td><td></td><td class="n"><b>1,823 ms</b></td><td class="n"><b>1,387 ms</b></td></tr>
+</table></div>
+<p class="note">Inside those parts, after the fixes:</p><div class="scroll"><table><tr><th>function</th><th class="n">share</th></tr><tr><td><code>MakeTerm.record_top_frame / sim (MakeTerm.re:2622, 2635)</code></td><td class="n">239 ms · 17%</td></tr><tr><td><code>ItemSpans.memo / top (ItemSpans.re:793, 822): the top level&#x27;s spans</code></td><td class="n">141 ms · 10%</td></tr><tr><td><code>MakeTerm.parse_level (MakeTerm.re:2891)</code></td><td class="n">92 ms · 7%</td></tr><tr><td><code>DefStatics.step_chain (DefStatics.re:788)</code></td><td class="n">154 ms · 11%</td></tr><tr><td><code>DefStatics.calc_chain (DefStatics.re:1725)</code></td><td class="n">128 ms · 9%</td></tr><tr><td><code>Outline.build (Outline.re:241)</code></td><td class="n">195 ms · 14%</td></tr><tr><td><code>Measured.of_segment (Measured.re:1568): layout&#x27;s walk</code></td><td class="n">78 ms · 6%</td></tr><tr><td><code>Id.compare (src/util/Id.re:123), from several of the above</code></td><td class="n">134 ms · 10%</td></tr></table></div>
+<p>Every remaining part is a pass over the whole top level, around work that is already incremental:</p>
+<ul>
+<li><b>The top-level term</b> (<code>MakeTerm.go_incr</code>). The syntax cache re-parses only the changed definition, but the top level's term is then rebuilt from all of them: a simulation of the top-level frame over every definition (<code>record_top_frame</code>), and every definition's span (<code>ItemSpans</code>).</li>
+<li><b>Statics' chain</b> (<code>DefStatics.step_chain</code>, <code>calc_chain</code>). Definitions are analyzed one by one, each in the context the ones before it make. Only 2 heads are compared structurally, and every other definition is found physically the same in constant time, but the walk itself visits all <i>n</i>.</li>
+<li><b>The outline</b> (<code>Outline.build</code>), rebuilt on every undo and redo (<a href="#twice">below</a>).</li>
+<li><b>Layout's walk</b> (<code>Measured.of_segment</code>). One or two chunks are measured again, and the walk to place them visits the rest.</li>
+</ul>
+
+<h2 id="fixes">Two cheap fixes<a class="anchor" href="#fixes" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fixes" title="copy this section's address">copy link</button></h2>
+<p>Both were passes over the whole program that nothing needed. Both are on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> since 2026-11-02, cherry-picked as 394552d5d0 and bfa36a6ede (first made on a probe branch as 459b029f68 and d06473240f).</p>
+<h3 id="fix-root">The auto-probe's program root (394552d5d0)<a class="anchor" href="#fix-root" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fix-root" title="copy this section's address">copy link</button></h3>
+<p>Auto-probes find the program's root expression on every frame (<code>AutoProbePerform.program_root_id</code>). They did it from a skeleton of the whole top level, through a memo keyed on the segment's identity, which every edit replaces, so it missed on every frame after an edit: 13% of the profile before. The parser already keeps that skeleton (<code>MakeTerm.Incr</code>'s <code>c_skel</code>, from <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>), so the fix reads it when it belongs to this segment:</p>
+<pre class="code"><span class="ad">let skel =
+  switch (syntax.t_cache.c_skel) {
+  | Some((Sort.Exp, parsed, skel)) when parsed === seg => skel
+  | _ => Segment.skel(seg)
+  };</span>
+switch (Segment.root_id(skel, seg)) {</pre>
+<p>This one is <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>'s and <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>'s only: dev has no <code>c_skel</code>.</p>
+<h3 id="fix-digits">No completions after a numeral (bfa36a6ede)<a class="anchor" href="#fix-digits" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fix-digits" title="copy this section's address">copy link</button></h3>
+<p>After each keystroke, the editor fills its completion buffer with the best suggestion for the token left of the caret (<code>TyDi.set_buffer</code>). To find it, it scans the context for names and completes the whole segment to find the delimiters the syntax expects. That is a pass over the program, 10% of the profile before. No suggestion starts with a digit (names, keywords, operators and missing delimiters don't), so after a numeral none is computed now:</p>
+<pre class="code">let* tok_to_left = token_to_left(z);
+<span class="ad">let* _ =
+  switch (tok_to_left.[0]) {
+  | '0' .. '9' => None
+  | _ => Some()
+  | exception (Invalid_argument(_)) => Some()
+  };</span></pre>
+<p>A limit to keep in mind: this fix helps exactly the probe's edits, which type digits. Typing a name still computes suggestions over the program. Dev has the same code, so the fix would suit dev as well.</p>
+
+<h2 id="twice">Why an undo costs more than an edit<a class="anchor" href="#twice" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="twice" title="copy this section's address">copy link</button></h2>
+<figure class="fig" id="fig4"><div class="figscroll"><svg viewBox="0 0 640 154" width="100%" role="img" aria-label="At 3,200 definitions after the fixes: an edit, a redo and an undo, each with its statics refresh; the outline is part of the redo and the undo">
+<text x="64" y="23.0" font-size="12" text-anchor="end" fill="var(--ink)">an edit</text><rect x="70" y="6" width="144.8" height="26" fill="var(--accent2)" opacity="0.9"/>
+<rect x="214.8" y="6" width="106.0" height="26" fill="var(--cx)"/><text x="325.8" y="23.0" font-size="11.5" fill="var(--ink)"><tspan font-weight="700">43</tspan> + 32 ms</text>
+<text x="64" y="63.0" font-size="12" text-anchor="end" fill="var(--ink)">a redo</text><rect x="70" y="46" width="286.1" height="26" fill="var(--warn)" opacity="0.9"/>
+<rect x="267.4" y="46" width="88.8" height="26" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="356.1" y="46" width="106.0" height="26" fill="var(--cx)"/><text x="467.2" y="63.0" font-size="11.5" fill="var(--ink)"><tspan font-weight="700">85</tspan> + 32 ms</text>
+<text x="64" y="103.0" font-size="12" text-anchor="end" fill="var(--ink)">an undo</text><rect x="70" y="86" width="404.0" height="26" fill="var(--accent)" opacity="0.9"/>
+<rect x="385.2" y="86" width="88.8" height="26" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="474.0" y="86" width="106.0" height="26" fill="var(--cx)"/><text x="585.0" y="103.0" font-size="11.5" fill="var(--ink)"><tspan font-weight="700">120</tspan> + 32 ms</text>
+<rect x="70" y="128" width="10" height="10" fill="none" stroke="var(--ink)" stroke-dasharray="3 2"/><text x="84" y="137" font-size="10.5" fill="var(--muted)">the outline, about 26 ms</text><rect x="220" y="128" width="10" height="10" fill="var(--cx)"/><text x="234" y="137" font-size="10.5" fill="var(--muted)">statics after it</text>
+</svg></div>
+<figcaption>Figure 4. An edit, a redo and an undo at 3,200 definitions after the fixes, each followed by its statics refresh (grey). The dashed box inside the redo and the undo is the outline's rebuild, from the profile: the profile's outline time over the 8 steps that build it.</figcaption></figure>
+<p>An undo or a redo is two frames: the restore, then the <code>RealizeView</code> it schedules. The second builds the program's outline (<code>Program.outline</code> &rarr; <code>Outline.of_source</code>). The outline is memoized on the last four programs, keyed by the segment's identity and then by <code>Segment.same_program</code>, and the restored program matches none of them. So the outline is built from scratch, about 26 ms at 3,200 definitions. In this probe an edit never builds it, because nothing draws the sidebar. In the app, the sidebar's view may ask for it after edits too; that is not measured here.</p>
+<p>That accounts for most of a redo's extra over an edit (42 ms), but only a third of an undo's (77 ms). An undo parses 2 definitions again where an edit parses 1, but that is constant work. Why an undo costs about one and a half redos is the next thing to profile, with the undo steps alone.</p>
+
+<h2 id="logn">Toward O(log n)<a class="anchor" href="#logn" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="logn" title="copy this section's address">copy link</button></h2>
+<p>Every pass left is a walk over the top level's definitions. The incremental work inside each pass is already constant, so making each step O(log <i>n</i>) means making the walks O(log <i>n</i>). That starts with how the top level is represented.</p>
+<figure class="fig" id="fig5"><div class="figscroll"><svg viewBox="0 0 900 300" width="100%" role="img" aria-label="Left: the top level as a chain of nested lets; changing definition 9 rebuilds the 9 lets around it. Right: the same 16 definitions in a balanced tree; changing definition 9 rebuilds the 4 nodes on its path, and the old root still shares every other node.">
+<text x="0" y="16" font-size="13" font-weight="700" fill="var(--ink)">Today: a chain of nested lets</text>
+<rect x="8" y="40" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="14" y="53" font-size="10.5" fill="#fff">let v0</text>
+<rect x="30" y="54" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="36" y="67" font-size="10.5" fill="#fff">let v1</text>
+<rect x="52" y="68" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="58" y="81" font-size="10.5" fill="#fff">let v2</text>
+<rect x="74" y="82" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="80" y="95" font-size="10.5" fill="#fff">let v3</text>
+<rect x="96" y="96" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="102" y="109" font-size="10.5" fill="#fff">let v4</text>
+<rect x="118" y="110" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="124" y="123" font-size="10.5" fill="#fff">let v5</text>
+<rect x="140" y="124" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="146" y="137" font-size="10.5" fill="#fff">let v6</text>
+<rect x="162" y="138" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="168" y="151" font-size="10.5" fill="#fff">let v7</text>
+<rect x="184" y="152" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="190" y="165" font-size="10.5" fill="#fff">let v8</text>
+<rect x="206" y="166" width="58" height="18" rx="4" fill="var(--bad)" opacity="0.85" stroke="var(--bad)"/><text x="212" y="179" font-size="10.5" fill="#fff">let v9</text>
+<rect x="228" y="180" width="58" height="18" rx="4" fill="var(--paper)" opacity="1" stroke="var(--muted)"/><text x="234" y="193" font-size="10.5" fill="var(--muted)">let v10</text>
+<rect x="250" y="194" width="58" height="18" rx="4" fill="var(--paper)" opacity="1" stroke="var(--muted)"/><text x="256" y="207" font-size="10.5" fill="var(--muted)">let v11</text>
+<rect x="272" y="208" width="58" height="18" rx="4" fill="var(--paper)" opacity="1" stroke="var(--muted)"/><text x="278" y="221" font-size="10.5" fill="var(--muted)">let v12</text>
+<rect x="294" y="222" width="58" height="18" rx="4" fill="var(--paper)" opacity="1" stroke="var(--muted)"/><text x="300" y="235" font-size="10.5" fill="var(--muted)">let v13</text>
+<rect x="316" y="236" width="58" height="18" rx="4" fill="var(--paper)" opacity="1" stroke="var(--muted)"/><text x="322" y="249" font-size="10.5" fill="var(--muted)">let v14</text>
+<rect x="338" y="250" width="58" height="18" rx="4" fill="var(--paper)" opacity="1" stroke="var(--muted)"/><text x="344" y="263" font-size="10.5" fill="var(--muted)">let v15</text>
+<text x="0" y="292" font-size="11.5" fill="var(--muted)">Changing v9 rebuilds every let around it: 10 of 16, n/2 on average.</text>
+<text x="430" y="16" font-size="13" font-weight="700" fill="var(--ink)">A balanced tree of definitions</text>
+<line x1="444.7" y1="250.0" x2="459.4" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="474.1" y1="250.0" x2="459.4" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="503.4" y1="250.0" x2="518.1" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="532.8" y1="250.0" x2="518.1" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="562.2" y1="250.0" x2="576.9" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="591.6" y1="250.0" x2="576.9" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="620.9" y1="250.0" x2="635.6" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="650.3" y1="250.0" x2="635.6" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="679.7" y1="250.0" x2="694.4" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="709.1" y1="250.0" x2="694.4" y2="202.0" stroke="var(--accent)" stroke-width="2.6"/>
+<line x1="738.4" y1="250.0" x2="753.1" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="767.8" y1="250.0" x2="753.1" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="797.2" y1="250.0" x2="811.9" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="826.6" y1="250.0" x2="811.9" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="855.9" y1="250.0" x2="870.6" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="885.3" y1="250.0" x2="870.6" y2="202.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="459.4" y1="202.0" x2="488.8" y2="154.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="518.1" y1="202.0" x2="488.8" y2="154.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="576.9" y1="202.0" x2="606.2" y2="154.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="635.6" y1="202.0" x2="606.2" y2="154.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="694.4" y1="202.0" x2="723.8" y2="154.0" stroke="var(--accent)" stroke-width="2.6"/>
+<line x1="753.1" y1="202.0" x2="723.8" y2="154.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="811.9" y1="202.0" x2="841.2" y2="154.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="870.6" y1="202.0" x2="841.2" y2="154.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="488.8" y1="154.0" x2="547.5" y2="106.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="606.2" y1="154.0" x2="547.5" y2="106.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="723.8" y1="154.0" x2="782.5" y2="106.0" stroke="var(--accent)" stroke-width="2.6"/>
+<line x1="841.2" y1="154.0" x2="782.5" y2="106.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="547.5" y1="106.0" x2="665.0" y2="58.0" stroke="var(--line)" stroke-width="1.2"/>
+<line x1="782.5" y1="106.0" x2="665.0" y2="58.0" stroke="var(--accent)" stroke-width="2.6"/>
+<circle cx="710.4" cy="194.0" r="6" fill="none" stroke="var(--muted)" stroke-dasharray="2 2"/>
+<circle cx="739.8" cy="146.0" r="6" fill="none" stroke="var(--muted)" stroke-dasharray="2 2"/>
+<circle cx="798.5" cy="98.0" r="6" fill="none" stroke="var(--muted)" stroke-dasharray="2 2"/>
+<circle cx="681.0" cy="50.0" r="6" fill="none" stroke="var(--muted)" stroke-dasharray="2 2"/>
+<circle cx="444.7" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="444.7" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v0</text>
+<circle cx="474.1" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="474.1" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v1</text>
+<circle cx="503.4" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="503.4" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v2</text>
+<circle cx="532.8" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="532.8" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v3</text>
+<circle cx="562.2" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="562.2" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v4</text>
+<circle cx="591.6" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="591.6" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v5</text>
+<circle cx="620.9" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="620.9" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v6</text>
+<circle cx="650.3" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="650.3" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v7</text>
+<circle cx="679.7" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="679.7" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v8</text>
+<circle cx="709.1" cy="250.0" r="8" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="709.1" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v9</text>
+<circle cx="738.4" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="738.4" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v10</text>
+<circle cx="767.8" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="767.8" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v11</text>
+<circle cx="797.2" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="797.2" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v12</text>
+<circle cx="826.6" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="826.6" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v13</text>
+<circle cx="855.9" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="855.9" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v14</text>
+<circle cx="885.3" cy="250.0" r="8" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<text x="885.3" y="272.0" font-size="9.5" text-anchor="middle" fill="var(--muted)">v15</text>
+<circle cx="459.4" cy="202.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="518.1" cy="202.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="576.9" cy="202.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="635.6" cy="202.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="694.4" cy="202.0" r="7" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>
+<circle cx="753.1" cy="202.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="811.9" cy="202.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="870.6" cy="202.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="488.8" cy="154.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="606.2" cy="154.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="723.8" cy="154.0" r="7" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>
+<circle cx="841.2" cy="154.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="547.5" cy="106.0" r="7" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5"/>
+<circle cx="782.5" cy="106.0" r="7" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>
+<circle cx="665.0" cy="58.0" r="7" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="693.0" y="54.0" font-size="11" fill="var(--muted)">the old root (dashed) keeps the old path</text><text x="693.0" y="68.0" font-size="11" fill="var(--muted)">and shares every other node</text>
+<text x="430" y="292" font-size="11.5" fill="var(--muted)">Changing v9 rebuilds its path: log2 n nodes, here 4, each with its summary.</text>
+</svg></div>
+<figcaption>Figure 5. Left: the top level as it is, a chain of nested lets, where each definition's term contains every definition after it. A persistent update to definition 9 rebuilds the lets around it, 10 of 16 here, n/2 on average. Right: the same definitions as the leaves of a balanced tree. An update rebuilds only the path to the changed leaf, log<sub>2</sub> <i>n</i> nodes, and the previous version keeps its own path while sharing everything else.</figcaption></figure>
+<div class="scroll"><table>
+<tr><th>pass</th><th>today</th><th>over a balanced tree of definitions</th></tr>
+<tr><td>the top-level term</td><td class="on">O(n): a chain of nested lets, rebuilt from every definition</td><td>O(log n): each node keeps its subtree's term pieces and skeleton; an edit rebuilds its path. The evaluator and statics would read the top level as a sequence of items, as <code>DefStatics</code> already does.</td></tr>
+<tr><td>statics' chain</td><td class="on">O(n) walk, O(1) analysis</td><td>O(log n) to find the changed definition, plus the definitions that use a name whose type changed: each node keeps the names its subtree binds and uses, so the walk can skip subtrees that cannot be affected.</td></tr>
+<tr><td>layout</td><td class="on">O(n) walk to place a chunk</td><td>O(log n): each node keeps its subtree's rows and widths, so a definition's position is a sum along its path, as in a rope.</td></tr>
+<tr><td>the outline</td><td class="on">O(n), rebuilt on every undo and redo</td><td>O(1) on undo: kept with the snapshot, or found again by the restored program's identity. O(log n) on edit: one entry per node, rebuilt along the path.</td></tr>
+<tr><td>the undo history</td><td class="o1">O(1) to push and pop</td><td>The same. A snapshot of a persistent tree is its root, so it could keep its derived data at the cost of one path per edit rather than a whole version, which is why snapshots are compacted today (<a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>). An undo would then swap roots and redraw what differs.</td></tr>
+</table></div>
+<p>There are two ways to make an undo cheap, and they compose. <b>Undo as a swap of roots</b> keeps each version's derived data in a shared tree, and needs that tree. <b>Undo as an inverse edit</b> replays the edit backwards through the same incremental path a keystroke takes, and needs every action to have an inverse. Either way the walks above have to become O(log <i>n</i>) first, since an edit pays them too. The cheapest walk to isolate and try first is statics' chain: <code>DefStatics</code> already treats the top level as a list of items with summaries.</p>
+
+<h2 id="not">What this does not measure<a class="anchor" href="#not" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="not" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>Evaluation.</b> The probe turns it off. In the app, an undo also re-evaluates the program in the worker, which ships the program to it and the results back.</li>
+<li><b>Drawing.</b> The probe builds no view and no DOM, so the time to redraw the code after an edit or an undo is not here.</li>
+<li><b>The browser.</b> These are Node timings of the test build. Hosted builds in a browser differ in speed, not in how the work grows.</li>
+<li><b>Real programs.</b> A chain of short lets is the plainest shape that grows. Slides like Full Body have fewer, larger definitions, modules and livelits; the same walks apply to them, but with smaller <i>n</i> and larger per-definition costs.</li>
+</ul>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>Profile undo steps alone, to explain why an undo costs about one and a half redos.</li>
+<li>Let a restored program reuse its outline: keep the outline with the snapshot, or find it by the restored program's identity. Then measure an undo again.</li>
+<li>Time an edit and an undo in the browser on Full Body, with evaluation and drawing, to see what share of a real undo these passes are.</li>
+<li>Try the top level as a balanced tree of definitions for statics' chain first, and measure it with this probe: does an edit's statics refresh stop growing with <i>n</i>?</li>
+<li>Then the top-level term and layout over the same tree.</li>
+<li>Offer the completions fix (no suggestions after a numeral) to dev as a PR of its own: dev has the same code.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>The builds.</b> Before: <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> at 2cab658ef1 (dev's merge day of 2026-10-29 merged in) plus the probe, 1d98b3aed7 and 167247e61d. After: the same plus the two fixes, 459b029f68 and d06473240f. On <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> the fixes are 394552d5d0 and bfa36a6ede, with the same code. The probe commits are on a local branch; the probe's source is in <code>036/drivers/</code>.</li>
+<li><b>The probe</b> (<code>Test_UndoScaling.re</code>, one of Hazel's test modules): for each size, build the program, move the caret into the middle definition, then 4 edits (typing <code>1</code>), 4 undos and 4 redos. Each step runs through <code>History.Update.update</code> and <code>calculate</code>, then the frames it schedules, then a statics refresh (<code>RefreshStatics</code>, which the typing debounce runs in the app). Each frame's <code>calculate</code> is told whether its update was an edit, as <code>Main.re</code> tells it, and <code>dynamics=false</code>. For each step it counts the top-level items parsed in full (<code>MakeTerm.Incr.full_analyzed</code>), the layout chunks measured (<code>Measured.Incr.built</code>) and the definitions' heads compared structurally (<code>DefStatics.head_compares</code>).</li>
+<li><b>Two checks the test runner installs were turned off</b> for the probe, because each made the numbers mean something else. One compares the incremental statics with a whole-program analysis after every calculation (<code>DefStatics.after_calc</code>). It made the first numbers look quadratic, then cheap past 3,000 entries, where it stops. The other re-molds the whole program after every edit (<code>Zipper.normalize_check</code>). A helper of the undo tests also told every frame it was an edit; the probe tells each frame what the app's main loop would.</li>
+<li><b>Timing:</b> Node 22.23 on a laptop (Intel Core i7-1370P, Linux), the test build compiled by js_of_ocaml in its release profile, run with <code>nice</code>. Times come from <code>Sys.time</code>, read to the millisecond. There were 3 runs per build at 400, 800, 1,600, 3,200 and 6,400 definitions, with every after run before every before run (not alternated), on 2026-11-02 near 10:30 MST. Node runs with a 64 MB stack under a 256 MB system stack, because at 6,400 definitions the default one overflows: the same probe crashed in four of six runs with an 8 MB stack.</li>
+<li><b>Profiles:</b> <code>node --cpu-prof</code> at a 200 µs interval, one run of each build at 3,200 definitions (earlier the same day, same builds). Read by <code>036/drivers/prof.py</code>, which maps the test bundle's functions to their source through js_of_ocaml's source markers and sums inclusive time per function, under the probe's <code>sample</code>. Node's profiler keeps about 255 frames of a stack, so deep recursion can hide callers; the parts in Figure 3 are separate branches below <code>sample</code>, so none is counted twice. Raw profiles are summarized in <code>data/profile_3200.json</code>.</li>
+<li><b>The data</b>, twice: in this page (<code>script#report-data</code>) and as files in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/036/data"><code>036/data/</code></a>, every run's raw output (<code>runs/</code>), the medians and samples (<code>steps.json</code>, by <code>drivers/medians.py</code>) and the profiles' parts.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/036/data"><code>036/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main>
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-02T17:10:44Z", "base": "integration/livelits-splicerefs-full"}}, BUILT = "2026-11-02";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    const b = li.querySelector("b, strong");
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 36,
+ "title": "What an Undo Costs",
+ "date": "2026-11-02",
+ "kind": "measurement",
+ "status": "work in progress",
+ "question": "How do an edit, an undo and a redo grow with the program in Hazel's editor, where does the time go, and what would O(log n) per step take? Matthew, 2026-11-02, for the meeting with Cyrus on 2026-11-04 (^ticket(665)).",
+ "measurements": "Test_UndoScaling (drivers/) in Node 22.23 on a laptop (Intel Core i7-1370P, Linux): a program of n definitions (400 to 6,400), 4 edits in the middle definition, 4 undos, 4 redos, each through History.Update.update and calculate and the frames scheduled, then a statics refresh; evaluation off. 3 runs per build, every after run before every before run; Sys.time, ms. step_ms is the step, refresh_ms the statics refresh after it; work counts per step (top-level items parsed in full, layout chunks measured, heads compared). Profiles: node --cpu-prof, 200 us, one run per build at 3,200, summarized in profile_3200.json.",
+ "builds": [
+  {
+   "what": "before the fixes: #2635 + the probe",
+   "branch": "integration/livelits-modular-editors at 2cab658ef1, probe 1d98b3aed7 + 167247e61d",
+   "commit": "167247e61d"
+  },
+  {
+   "what": "after: the same + the two fixes",
+   "branch": "local perf/665-cheap; on #2635 as 394552d5d0, bfa36a6ede",
+   "commit": "d06473240f"
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/profile_3200.json",
+  "data/runs",
+  "data/steps.json",
+  "data/tables.json"
+ ],
+ "readings": {
+  "A 400 edit": {
+   "step_ms": [
+    19.0,
+    15.0,
+    16.0,
+    14.0,
+    17.0,
+    13.0,
+    14.0,
+    13.0,
+    16.0,
+    12.0,
+    13.0,
+    14.0
+   ],
+   "refresh_ms": [
+    4.0,
+    7.0,
+    6.0,
+    5.0,
+    6.0,
+    5.0,
+    9.0,
+    5.0,
+    6.0,
+    5.0,
+    7.0,
+    4.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "A 400 redo": {
+   "step_ms": [
+    15.0,
+    16.0,
+    15.0,
+    20.0,
+    15.0,
+    17.0,
+    13.0,
+    18.0,
+    16.0,
+    17.0,
+    13.0,
+    18.0
+   ],
+   "refresh_ms": [
+    4.0,
+    3.0,
+    3.0,
+    2.0,
+    3.0,
+    5.0,
+    5.0,
+    5.0,
+    4.0,
+    5.0,
+    4.0,
+    5.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 400 undo": {
+   "step_ms": [
+    29.0,
+    23.0,
+    23.0,
+    24.0,
+    25.0,
+    21.0,
+    21.0,
+    22.0,
+    27.0,
+    21.0,
+    21.0,
+    24.0
+   ],
+   "refresh_ms": [
+    4.0,
+    4.0,
+    6.0,
+    5.0,
+    6.0,
+    5.0,
+    3.0,
+    3.0,
+    4.0,
+    7.0,
+    4.0,
+    3.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 800 edit": {
+   "step_ms": [
+    32.0,
+    20.0,
+    22.0,
+    16.0,
+    24.0,
+    16.0,
+    15.0,
+    13.0,
+    27.0,
+    17.0,
+    15.0,
+    14.0
+   ],
+   "refresh_ms": [
+    7.0,
+    11.0,
+    9.0,
+    10.0,
+    6.0,
+    7.0,
+    5.0,
+    7.0,
+    6.0,
+    7.0,
+    4.0,
+    7.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "A 800 redo": {
+   "step_ms": [
+    29.0,
+    30.0,
+    28.0,
+    77.0,
+    24.0,
+    26.0,
+    53.0,
+    42.0,
+    25.0,
+    27.0,
+    53.0,
+    44.0
+   ],
+   "refresh_ms": [
+    6.0,
+    5.0,
+    9.0,
+    8.0,
+    6.0,
+    4.0,
+    23.0,
+    9.0,
+    6.0,
+    4.0,
+    24.0,
+    8.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 800 undo": {
+   "step_ms": [
+    51.0,
+    42.0,
+    35.0,
+    39.0,
+    40.0,
+    37.0,
+    33.0,
+    32.0,
+    47.0,
+    39.0,
+    32.0,
+    32.0
+   ],
+   "refresh_ms": [
+    9.0,
+    7.0,
+    8.0,
+    6.0,
+    5.0,
+    6.0,
+    6.0,
+    6.0,
+    6.0,
+    8.0,
+    6.0,
+    8.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 1600 edit": {
+   "step_ms": [
+    42.0,
+    33.0,
+    39.0,
+    35.0,
+    41.0,
+    36.0,
+    29.0,
+    29.0,
+    45.0,
+    29.0,
+    29.0,
+    32.0
+   ],
+   "refresh_ms": [
+    14.0,
+    16.0,
+    12.0,
+    14.0,
+    14.0,
+    13.0,
+    12.0,
+    15.0,
+    17.0,
+    14.0,
+    13.0,
+    14.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "A 1600 redo": {
+   "step_ms": [
+    61.0,
+    77.0,
+    64.0,
+    84.0,
+    63.0,
+    63.0,
+    63.0,
+    78.0,
+    63.0,
+    55.0,
+    59.0,
+    71.0
+   ],
+   "refresh_ms": [
+    17.0,
+    14.0,
+    16.0,
+    14.0,
+    15.0,
+    15.0,
+    16.0,
+    17.0,
+    13.0,
+    13.0,
+    12.0,
+    14.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 1600 undo": {
+   "step_ms": [
+    82.0,
+    81.0,
+    87.0,
+    81.0,
+    95.0,
+    85.0,
+    74.0,
+    74.0,
+    78.0,
+    77.0,
+    72.0,
+    73.0
+   ],
+   "refresh_ms": [
+    17.0,
+    14.0,
+    13.0,
+    14.0,
+    17.0,
+    12.0,
+    14.0,
+    14.0,
+    15.0,
+    13.0,
+    13.0,
+    17.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 3200 edit": {
+   "step_ms": [
+    93.0,
+    69.0,
+    85.0,
+    65.0,
+    101.0,
+    73.0,
+    73.0,
+    72.0,
+    96.0,
+    66.0,
+    61.0,
+    61.0
+   ],
+   "refresh_ms": [
+    29.0,
+    25.0,
+    37.0,
+    34.0,
+    30.0,
+    28.0,
+    32.0,
+    32.0,
+    26.0,
+    24.0,
+    27.0,
+    28.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "A 3200 redo": {
+   "step_ms": [
+    130.0,
+    116.0,
+    113.0,
+    143.0,
+    140.0,
+    136.0,
+    130.0,
+    162.0,
+    113.0,
+    127.0,
+    112.0,
+    143.0
+   ],
+   "refresh_ms": [
+    28.0,
+    26.0,
+    26.0,
+    23.0,
+    30.0,
+    29.0,
+    32.0,
+    28.0,
+    26.0,
+    25.0,
+    27.0,
+    26.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 3200 undo": {
+   "step_ms": [
+    166.0,
+    196.0,
+    216.0,
+    160.0,
+    190.0,
+    260.0,
+    174.0,
+    178.0,
+    156.0,
+    215.0,
+    168.0,
+    147.0
+   ],
+   "refresh_ms": [
+    28.0,
+    60.0,
+    25.0,
+    27.0,
+    32.0,
+    41.0,
+    30.0,
+    30.0,
+    27.0,
+    64.0,
+    33.0,
+    25.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 6400 edit": {
+   "step_ms": [
+    239.0,
+    158.0,
+    143.0,
+    168.0,
+    251.0,
+    163.0,
+    161.0,
+    160.0,
+    261.0,
+    163.0,
+    172.0,
+    163.0
+   ],
+   "refresh_ms": [
+    72.0,
+    77.0,
+    83.0,
+    73.0,
+    77.0,
+    78.0,
+    68.0,
+    78.0,
+    76.0,
+    75.0,
+    78.0,
+    77.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "A 6400 redo": {
+   "step_ms": [
+    333.0,
+    497.0,
+    345.0,
+    410.0,
+    470.0,
+    285.0,
+    275.0,
+    341.0,
+    312.0,
+    339.0,
+    277.0,
+    374.0
+   ],
+   "refresh_ms": [
+    72.0,
+    108.0,
+    81.0,
+    69.0,
+    86.0,
+    62.0,
+    68.0,
+    62.0,
+    279.0,
+    68.0,
+    64.0,
+    69.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "A 6400 undo": {
+   "step_ms": [
+    441.0,
+    419.0,
+    432.0,
+    391.0,
+    424.0,
+    431.0,
+    418.0,
+    363.0,
+    446.0,
+    430.0,
+    360.0,
+    380.0
+   ],
+   "refresh_ms": [
+    82.0,
+    73.0,
+    77.0,
+    75.0,
+    82.0,
+    80.0,
+    68.0,
+    71.0,
+    83.0,
+    68.0,
+    69.0,
+    68.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 400 edit": {
+   "step_ms": [
+    13.0,
+    7.0,
+    11.0,
+    12.0,
+    14.0,
+    7.0,
+    9.0,
+    7.0,
+    14.0,
+    8.0,
+    10.0,
+    12.0
+   ],
+   "refresh_ms": [
+    6.0,
+    5.0,
+    6.0,
+    5.0,
+    7.0,
+    8.0,
+    12.0,
+    5.0,
+    6.0,
+    5.0,
+    6.0,
+    7.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "B 400 redo": {
+   "step_ms": [
+    14.0,
+    14.0,
+    15.0,
+    23.0,
+    9.0,
+    8.0,
+    11.0,
+    15.0,
+    13.0,
+    9.0,
+    11.0,
+    13.0
+   ],
+   "refresh_ms": [
+    8.0,
+    6.0,
+    5.0,
+    6.0,
+    4.0,
+    10.0,
+    5.0,
+    5.0,
+    4.0,
+    5.0,
+    7.0,
+    4.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 400 undo": {
+   "step_ms": [
+    23.0,
+    16.0,
+    15.0,
+    14.0,
+    39.0,
+    20.0,
+    19.0,
+    16.0,
+    25.0,
+    23.0,
+    16.0,
+    18.0
+   ],
+   "refresh_ms": [
+    5.0,
+    5.0,
+    5.0,
+    7.0,
+    5.0,
+    4.0,
+    3.0,
+    5.0,
+    6.0,
+    7.0,
+    6.0,
+    5.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 800 edit": {
+   "step_ms": [
+    21.0,
+    10.0,
+    10.0,
+    10.0,
+    22.0,
+    12.0,
+    9.0,
+    9.0,
+    23.0,
+    10.0,
+    11.0,
+    9.0
+   ],
+   "refresh_ms": [
+    7.0,
+    9.0,
+    6.0,
+    9.0,
+    4.0,
+    8.0,
+    7.0,
+    5.0,
+    9.0,
+    8.0,
+    8.0,
+    5.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "B 800 redo": {
+   "step_ms": [
+    17.0,
+    18.0,
+    17.0,
+    25.0,
+    14.0,
+    16.0,
+    16.0,
+    25.0,
+    14.0,
+    15.0,
+    13.0,
+    25.0
+   ],
+   "refresh_ms": [
+    7.0,
+    6.0,
+    6.0,
+    7.0,
+    7.0,
+    6.0,
+    7.0,
+    8.0,
+    7.0,
+    6.0,
+    7.0,
+    6.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 800 undo": {
+   "step_ms": [
+    32.0,
+    31.0,
+    28.0,
+    27.0,
+    32.0,
+    32.0,
+    35.0,
+    26.0,
+    36.0,
+    27.0,
+    22.0,
+    23.0
+   ],
+   "refresh_ms": [
+    7.0,
+    6.0,
+    8.0,
+    5.0,
+    8.0,
+    7.0,
+    9.0,
+    8.0,
+    8.0,
+    6.0,
+    7.0,
+    6.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 1600 edit": {
+   "step_ms": [
+    37.0,
+    26.0,
+    21.0,
+    21.0,
+    40.0,
+    23.0,
+    21.0,
+    23.0,
+    31.0,
+    20.0,
+    20.0,
+    20.0
+   ],
+   "refresh_ms": [
+    19.0,
+    17.0,
+    15.0,
+    16.0,
+    22.0,
+    16.0,
+    18.0,
+    15.0,
+    15.0,
+    14.0,
+    16.0,
+    14.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "B 1600 redo": {
+   "step_ms": [
+    45.0,
+    40.0,
+    42.0,
+    63.0,
+    38.0,
+    37.0,
+    48.0,
+    70.0,
+    34.0,
+    35.0,
+    35.0,
+    55.0
+   ],
+   "refresh_ms": [
+    17.0,
+    17.0,
+    25.0,
+    16.0,
+    19.0,
+    19.0,
+    23.0,
+    19.0,
+    17.0,
+    16.0,
+    18.0,
+    17.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 1600 undo": {
+   "step_ms": [
+    77.0,
+    69.0,
+    70.0,
+    65.0,
+    69.0,
+    61.0,
+    54.0,
+    55.0,
+    61.0,
+    50.0,
+    49.0,
+    51.0
+   ],
+   "refresh_ms": [
+    18.0,
+    16.0,
+    17.0,
+    16.0,
+    28.0,
+    29.0,
+    16.0,
+    17.0,
+    23.0,
+    15.0,
+    16.0,
+    16.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 3200 edit": {
+   "step_ms": [
+    83.0,
+    42.0,
+    47.0,
+    42.0,
+    78.0,
+    53.0,
+    43.0,
+    42.0,
+    82.0,
+    40.0,
+    40.0,
+    43.0
+   ],
+   "refresh_ms": [
+    31.0,
+    33.0,
+    38.0,
+    32.0,
+    32.0,
+    32.0,
+    33.0,
+    37.0,
+    32.0,
+    30.0,
+    28.0,
+    29.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "B 3200 redo": {
+   "step_ms": [
+    82.0,
+    93.0,
+    81.0,
+    148.0,
+    93.0,
+    88.0,
+    77.0,
+    106.0,
+    81.0,
+    62.0,
+    68.0,
+    121.0
+   ],
+   "refresh_ms": [
+    30.0,
+    30.0,
+    26.0,
+    32.0,
+    39.0,
+    29.0,
+    28.0,
+    29.0,
+    29.0,
+    29.0,
+    28.0,
+    27.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 3200 undo": {
+   "step_ms": [
+    140.0,
+    171.0,
+    112.0,
+    111.0,
+    124.0,
+    162.0,
+    141.0,
+    116.0,
+    112.0,
+    205.0,
+    104.0,
+    109.0
+   ],
+   "refresh_ms": [
+    56.0,
+    31.0,
+    37.0,
+    31.0,
+    33.0,
+    70.0,
+    34.0,
+    31.0,
+    30.0,
+    36.0,
+    36.0,
+    39.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 6400 edit": {
+   "step_ms": [
+    204.0,
+    110.0,
+    114.0,
+    113.0,
+    184.0,
+    95.0,
+    85.0,
+    96.0,
+    180.0,
+    96.0,
+    89.0,
+    103.0
+   ],
+   "refresh_ms": [
+    97.0,
+    92.0,
+    89.0,
+    84.0,
+    73.0,
+    75.0,
+    74.0,
+    74.0,
+    76.0,
+    79.0,
+    76.0,
+    73.0
+   ],
+   "step_work": {
+    "parsed": 1,
+    "measured": 1,
+    "compared": 0
+   }
+  },
+  "B 6400 redo": {
+   "step_ms": [
+    176.0,
+    184.0,
+    404.0,
+    293.0,
+    194.0,
+    166.0,
+    175.0,
+    469.0,
+    183.0,
+    175.0,
+    168.0,
+    468.0
+   ],
+   "refresh_ms": [
+    76.0,
+    91.0,
+    104.0,
+    78.0,
+    86.0,
+    71.0,
+    91.0,
+    121.0,
+    78.0,
+    78.0,
+    97.0,
+    90.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  },
+  "B 6400 undo": {
+   "step_ms": [
+    316.0,
+    336.0,
+    301.0,
+    263.0,
+    295.0,
+    290.0,
+    337.0,
+    319.0,
+    279.0,
+    244.0,
+    249.0,
+    271.0
+   ],
+   "refresh_ms": [
+    80.0,
+    86.0,
+    91.0,
+    79.0,
+    76.0,
+    82.0,
+    78.0,
+    84.0,
+    72.0,
+    78.0,
+    75.0,
+    68.0
+   ],
+   "step_work": {
+    "parsed": 2,
+    "measured": 2,
+    "compared": 0
+   }
+  }
+ },
+ "readings_note": "Keys: build (A before the fixes, B after), definitions, step kind. Readings in run order (3 runs x 4 steps); step_work is the first sample's (top-level items parsed in full, layout chunks measured, heads compared).",
+ "profile_3200": {
+  "what": "Where the probe's time goes at 3,200 definitions: node --cpu-prof (200 us interval) over one run of Test_UndoScaling with UNDO_SIZES=3200, read with drivers/prof.py, keeping samples under the probe's `sample` function (the 12 steps and their 12 statics refreshes; the program's build excluded). Inclusive milliseconds per source function, mapped through the test bundle's /*<<src/...>>*/ markers. Profiled times run long; read the shares. One profile per build. The groups are disjoint (each is a separate branch of the call tree under `sample`); `rest` is the total minus the groups.",
+  "builds": {
+   "before": {
+    "commit": "167247e61d",
+    "what": "#2635 at 2cab658ef1 plus the probe (1d98b3aed7, 167247e61d)",
+    "profile": "CPU.20261102.084732 (profC)"
+   },
+   "after": {
+    "commit": "d06473240f",
+    "what": "the same plus the two fixes (459b029f68, d06473240f; on #2635 as 394552d5d0, bfa36a6ede)",
+    "profile": "CPU.20261102.085222 (profD)"
+   }
+  },
+  "total_ms": {
+   "before": 1823,
+   "after": 1387
+  },
+  "groups": [
+   {
+    "key": "term",
+    "label": "rebuilding the top-level term",
+    "function": "MakeTerm.go_incr (src/haz3lcore/lang/MakeTerm.re:3382)",
+    "before_ms": 527,
+    "after_ms": 523
+   },
+   {
+    "key": "statics",
+    "label": "statics' walk down the chain",
+    "function": "DefStatics.calc (src/haz3lcore/derived/DefStatics.re:1934)",
+    "before_ms": 289,
+    "after_ms": 283
+   },
+   {
+    "key": "outline",
+    "label": "the outline, rebuilt (undo and redo only)",
+    "function": "Outline.of_source (src/haz3lcore/tiles/Outline.re:290)",
+    "before_ms": 210,
+    "after_ms": 211
+   },
+   {
+    "key": "root",
+    "label": "the auto-probe's program root",
+    "function": "AutoProbePerform.program_root_id (src/haz3lcore/AutoProbePerform.re:188)",
+    "before_ms": 244,
+    "after_ms": 0,
+    "note": "after: below the profile's top 50 functions, so under 70 ms; counted in rest"
+   },
+   {
+    "key": "tydi",
+    "label": "completion suggestions",
+    "function": "TyDi.suggest (src/haz3lcore/TyDi/TyDi.re:57)",
+    "before_ms": 178,
+    "after_ms": 0,
+    "note": "after: not called on a numeral; below the top 50; counted in rest"
+   }
+  ],
+  "after_detail": [
+   {
+    "function": "MakeTerm.record_top_frame / sim (MakeTerm.re:2622, 2635)",
+    "ms": 239,
+    "share": 0.172,
+    "inside": "term"
+   },
+   {
+    "function": "ItemSpans.memo / top (ItemSpans.re:793, 822): the top level's spans",
+    "ms": 141,
+    "share": 0.102,
+    "inside": "term"
+   },
+   {
+    "function": "MakeTerm.parse_level (MakeTerm.re:2891)",
+    "ms": 92,
+    "share": 0.066,
+    "inside": "term"
+   },
+   {
+    "function": "DefStatics.step_chain (DefStatics.re:788)",
+    "ms": 154,
+    "share": 0.111,
+    "inside": "statics"
+   },
+   {
+    "function": "DefStatics.calc_chain (DefStatics.re:1725)",
+    "ms": 128,
+    "share": 0.092,
+    "inside": "statics"
+   },
+   {
+    "function": "Outline.build (Outline.re:241)",
+    "ms": 195,
+    "share": 0.141,
+    "inside": "outline"
+   },
+   {
+    "function": "Measured.of_segment (Measured.re:1568): layout's walk",
+    "ms": 78,
+    "share": 0.056,
+    "inside": "rest"
+   },
+   {
+    "function": "Id.compare (src/util/Id.re:123), from several of the above",
+    "ms": 134,
+    "share": 0.096,
+    "inside": "several"
+   }
+  ]
+ },
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "How it grows",
+   "section_id": "scaling",
+   "columns": [
+    "definitions",
+    "an edit, before",
+    "after",
+    "an undo, before",
+    "after",
+    "a redo, before",
+    "after",
+    "statics, after",
+    "building the program"
+   ],
+   "rows": [
+    [
+     "400",
+     "14",
+     "10.5 (7–14)",
+     "23",
+     "18.5 (14–39)",
+     "16",
+     "13 (8–23)",
+     "5",
+     "173"
+    ],
+    [
+     "800",
+     "16.5",
+     "10 (9–23)",
+     "38",
+     "30 (22–36)",
+     "30",
+     "16.5 (13–25)",
+     "7",
+     "251"
+    ],
+    [
+     "1,600",
+     "34",
+     "22 (20–40)",
+     "80",
+     "61 (49–77)",
+     "63",
+     "41 (34–70)",
+     "17",
+     "685"
+    ],
+    [
+     "3,200",
+     "72",
+     "43 (40–83)",
+     "176",
+     "120 (104–205)",
+     "130",
+     "85 (62–148)",
+     "32",
+     "1,007"
+    ],
+    [
+     "6,400",
+     "163",
+     "106 (85–204)",
+     "422",
+     "292 (244–337)",
+     "340",
+     "184 (166–469)",
+     "78",
+     "2,637"
+    ]
+   ]
+  },
+  {
+   "section": "Where the time goes",
+   "section_id": "where",
+   "columns": [
+    "part of the time",
+    "where",
+    "before",
+    "after"
+   ],
+   "rows": [
+    [
+     "rebuilding the top-level term",
+     "MakeTerm.go_incr (src/haz3lcore/lang/MakeTerm.re:3382)",
+     "527 ms · 29%",
+     "523 ms · 38%"
+    ],
+    [
+     "statics' walk down the chain",
+     "DefStatics.calc (src/haz3lcore/derived/DefStatics.re:1934)",
+     "289 ms · 16%",
+     "283 ms · 20%"
+    ],
+    [
+     "the outline, rebuilt (undo and redo only)",
+     "Outline.of_source (src/haz3lcore/tiles/Outline.re:290)",
+     "210 ms · 12%",
+     "211 ms · 15%"
+    ],
+    [
+     "the auto-probe's program root",
+     "AutoProbePerform.program_root_id (src/haz3lcore/AutoProbePerform.re:188)",
+     "244 ms · 13%",
+     "under 78 ms"
+    ],
+    [
+     "completion suggestions",
+     "TyDi.suggest (src/haz3lcore/TyDi/TyDi.re:57)",
+     "178 ms · 10%",
+     "under 78 ms"
+    ],
+    [
+     "the rest",
+     "garbage collection, the probe's own frames, and everything below the list",
+     "375 ms · 21%",
+     "370 ms · 27%"
+    ],
+    [
+     "total",
+     "",
+     "1,823 ms",
+     "1,387 ms"
+    ]
+   ]
+  },
+  {
+   "section": "Where the time goes",
+   "section_id": "where",
+   "columns": [
+    "function",
+    "share"
+   ],
+   "rows": [
+    [
+     "MakeTerm.record_top_frame / sim (MakeTerm.re:2622, 2635)",
+     "239 ms · 17%"
+    ],
+    [
+     "ItemSpans.memo / top (ItemSpans.re:793, 822): the top level's spans",
+     "141 ms · 10%"
+    ],
+    [
+     "MakeTerm.parse_level (MakeTerm.re:2891)",
+     "92 ms · 7%"
+    ],
+    [
+     "DefStatics.step_chain (DefStatics.re:788)",
+     "154 ms · 11%"
+    ],
+    [
+     "DefStatics.calc_chain (DefStatics.re:1725)",
+     "128 ms · 9%"
+    ],
+    [
+     "Outline.build (Outline.re:241)",
+     "195 ms · 14%"
+    ],
+    [
+     "Measured.of_segment (Measured.re:1568): layout's walk",
+     "78 ms · 6%"
+    ],
+    [
+     "Id.compare (src/util/Id.re:123), from several of the above",
+     "134 ms · 10%"
+    ]
+   ]
+  },
+  {
+   "section": "Toward O(log n)",
+   "section_id": "logn",
+   "columns": [
+    "pass",
+    "today",
+    "over a balanced tree of definitions"
+   ],
+   "rows": [
+    [
+     "the top-level term",
+     "O(n): a chain of nested lets, rebuilt from every definition",
+     "O(log n): each node keeps its subtree's term pieces and skeleton; an edit rebuilds its path. The evaluator and statics would read the top level as a sequence of items, as DefStatics already does."
+    ],
+    [
+     "statics' chain",
+     "O(n) walk, O(1) analysis",
+     "O(log n) to find the changed definition, plus the definitions that use a name whose type changed: each node keeps the names its subtree binds and uses, so the walk can skip subtrees that cannot be affected."
+    ],
+    [
+     "layout",
+     "O(n) walk to place a chunk",
+     "O(log n): each node keeps its subtree's rows and widths, so a definition's position is a sum along its path, as in a rope."
+    ],
+    [
+     "the outline",
+     "O(n), rebuilt on every undo and redo",
+     "O(1) on undo: kept with the snapshot, or found again by the restored program's identity. O(log n) on edit: one entry per node, rebuilt along the path."
+    ],
+    [
+     "the undo history",
+     "O(1) to push and pop",
+     "The same. A snapshot of a persistent tree is its root, so it could keep its derived data at the cost of one path per edit rather than a whole version, which is why snapshots are compacted today (^report(14)). An undo would then swap roots and redraw what differs."
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/036/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>

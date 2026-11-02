@@ -1,0 +1,127 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 036 · the editor and undo · 2026-11-02 · <span class="wip">work in progress</span> · after report 014</p>
+<h1>What an Undo Costs</h1>
+<p class="sub">How do the times of an edit, an undo and a redo grow with the size of the program? Where does that time go? And what would it take for each to cost O(log n) in the program's size, rather than O(n)? Matthew's question (2026-11-02), for the meeting with Cyrus on 2026-11-04. Measured on #2635 (livelits &times; modular editors), in Node, on a program of <i>n</i> definitions at five sizes.</p>
+
+<div class="headline">
+<p><b>Short answers.</b> A program of <i>n</i> top-level definitions, an edit in the middle one, then undos and redos, each through the app's own update loop; medians of 12 steps. The method is at the end.</p>
+<ol class="ans">
+<li><div class="row"><p><b>Every step grows in proportion to the program.</b> At {{n_hi}} definitions, after the fixes below, an edit takes {{edit_B_6400}} ms, an undo {{undo_B_6400}} and a redo {{redo_B_6400}}, and the statics refresh after each about {{st_B_6400}} more. From {{n_lo}} to {{n_hi}} definitions, doubling the program multiplies each step's time by {{dbl_lo}} to {{dbl_hi}}: a slope of {{slope_lo}} to {{slope_hi}} on a log-log plot, a little steeper than linear (<a href="#scaling">Figure 1</a>).</p>
+<figure class="mini">{{FIG_SCALE_MINI}}<figcaption>After the fixes, log-log. All of it, before and after, in <a href="#fig1">Figure 1</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>The incremental caches work; the passes around them do not scale.</b> Whatever <i>n</i>, a step parses 1 or 2 definitions again, re-measures 1 or 2 chunks of layout, and compares 2 definitions' heads in statics. What grows with <i>n</i> is the passes over every definition around that work: rebuilding the top-level term ({{share_term}}% of the time at 3,200 definitions), statics' walk down the chain of definitions ({{share_statics}}%), the outline ({{share_outline}}%, on undo and redo only), and layout's walk (6%) (<a href="#where">Figure 3</a>). The undo history itself costs almost nothing: a snapshot is pushed and popped at the head of a list, and an older, compacted snapshot restores as fast as the newest, whole one.</p>
+<figure class="mini">{{FIG_WHERE_MINI}}<figcaption>One profile of the 12 steps at 3,200 definitions, after the fixes; <a href="#fig3">Figure 3</a> has the one before.</figcaption></figure></div></li>
+<li><div class="row"><p><b>An undo costs {{undo_x_lo}} to {{undo_x_hi}} edits, a redo {{redo_x_lo}} to {{redo_x_hi}}.</b> A restored snapshot takes a second frame, which rebuilds the outline from scratch: its memo of recent programs misses on the restored one. That is about {{outline_ms}} ms of each undo and redo at 3,200 definitions: most of the {{gap_redo_3200}} ms a redo costs beyond an edit, but only a third of an undo's {{gap_undo_3200}}. The rest of an undo's extra is not explained yet (<a href="#twice">Figure 4</a>).</p>
+<figure class="mini">{{FIG_TWICE_MINI}}<figcaption>At 3,200 definitions, after the fixes: each step, then its statics.</figcaption></figure></div></li>
+<li><div class="row"><p><b>Two cheap fixes, now on #2635, took {{cut_lo}}–{{cut_hi}}% off at the two largest sizes.</b> The auto-probe rebuilt the whole top level's skeleton on every frame, because its memo was keyed on a segment that every edit replaces (394552d5d0). And completion suggestions were computed after every typed digit, though none can start with one (bfa36a6ede). Both were whole-program passes, and both are gone. Each step is still linear (<a href="#fixes">the fixes</a>).</p>
+<figure class="mini">{{FIG_FIXES_MINI}}<figcaption>Before (grey) and after the fixes, at {{n_hi}} definitions.</figcaption></figure></div></li>
+<li><div class="row"><p><b>O(log n) needs the top level as a balanced tree, not a chain.</b> The top level is a chain of nested lets, <i>n</i> deep: changing a definition in the middle rebuilds every let around it, however good the caches. With the definitions in a balanced tree whose nodes keep summaries (the names a subtree binds, its rows of layout, its part of the skeleton), each pass touches only the <i>log n</i> nodes on the changed definition's path. And since the previous version shares every other node, a snapshot can keep its derived data, so an undo becomes a swap of roots (<a href="#logn">Figure 5</a>).</p>
+<figure class="mini">{{FIG_TREE_MINI}}<figcaption>A change rebuilds only its path. <a href="#fig5">Figure 5</a> sets it beside today's chain.</figcaption></figure></div></li>
+</ol>
+</div>
+
+<h2 id="question">The question</h2>
+<p>An edit in Hazel's editor is meant to cost time in proportion to what it changes. Matthew's question on 2026-11-02 was whether that is true of undo. It seemed to cost O(<i>n</i>) in the size of the program. Could an edit and an undo each cost O(log <i>n</i>)? The question is for the meeting with Cyrus on 2026-11-04. A related question, how much structure sharing is lost as values go to the evaluation worker and back, is not measured here.</p>
+<p>Report 014 measured what the undo history <em>keeps</em>, in a browser on the Full Body slide: whole versions of the editor's state, about 92 MB an edit on #2597, until Andrew Blinn's compaction of snapshots (6010128b7d) was ported there. #2635 had it already and keeps about 8 MB an edit; keeping the newest undo and redo entries whole (032fe3aca6) followed. This report measures what an undo <em>costs in time</em>, and how that grows with the program.</p>
+
+<h2 id="undo">How an undo works today</h2>
+<p>The undo history (<code>src/web/app/History.re</code>, at bfa36a6ede) is two lists of page models, the undo stack and the redo stack, capped at 250 entries. An edit pushes the model from before it onto the undo stack. Pushing compacts the entry below the new head: it drops the derived caches (syntax, statics, evaluation results) and keeps the zippers, the editor's own representation of the text and the caret. The newest entry stays whole. An undo pops the head and restores it:</p>
+<ul>
+<li><b>Syntax is rebuilt against the live caches.</b> <code>Page.carry_over</code> hands the restored model the live editor's parse and layout caches, which hit for every piece the step did not change. So 1 or 2 definitions are parsed again, whatever the size of the program.</li>
+<li><b>A second frame realizes the view.</b> The restore schedules <code>RealizeView</code>, which rebuilds the outline of the program: the tree of its definitions that the sidebar and the agent read.</li>
+<li><b>Statics wait for the typing debounce,</b> as after a keystroke, and re-analyze incrementally: the definitions are walked in order and their heads compared with the previous version's, and only those that changed are analyzed again.</li>
+</ul>
+<figure class="fig" id="fig2"><div class="figscroll">{{FIG_PIPELINE}}</div>
+<figcaption>Figure 2. What an edit and an undo run, as the probe below counted and profiled them. The work on the changed definition is constant; each pass over every definition is linear. Read from <code>History.re</code>, <code>Page.re</code>, <code>MakeTerm.re</code>, <code>DefStatics.re</code> and <code>Workspace.re</code> at bfa36a6ede.</figcaption></figure>
+
+<h2 id="scaling">How it grows</h2>
+<p>The probe builds a program of <i>n</i> definitions, <code>let v0 = 0 in let v1 = v0 + 1 in &hellip; v<i>n</i>-1</code>. It moves the caret into the middle definition and types four digits there, then undoes four times and redoes four times. Each step goes through the app's own update loop, with each frame told whether it was an edit, as the app's main loop tells it. Then comes the statics refresh that the typing debounce would run. Evaluation is off. Sizes 400 to 6,400, three runs of four steps of each kind for each build.</p>
+<figure class="fig" id="fig1"><div class="figscroll">{{FIG_SCALE}}</div>
+<figcaption>Figure 1. The time of one step against the number of definitions, both on log scales, so a straight line of slope 1 is linear growth. The statics refresh after each step is not included (it is in the table). Grey dashed: before the fixes; coloured: after. The green dotted line is not a measurement: it is how a step would grow if it cost O(log <i>n</i>), drawn from the first point. Medians of 12 steps; the after column's ranges are in the table.</figcaption></figure>
+{{TABLE_SCALE}}
+<p class="note">Milliseconds per step, medians of 12 (3 runs &times; 4 steps); the after column's range in brackets. "Statics, after" is the median refresh after each of the 36 steps at that size. "Building the program" is the first run's initial build of the editor, for scale.</p>
+<p>Two things in the spread are worth knowing. The first edit of each run takes about twice as long as the other three. The last redo takes longer than the other redos: about 40 ms more at 3,200 definitions, and up to 300 more at 6,400. Neither is explained yet; medians of 12 are robust to both. Runs of the same two builds this morning (800 to 3,200 definitions) were 20 to 70% slower at every size, for both builds alike. That is the laptop's spread between sessions, larger than the fixes' effect at the small sizes, so compare within a session: this morning's gap between the builds was 25 to 45% at the larger sizes, much as here.</p>
+
+<h2 id="where">Where the time goes</h2>
+<figure class="fig" id="fig3"><div class="figscroll">{{FIG_WHERE}}</div>
+<figcaption>Figure 3. One CPU profile of the probe's 12 steps and their statics refreshes at 3,200 definitions, for each build, split into parts of the call tree that do not overlap. Profiled times run long, so read the shares. The auto-probe's root and completions, 23% of the time before the fixes, are gone after; the rest is the same work.</figcaption></figure>
+{{TABLE_WHERE}}
+<p>Every remaining part is a pass over the whole top level, around work that is already incremental:</p>
+<ul>
+<li><b>The top-level term</b> (<code>MakeTerm.go_incr</code>). The syntax cache re-parses only the changed definition, but the top level's term is then rebuilt from all of them: a simulation of the top-level frame over every definition (<code>record_top_frame</code>), and every definition's span (<code>ItemSpans</code>).</li>
+<li><b>Statics' chain</b> (<code>DefStatics.step_chain</code>, <code>calc_chain</code>). Definitions are analyzed one by one, each in the context the ones before it make. Only 2 heads are compared structurally, and every other definition is found physically the same in constant time, but the walk itself visits all <i>n</i>.</li>
+<li><b>The outline</b> (<code>Outline.build</code>), rebuilt on every undo and redo (<a href="#twice">below</a>).</li>
+<li><b>Layout's walk</b> (<code>Measured.of_segment</code>). One or two chunks are measured again, and the walk to place them visits the rest.</li>
+</ul>
+
+<h2 id="fixes">Two cheap fixes</h2>
+<p>Both were passes over the whole program that nothing needed. Both are on #2635 since 2026-11-02, cherry-picked as 394552d5d0 and bfa36a6ede (first made on a probe branch as 459b029f68 and d06473240f).</p>
+<h3 id="fix-root">The auto-probe's program root (394552d5d0)</h3>
+<p>Auto-probes find the program's root expression on every frame (<code>AutoProbePerform.program_root_id</code>). They did it from a skeleton of the whole top level, through a memo keyed on the segment's identity, which every edit replaces, so it missed on every frame after an edit: 13% of the profile before. The parser already keeps that skeleton (<code>MakeTerm.Incr</code>'s <code>c_skel</code>, from #2469), so the fix reads it when it belongs to this segment:</p>
+<pre class="code"><span class="ad">let skel =
+  switch (syntax.t_cache.c_skel) {
+  | Some((Sort.Exp, parsed, skel)) when parsed === seg => skel
+  | _ => Segment.skel(seg)
+  };</span>
+switch (Segment.root_id(skel, seg)) {</pre>
+<p>This one is #2635's and #2469's only: dev has no <code>c_skel</code>.</p>
+<h3 id="fix-digits">No completions after a numeral (bfa36a6ede)</h3>
+<p>After each keystroke, the editor fills its completion buffer with the best suggestion for the token left of the caret (<code>TyDi.set_buffer</code>). To find it, it scans the context for names and completes the whole segment to find the delimiters the syntax expects. That is a pass over the program, 10% of the profile before. No suggestion starts with a digit (names, keywords, operators and missing delimiters don't), so after a numeral none is computed now:</p>
+<pre class="code">let* tok_to_left = token_to_left(z);
+<span class="ad">let* _ =
+  switch (tok_to_left.[0]) {
+  | '0' .. '9' => None
+  | _ => Some()
+  | exception (Invalid_argument(_)) => Some()
+  };</span></pre>
+<p>A limit to keep in mind: this fix helps exactly the probe's edits, which type digits. Typing a name still computes suggestions over the program. Dev has the same code, so the fix would suit dev as well.</p>
+
+<h2 id="twice">Why an undo costs more than an edit</h2>
+<figure class="fig" id="fig4"><div class="figscroll">{{FIG_TWICE}}</div>
+<figcaption>Figure 4. An edit, a redo and an undo at 3,200 definitions after the fixes, each followed by its statics refresh (grey). The dashed box inside the redo and the undo is the outline's rebuild, from the profile: the profile's outline time over the 8 steps that build it.</figcaption></figure>
+<p>An undo or a redo is two frames: the restore, then the <code>RealizeView</code> it schedules. The second builds the program's outline (<code>Program.outline</code> &rarr; <code>Outline.of_source</code>). The outline is memoized on the last four programs, keyed by the segment's identity and then by <code>Segment.same_program</code>, and the restored program matches none of them. So the outline is built from scratch, about {{outline_ms}} ms at 3,200 definitions. In this probe an edit never builds it, because nothing draws the sidebar. In the app, the sidebar's view may ask for it after edits too; that is not measured here.</p>
+<p>That accounts for most of a redo's extra over an edit ({{gap_redo_3200}} ms), but only a third of an undo's ({{gap_undo_3200}} ms). An undo parses 2 definitions again where an edit parses 1, but that is constant work. Why an undo costs about one and a half redos is the next thing to profile, with the undo steps alone.</p>
+
+<h2 id="logn">Toward O(log n)</h2>
+<p>Every pass left is a walk over the top level's definitions. The incremental work inside each pass is already constant, so making each step O(log <i>n</i>) means making the walks O(log <i>n</i>). That starts with how the top level is represented.</p>
+<figure class="fig" id="fig5"><div class="figscroll">{{FIG_TREE}}</div>
+<figcaption>Figure 5. Left: the top level as it is, a chain of nested lets, where each definition's term contains every definition after it. A persistent update to definition 9 rebuilds the lets around it, 10 of 16 here, n/2 on average. Right: the same definitions as the leaves of a balanced tree. An update rebuilds only the path to the changed leaf, log<sub>2</sub> <i>n</i> nodes, and the previous version keeps its own path while sharing everything else.</figcaption></figure>
+<div class="scroll"><table>
+<tr><th>pass</th><th>today</th><th>over a balanced tree of definitions</th></tr>
+<tr><td>the top-level term</td><td class="on">O(n): a chain of nested lets, rebuilt from every definition</td><td>O(log n): each node keeps its subtree's term pieces and skeleton; an edit rebuilds its path. The evaluator and statics would read the top level as a sequence of items, as <code>DefStatics</code> already does.</td></tr>
+<tr><td>statics' chain</td><td class="on">O(n) walk, O(1) analysis</td><td>O(log n) to find the changed definition, plus the definitions that use a name whose type changed: each node keeps the names its subtree binds and uses, so the walk can skip subtrees that cannot be affected.</td></tr>
+<tr><td>layout</td><td class="on">O(n) walk to place a chunk</td><td>O(log n): each node keeps its subtree's rows and widths, so a definition's position is a sum along its path, as in a rope.</td></tr>
+<tr><td>the outline</td><td class="on">O(n), rebuilt on every undo and redo</td><td>O(1) on undo: kept with the snapshot, or found again by the restored program's identity. O(log n) on edit: one entry per node, rebuilt along the path.</td></tr>
+<tr><td>the undo history</td><td class="o1">O(1) to push and pop</td><td>The same. A snapshot of a persistent tree is its root, so it could keep its derived data at the cost of one path per edit rather than a whole version, which is why snapshots are compacted today (report 014). An undo would then swap roots and redraw what differs.</td></tr>
+</table></div>
+<p>There are two ways to make an undo cheap, and they compose. <b>Undo as a swap of roots</b> keeps each version's derived data in a shared tree, and needs that tree. <b>Undo as an inverse edit</b> replays the edit backwards through the same incremental path a keystroke takes, and needs every action to have an inverse. Either way the walks above have to become O(log <i>n</i>) first, since an edit pays them too. The cheapest walk to isolate and try first is statics' chain: <code>DefStatics</code> already treats the top level as a list of items with summaries.</p>
+
+<h2 id="not">What this does not measure</h2>
+<ul>
+<li><b>Evaluation.</b> The probe turns it off. In the app, an undo also re-evaluates the program in the worker, which ships the program to it and the results back.</li>
+<li><b>Drawing.</b> The probe builds no view and no DOM, so the time to redraw the code after an edit or an undo is not here.</li>
+<li><b>The browser.</b> These are Node timings of the test build. Hosted builds in a browser differ in speed, not in how the work grows.</li>
+<li><b>Real programs.</b> A chain of short lets is the plainest shape that grows. Slides like Full Body have fewer, larger definitions, modules and livelits; the same walks apply to them, but with smaller <i>n</i> and larger per-definition costs.</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Profile undo steps alone, to explain why an undo costs about one and a half redos.</li>
+<li>Let a restored program reuse its outline: keep the outline with the snapshot, or find it by the restored program's identity. Then measure an undo again.</li>
+<li>Time an edit and an undo in the browser on Full Body, with evaluation and drawing, to see what share of a real undo these passes are.</li>
+<li>Try the top level as a balanced tree of definitions for statics' chain first, and measure it with this probe: does an edit's statics refresh stop growing with <i>n</i>?</li>
+<li>Then the top-level term and layout over the same tree.</li>
+<li>Offer the completions fix (no suggestions after a numeral) to dev as a PR of its own: dev has the same code.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>The builds.</b> Before: #2635 at 2cab658ef1 (dev's merge day of 2026-10-29 merged in) plus the probe, 1d98b3aed7 and 167247e61d. After: the same plus the two fixes, 459b029f68 and d06473240f. On #2635 the fixes are 394552d5d0 and bfa36a6ede, with the same code. The probe commits are on a local branch; the probe's source is in <code>036/drivers/</code>.</li>
+<li><b>The probe</b> (<code>Test_UndoScaling.re</code>, one of Hazel's test modules): for each size, build the program, move the caret into the middle definition, then 4 edits (typing <code>1</code>), 4 undos and 4 redos. Each step runs through <code>History.Update.update</code> and <code>calculate</code>, then the frames it schedules, then a statics refresh (<code>RefreshStatics</code>, which the typing debounce runs in the app). Each frame's <code>calculate</code> is told whether its update was an edit, as <code>Main.re</code> tells it, and <code>dynamics=false</code>. For each step it counts the top-level items parsed in full (<code>MakeTerm.Incr.full_analyzed</code>), the layout chunks measured (<code>Measured.Incr.built</code>) and the definitions' heads compared structurally (<code>DefStatics.head_compares</code>).</li>
+<li><b>Two checks the test runner installs were turned off</b> for the probe, because each made the numbers mean something else. One compares the incremental statics with a whole-program analysis after every calculation (<code>DefStatics.after_calc</code>). It made the first numbers look quadratic, then cheap past 3,000 entries, where it stops. The other re-molds the whole program after every edit (<code>Zipper.normalize_check</code>). A helper of the undo tests also told every frame it was an edit; the probe tells each frame what the app's main loop would.</li>
+<li><b>Timing:</b> Node 22.23 on a laptop (Intel Core i7-1370P, Linux), the test build compiled by js_of_ocaml in its release profile, run with <code>nice</code>. Times come from <code>Sys.time</code>, read to the millisecond. There were 3 runs per build at 400, 800, 1,600, 3,200 and 6,400 definitions, with every after run before every before run (not alternated), on 2026-11-02 near 10:30 MST. Node runs with a 64 MB stack under a 256 MB system stack, because at 6,400 definitions the default one overflows: the same probe crashed in four of six runs with an 8 MB stack.</li>
+<li><b>Profiles:</b> <code>node --cpu-prof</code> at a 200 µs interval, one run of each build at 3,200 definitions (earlier the same day, same builds). Read by <code>036/drivers/prof.py</code>, which maps the test bundle's functions to their source through js_of_ocaml's source markers and sums inclusive time per function, under the probe's <code>sample</code>. Node's profiler keeps about 255 frames of a stack, so deep recursion can hide callers; the parts in Figure 3 are separate branches below <code>sample</code>, so none is counted twice. Raw profiles are summarized in <code>data/profile_3200.json</code>.</li>
+<li><b>The data</b>, twice: in this page (<code>script#report-data</code>) and as files in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/036/data"><code>036/data/</code></a>, every run's raw output (<code>runs/</code>), the medians and samples (<code>steps.json</code>, by <code>drivers/medians.py</code>) and the profiles' parts.</li>
+</ul>
+</main>
+</body>
+</html>

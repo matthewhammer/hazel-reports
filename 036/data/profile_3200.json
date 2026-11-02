@@ -1,0 +1,25 @@
+{
+ "what": "Where the probe's time goes at 3,200 definitions: node --cpu-prof (200 us interval) over one run of Test_UndoScaling with UNDO_SIZES=3200, read with drivers/prof.py, keeping samples under the probe's `sample` function (the 12 steps and their 12 statics refreshes; the program's build excluded). Inclusive milliseconds per source function, mapped through the test bundle's /*<<src/...>>*/ markers. Profiled times run long; read the shares. One profile per build. The groups are disjoint (each is a separate branch of the call tree under `sample`); `rest` is the total minus the groups.",
+ "builds": {
+  "before": {"commit": "167247e61d", "what": "#2635 at 2cab658ef1 plus the probe (1d98b3aed7, 167247e61d)", "profile": "CPU.20261102.084732 (profC)"},
+  "after": {"commit": "d06473240f", "what": "the same plus the two fixes (459b029f68, d06473240f; on #2635 as 394552d5d0, bfa36a6ede)", "profile": "CPU.20261102.085222 (profD)"}
+ },
+ "total_ms": {"before": 1823, "after": 1387},
+ "groups": [
+  {"key": "term", "label": "rebuilding the top-level term", "function": "MakeTerm.go_incr (src/haz3lcore/lang/MakeTerm.re:3382)", "before_ms": 527, "after_ms": 523},
+  {"key": "statics", "label": "statics' walk down the chain", "function": "DefStatics.calc (src/haz3lcore/derived/DefStatics.re:1934)", "before_ms": 289, "after_ms": 283},
+  {"key": "outline", "label": "the outline, rebuilt (undo and redo only)", "function": "Outline.of_source (src/haz3lcore/tiles/Outline.re:290)", "before_ms": 210, "after_ms": 211},
+  {"key": "root", "label": "the auto-probe's program root", "function": "AutoProbePerform.program_root_id (src/haz3lcore/AutoProbePerform.re:188)", "before_ms": 244, "after_ms": 0, "note": "after: below the profile's top 50 functions, so under 70 ms; counted in rest"},
+  {"key": "tydi", "label": "completion suggestions", "function": "TyDi.suggest (src/haz3lcore/TyDi/TyDi.re:57)", "before_ms": 178, "after_ms": 0, "note": "after: not called on a numeral; below the top 50; counted in rest"}
+ ],
+ "after_detail": [
+  {"function": "MakeTerm.record_top_frame / sim (MakeTerm.re:2622, 2635)", "ms": 239, "share": 0.172, "inside": "term"},
+  {"function": "ItemSpans.memo / top (ItemSpans.re:793, 822): the top level's spans", "ms": 141, "share": 0.102, "inside": "term"},
+  {"function": "MakeTerm.parse_level (MakeTerm.re:2891)", "ms": 92, "share": 0.066, "inside": "term"},
+  {"function": "DefStatics.step_chain (DefStatics.re:788)", "ms": 154, "share": 0.111, "inside": "statics"},
+  {"function": "DefStatics.calc_chain (DefStatics.re:1725)", "ms": 128, "share": 0.092, "inside": "statics"},
+  {"function": "Outline.build (Outline.re:241)", "ms": 195, "share": 0.141, "inside": "outline"},
+  {"function": "Measured.of_segment (Measured.re:1568): layout's walk", "ms": 78, "share": 0.056, "inside": "rest"},
+  {"function": "Id.compare (src/util/Id.re:123), from several of the above", "ms": 134, "share": 0.096, "inside": "several"}
+ ]
+}

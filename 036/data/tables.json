@@ -1,0 +1,206 @@
+[
+ {
+  "section": "How it grows",
+  "section_id": "scaling",
+  "columns": [
+   "definitions",
+   "an edit, before",
+   "after",
+   "an undo, before",
+   "after",
+   "a redo, before",
+   "after",
+   "statics, after",
+   "building the program"
+  ],
+  "rows": [
+   [
+    "400",
+    "14",
+    "10.5 (7–14)",
+    "23",
+    "18.5 (14–39)",
+    "16",
+    "13 (8–23)",
+    "5",
+    "173"
+   ],
+   [
+    "800",
+    "16.5",
+    "10 (9–23)",
+    "38",
+    "30 (22–36)",
+    "30",
+    "16.5 (13–25)",
+    "7",
+    "251"
+   ],
+   [
+    "1,600",
+    "34",
+    "22 (20–40)",
+    "80",
+    "61 (49–77)",
+    "63",
+    "41 (34–70)",
+    "17",
+    "685"
+   ],
+   [
+    "3,200",
+    "72",
+    "43 (40–83)",
+    "176",
+    "120 (104–205)",
+    "130",
+    "85 (62–148)",
+    "32",
+    "1,007"
+   ],
+   [
+    "6,400",
+    "163",
+    "106 (85–204)",
+    "422",
+    "292 (244–337)",
+    "340",
+    "184 (166–469)",
+    "78",
+    "2,637"
+   ]
+  ]
+ },
+ {
+  "section": "Where the time goes",
+  "section_id": "where",
+  "columns": [
+   "part of the time",
+   "where",
+   "before",
+   "after"
+  ],
+  "rows": [
+   [
+    "rebuilding the top-level term",
+    "MakeTerm.go_incr (src/haz3lcore/lang/MakeTerm.re:3382)",
+    "527 ms · 29%",
+    "523 ms · 38%"
+   ],
+   [
+    "statics' walk down the chain",
+    "DefStatics.calc (src/haz3lcore/derived/DefStatics.re:1934)",
+    "289 ms · 16%",
+    "283 ms · 20%"
+   ],
+   [
+    "the outline, rebuilt (undo and redo only)",
+    "Outline.of_source (src/haz3lcore/tiles/Outline.re:290)",
+    "210 ms · 12%",
+    "211 ms · 15%"
+   ],
+   [
+    "the auto-probe's program root",
+    "AutoProbePerform.program_root_id (src/haz3lcore/AutoProbePerform.re:188)",
+    "244 ms · 13%",
+    "under 78 ms"
+   ],
+   [
+    "completion suggestions",
+    "TyDi.suggest (src/haz3lcore/TyDi/TyDi.re:57)",
+    "178 ms · 10%",
+    "under 78 ms"
+   ],
+   [
+    "the rest",
+    "garbage collection, the probe's own frames, and everything below the list",
+    "375 ms · 21%",
+    "370 ms · 27%"
+   ],
+   [
+    "total",
+    "",
+    "1,823 ms",
+    "1,387 ms"
+   ]
+  ]
+ },
+ {
+  "section": "Where the time goes",
+  "section_id": "where",
+  "columns": [
+   "function",
+   "share"
+  ],
+  "rows": [
+   [
+    "MakeTerm.record_top_frame / sim (MakeTerm.re:2622, 2635)",
+    "239 ms · 17%"
+   ],
+   [
+    "ItemSpans.memo / top (ItemSpans.re:793, 822): the top level's spans",
+    "141 ms · 10%"
+   ],
+   [
+    "MakeTerm.parse_level (MakeTerm.re:2891)",
+    "92 ms · 7%"
+   ],
+   [
+    "DefStatics.step_chain (DefStatics.re:788)",
+    "154 ms · 11%"
+   ],
+   [
+    "DefStatics.calc_chain (DefStatics.re:1725)",
+    "128 ms · 9%"
+   ],
+   [
+    "Outline.build (Outline.re:241)",
+    "195 ms · 14%"
+   ],
+   [
+    "Measured.of_segment (Measured.re:1568): layout's walk",
+    "78 ms · 6%"
+   ],
+   [
+    "Id.compare (src/util/Id.re:123), from several of the above",
+    "134 ms · 10%"
+   ]
+  ]
+ },
+ {
+  "section": "Toward O(log n)",
+  "section_id": "logn",
+  "columns": [
+   "pass",
+   "today",
+   "over a balanced tree of definitions"
+  ],
+  "rows": [
+   [
+    "the top-level term",
+    "O(n): a chain of nested lets, rebuilt from every definition",
+    "O(log n): each node keeps its subtree's term pieces and skeleton; an edit rebuilds its path. The evaluator and statics would read the top level as a sequence of items, as DefStatics already does."
+   ],
+   [
+    "statics' chain",
+    "O(n) walk, O(1) analysis",
+    "O(log n) to find the changed definition, plus the definitions that use a name whose type changed: each node keeps the names its subtree binds and uses, so the walk can skip subtrees that cannot be affected."
+   ],
+   [
+    "layout",
+    "O(n) walk to place a chunk",
+    "O(log n): each node keeps its subtree's rows and widths, so a definition's position is a sum along its path, as in a rope."
+   ],
+   [
+    "the outline",
+    "O(n), rebuilt on every undo and redo",
+    "O(1) on undo: kept with the snapshot, or found again by the restored program's identity. O(log n) on edit: one entry per node, rebuilt along the path."
+   ],
+   [
+    "the undo history",
+    "O(1) to push and pop",
+    "The same. A snapshot of a persistent tree is its root, so it could keep its derived data at the cost of one path per edit rather than a whole version, which is why snapshots are compacted today (^report(14)). An undo would then swap roots and redraw what differs."
+   ]
+  ]
+ }
+]
