@@ -129,7 +129,8 @@ details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-f
 details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
 button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 h3.grp { margin-top: 1.2em; }
-</style><style id="anchors-css">
+</style>
+<style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
 h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
 .copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
@@ -152,31 +153,34 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 <li><p><b>Against:</b> an API is a promise. It fixes how Hazel values look in JS, ties pages to builds that today are branch URLs with no versions, runs on the page's own thread, and puts an evaluator in pages that may run code they did not write.</p></li>
 <li><p><b>Suggestion:</b> make it official in two steps: first merge <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> as an <i>experimental</i> library (labelled so, built on <code>dev</code>), then promise stability only for the small core (<code>analyze</code>, <code>run</code>, the value mapping) once a second user besides MUDU has used it.</p></li>
 </ol>
+<div class="callout warn" id="update-box">
+<p><b>Update, 2026-11-02: a first npm release, <code>hazeljs</code> 0.0.1,</b> built from <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> at <a href="https://github.com/hazelgrove/hazel/commit/0d66c36618"><code>0d66c36618</code></a>. For Hazel's core team: beyond <code>dev</code> it carries only the library's own 11 commits, from <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>. It has no modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>), no livelits, and none of the performance PRs still open against <code>dev</code>. Three of those commits touch Hazel's core, and the release is 24 PRs behind today's <code>dev</code> (<a href="#release">below</a>).</p>
+</div>
 </div>
 
-<h2 id="today">What the draft library does</h2>
+<h2 id="today">What the draft library does<a class="anchor" href="#today" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="today" title="copy this section's address">copy link</button></h2>
 <table class="t">
 <tr><th>Call</th><th>What it gives</th></tr>
 <tr><td><code>Hazel.analyze(text)</code></td><td><code>{errors}</code>: the program's error messages.</td></tr>
 <tr><td><code>Hazel.run(text)</code></td><td><code>{errors, value}</code>. Errors do not stop a run: Hazel evaluates around its holes, so the page decides which errors it accepts.</td></tr>
 <tr><td><code>Hazel.analyzeProgram(spec)</code>, <code>runProgram(spec)</code></td><td>A program from named modules' texts (one editor each), a preamble and a tail; errors, holes and unfinished brackets per module; <code>ok</code> when there are none.</td></tr>
 <tr><td>Values</td><td>numbers, booleans, strings; lists as arrays; <code>()</code> as <code>null</code>; labeled tuples as objects; constructors as <code>{tag, value}</code>; functions as JS functions, called with converted arguments.</td></tr>
-<tr><td>Embed mode (<code>index.html#embed</code>)</td><td>Hazel's own tiles and error marks for a program the page posts, read-only on #2719; selectable and editable, with themes, fonts, line numbers and go-to-definition, on the <code>embed-editable</code> branch (12 commits, no PR yet).</td></tr>
+<tr><td>Embed mode (<code>index.html#embed</code>)</td><td>Hazel's own tiles and error marks for a program the page posts, read-only on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>; selectable and editable, with themes, fonts, line numbers and go-to-definition, on the <code>embed-editable</code> branch (12 commits, no PR yet).</td></tr>
 </table>
-<p class="note">Sources: <code>docs/hazel-as-a-js-library.md</code> on #2719's branch; <code>src/web/HazelLibCore.re</code>; 17 test cases (<code>HazelLib</code>), under node with the rest of the suite. Sizes measured 2026-10-26 from hazel.org's branch builds.</p>
+<p class="note">Sources: <code>docs/hazel-as-a-js-library.md</code> on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s branch; <code>src/web/HazelLibCore.re</code>; 17 test cases (<code>HazelLib</code>), under node with the rest of the suite. Sizes measured 2026-10-26 from hazel.org's branch builds.</p>
 
-<h2 id="mudu">What the game has shown</h2>
-<p>MUDU's 📜 Scripting panel gives five kinds of room a rule each: a function from the game's event (a lever pulled, a way taken) to a tree of commands the game carries out (<a href="../033/">^report(33)</a> describes the rules and their types). The same rules can be written in Hazel (the default), in JS, or in Fumola, which makes a fair comparison.</p>
+<h2 id="mudu">What the game has shown<a class="anchor" href="#mudu" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="mudu" title="copy this section's address">copy link</button></h2>
+<p>MUDU's 📜 Scripting panel gives five kinds of room a rule each: a function from the game's event (a lever pulled, a way taken) to a tree of commands the game carries out (<a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a> describes the rules and their types). The same rules can be written in Hazel (the default), in JS, or in Fumola, which makes a fair comparison.</p>
 <ul class="ev">
 <li><b>Types earn their keep.</b> The rules' vocabulary is sums (<code>Pull(L)</code>, <code>Way(N)</code>, a room's exits), checked where a rule's parameter is annotated, so a rule that returns the wrong command is an error in the editor, not a bug in play. The JS version of the same rule has no such check.</li>
 <li><b>Holes are a feature in a game.</b> A rule half written still runs: the game falls back to its built-in behaviour while <code>ok</code> is false, so kids can edit while they play.</li>
-<li><b>Calls cost more than they should.</b> <a href="../025/">^report(25)</a> took one call apart: the World room's rule, 40 ms a call at a 16×16 map against 0.003 ms for the same rule in JS. Every call pays a floor that grows with its argument (8.5 ms at 16×16), because the library turns the JS argument into Hazel syntax and evaluates it back into the value it already was; and a typed helper re-checked its annotation on every step, which <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> removes (144 ms to 20.6 ms). Passing the rule only what it needs made it flat (0.9 ms).</li>
+<li><b>Calls cost more than they should.</b> <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a> took one call apart: the World room's rule, 40 ms a call at a 16×16 map against 0.003 ms for the same rule in JS. Every call pays a floor that grows with its argument (8.5 ms at 16×16), because the library turns the JS argument into Hazel syntax and evaluates it back into the value it already was; and a typed helper re-checked its annotation on every step, which <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> removes (144 ms to 20.6 ms). Passing the rule only what it needs made it flat (0.9 ms).</li>
 <li><b>Reading can be slow.</b> Reading the program is 21 to 81 ms for the panel's modules (well formed), but up to 1.8 s when a module has an unclosed bracket, because only the recovering parser can read it (its time grows with the square of the module's length). The first load of the library and its first analysis took about a second (the game's own log: "analyzed and run in 1148 ms").</li>
-<li><b>What the game had to build itself:</b> the outline of a program (modules, types, functions) from regexes over the text, and which row a click lands on. Modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>) already know these; the open question on #2711 is how the library should take #2469 as a dependency.</li>
+<li><b>What the game had to build itself:</b> the outline of a program (modules, types, functions) from regexes over the text, and which row a click lands on. Modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>) already know these; the open question on <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> is how the library should take <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> as a dependency.</li>
 <li><b>Gaps found by use:</b> constructors declared in one module were not usable in the next ("Constructor is not defined"), fixed separately by <a href="https://github.com/hazelgrove/hazel/pull/2729">#2729</a>; and a constructor from JS whose tag the sum lacks, which a fix kept on one laptop (<code>js-library-tagcheck</code>) makes stay stuck under its ascription.</li>
 </ul>
 
-<h2 id="beyond">Uses beyond the game</h2>
+<h2 id="beyond">Uses beyond the game<a class="anchor" href="#beyond" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="beyond" title="copy this section's address">copy link</button></h2>
 <table class="t">
 <tr><th>Use</th><th>What the library gives it</th></tr>
 <tr><td>Teaching pages and courses</td><td>Exercises checked in the student's page: <code>analyze</code> for type errors, <code>run</code> for tests, without hosting the whole Hazel app.</td></tr>
@@ -187,7 +191,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 <tr><td>Testing and tooling</td><td>Scripts that run Hazel programs under node (the library's own tests already do), for checks in other projects' CI.</td></tr>
 </table>
 
-<h2 id="pros">For making it official</h2>
+<h2 id="pros">For making it official<a class="anchor" href="#pros" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pros" title="copy this section's address">copy link</button></h2>
 <ul class="ev">
 <li><b>It is small and mostly done.</b> One module over the existing statics and evaluator, a doc and tests. Merging costs little review; keeping it costs a test run.</li>
 <li><b>It shows Hazel where people are.</b> Hazel's ideas (holes that still run, typed edit states) are hardest to show in the abstract; a page that runs a kid's half-written rule is an easy demonstration.</li>
@@ -195,32 +199,68 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 <li><b>Official means findable.</b> A stable URL and a version beat a branch build named in someone's code; today a page must point at <code>hazel.org/build/&lt;branch&gt;/</code>, which moves when the branch does.</li>
 </ul>
 
-<h2 id="cons">Against, or costs to plan for</h2>
+<h2 id="cons">Against, or costs to plan for<a class="anchor" href="#cons" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="cons" title="copy this section's address">copy link</button></h2>
 <ul class="ev">
 <li><b>An API is a promise.</b> The JS shape of Hazel values (<code>{tag, value}</code>, tuples as arrays, labeled tuples as objects) becomes hard to change once pages depend on it. Hazel's own types keep moving (modules, labeled tuples, type functions).</li>
 <li><b>Versions and builds.</b> Branch builds have no versions. An official library needs releases (a version in the file, <code>Hazel.version</code> already says "0.1 (draft)"), and a place that keeps old ones, or pages break when <code>dev</code> moves.</li>
-<li><b>The call boundary.</b> Converting a JS value by building Hazel syntax and evaluating it is the floor under every call (<a href="../025/">^report(25)</a>); an official library should hand Hazel values in directly, and say how big an argument a call should take.</li>
+<li><b>The call boundary.</b> Converting a JS value by building Hazel syntax and evaluating it is the floor under every call (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>); an official library should hand Hazel values in directly, and say how big an argument a call should take.</li>
 <li><b>Size and the main thread.</b> 643 KB is fine for a game, heavy for a docs page with one example; and the library runs on the page's own thread, so a slow analysis (the 1.8 s case) freezes the page. Hazel's app already has an evaluation worker; the library does not use one yet.</li>
 <li><b>Running code a page did not write.</b> A page that runs a visitor's Hazel program runs it with the page's own rights, as any in-page evaluator would. The library should say so, and a worker would help here too.</li>
 <li><b>Two surfaces to keep in step.</b> The embed frame is Hazel's whole app in a mode; every change to the app can change the frame. Its messages need the same care as the library's calls.</li>
 <li><b>Team time.</b> Someone has to own it: answer issues, review changes, decide what is in the stable core.</li>
 </ul>
 
-<h2 id="next">What next</h2>
+<h2 id="release">Update, 2026-11-02: the npm release, and what it is built on<a class="anchor" href="#release" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="release" title="copy this section's address">copy link</button></h2>
+<p>A first, experimental release of the library is packaged for npm as <code>hazeljs</code> 0.0.1: <code>hazel-lib.js</code> as one file, entry points for Node's <code>require</code> and <code>import</code> and for a page's <code>&lt;script&gt;</code> (from a CDN that serves npm packages), TypeScript declarations, and a README. Its README sends readers to <a href="https://hazel.org">hazel.org</a>, and to the <a href="https://github.com/hazelgrove/hazel/graphs/contributors">contributors on GitHub</a>, for who makes Hazel. The name is Matthew's choice. Here, for Hazel's core team, is exactly what the release contains.</p>
+
+<h3 id="release-base">Built from dev of 2026-10-19 and two PRs, nothing else<a class="anchor" href="#release-base" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="release-base" title="copy this section's address">copy link</button></h3>
+<p>The library file is built from hazelgrove/hazel at <a href="https://github.com/hazelgrove/hazel/commit/0d66c36618"><code>0d66c36618</code></a>, the head of <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> (branch <code>js-library-embed</code>), with <code>GITHUB_SHA</code> set so that <code>Hazel.build</code> names that commit. That commit is <code>dev</code> at <a href="https://github.com/hazelgrove/hazel/commit/962a7cb009"><code>962a7cb009</code></a> (2026-10-19) plus 11 commits, and no merges, so no other branch is in it:</p>
+<table class="t">
+<tr><th>From</th><th>Commits</th><th>What they change</th></tr>
+<tr><td><a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, the library (<code>js-library</code>, head <a href="https://github.com/hazelgrove/hazel/commit/77059807e9"><code>77059807e9</code></a>)</td><td>6</td><td>New files only: <code>src/web/HazelLib.re</code> and <code>HazelLibCore.re</code> (the API and the value mapping), <code>docs/hazel-as-a-js-library.md</code>, <code>test/Test_HazelLib.re</code>, and their dune rules. Nothing else in the app calls them.</td></tr>
+<tr><td><a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, programs of modules and embed mode (<code>js-library-embed</code>, head <a href="https://github.com/hazelgrove/hazel/commit/0d66c36618"><code>0d66c36618</code></a>)</td><td>5</td><td>The library's <code>analyzeProgram</code> and <code>runProgram</code>; embed mode, a new mode of the app entered only from <code>index.html#embed</code> (<code>src/web/embed/</code>, two lines in <code>Main.re</code>, <code>embed.css</code>); and the core changes below.</td></tr>
+</table>
+<p><b>What touches Hazel's core</b> (<code>src/haz3lcore</code>, 830 lines added and 31 removed, all in <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s commits <a href="https://github.com/hazelgrove/hazel/commit/61d8bf6f2b"><code>61d8bf6f2b</code></a>, <a href="https://github.com/hazelgrove/hazel/commit/4538863089"><code>4538863089</code></a> and <a href="https://github.com/hazelgrove/hazel/commit/0d66c36618"><code>0d66c36618</code></a>):</p>
+<ul>
+<li><code>derived/ModuleProgram.re</code>, new: joins named modules' texts into one program (the preamble, then <code>module Name = { body } in</code> for each, then the tail) and attributes each error, hole and unfinished bracket to its module.</li>
+<li><code>lang/MakeTerm.re</code>: an editor rooted at the module sort (<code>Mod</code>) is read inside a module-body tile, so its term is the module expression of its members. Every other root is read as before.</li>
+<li><code>FastParse.re</code>: a module body whose last member is unfinished (<code>let x =</code>) is read again with a hole after it, so it stays on the fast parser instead of falling back to the slow, recovering one.</li>
+<li><code>TyDi/ErrorPrint.re</code>: each error can be listed with the id of the term it is on.</li>
+</ul>
+
+<h3 id="release-not">Not in it<a class="anchor" href="#release-not" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="release-not" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>Modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>)</b>, and so not its outline and navigation: what next's step 3 below, still open.</li>
+<li><b>The livelits</b> (<a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>).</li>
+<li><b>The performance PRs still open against <code>dev</code>.</b> Of the 19 that <a href="../021/"><code class="ref"><b>^report(</b>21<b>)</b></code></a> reviewed for correctness (besides <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>), one had reached <code>dev</code> by 2026-10-19 and is in the release: <a href="https://github.com/hazelgrove/hazel/pull/2679">#2679</a> (an ascription pushed through a value gives the value back when it already has the type). Two more, <a href="https://github.com/hazelgrove/hazel/pull/2672">#2672</a> and <a href="https://github.com/hazelgrove/hazel/pull/2678">#2678</a>, reached <code>dev</code> on 2026-10-29 and are not. The rest are still open, among them <a href="https://github.com/hazelgrove/hazel/pull/2603">#2603</a>, <a href="https://github.com/hazelgrove/hazel/pull/2606">#2606</a>, <a href="https://github.com/hazelgrove/hazel/pull/2608">#2608</a>, <a href="https://github.com/hazelgrove/hazel/pull/2610">#2610</a>, <a href="https://github.com/hazelgrove/hazel/pull/2614">#2614</a>, <a href="https://github.com/hazelgrove/hazel/pull/2651">#2651</a>, <a href="https://github.com/hazelgrove/hazel/pull/2652">#2652</a>, <a href="https://github.com/hazelgrove/hazel/pull/2661">#2661</a>, <a href="https://github.com/hazelgrove/hazel/pull/2671">#2671</a>, <a href="https://github.com/hazelgrove/hazel/pull/2673">#2673</a>, <a href="https://github.com/hazelgrove/hazel/pull/2675">#2675</a> and <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a>, whose typed-value fast path the game's rules want (step 4a below).</li>
+</ul>
+
+<h3 id="release-behind">Behind today's dev<a class="anchor" href="#release-behind" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="release-behind" title="copy this section's address">copy link</button></h3>
+<p>The release is 151 commits, 24 PRs, behind <code>dev</code> as of <a href="https://github.com/hazelgrove/hazel/commit/90d1005c9e"><code>90d1005c9e</code></a> (2026-10-29). Those that change what a program means or how it reads: curried function definitions (<a href="https://github.com/hazelgrove/hazel/pull/2403">#2403</a>), folded constructor heads in pattern matches (<a href="https://github.com/hazelgrove/hazel/pull/2391">#2391</a>), and streaming evaluation in read-only cells (<a href="https://github.com/hazelgrove/hazel/pull/2683">#2683</a>). Those that will matter for merging the library: the <code>.rei</code> interfaces for <code>src/util</code> and leaf modules (<a href="https://github.com/hazelgrove/hazel/pull/2439">#2439</a>, <a href="https://github.com/hazelgrove/hazel/pull/2440">#2440</a>), which the library's new uses must be declared in, and the evaluation budgets in CI (<a href="https://github.com/hazelgrove/hazel/pull/2678">#2678</a>). A trial merge of <a href="https://github.com/hazelgrove/hazel/commit/0d66c36618"><code>0d66c36618</code></a> into today's <code>dev</code> conflicts in one file, <code>src/web/dune</code> (the modules lists); whether it builds against the new interfaces is not checked yet.</p>
+
+<h3 id="release-found">Found while packaging<a class="anchor" href="#release-found" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="release-found" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>Stack depth.</b> In Node, a module of about 150 members overflows the default stack. A module of 400 members, run with a larger stack, analyzes in about 2.3 s. Measured once each, in Node 22 on a laptop.</li>
+<li><b>The <code>ms</code> field</b> of <code>analyzeProgram</code> and <code>runProgram</code> reads 0 in Node, whatever the call takes: a bug in how the library reads the clock, not yet traced.</li>
+</ul>
+<p>Both are in the README's limits.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol class="opts">
-<li id="step-1"><b>Ready #2711:</b> move the stranded constructor fix onto it, bring its description up to date (the editor in a page moved to #2719 and beyond), and take it out of draft.</li>
-<li id="step-2"><b>Open a PR for the embed frame's 12 commits</b> (<code>embed-editable</code>), stacked on #2719, so the whole of what MUDU uses is under review.</li>
-<li id="step-3"><b>Decide the #2469 question</b> (outline and navigation from modular editors) before the library grows its own.</li>
-<li id="step-4a"><b>Convert JS values directly</b> into Hazel values at the call boundary, not through syntax re-evaluated (<a href="../025/">^report(25)</a>'s floor), and merge <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a>, which the game's typed rules need.</li>
+<li id="step-1"><b>Ready <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>:</b> move the stranded constructor fix onto it, bring its description up to date (the editor in a page moved to <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> and beyond), and take it out of draft.</li>
+<li id="step-2"><b>Open a PR for the embed frame's 12 commits</b> (<code>embed-editable</code>), stacked on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, so the whole of what MUDU uses is under review.</li>
+<li id="step-3"><b>Decide the <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> question</b> (outline and navigation from modular editors) before the library grows its own.</li>
+<li id="step-4a"><b>Convert JS values directly</b> into Hazel values at the call boundary, not through syntax re-evaluated (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>'s floor), and merge <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a>, which the game's typed rules need.</li>
 <li id="step-4"><b>Run analysis in a worker</b> in the library, as the app does, so a slow read never freezes a page.</li>
 <li id="step-5"><b>Version it:</b> a build per release at a stable URL, <code>Hazel.version</code> a real number, and the stable core named in the doc.</li>
 <li id="step-6"><b>Find a second user</b> (a course page, or the docs' own examples) before promising stability beyond the core.</li>
 </ol>
 
-<h2 id="how">How this was put together</h2>
-<p class="note">From the branches' code and docs (#2711, #2719, <code>embed-editable</code>), <a href="../025/">^report(25)</a>'s measurements of a call, MUDU's own use of them (its <code>25-scripting.js</code> and event log), and sizes fetched from hazel.org's branch builds on 2026-10-26. The timing figures are the doc's own, measured under node on a laptop; nothing new was measured for this draft.</p>
-<h2>Updates</h2>
-<p class="note">2026-10-26: first draft, from ^ticket(635), for Matthew to read before it goes out.</p>
+<h2 id="how">How this was put together<a class="anchor" href="#how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="how" title="copy this section's address">copy link</button></h2>
+<p class="note">From the branches' code and docs (<a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, <code>embed-editable</code>), <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>'s measurements of a call, MUDU's own use of them (its <code>25-scripting.js</code> and event log), and sizes fetched from hazel.org's branch builds on 2026-10-26. The timing figures are the doc's own, measured under node on a laptop; nothing new was measured for this draft.</p>
+<h2 id="updates">Updates<a class="anchor" href="#updates" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="updates" title="copy this section's address">copy link</button></h2>
+<p class="note">2026-10-26: first draft, from <a href="https://matthewhammer.org/hazel/dashboard/#ticket-635"><code class="ref"><b>^ticket(</b>635<b>)</b></code></a>, for Matthew to read before it goes out.</p>
+<p class="note">2026-11-02: the npm release and what it is built on (<a href="#release">above</a>), for Hazel's core team (Matthew's ask, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-668"><code class="ref"><b>^ticket(</b>668<b>)</b></code></a>).</p>
 </main>
 <script>
 // (the appendix: names and links load with the page; a row's record type and its pictures only when it is opened)
@@ -255,192 +295,6 @@ openHash(); addEventListener('hashchange', openHash);
   code.ref b { font-weight: 800; }
 </style>
 <!-- refs: end -->
-<!-- ref-cards: begin -->
-<style>
-  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
-  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
-    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
-    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
-  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
-  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
-  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
-  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
-  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
-    vertical-align: 1px; background: #6e7781; }
-  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
-  .rc-state.done { background: #8250df; }
-</style>
-<script>
-/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
-   ticket from the work dashboard's data (its area, its status, its first
-   line), carried by the dashboard's own pages and read live from the
-   published data anywhere else; a report from its own page, live (its
-   title, date and opening). Once per page load each. */
-(() => {
-  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
-  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
-  /* the dashboard itself carries its tickets (made with the page, changed
-     with it); any other page asks the published data */
-  const EMBED = null;
-  let data = EMBED ? Promise.resolve(EMBED) : null;
-  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
-  const pages = new Map();
-  const loadReport = url => {
-    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
-      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
-      let p = h1 && h1.nextElementSibling;
-      while (p && p.tagName !== "P") p = p.nextElementSibling;
-      const label = (doc.querySelector(".series") || {}).textContent || "";
-      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
-               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
-    }).catch(() => null));
-    return pages.get(url);
-  };
-  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
-  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
-  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
-  const ticketCard = (n, d) => {
-    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
-    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
-    const q = (d.queue || []).indexOf(n);
-    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
-      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
-      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
-    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
-      `<div class="rc-title">${esc(lead(t.text))}</div>` +
-      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
-      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
-  };
-  const reportCard = (n, r) => r
-    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
-      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
-    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
-  let card = null, over = null, timer = null;
-  const place = a => {
-    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
-    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
-    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
-  };
-  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
-  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
-  const show = (a, ref) => {
-    over = a; clearTimeout(timer);
-    timer = setTimeout(async () => {
-      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
-      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
-      card.hidden = false; place(a);
-      let html;
-      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
-      else html = reportCard(ref.n, await loadReport(a.href));
-      if (over !== a) return;
-      card.innerHTML = html; place(a);
-    }, 250);
-  };
-  const linkOf = t => t && t.closest && t.closest("a[href]");
-  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
-  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
-  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
-  document.addEventListener("focusout", hide);
-  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
-  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
-})();
-</script>
-<!-- ref-cards: end -->
-<!-- pr-cards: begin -->
-<style>
-  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
-  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
-    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
-    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
-  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
-  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
-  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
-  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
-  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
-  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
-  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
-  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
-  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
-</style>
-<script>
-/* A card for each link to a GitHub PR or issue, on hover or focus: its
-   title, state, the branch a PR targets (dev or not: the distinction that
-   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
-   number per page load; if GitHub does not answer, what it said when the
-   page was built (tools/link_prs.py writes this block). */
-(() => {
-  const CACHED = {"hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}}, BUILT = "2026-10-25";
-  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
-  const asked = new Map();
-  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
-  const ask = (key, kind) => {
-    if (!asked.has(key)) {
-      const [repo, n] = key.split("#"), pull = kind === "pull";
-      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
-        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
-                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
-                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
-        .catch(() => null));
-    }
-    return asked.get(key);
-  };
-  const baseChip = d => !d.base ? "" : d.base === "dev"
-    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
-    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
-  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-  const ago = iso => {
-    const s = (Date.now() - new Date(iso)) / 1000;
-    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
-      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
-    return "just now";
-  };
-  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  const fill = (key, d, note) => {
-    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
-    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
-      `<div class="pr-title">${esc(d.title)}</div>` +
-      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
-      (note ? `<div class="pr-note">${note}</div>` : "");
-  };
-  let card = null, over = null, timer = null;
-  const place = a => {
-    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
-    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
-    const below = r.bottom + 6 + h < innerHeight;
-    card.style.left = (left + scrollX) + "px";
-    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
-  };
-  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
-  const show = a => {
-    const m = RX.exec(a.href);
-    if (!m) return;
-    const key = m[1] + "#" + m[3];
-    over = a; clearTimeout(timer);
-    timer = setTimeout(async () => {
-      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
-      const cached = CACHED[key];
-      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
-      card.hidden = false; place(a);
-      const d = await ask(key, m[2]);
-      if (over !== a) return;
-      card.innerHTML = d ? fill(key, d, "")
-        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
-        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
-      place(a);
-    }, 250);
-  };
-  const linkOf = t => t && t.closest && t.closest("a[href]");
-  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
-  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
-  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
-  document.addEventListener("focusout", hide);
-  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
-  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
-})();
-</script>
-<!-- pr-cards: end -->
 
 <!-- theme: begin -->
 <style>
@@ -709,6 +563,195 @@ openHash(); addEventListener('hashchange', openHash);
 }
 </script>
 <!-- report-data: end -->
+
+
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2391": {"author": "CAIMEOX", "comments": 1, "created": "2026-07-23T15:36:06Z", "kind": "pull", "state": "merged", "title": "Fix folded constructor heads in pattern matches", "updated": "2026-10-29T21:22:40Z", "base": "dev"}, "hazelgrove/hazel#2403": {"author": "MaxCarroll0", "comments": 2, "created": "2026-07-28T15:36:18Z", "kind": "pull", "state": "merged", "title": "Curried function definition syntax", "updated": "2026-10-29T23:10:10Z", "base": "dev"}, "hazelgrove/hazel#2439": {"author": "7h3kk1d", "comments": 3, "created": "2026-08-12T15:56:13Z", "kind": "pull", "state": "merged", "title": "Add .rei interfaces for src/util modules", "updated": "2026-10-29T16:44:38Z", "base": "dev"}, "hazelgrove/hazel#2440": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-12T15:57:56Z", "kind": "pull", "state": "merged", "title": "Add .rei interfaces for leaf modules", "updated": "2026-10-29T19:34:39Z", "base": "dev"}, "hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2603": {"author": "matthewhammer", "comments": 1, "created": "2026-09-26T21:10:09Z", "kind": "pull", "state": "open", "title": "Statics: a let is analyzed once unless it refers to itself, plus three smaller speedups", "updated": "2026-09-26T21:30:11Z", "base": "dev"}, "hazelgrove/hazel#2606": {"author": "matthewhammer", "comments": 1, "created": "2026-09-28T01:00:47Z", "kind": "pull", "state": "open", "title": "Keep the incremental cache in the eval worker", "updated": "2026-09-30T19:18:48Z", "base": "dev"}, "hazelgrove/hazel#2608": {"author": "matthewhammer", "comments": 1, "created": "2026-09-28T12:03:57Z", "kind": "pull", "state": "open", "title": "Leave the source's whitespace and comments out of elaborations", "updated": "2026-10-21T19:43:30Z", "base": "dev"}, "hazelgrove/hazel#2610": {"author": "matthewhammer", "comments": 1, "created": "2026-09-28T15:18:03Z", "kind": "pull", "state": "open", "title": "Parse the load fallback with the segmented parser, projectors kept", "updated": "2026-10-20T20:30:28Z", "base": "dev"}, "hazelgrove/hazel#2614": {"author": "matthewhammer", "comments": 1, "created": "2026-09-28T22:58:00Z", "kind": "pull", "state": "open", "title": "Load text about 2.5× faster: whole tokens, one re-grout", "updated": "2026-09-29T18:40:33Z", "base": "dev"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-02T17:10:44Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2651": {"author": "matthewhammer", "comments": 4, "created": "2026-10-05T22:34:31Z", "kind": "pull", "state": "open", "title": "Statics: a module binding analyzes its definition once, not twice", "updated": "2026-10-29T15:57:53Z", "base": "dev"}, "hazelgrove/hazel#2652": {"author": "matthewhammer", "comments": 2, "created": "2026-10-06T00:19:52Z", "kind": "pull", "state": "open", "title": "Eval worker in Firefox: start it at load, and do not time out a reply that is queued", "updated": "2026-10-29T15:57:41Z", "base": "dev"}, "hazelgrove/hazel#2661": {"author": "matthewhammer", "comments": 2, "created": "2026-10-10T01:18:55Z", "kind": "pull", "state": "open", "title": "Types get a Merkle hash; the evaluator asks is_consistent once per pair", "updated": "2026-10-29T15:57:44Z", "base": "dev"}, "hazelgrove/hazel#2671": {"author": "matthewhammer", "comments": 1, "created": "2026-10-10T13:59:41Z", "kind": "pull", "state": "open", "title": "MapPiece keeps unchanged pieces as the same objects", "updated": "2026-10-10T14:25:32Z", "base": "dev"}, "hazelgrove/hazel#2672": {"author": "matthewhammer", "comments": 5, "created": "2026-10-10T16:32:57Z", "kind": "pull", "state": "merged", "title": "Measuring the font scrolls to the caret only if it was in view", "updated": "2026-10-29T23:10:09Z", "base": "dev"}, "hazelgrove/hazel#2673": {"author": "matthewhammer", "comments": 1, "created": "2026-10-10T17:19:02Z", "kind": "pull", "state": "open", "title": "Incremental evaluation recognizes an unchanged expression by its Merkle hash", "updated": "2026-10-20T20:32:20Z", "base": "dev"}, "hazelgrove/hazel#2675": {"author": "matthewhammer", "comments": 3, "created": "2026-10-12T13:05:13Z", "kind": "pull", "state": "open", "title": "Incremental evaluation reuses expressions around a recursive let", "updated": "2026-10-29T16:24:33Z", "base": "dev"}, "hazelgrove/hazel#2678": {"author": "matthewhammer", "comments": 2, "created": "2026-10-12T17:06:58Z", "kind": "pull", "state": "merged", "title": "CI fails when an evaluation does more work than its budget", "updated": "2026-10-29T17:39:32Z", "base": "dev"}, "hazelgrove/hazel#2679": {"author": "matthewhammer", "comments": 1, "created": "2026-10-12T20:45:04Z", "kind": "pull", "state": "merged", "title": "An ascription pushed through a value gives the value back when it already has the type", "updated": "2026-10-19T19:48:48Z", "base": "dev"}, "hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2683": {"author": "disconcision", "comments": 2, "created": "2026-10-16T00:51:53Z", "kind": "pull", "state": "merged", "title": "Accept streaming eval actions in read-only cells", "updated": "2026-10-29T19:34:38Z", "base": "dev"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-10-21T22:03:19Z", "base": "js-library"}, "hazelgrove/hazel#2729": {"author": "matthewhammer", "comments": 2, "created": "2026-10-23T18:03:12Z", "kind": "pull", "state": "open", "title": "A module's sum types are usable after it: their names and constructors", "updated": "2026-10-30T14:12:58Z", "base": "dev"}}, BUILT = "2026-11-02";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
 <!-- anchors (tools/add_anchors.py) -->
 <script id="anchors-js">
 /* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
