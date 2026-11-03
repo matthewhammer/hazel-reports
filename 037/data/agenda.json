@@ -4,7 +4,7 @@
  "meeting": "2026-11-04",
  "meeting_time": "12:00 MST (noon in Boulder, Colorado)",
  "started": "2026-11-02",
- "updated": "2026-11-03 08:13 MST",
+ "updated": "2026-11-03 08:34 MST",
  "page_title": "Agenda for November 4",
  "title": "Agenda: Matthew and Cyrus, Wednesday 2026-11-04, noon Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Wednesday 2026-11-04 at noon Mountain time (12:00 MST, Boulder), in three parts: performance, Hazel embedded in JS programs, and DSL tile editors as livelits. <b>A work in progress:</b> compiled over the two days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
@@ -57,10 +57,10 @@
      "title": "#2635 is up to date with dev's merge day",
      "asked": "Matthew, 2026-11-02",
      "ticket": 663,
-     "status": "merged; Firefox deck: 3 of 12 cases fail",
-     "tone": "warn",
-     "as_of": "2026-11-03 07:15",
-     "body": "<p>Dev's 10-29 merge day (149 commits: curried function definitions #2403, .rei interfaces, PerfBudgets #2678, the quick tests #2714 and more) merged into #2635 at 2cab658ef1. CI passed (Fast checks, Full tests, Static checks), and the 8 long-known Full-test failures are gone. The Firefox deck check failed on a workflow line the merge left stale (it ran dune through opam, which dev's toolchain step leaves off the path).</p><p><b>Since:</b> the fix, 1d17541aaf, pushed 2026-11-02 16:29. On it the deck builds and runs, and 9 of its 12 cases pass. Three fail, all on the eye that reveals a livelit's syntax: Kids' Choice's params line, the toggle staying visible while the mouse is in the livelit, and the sweep of every slide's livelits (5 of 126 uses: the pane closed, or the GUI changed and the revealed model did not). Fast checks, Full tests and Static checks pass. Not yet known: whether dev's merge broke these, or they are flaky.</p>",
+     "status": "merged; deck fix found, 12/12 on a trial branch",
+     "tone": "good",
+     "as_of": "2026-11-03 08:34",
+     "body": "<p>Dev's 10-29 merge day (149 commits: curried function definitions #2403, .rei interfaces, PerfBudgets #2678, the quick tests #2714 and more) merged into #2635 at 2cab658ef1. CI passed (Fast checks, Full tests, Static checks), and the 8 long-known Full-test failures are gone. The Firefox deck check failed on a workflow line the merge left stale (it ran dune through opam, which dev's toolchain step leaves off the path).</p><p><b>Since:</b> the fix, 1d17541aaf, pushed 2026-11-02 16:29: the deck builds and runs. Three of its 12 cases failed, all on the eye that reveals a livelit's syntax, and a rerun failed a different set. <b>The cause is the test harness, not the app</b> (2026-11-03): dev's c206b02c25 gives a build of any branch but dev an IndexedDB database of its own, <code>hazel:&lt;branch&gt;</code>, and the deck's reset between cases (<code>/fresh</code>, in <code>scripts/dev_serve.py</code>) cleared only <code>hazel</code>, so each case met the edits of the one before. With the reset clearing the branch's database too (8ee77cecbe, on a trial branch), all 12 cases pass. Not yet on #2635. Fast checks, Full tests and Static checks were green throughout.</p>",
      "meeting": "The landing order: #2469 into dev, then #2635 retargeted to dev?"
     }
    ]
