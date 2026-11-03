@@ -290,7 +290,17 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>The newest entry of each stack stays whole</b>, and is compacted only when the next one is pushed above it. That is at most two whole page models.</li>
 <li><b>Restoring a compacted entry</b> rebuilds its syntax against the live editor's parse and layout caches (<code>Page.carry_over</code>), which hit for every piece the step did not change. Statics and results wait for the typing debounce, as after a keystroke.</li>
 </ul>
-<p>So a compacted entry is smaller, but not free. How much it keeps at <i>n</i> definitions, and how much of it consecutive entries share, has not been measured (<a href="#notyet">below</a>).</p>
+<p>So a compacted entry is smaller, but not free. How much it keeps as the program grows is next.</p>
+
+<h3 id="persize">What an entry costs as the program grows<a class="anchor" href="#persize" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="persize" title="copy this section's address">copy link</button></h3>
+<p>Measured 2026-11-03 on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> in Node, on GitHub's machines: a chain of <i>n</i> definitions, a <code>1</code> typed again and again in the middle one through the app's own loop, and the live heap after a forced collection with 10 and with 100 undo entries. Twice: as the history keeps them, and with each step's whole page kept as well, as a history without the compaction would.</p>
+<table>
+<tr><th>Definitions</th><th>Each entry, as kept</th><th>Each entry, kept whole</th></tr>
+<tr><td class="n">400</td><td class="n">0.011 MB</td><td class="n">0.55 MB</td></tr>
+<tr><td class="n">1,600</td><td class="n">0.009 MB</td><td class="n">1.9 MB</td></tr>
+<tr><td class="n">6,400</td><td class="n">about 0</td><td class="n">6.9 MB</td></tr>
+</table>
+<p><b>A compacted entry costs almost nothing, at any size.</b> Consecutive entries share nearly all of what they keep: the zippers are persistent, and an edit makes new only the path to it. A whole entry grows with the program, about 1.1 KB a definition, because its derived data is built anew by every edit. The first ten entries cost more as kept (2.6, 6.8 and 26 MB at the three sizes), since the newest entry is whole and the caches fill. One run each, a dev build: the probe is <code>test/Test_UndoSpace.re</code> on the branch trial/665-space, run 41695584813.</p>
 
 <h2 id="how">How the compaction works<a class="anchor" href="#how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="how" title="copy this section's address">copy link</button></h2>
 <p>An example first. Start with a page <b>A</b>, make three edits, to <b>B</b>, <b>C</b> and <b>D</b>, then undo twice and redo once. In the table a whole entry is in bold, and a compacted one, its derived data dropped, is plain.</p>
@@ -328,13 +338,13 @@ document.addEventListener("DOMContentLoaded", () => {
 <h2 id="precompact">Open question: could entries be compact from the start?<a class="anchor" href="#precompact" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="precompact" title="copy this section's address">copy link</button></h2>
 <p>Could the history never hold derived data that it later has to drop, or never need to drop it? The question has two readings, with different answers.</p>
 <p><b>Push entries already compacted.</b> This saves almost nothing, since compacting is a few new records per editor. And it loses the one fast path: the newest entry is kept whole so that the latest undo and redo restore without rebuilding. With every entry compacted, a redo on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> took about three edits (<a href="#price">above</a>).</p>
-<p><b>Keep the derived data, shared.</b> The real prize is an entry that keeps its derived data at the cost of only what its own edit changed. Then nothing would be compacted, and no restore would rebuild anything. Zippers are persistent already, so the text and caret of consecutive entries could share most of their pieces, though that has not been checked. The derived data is where it gets hard:</p>
+<p><b>Keep the derived data, shared.</b> The real prize is an entry that keeps its derived data at the cost of only what its own edit changed. Then nothing would be compacted, and no restore would rebuild anything. The text and caret already do: compacted entries cost almost nothing apiece at any size (<a href="#persize">above</a>), so consecutive entries share nearly all of what they keep. The derived data is where it gets hard:</p>
 <ul>
 <li><b>Whole-program passes build new structure on every edit.</b> Rebuilding the top-level term, statics' walk down the chain of definitions, the outline and layout's walk each touch every definition (<a href="#time">below</a>). So what they build is new in every entry, O(<i>n</i>) of it, even after a one-character edit.</li>
 <li><b>The caches are changed in place.</b> The layout and term caches are hash tables, updated as they are used, so two entries cannot share one. That is why compaction gives each restored editor caches of its own.</li>
 <li><b>Statics may already be close.</b> DefStatics analyzes one definition at a time and keeps the analyses that did not change. In <a href="https://matthewhammer.org/hazel/dashboard/#ticket-666"><code class="ref"><b>^ticket(</b>666<b>)</b></code></a>'s probe of 2026-11-03 on Full Body, after a one-number edit, 1 of its 167 top-level definitions had a new analysis. Whether consecutive entries then share the other 166 in memory has not been measured.</li>
 <li><b>Results come back mostly as new objects.</b> The values the page decodes from the evaluation worker are new objects, except the larger parts it already holds. In the same probe, none of the 192 blocks of Kids' Choice's result came back as the objects decoded the time before, and 60 of Full Body's 137 did. Entries could share results only as far as decoding keeps those identities.</li>
-<li><b>What a compacted entry still holds is not yet understood.</b> The code's comment names frozen typing contexts and master segments. Whether consecutive entries share them is the first thing to measure (<a href="#notyet">below</a>).</li>
+<li><b>What a compacted entry still holds is shared already.</b> The code's comment names frozen typing contexts and master segments, and a deep stack once ran out of memory on large programs. Measured, a compacted entry adds about 0.01 MB or less, at up to 6,400 definitions (<a href="#persize">above</a>): whatever it holds, consecutive entries share it.</li>
 </ul>
 <p>The balanced tree of definitions in <a href="#next">What next</a> is this idea taken all the way. Each node keeps its own derived summaries, a snapshot is a root that shares every node the edit did not touch, and an undo is a swap of roots, with nothing to compact and nothing to rebuild. The challenge is that every whole-program pass above would have to work on that tree, one path at a time.</p>
 
@@ -388,7 +398,6 @@ realized
 
 <h2 id="notyet">Not yet measured<a class="anchor" href="#notyet" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="notyet" title="copy this section's address">copy link</button></h2>
 <ul>
-<li><b>Space against the size of the program, on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>.</b> What a compacted entry and a whole entry keep at <i>n</i> definitions, and how much consecutive entries share. Zippers are persistent, so an entry after a small edit could share most of its pieces with the one before; that has not been checked.</li>
 <li><b>Dev's growth per edit,</b> on its own slides, today.</li>
 <li><b>The sidebar's own cost</b> beyond its outline: drawing its rows. The probe times only the outline it reads.</li>
 <li><b>An undo in the browser</b> with evaluation and drawing: Node runs no worker and builds no view or DOM.</li>
@@ -399,7 +408,6 @@ realized
 <ol>
 <li>Make the outline's build touch only the definitions that changed, so that neither an edit with the sidebar shown nor an undo pays a walk of every definition: about 44 ms per edit and 39 per undo at 3,200 definitions. A cheaper first step for undo alone: keep the outline with its undo entry.</li>
 <li>Put the fix for the second syntax pass on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (9df1b2601e), once its CI is green, and measure an undo again in the browser.</li>
-<li>Measure space against size on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> in Node: the heap after a forced collection with 0, 1, 10 and 100 undo entries, at each size, compacted and whole.</li>
 <li>Decide dev: a small PR with the compaction and an always-on cap now, or wait for <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> to bring them (the 2026-10-15 call was to wait).</li>
 <li>Try the top level as a balanced tree of definitions (<a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>'s Figure 5). A snapshot of a persistent tree is its root: it shares every node the edit did not touch, so an entry would keep O(log <i>n</i>) new nodes, and an undo could be a swap of roots, with its derived data kept.</li>
 <li>Time an edit and an undo in the browser on Full Body, with evaluation and drawing.</li>
@@ -575,7 +583,7 @@ realized
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-03T16:23:10Z", "base": "integration/livelits-splicerefs-full"}}, BUILT = "2026-11-03";
+  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-03T17:41:42Z", "base": "integration/livelits-splicerefs-full"}}, BUILT = "2026-11-03";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -842,6 +850,32 @@ realized
      "1",
      "52",
      "1.6"
+    ]
+   ]
+  },
+  {
+   "section": "What an entry costs as the program grows",
+   "section_id": "persize",
+   "columns": [
+    "Definitions",
+    "Each entry, as kept",
+    "Each entry, kept whole"
+   ],
+   "rows": [
+    [
+     "400",
+     "0.011 MB",
+     "0.55 MB"
+    ],
+    [
+     "1,600",
+     "0.009 MB",
+     "1.9 MB"
+    ],
+    [
+     "6,400",
+     "about 0",
+     "6.9 MB"
     ]
    ]
   },
