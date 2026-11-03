@@ -3,8 +3,8 @@
 
 The space figures come from ^report(14)'s update (data/space.json), the step
 times from ^report(36)'s probe (036/data/steps.json, its release build, after
-the fixes), and the outline's part of each undo and redo from new profiles
-(data/outline_split.json, by drivers/split.py). {{name}} in body.html is a
+the fixes), and the outline's part of each undo and redo from those times by
+position and from new profiles (data/outline_kinds.json, by drivers/kinds.py). {{name}} in body.html is a
 figure or a number from them. Then the series tools run over the page (see
 build.sh)."""
 import html, json, os, re, statistics
@@ -17,10 +17,11 @@ s35 = open(os.path.join(ROOT, "035", "index.html")).read()
 CSS = s35[s35.index("<style>") + 7: s35.index("</style>")]
 
 space = json.load(open(os.path.join(DATA, "space.json")))
-split = json.load(open(os.path.join(DATA, "outline_split.json")))["rows"]
+kinds = json.load(open(os.path.join(DATA, "outline_kinds.json")))["sizes"]
 steps = json.load(open(os.path.join(ROOT, "036", "data", "steps.json")))
 MED = {(r["n"], r["kind"]): r["step_median_ms"] for r in steps if r["build"] == "B"}
-SIZES = sorted({r["n"] for r in split})
+REC = {(r["n"], r["kind"]): r for r in steps if r["build"] == "B"}
+SIZES = sorted({r["n"] for r in steps})
 
 
 def fmt(v):
@@ -31,21 +32,25 @@ def esc(s):
     return html.escape(s, quote=True)
 
 
-# the outline's share of the undo and redo steps' time, per size: the mean of the runs
-SHARE = {n: statistics.mean(r["outline_share_of_undo_redo"] for r in split if r["n"] == n) for n in SIZES}
-SHARE_RUNS = {n: [r["outline_share_of_undo_redo"] for r in split if r["n"] == n] for n in SIZES}
+def at(n, kind, idx):
+    # ^report(36)'s step times (after the fixes, release build) at these positions in each run of 4
+    return [x["step_ms"] for x in REC[(n, kind)]["samples"] if x["index"] in idx]
 
 
-def outline_ms(n):
-    # in ^report(36)'s release timings: the share of the undo and redo steps, spread evenly over the 8 steps
-    return SHARE[n] * (MED[(n, "undo")] + MED[(n, "redo")]) / 2
-
-
+# An undo rebuilds the outline every time. A redo finds it in the outline's memo of the last four programs, which
+# the undos just filled, except the last redo, which restores the program from after the edits: no undo built that
+# one. So the outline's rebuild is what an undo costs beyond a redo that finds its outline.
 ROWS = []
 for n in SIZES:
-    e, u, r, o = MED[(n, "edit")], MED[(n, "undo")], MED[(n, "redo")], outline_ms(n)
-    ROWS.append({"n": n, "edit": e, "undo": u, "redo": r, "outline": o, "undo_rest": u - o, "redo_rest": r - o,
-                 "undo_rest_x": (u - o) / e, "redo_rest_x": (r - o) / e, "undo_x": u / e, "redo_x": r / e})
+    e, u = MED[(n, "edit")], MED[(n, "undo")]
+    hit = statistics.median(at(n, "redo", (1, 2, 3)))
+    last = statistics.median(at(n, "redo", (4,)))
+    o = u - hit
+    k = kinds[str(n)]
+    ROWS.append({"n": n, "edit": e, "undo": u, "redo": MED[(n, "redo")], "hit": hit, "last": last, "outline": o,
+                 "share": o / u, "prof_share": k["undo"]["outline_ms"] / k["undo"]["step_ms"],
+                 "prof_share_redo": k["redo"]["outline_ms"] / k["redo"]["step_ms"],
+                 "hit_x": hit / e, "undo_x": u / e, "last_extra": last - hit})
 BY = {x["n"]: x for x in ROWS}
 
 # --- Figure 1: what the undo history kept after 12 edits, per build ---
@@ -82,32 +87,33 @@ def fig_space(W=760, mini=False):
 
 def fig_split(W=900, mini=False, sizes=None):
     sizes = sizes or SIZES
-    k = len(sizes)
-    pw = W / k
-    H = 230 if not mini else 170
-    T, B = 30, 40
+    pw = W / len(sizes)
+    H = 240 if not mini else 180
+    T, B = 30, 44
+    KIND = (("edit", "edit", "var(--accent2)"), ("undo", "undo", "var(--accent)"),
+            ("hit", "redo", "var(--warn)"), ("last", "last redo", "var(--warn)"))
     o = []
     for j, n in enumerate(sizes):
         x0 = j * pw
         row = BY[n]
-        top = max(row["undo"], row["redo"], row["edit"]) * 1.12
+        top = max(row["undo"], row["last"], row["edit"]) * 1.14
         Y = lambda v: T + (1 - v / top) * (H - T - B)
         o.append(f'<text x="{x0 + pw / 2:.1f}" y="16" font-size="{12.5 if not mini else 13}" font-weight="700" text-anchor="middle" fill="var(--ink)">{n:,} definitions</text>')
-        o.append(f'<line x1="{x0 + 10:.1f}" x2="{x0 + pw - 10:.1f}" y1="{Y(0):.1f}" y2="{Y(0):.1f}" stroke="var(--line)"/>')
-        bw = (pw - 30) / 3 - 6
-        for i, (kind, lab) in enumerate((("edit", "edit"), ("undo", "undo"), ("redo", "redo"))):
-            bx = x0 + 15 + i * (bw + 9)
-            v = row[kind]
-            ol = row["outline"] if kind != "edit" else 0
+        o.append(f'<line x1="{x0 + 8:.1f}" x2="{x0 + pw - 8:.1f}" y1="{Y(0):.1f}" y2="{Y(0):.1f}" stroke="var(--line)"/>')
+        bw = (pw - 24) / 4 - 5
+        for i, (key, lab, col) in enumerate(KIND):
+            bx = x0 + 12 + i * (bw + 6)
+            v = row[key]
+            ol = min(row["outline"], v) if key in ("undo", "last") else 0
             rest = v - ol
-            col = {"edit": "var(--accent2)", "undo": "var(--accent)", "redo": "var(--warn)"}[kind]
-            o.append(f'<rect x="{bx:.1f}" y="{Y(rest):.1f}" width="{bw:.1f}" height="{Y(0) - Y(rest):.1f}" fill="{col}" rx="2"><title>{n:,} definitions, {lab}: {fmt(v)} ms; the outline {fmt(ol)} of it</title></rect>')
+            o.append(f'<rect x="{bx:.1f}" y="{Y(rest):.1f}" width="{bw:.1f}" height="{Y(0) - Y(rest):.1f}" fill="{col}" rx="2"><title>{n:,} definitions, {lab}: {fmt(v)} ms</title></rect>')
             if ol:
-                o.append(f'<rect x="{bx:.1f}" y="{Y(v):.1f}" width="{bw:.1f}" height="{Y(rest) - Y(v):.1f}" fill="none" stroke="{col}" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about {fmt(ol)} ms</title></rect>')
-            o.append(f'<text x="{bx + bw / 2:.1f}" y="{Y(v) - 4:.1f}" font-size="{11 if not mini else 12}" text-anchor="middle" fill="var(--ink)">{fmt(v)}</text>'
-                     f'<text x="{bx + bw / 2:.1f}" y="{H - B + 15}" font-size="{11 if not mini else 12}" text-anchor="middle" fill="var(--muted)">{lab}</text>')
-    o.append(f'<text x="{W / 2:.1f}" y="{H - 6}" font-size="11.5" text-anchor="middle" fill="var(--muted)">ms per step, each size on its own scale; the dashed top of an undo or a redo is the outline\'s rebuild</text>')
-    return f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="An edit, an undo and a redo at each size, the outline\'s part marked" style="width:100%;height:auto">' + "".join(o) + "</svg>"
+                o.append(f'<rect x="{bx:.1f}" y="{Y(v):.1f}" width="{bw:.1f}" height="{Y(rest) - Y(v):.1f}" fill="none" stroke="{col}" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about {fmt(row["outline"])} ms</title></rect>')
+            o.append(f'<text x="{bx + bw / 2:.1f}" y="{Y(v) - 4:.1f}" font-size="{10.5 if not mini else 12}" text-anchor="middle" fill="var(--ink)">{fmt(v)}</text>')
+            for t, line in enumerate(lab.split(" ")):
+                o.append(f'<text x="{bx + bw / 2:.1f}" y="{H - B + 14 + t * 12}" font-size="{10.5 if not mini else 12}" text-anchor="middle" fill="var(--muted)">{line}</text>')
+    o.append(f'<text x="{W / 2:.1f}" y="{H - 4}" font-size="11.5" text-anchor="middle" fill="var(--muted)">ms per step, each size on its own scale; the dashed top is the outline\'s rebuild</text>')
+    return f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="An edit, an undo, a redo and the last redo at each size, the outline\'s rebuild marked" style="width:100%;height:auto">' + "".join(o) + "</svg>"
 
 
 # --- the tables ---
@@ -130,13 +136,12 @@ def table_times():
 
 
 def table_split():
-    h = ("<table><thead><tr><th>definitions</th><th>an edit</th><th>an undo</th><th>its outline</th><th>the rest</th>"
-         "<th>a redo</th><th>its outline</th><th>the rest</th><th>outline's share (2 runs)</th><th>undo, rest, in edits</th><th>redo, rest, in edits</th></tr></thead><tbody>")
+    h = ("<table><thead><tr><th>definitions</th><th>an edit</th><th>an undo</th><th>a redo that finds its outline (the first three)</th>"
+         "<th>the last redo</th><th>the outline: undo minus redo</th><th>its share of an undo</th><th>the profile's share of an undo (2 runs)</th>"
+         "<th>a redo that finds its outline, in edits</th></tr></thead><tbody>")
     for x in ROWS:
-        sh = " and ".join(f"{s * 100:.0f}%" for s in SHARE_RUNS[x["n"]])
-        h += (f'<tr><td>{x["n"]:,}</td><td>{fmt(x["edit"])}</td><td>{fmt(x["undo"])}</td><td>{fmt(x["outline"])}</td><td>{fmt(x["undo_rest"])}</td>'
-              f'<td>{fmt(x["redo"])}</td><td>{fmt(x["outline"])}</td><td>{fmt(x["redo_rest"])}</td><td>{sh}</td>'
-              f'<td>{x["undo_rest_x"]:.1f}</td><td>{x["redo_rest_x"]:.1f}</td></tr>')
+        h += (f'<tr><td>{x["n"]:,}</td><td>{fmt(x["edit"])}</td><td>{fmt(x["undo"])}</td><td>{fmt(x["hit"])}</td><td>{fmt(x["last"])}</td>'
+              f'<td>{fmt(x["outline"])}</td><td>{x["share"] * 100:.0f}%</td><td>{x["prof_share"] * 100:.0f}%</td><td>{x["hit_x"]:.1f}</td></tr>')
     return h + "</tbody></table>"
 
 
@@ -150,23 +155,19 @@ for key, r in k.items():
 V["kept_ratio"] = f'{k["asbuilt"]["kept_mb"] / k["compact"]["kept_mb"]:.1f}'
 for n in SIZES:
     x = BY[n]
-    for f in ("edit", "undo", "redo", "outline", "undo_rest", "redo_rest"):
+    for f in ("edit", "undo", "redo", "hit", "last", "outline"):
         V[f"{f}_{n}"] = fmt(x[f])
-    for f in ("undo_rest_x", "redo_rest_x", "undo_x", "redo_x"):
-        V[f"{f}_{n}"] = f"{x[f]:.1f}"
-allsh = [s for n in SIZES for s in SHARE_RUNS[n]]
-V["share_lo"], V["share_hi"] = f"{min(allsh) * 100:.0f}", f"{max(allsh) * 100:.0f}"
+    V[f"hit_x_{n}"] = f'{x["hit_x"]:.1f}'
+    V[f"undo_x_{n}"] = f'{x["undo_x"]:.1f}'
 big = [n for n in SIZES if n >= 1600]
-V["urx_lo"], V["urx_hi"] = f'{min(BY[n]["undo_rest_x"] for n in big):.1f}', f'{max(BY[n]["undo_rest_x"] for n in big):.1f}'
-V["rrx_lo"], V["rrx_hi"] = f'{min(BY[n]["redo_rest_x"] for n in big):.1f}', f'{max(BY[n]["redo_rest_x"] for n in big):.1f}'
-fr = [BY[n]["outline"] / (BY[n]["redo"] - BY[n]["edit"]) for n in big]
-fu = [BY[n]["outline"] / (BY[n]["undo"] - BY[n]["edit"]) for n in big]
-V["redo_extra_lo"], V["redo_extra_hi"] = f"{min(fr) * 100:.0f}", f"{max(fr) * 100:.0f}"
-V["undo_extra_lo"], V["undo_extra_hi"] = f"{min(fu) * 100:.0f}", f"{max(fu) * 100:.0f}"
-V["ol_per_def_us"] = f'{statistics.mean(BY[n]["outline"] / n for n in big) * 1000:.0f}'
-
+V["share_lo"], V["share_hi"] = f'{min(BY[n]["share"] for n in big) * 100:.0f}', f'{max(BY[n]["share"] for n in big) * 100:.0f}'
+V["pshare_lo"], V["pshare_hi"] = f'{min(x["prof_share"] for x in ROWS) * 100:.0f}', f'{max(x["prof_share"] for x in ROWS) * 100:.0f}'
+V["pshare_redo_lo"], V["pshare_redo_hi"] = f'{min(x["prof_share_redo"] for x in ROWS) * 100:.0f}', f'{max(x["prof_share_redo"] for x in ROWS) * 100:.0f}'
+V["hitx_lo"], V["hitx_hi"] = f'{min(BY[n]["hit_x"] for n in big):.1f}', f'{max(BY[n]["hit_x"] for n in big):.1f}'
+SYN = json.load(open(os.path.join(DATA, "outline_kinds.json")))["syntax_ms"]
+V["redo_syn_3200"], V["edit_syn_3200"] = f'{SYN["3200"]["redo"]:,}', f'{SYN["3200"]["edit"]:,}'
 FIGS = {"FIG_SPACE": fig_space(), "FIG_SPACE_MINI": fig_space(W=300, mini=True),
-        "FIG_SPLIT": fig_split(), "FIG_SPLIT_MINI": fig_split(W=300, mini=True, sizes=[6400]),
+        "FIG_SPLIT": fig_split(), "FIG_SPLIT_MINI": fig_split(W=300, mini=True, sizes=[3200]),
         "TABLE_SPACE": table_space(), "TABLE_TIMES": table_times(), "TABLE_SPLIT": table_split()}
 BODY = open(os.path.join(HERE, "body.html")).read()
 BODY = re.sub(r"\{\{(\w+)\}\}", lambda m: FIGS.get(m.group(1)) or V[m.group(1)], BODY)
@@ -174,7 +175,7 @@ HEAD = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Undo, in Time and Space</title>
-<meta name="description" content="What undo costs in Hazel's editor. Space: an uncapped history of whole editor states kept {V['kept_asbuilt']} MB after 12 edits on #2597, {V['kept_compact']} with Andrew Blinn's compaction; how that was found. Time: every step linear in the program; the modular editors' outline rebuild is {V['share_lo']} to {V['share_hi']}% of each undo and redo. Where it stands and what is next.">
+<meta name="description" content="What undo costs in Hazel's editor. Space: an uncapped history of whole editor states kept {V['kept_asbuilt']} MB after 12 edits on #2597, {V['kept_compact']} with Andrew Blinn's compaction; how that was found. Time: every step linear in the program; an undo is a redo plus a rebuild of the modular editors' outline, a third of the undo. Where it stands and what is next.">
 <style>{CSS}
 </style>
 </head>

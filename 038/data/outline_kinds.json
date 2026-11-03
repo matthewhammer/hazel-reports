@@ -1,0 +1,86 @@
+{
+ "what": "Profile time per kind of step, the step itself without its statics refresh, summed over 2 runs of 4 steps each, and the part under Outline.of_source (Outline.re:290). The probe at 58dae0b427 (local branch probe/665-undo-vs-redo: d06473240f with one named sampler per kind and the refresh as its own function), dev profile, node --cpu-prof 200 us, 2026-11-03 07:48-07:52 MST. Node's profiler keeps about 255 frames of a stack, so a sample whose sampler frame was cut off is not counted: read the shares within a kind, not the totals across kinds. drivers/kinds.py.",
+ "sizes": {
+  "400": {
+   "edit": {
+    "step_ms": 169,
+    "outline_ms": 0
+   },
+   "undo": {
+    "step_ms": 226,
+    "outline_ms": 66
+   },
+   "redo": {
+    "step_ms": 130,
+    "outline_ms": 12
+   }
+  },
+  "800": {
+   "edit": {
+    "step_ms": 251,
+    "outline_ms": 0
+   },
+   "undo": {
+    "step_ms": 318,
+    "outline_ms": 103
+   },
+   "redo": {
+    "step_ms": 201,
+    "outline_ms": 20
+   }
+  },
+  "1600": {
+   "edit": {
+    "step_ms": 357,
+    "outline_ms": 0
+   },
+   "undo": {
+    "step_ms": 586,
+    "outline_ms": 178
+   },
+   "redo": {
+    "step_ms": 417,
+    "outline_ms": 32
+   }
+  },
+  "3200": {
+   "edit": {
+    "step_ms": 673,
+    "outline_ms": 0
+   },
+   "undo": {
+    "step_ms": 1123,
+    "outline_ms": 327
+   },
+   "redo": {
+    "step_ms": 816,
+    "outline_ms": 64
+   }
+  },
+  "6400": {
+   "edit": {
+    "step_ms": 1334,
+    "outline_ms": 0
+   },
+   "undo": {
+    "step_ms": 2105,
+    "outline_ms": 583
+   },
+   "redo": {
+    "step_ms": 1648,
+    "outline_ms": 127
+   }
+  }
+ },
+ "syntax_ms": {
+  "what": "profile ms under CachedSyntax.mk (CachedSyntax.re:218) in the steps of each kind, 2 runs summed",
+  "3200": {
+   "edit": 296,
+   "redo": 534
+  },
+  "6400": {
+   "edit": 622,
+   "redo": 1088
+  }
+ }
+}
