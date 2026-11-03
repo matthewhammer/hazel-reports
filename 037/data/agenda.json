@@ -11,7 +11,7 @@
  "short": [
   "<b>Performance: an edit and an undo each cost time in proportion to the program, and an undo about three edits.</b> Measured on #2635 at five sizes: at 6,400 definitions an edit takes about 106 ms and an undo about 292, each followed by about 78 ms of statics. Two cheap fixes are on #2635 and took 31 to 46% off at the larger sizes; what is left is whole-program passes around incremental caches that already work. In space, Andrew Blinn's compaction of undo entries cut what a #2597 tab kept after 12 edits from 1,048 MB to 159; dev does not have it yet. Getting to O(log n) is a design question for the meeting (^report(38), both stories; <a href=\"../036/\"><code class=\"ref\"><b>^report(</b>36<b>)</b></code></a>, in progress).",
   "<b>Hazlets: Hazel embedded in a JS program's event handlers.</b> A new word for the pattern Messed Up Dress Up uses, the first and so far only one. A demo of the game's scripts, the question <a href=\"../034/\"><code class=\"ref\"><b>^report(</b>34<b>)</b></code></a> asks (should the library be official?), and a prototype npm package, <code>hazeljs</code> 0.0.1, published on npm on 2026-11-02.",
-  "<b>DSL tile editors as a kind of livelit:</b> Matthew's proposal. The livelit's literal is a Hazel value describing a grammar, its view is a tile editor for that grammar, and its expansion is the parse tree. Is this the shape Cyrus wants, and what should the first demo be?"
+  "<b>DSL tile editors as a kind of livelit:</b> Cyrus's idea, from about two weeks ago, which Matthew brings back. The livelit's literal is a Hazel value describing a grammar, its view is a tile editor for that grammar, and its expansion is the parse tree. Is this the shape Cyrus meant, and what should the first demo be?"
  ],
  "sections": [
   {
@@ -108,12 +108,12 @@
   {
    "id": "dsl",
    "title": "3. DSL tile editors as a kind of livelit",
-   "intro": "Matthew's proposal, for discussion: a new kind of livelit, perhaps built in, for languages defined inside Hazel.",
+   "intro": "Cyrus's idea, from about two weeks before this meeting, which Matthew brings back for discussion: a new kind of livelit, perhaps built in, for languages defined inside Hazel.",
    "items": [
     {
      "id": "dsl-livelit",
      "title": "A livelit whose literal is a grammar and whose view is a tile editor for it",
-     "asked": "Matthew, 2026-11-02",
+     "asked": "Cyrus, late October (his idea; Matthew brings it back, 2026-11-02)",
      "ticket": null,
      "status": "idea",
      "tone": "accent",
