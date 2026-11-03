@@ -15,7 +15,7 @@
 <figure class="mini">{{FIG_SPLIT_MINI}}<figcaption>At 3,200 definitions: the dashed top of the undo and of the last redo is the outline's rebuild. Every size in <a href="#fig2">Figure 2</a>.</figcaption></figure></div></li>
 <li><div class="row"><p><b>Next:</b> let a restored program find its outline instead of rebuilding it; find why a restore rebuilds more syntax than an edit; measure what one undo entry keeps as the program grows; decide whether dev gets the compaction before #2469 lands; and the balanced tree of definitions, which would make each step and each entry O(log <i>n</i>) (<a href="#next">what next</a>).</p></div></li>
 </ol>
-<p><b>Corrected 2026-11-03, 07:52 MST.</b> This report's first version, published an hour earlier, spread the outline's time evenly over undos and redos, and so said that without the outline a redo costs about an edit while most of an undo's extra was unexplained. A profile that tells an undo from a redo shows the opposite: the outline is nearly all of what an undo costs beyond a redo, and both cost more than an edit for another reason (<a href="#outline">the outline</a>).</p>
+<p><b>Corrected 2026-11-03, 07:52 MST.</b> This report's first version, published at 07:38, spread the outline's time evenly over undos and redos, and so said that without the outline a redo costs about an edit while most of an undo's extra was unexplained. A profile that tells an undo from a redo shows the opposite: the outline is nearly all of what an undo costs beyond a redo, and both cost more than an edit for another reason (<a href="#outline">the outline</a>).</p>
 </div>
 
 <h2 id="question">The question</h2>
