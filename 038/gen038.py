@@ -145,6 +145,24 @@ def table_split():
     return h + "</tbody></table>"
 
 
+VIEW = json.load(open(os.path.join(DATA, "outline_view.json")))["sizes"]
+
+
+def vmed(n, which, kind, field="step_ms", idx=None):
+    xs = VIEW[str(n)][which][kind][field]
+    return statistics.median(xs if idx is None else [xs[i] for i in idx])
+
+
+def table_view():
+    h = ("<table><thead><tr><th>definitions</th><th>an edit, no sidebar</th><th>an edit, with the sidebar</th><th>its outline, asked after it</th>"
+         "<th>an undo, no sidebar</th><th>an undo, with the sidebar (the first three)</th><th>a redo, with the sidebar (the first three)</th></tr></thead><tbody>")
+    for n in SIZES:
+        h += (f'<tr><td>{n:,}</td><td>{fmt(vmed(n, "off", "edit", idx=(1, 2, 3)))}</td><td>{fmt(vmed(n, "on", "edit", idx=(1, 2, 3)))}</td>'
+              f'<td>{fmt(vmed(n, "on", "edit", "outline_after_ms"))}</td><td>{fmt(vmed(n, "off", "undo", idx=(0, 1, 2)))}</td>'
+              f'<td>{fmt(vmed(n, "on", "undo", idx=(0, 1, 2)))}</td><td>{fmt(vmed(n, "on", "redo", idx=(0, 1, 2)))}</td></tr>')
+    return h + "</tbody></table>"
+
+
 # --- numbers for the prose ---
 
 V = {}
@@ -164,11 +182,17 @@ V["share_lo"], V["share_hi"] = f'{min(BY[n]["share"] for n in big) * 100:.0f}', 
 V["pshare_lo"], V["pshare_hi"] = f'{min(x["prof_share"] for x in ROWS) * 100:.0f}', f'{max(x["prof_share"] for x in ROWS) * 100:.0f}'
 V["pshare_redo_lo"], V["pshare_redo_hi"] = f'{min(x["prof_share_redo"] for x in ROWS) * 100:.0f}', f'{max(x["prof_share_redo"] for x in ROWS) * 100:.0f}'
 V["hitx_lo"], V["hitx_hi"] = f'{min(BY[n]["hit_x"] for n in big):.1f}', f'{max(BY[n]["hit_x"] for n in big):.1f}'
+V["view_ol_3200"] = fmt(vmed(3200, "on", "edit", "outline_after_ms"))
+V["view_edit_3200"] = fmt(vmed(3200, "on", "edit", idx=(1, 2, 3)))
+V["view_undo_3200"] = fmt(vmed(3200, "on", "undo", idx=(0, 1, 2)))
+V["view_redo_3200"] = fmt(vmed(3200, "on", "redo", idx=(0, 1, 2)))
+V["view_ol_6400"] = fmt(vmed(6400, "on", "edit", "outline_after_ms"))
+V["view_edit_6400"] = fmt(vmed(6400, "on", "edit", idx=(1, 2, 3)))
 SYN = json.load(open(os.path.join(DATA, "outline_kinds.json")))["syntax_ms"]
 V["redo_syn_3200"], V["edit_syn_3200"] = f'{SYN["3200"]["redo"]:,}', f'{SYN["3200"]["edit"]:,}'
 FIGS = {"FIG_SPACE": fig_space(), "FIG_SPACE_MINI": fig_space(W=300, mini=True),
         "FIG_SPLIT": fig_split(), "FIG_SPLIT_MINI": fig_split(W=300, mini=True, sizes=[3200]),
-        "TABLE_SPACE": table_space(), "TABLE_TIMES": table_times(), "TABLE_SPLIT": table_split()}
+        "TABLE_SPACE": table_space(), "TABLE_TIMES": table_times(), "TABLE_SPLIT": table_split(), "TABLE_VIEW": table_view()}
 BODY = open(os.path.join(HERE, "body.html")).read()
 BODY = re.sub(r"\{\{(\w+)\}\}", lambda m: FIGS.get(m.group(1)) or V[m.group(1)], BODY)
 HEAD = f"""<!doctype html>

@@ -80,6 +80,7 @@ let step = (m: Web.History.Model.t, action: Web.Page.Update.t) => {
 type sample = {
   step_ms: float,
   refresh_ms: float,
+  outline_ms: float,
   work: UC.work,
   refresh_work: UC.work,
 };
@@ -88,14 +89,21 @@ type sample = {
    tell it from the step (^ticket(665): undo apart from redo) */
 let refresh = m => step(m, Editors(Scratch(RefreshStatics)));
 
+/* with UNDO_VIEW_OUTLINE set, the program's outline after each step, as the
+   sidebar's view asks for it in the app (^ticket(665)); timed on its own */
+let view_outline = Sys.getenv_opt("UNDO_VIEW_OUTLINE") != None;
+let outline = m => ignore(Web.Program.outline(Cells.program(m)));
+
 let sample = (m, action) => {
   let ((m, work), step_ms) = ms(() => step(m, action));
+  let ((), outline_ms) = view_outline ? ms(() => outline(m)) : ((), 0.);
   let ((m, refresh_work), refresh_ms) = ms(() => refresh(m));
   (
     m,
     {
       step_ms,
       refresh_ms,
+      outline_ms,
       work,
       refresh_work,
     },
@@ -120,7 +128,7 @@ let sample_redo = (m, action) => {
 
 let show = (s: sample) =>
   Printf.sprintf(
-    "%7.1f+%7.1f ms (p%d m%d c%d | p%d m%d c%d)",
+    "%7.1f+%7.1f ms (p%d m%d c%d | p%d m%d c%d) ol %.1f",
     s.step_ms,
     s.refresh_ms,
     s.work.parsed,
@@ -129,6 +137,7 @@ let show = (s: sample) =>
     s.refresh_work.parsed,
     s.refresh_work.measured,
     s.refresh_work.compared,
+    s.outline_ms,
   );
 
 let run_size = (n: int) => {
@@ -153,6 +162,8 @@ let run_size = (n: int) => {
         ),
       ),
     );
+  /* the program as the edits find it, outlined as the sidebar would show it */
+  view_outline ? outline(m) : ();
   let steps = (m, k, sampler, action) => {
     let rec go = (m, k, acc) =>
       k == 0
