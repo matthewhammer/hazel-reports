@@ -4,7 +4,7 @@
  "meeting": "2026-11-04",
  "meeting_time": "12:00 MST (noon in Boulder, Colorado)",
  "started": "2026-11-02",
- "updated": "2026-11-03 07:52 MST",
+ "updated": "2026-11-03 08:13 MST",
  "page_title": "Agenda for November 4",
  "title": "Agenda: Matthew and Cyrus, Wednesday 2026-11-04, noon Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Wednesday 2026-11-04 at noon Mountain time (12:00 MST, Boulder), in three parts: performance, Hazel embedded in JS programs, and DSL tile editors as livelits. <b>A work in progress:</b> compiled over the two days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
@@ -46,11 +46,11 @@
      "title": "Why #2635's evaluator takes half dev's steps on the PerfBudgets program",
      "asked": "Matthew, 2026-11-02",
      "ticket": 667,
-     "status": "not started",
-     "tone": "muted",
-     "as_of": "2026-11-02 10:35",
-     "body": "<p>Cyrus's PerfBudgets test (#2678) counts the evaluator's steps on a fixed program: 206,834 on dev, 96,438 on #2635 after this week's dev merge. Either a gain to bring to dev, or steps the counter misses.</p>",
-     "meeting": "If it is a gain, which change makes it, and should it go to dev on its own?"
+     "status": "explained: fewer trampoline bounces, two of our commits",
+     "tone": "good",
+     "as_of": "2026-11-03 08:13",
+     "body": "<p>Cyrus's PerfBudgets test (#2678) counts the evaluator's trampoline steps on a fixed program: 206,834 on dev, 96,438 on #2635 after this week's dev merge.</p><p><b>Why (2026-11-03):</b> the same reductions take fewer trampoline bounces on #2635, every form alike. A probe of 16 small programs counts about twice dev's steps on dev for each (a bare literal: 12 steps on dev, 0 on #2635). Two of our October commits, on #2597's line and so on #2635 but not on dev, remove the bounces: d0c56fb090 (binding a value that is already done calls its continuation directly) is half the gap, since #2635 with it reverted counts 152,746; 602498d7aa (the evaluator skips binds that only pass a value through) is, by its own measure, most of the rest. The first is mostly counting (allocation 4% lower, time inside the noise); the second was 16 to 25% faster on a call-heavy program.</p>",
+     "meeting": "Bring d0c56fb090 and 602498d7aa to dev as a small PR of their own? Dev's PerfBudgets count, and its budget, would drop by about half."
     },
     {
      "id": "dev-merge",
