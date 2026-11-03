@@ -1,0 +1,101 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 039 · Hazel as a JS library · started 2026-11-03, updated {{updated}} MST · <span class="wip">work in progress</span> · after report 034</p>
+<h1>Hazlets, So Far</h1>
+<p class="sub">A <b>Hazlet</b> is a JavaScript program whose event handlers are written in Hazel: the program hands an event to a Hazel function, and acts on what the function answers. Matthew's word for the pattern (2026-11-02). Messed Up Dress Up, a game for kids, is the first Hazlet and so far the only one. This report gathers in one place what has been built for Hazlets since 2026-10-20, where each piece stands today, and what comes next. Matthew asked for it on 2026-11-03, for his meeting with Cyrus on 2026-11-04 (^report(37), the agenda, <a href="../037/#hazlet">its section 2</a>).</p>
+
+<div class="headline">
+<p><b>Short answers.</b> Each is as of 2026-11-03; the sources are at the end.</p>
+<ol class="ans">
+<li><p><b>One Hazlet runs today, live.</b> Messed Up Dress Up's 📜 Scripting tab (since 0.0.412, 2026-10-24) holds a Hazel program of modules: 📚 Common, then one module per room that has logic, five rooms in all. Each room's <code>on_event : (Globals, Event) -&gt; Cmd</code> answers the game's events, and each room can be run by Hazel, by Fumola or by the game's own JS (<a href="#what">Figure 1</a>).</p></li>
+<li><p><b>Nothing of it is in Hazel's dev branch yet.</b> The library the game uses, <code>hazel-lib.js</code>, is on two draft PRs, #2711 and #2719, both with CI green; GitHub reports that #2711 now conflicts with dev. The tiles a player edits in are on a branch with no PR, <code>embed-editable</code>. The game loads both from branch builds (<a href="#status">the table</a>).</p></li>
+<li><p><b>The library is on npm, as <code>hazeljs</code> 0.0.1,</b> since 2026-11-02 at 11:03 MST: one file, entry points for Node and for a script tag, TypeScript declarations and a README. A fresh project installs it from the registry and runs the README's examples. It is built from #2719's head, so it carries none of dev's changes since 2026-10-19 (<a href="#package">below</a>).</p></li>
+<li><p><b>A Hazel rule is fast enough for a lever, with one pause.</b> In the game, a Hazel rule answers in about 3.5 ms of a 13.7 ms lever pull (Fumola about 1.6 ms, of 10.7). But the first event after a reset waits 0.5 to 0.7 s while the program is built (^report(32), a draft). Larger rules pay for crossing the boundary, and the fixes for that are on trial branches, not in the game (<a href="#speed">below</a>).</p></li>
+<li><p><b>Next:</b> the package's checks, its placeholder version and a home for its source; the game loading Hazel from the package; the trap room live in ^report(34), its rule edited in tiles; and the library's road to dev, which is the meeting's question (<a href="#next">What next</a>, <a href="#meeting">For the meeting</a>).</p></li>
+</ol>
+</div>
+
+<h2 id="what">What a Hazlet is</h2>
+<p>Many JavaScript programs are organized around events: a click, a key, a timer, a message. A Hazlet hands some of those events to Hazel. The JS side builds a value describing what happened and what the handler may see, calls a function written in Hazel, and gets back a value describing what to do. Hazel never touches the page directly: its answer is data, and the JS program acts it out. Two names keep the parts apart. <b>The library</b> (<code>hazel-lib.js</code>, which defines <code>window.Hazel</code>) is the API for analyzing and running Hazel from JS. <b>A Hazlet</b> is a program that uses the library this way, with Hazel functions as its handlers.</p>
+<p>In Messed Up Dress Up, a red lever pulled in the castle's trap room is the event <code>Pull(L)</code>. The game builds the room's view of its state, a <code>Globals</code> record (the levers, how the pits are wired, the game's random draws, and more), and calls <code>TrapRoom.on_event</code>. The rule answers a <code>Cmd</code>, a chain of commands such as <code>Flip(L, SetPit(0, true, Done))</code>: flip the lever, then open pit 0. The game plays each command as its own code would, with its animation and its pits. When the player edits a rule in the 📜 tab, the game hands every module's text to <code>Hazel.runProgram</code>, which builds the one program and reports errors, holes and unfinished brackets module by module. While the program has errors or is not finished, the rooms run the game's own JS, so the game keeps working; the Hazel rule still runs as far as its errors allow, and its answer goes in the event log beside them. Each Hazel box shows its module in Hazel's own tiles, from Hazel's app in a frame, with Hazel's error marks; an edit made in the tiles is posted back to the game.</p>
+<figure class="fig" id="fig1"><div class="figscroll">{{FIG_PATH}}</div>
+<figcaption>Figure 1. One event in the first Hazlet, and one edit of its rules. Top: the game hands an event and the room's view to the room's Hazel function, and acts out the commands it answers. Bottom: an edit in the 📜 tab rebuilds the program; while it is not ready, the room's JS answers instead. Each box's border says where that piece comes from: the game's own code, the library (#2711, #2719), or the tiles' branch. Read from the game's <code>js/25-scripting.js</code> at 0.0.474.</figcaption></figure>
+<p>^report(33) reads what the rules are told today in detail: a view built for each room, with numbers for names. It proposes names for every place and thing in the game, and types built on them.</p>
+
+<h2 id="timeline">Progress so far</h2>
+<div class="scroll"><table>
+<tr><th>When</th><th>What</th><th>Where</th></tr>
+<tr><td class="n">2026-10-20</td><td>Hazel as a JS library: <code>Hazel.analyze</code> and <code>Hazel.run</code> on any page, Hazel values as plain JS values, JS functions in and out.</td><td>#2711, draft</td></tr>
+<tr><td class="n">2026-10-21</td><td>Programs of named modules (<code>analyzeProgram</code>, <code>runProgram</code>), and embed mode: Hazel's tiles in another page's frame. The same day, Matthew's meeting with Cyrus encouraged Hazel as a game script system, starting with this game (^report(30)).</td><td>#2719, draft, stacked on #2711</td></tr>
+<tr><td class="n">2026-10-22</td><td>What one call into Hazel costs, for the game's World rule: most of it a type annotation re-checked at run time, which #2681 removes; under it, a floor for crossing the boundary that grows with the argument.</td><td>^report(25)</td></tr>
+<tr><td class="n">2026-10-22</td><td>The same rules in Fumola, beside Hazel and the game's JS.</td><td>ticket 542</td></tr>
+<tr><td class="n">2026-10-22 to 23</td><td>Tiles in the frame that select, take edits and post each edit's text back; themes, fonts, line numbers, go-to-definition.</td><td><code>embed-editable</code>, 12 commits, no PR</td></tr>
+<tr><td class="n">2026-10-23</td><td>Two days in: five rooms and Common in Hazel and in Fumola, each checked against the game's JS; fixes for Hazel's speed on trial branches.</td><td>^report(30)</td></tr>
+<tr><td class="n">2026-10-23</td><td>The game loaded with each of the three as its default, timed as a speed run.</td><td>^report(32), a draft</td></tr>
+<tr><td class="n">2026-10-24</td><td>📜 Scripting released in the game (0.0.412): the panel, tiles in every box, the event log, Fumola with types, a JS, Hazel or Fumola chip per room.</td><td>matthewhammer/kids-choice-games#1</td></tr>
+<tr><td class="n">2026-10-25</td><td>A case study of the rules: what they are told, and names and types for every place and thing.</td><td>^report(33)</td></tr>
+<tr><td class="n">2026-10-26</td><td>Should the library be official? A suggestion: merge it as experimental, and promise stability for a small core once a second user has used it.</td><td>^report(34)</td></tr>
+<tr><td class="n">2026-10-29</td><td>Hazel's branch builds moved to build.hazel.org; the game followed (0.0.467), or its tiles' messages were dropped.</td><td>ticket 658</td></tr>
+<tr><td class="n">2026-11-02</td><td>"Hazlet" named. <code>hazeljs</code> 0.0.1 published on npm; ^report(34) updated with what the release carries beyond dev. Tickets for the package, and for the trap room live in a report.</td><td>^ticket(668), ^ticket(675)</td></tr>
+</table></div>
+
+<h2 id="status">Where each piece stands</h2>
+{{TABLE_STATUS}}
+<p class="note">Read on {{status_as_of}}. A ticket's number links to its row on the work dashboard.</p>
+
+<h2 id="speed">How fast it is</h2>
+<ul>
+<li><b>A lever, in the game</b> (^report(32), a draft, 60 pulls each in a browser): a Hazel rule answers in about 3.5 ms, a Fumola rule in about 1.6 ms. The commands then take the game about 9 ms either way, so a whole pull is 9.7 ms with JS, 10.7 with Fumola and 13.7 with Hazel, under a 60 Hz frame. Hazel's one slow event is the first after a reset, 0.5 to 0.7 s, while the program is built; Fumola's slowest is 12 to 21 ms. Hazel's tiles take about 3.7 s to fill all six boxes, while the page keeps drawing.</li>
+<li><b>Crossing the boundary</b> (^report(25), in Node): the library turns the whole JS argument into Hazel syntax, gives every node a fresh id, and evaluates it back into the value it already was. For the World rule's argument at 16&times;16 that floor is 8.5 to 10.6 ms a call, whatever the rule does.</li>
+<li><b>On trial branches</b> (^report(30), on GitHub's runners): with closures kept across the boundary, lists not re-typed in loops, a big value crossing once as a handle, and values skipping the evaluator's stages, a World move went from 241 ms to 0.97 ms. None of these are in the library the game loads.</li>
+</ul>
+
+<h2 id="package">The npm package, <code>hazeljs</code></h2>
+<p>A first, experimental release: <code>npm install hazeljs</code>, or a script tag from jsDelivr or unpkg. Version 0.0.1 has 9 files, 2.8 MB unpacked (about 640 KB gzipped). <code>require("hazeljs")</code> and <code>import Hazel from "hazeljs"</code> give the same <code>Hazel</code> object that a script tag puts on the page. The package also has TypeScript declarations for the API and the values, and a README that npmjs.com shows. The README covers install, the API call by call, the values table, programs of modules, size and speed, limits, and the game as a use case. It sends readers to hazel.org and to the contributors on GitHub for who makes Hazel. The name, <code>hazeljs</code>, is Matthew's choice; <i>Hazlet</i> stays the pattern's name. License MIT, as Hazel's.</p>
+<p><b>What it is built from:</b> #2719's head, <code>0d66c36618</code>, which is dev of 2026-10-19 plus the library's own 11 commits. There are no modular editors (#2469), no livelits, and none of the performance PRs still open against dev. As of 2026-10-29 the release was 151 commits, 24 PRs, behind dev (^report(34) lists them).</p>
+<p><b>Measured, in Node 22 on a laptop</b> (the README): <code>require</code> about 170 ms; a small program run about 30 ms; a module of 100 short members analyzed in about 110 ms, of 400 in about 2.3 s.</p>
+<p><b>Known issues</b>, in its CHANGELOG: a module of about 150 members overflows Node's default stack; the result's <code>ms</code> field reads 0 under Node (a bug in the library's timing, not yet traced); a text only Hazel's slower, recovering parser can read prints a <code>SLOW PARSE</code> line to the console. Also open: npm lists a placeholder it made first, <code>0.0.0-stage</code>, to be deprecated; and the package's own source is not yet in a public repository.</p>
+
+<h2 id="next">What next</h2>
+<h3 id="next-package">The package</h3>
+<ol>
+<li>The checks: a browser page and a TypeScript example (checked by <code>tsc --noEmit</code>), and a GitHub workflow that packs the package, installs it into each example as a user would, and runs them, the page in headless Firefox (^ticket(672)).</li>
+<li>Deprecate <code>0.0.0-stage</code>. Decide where the package's source lives (a folder on #2711's branch, built by dune, or a repository of its own), how versions after 0.0.1 name the Hazel commit they are built from, and whether it moves to an <code>@hazelgrove</code> organization on npm (^ticket(673)).</li>
+<li>The game loads Hazel from the package, pinned to a version, so the game is the package's first real user; its speed run is the check (^ticket(674)).</li>
+</ol>
+<h3 id="next-room">The trap room live in a report</h3>
+<p>Matthew's ask (2026-11-02): a reader plays the trap room on ^report(34)'s page and edits its Hazel rule in tiles, the room answering each edit at once (^ticket(675)). Three pieces, in order:</p>
+<ol>
+<li>The trap room outside the game: first a link that opens the game at the trap room with its 📜 tab showing and Hazel chosen, so a report can frame it; later the room as a package of its own, which means pulling it out of the game's shared state (^ticket(676)).</li>
+<li>Tiles in a page: a PR for <code>embed-editable</code>, stacked on #2719, and a place to serve it from that a report can frame (^ticket(677)). The library package has no editor.</li>
+<li>The wiring: the report's page posts the room's module text to the tiles, takes each edit back, runs it with <code>hazeljs</code>, and hands the new <code>on_event</code> to the room (^ticket(678)).</li>
+</ol>
+<h3 id="next-library">The library, toward dev</h3>
+<p>From ^report(34)'s list, still open:</p>
+<ol>
+<li>Ready #2711: resolve its conflict with dev, bring its description up to date, take it out of draft.</li>
+<li>Open the PR for <code>embed-editable</code> (the same step as above), so all that the game uses is under review.</li>
+<li>Decide whether the library's programs take their outline and navigation from modular editors (#2469) before the library grows its own.</li>
+<li>Convert JS values straight into Hazel values at the boundary, rather than through syntax evaluated again (^report(25)'s floor), and land #2681, which the game's typed rules want.</li>
+<li>Run analysis in a worker inside the library, as the app does, so a slow read never freezes a page.</li>
+<li>Find a second Hazlet, a course page or the docs' own examples, before promising stability beyond the core.</li>
+</ol>
+<h3 id="next-rules">The game's rules</h3>
+<p>^report(33)'s steps: names for every place and thing, kept through moves; a <code>RuleState</code> for the tree room first, built from those names, beside today's <code>Globals</code>; then the trap room.</p>
+
+<h2 id="meeting">For the meeting on 2026-11-04</h2>
+<p>From ^report(37), the agenda's section 2:</p>
+<ul>
+<li><a href="../037/#mudu-demo">The demo</a>: Cyrus's read of the rules' types, and of what a Hazlet should give its handlers: a view built per room, as today, or the program's whole state under readable names?</li>
+<li><a href="../037/#library">The library</a>: merge it as experimental, yes or no? And who else might build the second Hazlet?</li>
+<li><a href="../037/#npm">The package</a>: keep it under Matthew's npm account, or move it to a Hazel organization on npm? Is it the library alone, or also a helper for the Hazlet pattern, one that turns a program of modules into JS event handlers as the game does?</li>
+</ul>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>Nothing new was measured.</b> The times are from ^report(25), ^report(30) and ^report(32), and the package's README, each as its source states them.</li>
+<li><b>The state of each piece</b> was read on 2026-11-03 near 07:20 MST: <code>gh pr view</code> and <code>gh pr checks</code> for #2711, #2719 and #2681; <code>git ls-remote</code> and <code>git log</code> for <code>embed-editable</code> against <code>js-library-embed</code>; <code>npm view hazeljs</code>; the game's source at Dress Up 0.0.474 (4d8384b6), <code>js/25-scripting.js</code>, for the program's types and the build URLs it loads; and the work dashboard's tickets 668 to 678.</li>
+<li><b>The data</b>: the status table is <code>039/data/status.json</code>; the page is made by <code>039/gen039.py</code> from <code>039/body.html</code>.</li>
+</ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,145 @@
+[
+ {
+  "section": "Progress so far",
+  "section_id": "timeline",
+  "columns": [
+   "When",
+   "What",
+   "Where"
+  ],
+  "rows": [
+   [
+    "2026-10-20",
+    "Hazel as a JS library: Hazel.analyze and Hazel.run on any page, Hazel values as plain JS values, JS functions in and out.",
+    "#2711, draft"
+   ],
+   [
+    "2026-10-21",
+    "Programs of named modules (analyzeProgram, runProgram), and embed mode: Hazel's tiles in another page's frame. The same day, Matthew's meeting with Cyrus encouraged Hazel as a game script system, starting with this game (^report(30)).",
+    "#2719, draft, stacked on #2711"
+   ],
+   [
+    "2026-10-22",
+    "What one call into Hazel costs, for the game's World rule: most of it a type annotation re-checked at run time, which #2681 removes; under it, a floor for crossing the boundary that grows with the argument.",
+    "^report(25)"
+   ],
+   [
+    "2026-10-22",
+    "The same rules in Fumola, beside Hazel and the game's JS.",
+    "^ticket(542)"
+   ],
+   [
+    "2026-10-22 to 23",
+    "Tiles in the frame that select, take edits and post each edit's text back; themes, fonts, line numbers, go-to-definition.",
+    "embed-editable, 12 commits, no PR"
+   ],
+   [
+    "2026-10-23",
+    "Two days in: five rooms and Common in Hazel and in Fumola, each checked against the game's JS; fixes for Hazel's speed on trial branches.",
+    "^report(30)"
+   ],
+   [
+    "2026-10-23",
+    "The game loaded with each of the three as its default, timed as a speed run.",
+    "^report(32), a draft"
+   ],
+   [
+    "2026-10-24",
+    "📜 Scripting released in the game (0.0.412): the panel, tiles in every box, the event log, Fumola with types, a JS, Hazel or Fumola chip per room.",
+    "matthewhammer/kids-choice-games#1"
+   ],
+   [
+    "2026-10-25",
+    "A case study of the rules: what they are told, and names and types for every place and thing.",
+    "^report(33)"
+   ],
+   [
+    "2026-10-26",
+    "Should the library be official? A suggestion: merge it as experimental, and promise stability for a small core once a second user has used it.",
+    "^report(34)"
+   ],
+   [
+    "2026-10-29",
+    "Hazel's branch builds moved to build.hazel.org; the game followed (0.0.467), or its tiles' messages were dropped.",
+    "^ticket(658)"
+   ],
+   [
+    "2026-11-02",
+    "\"Hazlet\" named. hazeljs 0.0.1 published on npm; ^report(34) updated with what the release carries beyond dev. Tickets for the package, and for the trap room live in a report.",
+    "^ticket(668), ^ticket(675)"
+   ]
+  ]
+ },
+ {
+  "section": "Where each piece stands",
+  "section_id": "status",
+  "columns": [
+   "Piece",
+   "State",
+   "As of",
+   "Ticket or PR"
+  ],
+  "rows": [
+   [
+    "The library: hazel-lib.js, which puts window.Hazel on a page (analyze, run, the value mapping)",
+    "● Draft PR, CI green; GitHub reports a conflict with today's dev",
+    "2026-11-03",
+    "#2711 (opened 2026-10-20)"
+   ],
+   [
+    "Programs of named modules (analyzeProgram, runProgram) and embed mode: Hazel's tiles in a frame, read-only",
+    "● Draft PR stacked on #2711, CI green",
+    "2026-11-03",
+    "#2719 (opened 2026-10-21)"
+   ],
+   [
+    "Tiles in a frame that a reader can select and edit, each edit's text posted back to the page",
+    "● Branch embed-editable, 12 commits (2026-10-22 and 23), no PR yet",
+    "2026-11-03",
+    "^ticket(677)"
+   ],
+   [
+    "Messed Up Dress Up's 📜 Scripting tab: five rooms' rules and a Common module, each room run by its JS, Hazel or Fumola",
+    "● Live since 0.0.412 (2026-10-24); the game is at 0.0.474. It loads the library from #2719's branch build and the tiles from embed-editable's, on build.hazel.org",
+    "2026-11-03",
+    "matthewhammer/kids-choice-games#1 (merged 2026-10-24)"
+   ],
+   [
+    "Speed fixes the game's rules want: a value known to have a type is not walked again for it",
+    "● Open against dev, waiting for review; the other fixes ^report(30) measured are on trial branches, not in the game",
+    "2026-11-03",
+    "#2681"
+   ],
+   [
+    "The npm package hazeljs 0.0.1: the library as one file, entry points for require, import and a script tag, TypeScript declarations, a README",
+    "● Published 2026-11-02 11:03 MST, under Matthew's npm account. Installed from the registry into a fresh project: the README's examples run through require and import; jsDelivr and unpkg serve the file. Its source is not yet in a public repository",
+    "2026-11-02 13:23",
+    "^ticket(668), ^ticket(669) to ^ticket(671), ^ticket(673)"
+   ],
+   [
+    "The package's checks: a browser page and TypeScript examples, and a GitHub workflow that installs the packed package into each",
+    "● Not started",
+    "2026-11-02 13:23",
+    "^ticket(672)"
+   ],
+   [
+    "A placeholder version npm made first, 0.0.0-stage",
+    "● Still listed; to be deprecated, which needs Matthew's two-factor code",
+    "2026-11-03",
+    "^ticket(673)"
+   ],
+   [
+    "The game loading its Hazel from the package, pinned to a version, instead of a branch build",
+    "● Not started",
+    "2026-11-02",
+    "^ticket(674)"
+   ],
+   [
+    "The trap room live in ^report(34), its Hazel rule editable in tiles",
+    "● Not started (Matthew's ask, 2026-11-02)",
+    "2026-11-02",
+    "^ticket(675) to ^ticket(678)"
+   ]
+  ]
+ }
+]

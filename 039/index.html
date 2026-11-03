@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hazlets, So Far</title>
+<meta name="description" content="A Hazlet is a JavaScript program whose event handlers are written in Hazel; Messed Up Dress Up is the first. What has been built since 2026-10-20 (the library on #2711 and #2719, tiles in a frame, the game's Scripting tab, hazeljs 0.0.1 on npm), where each piece stands, and what comes next.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  .st { font-size: 0.85em; } .st-good { color: var(--good); } .st-warn { color: var(--warn); } .st-muted { color: var(--muted); }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>39<b>)</b></code> · Hazel as a JS library · started 2026-11-03, updated 2026-11-03 07:23 MST · <span class="wip">work in progress</span> · after <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Hazlets, So Far</h1>
+<p class="sub">A <b>Hazlet</b> is a JavaScript program whose event handlers are written in Hazel: the program hands an event to a Hazel function, and acts on what the function answers. Matthew's word for the pattern (2026-11-02). Messed Up Dress Up, a game for kids, is the first Hazlet and so far the only one. This report gathers in one place what has been built for Hazlets since 2026-10-20, where each piece stands today, and what comes next. Matthew asked for it on 2026-11-03, for his meeting with Cyrus on 2026-11-04 (<a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a>, the agenda, <a href="../037/#hazlet">its section 2</a>).</p>
+
+<div class="headline">
+<p><b>Short answers.</b> Each is as of 2026-11-03; the sources are at the end.</p>
+<ol class="ans">
+<li><p><b>One Hazlet runs today, live.</b> Messed Up Dress Up's 📜 Scripting tab (since 0.0.412, 2026-10-24) holds a Hazel program of modules: 📚 Common, then one module per room that has logic, five rooms in all. Each room's <code>on_event : (Globals, Event) -&gt; Cmd</code> answers the game's events, and each room can be run by Hazel, by Fumola or by the game's own JS (<a href="#what">Figure 1</a>).</p></li>
+<li><p><b>Nothing of it is in Hazel's dev branch yet.</b> The library the game uses, <code>hazel-lib.js</code>, is on two draft PRs, <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, both with CI green; GitHub reports that <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> now conflicts with dev. The tiles a player edits in are on a branch with no PR, <code>embed-editable</code>. The game loads both from branch builds (<a href="#status">the table</a>).</p></li>
+<li><p><b>The library is on npm, as <code>hazeljs</code> 0.0.1,</b> since 2026-11-02 at 11:03 MST: one file, entry points for Node and for a script tag, TypeScript declarations and a README. A fresh project installs it from the registry and runs the README's examples. It is built from <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s head, so it carries none of dev's changes since 2026-10-19 (<a href="#package">below</a>).</p></li>
+<li><p><b>A Hazel rule is fast enough for a lever, with one pause.</b> In the game, a Hazel rule answers in about 3.5 ms of a 13.7 ms lever pull (Fumola about 1.6 ms, of 10.7). But the first event after a reset waits 0.5 to 0.7 s while the program is built (<a href="../032/"><code class="ref"><b>^report(</b>32<b>)</b></code></a>, a draft). Larger rules pay for crossing the boundary, and the fixes for that are on trial branches, not in the game (<a href="#speed">below</a>).</p></li>
+<li><p><b>Next:</b> the package's checks, its placeholder version and a home for its source; the game loading Hazel from the package; the trap room live in <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>, its rule edited in tiles; and the library's road to dev, which is the meeting's question (<a href="#next">What next</a>, <a href="#meeting">For the meeting</a>).</p></li>
+</ol>
+</div>
+
+<h2 id="what">What a Hazlet is<a class="anchor" href="#what" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="what" title="copy this section's address">copy link</button></h2>
+<p>Many JavaScript programs are organized around events: a click, a key, a timer, a message. A Hazlet hands some of those events to Hazel. The JS side builds a value describing what happened and what the handler may see, calls a function written in Hazel, and gets back a value describing what to do. Hazel never touches the page directly: its answer is data, and the JS program acts it out. Two names keep the parts apart. <b>The library</b> (<code>hazel-lib.js</code>, which defines <code>window.Hazel</code>) is the API for analyzing and running Hazel from JS. <b>A Hazlet</b> is a program that uses the library this way, with Hazel functions as its handlers.</p>
+<p>In Messed Up Dress Up, a red lever pulled in the castle's trap room is the event <code>Pull(L)</code>. The game builds the room's view of its state, a <code>Globals</code> record (the levers, how the pits are wired, the game's random draws, and more), and calls <code>TrapRoom.on_event</code>. The rule answers a <code>Cmd</code>, a chain of commands such as <code>Flip(L, SetPit(0, true, Done))</code>: flip the lever, then open pit 0. The game plays each command as its own code would, with its animation and its pits. When the player edits a rule in the 📜 tab, the game hands every module's text to <code>Hazel.runProgram</code>, which builds the one program and reports errors, holes and unfinished brackets module by module. While the program has errors or is not finished, the rooms run the game's own JS, so the game keeps working; the Hazel rule still runs as far as its errors allow, and its answer goes in the event log beside them. Each Hazel box shows its module in Hazel's own tiles, from Hazel's app in a frame, with Hazel's error marks; an edit made in the tiles is posted back to the game.</p>
+<figure class="fig" id="fig1"><div class="figscroll"><svg viewBox="0 0 940 330" width="100%" role="img" aria-label="One event in Messed Up Dress Up: a lever pulled, the room&#39;s view and the event handed through the library to the room&#39;s Hazel rule, which answers commands the game acts out. One edit: a module&#39;s box and its tiles, Hazel.runProgram building the program, and the rooms running their JS while it is not ready.">
+<text x="0" y="20" font-size="13" font-weight="700" fill="var(--ink)">One event</text>
+<rect x="0" y="30" width="160" height="74" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="2"/>
+<text x="8" y="47" font-size="12" font-weight="700" fill="var(--ink)">the game (JS)</text>
+<text x="8" y="64" font-size="11" fill="var(--muted)">a red lever pulled:</text>
+<text x="8" y="78" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="var(--muted)">Pull(L)</text>
+<line x1="160" x2="174" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M172,63.0 L178,67.0 L172,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="178" y="30" width="160" height="74" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="2"/>
+<text x="186" y="47" font-size="12" font-weight="700" fill="var(--ink)">the room&#x27;s view</text>
+<text x="186" y="64" font-size="11" fill="var(--muted)">Globals: the levers,</text>
+<text x="186" y="78" font-size="11" fill="var(--muted)">the wiring, the draws</text>
+<line x1="338" x2="352" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M350,63.0 L356,67.0 L350,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="356" y="30" width="160" height="74" rx="8" fill="var(--paper)" stroke="var(--accent)" stroke-width="2"/>
+<text x="364" y="47" font-size="12" font-weight="700" fill="var(--ink)">the library</text>
+<text x="364" y="64" font-size="11" fill="var(--muted)">calls TrapRoom.on_event;</text>
+<text x="364" y="78" font-size="11" fill="var(--muted)">values converted both ways</text>
+<line x1="516" x2="530" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M528,63.0 L534,67.0 L528,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="534" y="30" width="214" height="74" rx="8" fill="var(--paper)" stroke="var(--good)" stroke-width="2"/>
+<text x="542" y="47" font-size="12" font-weight="700" fill="var(--ink)">the rule (Hazel)</text>
+<text x="542" y="64" font-size="11" fill="var(--muted)">answers a Cmd:</text>
+<text x="542" y="78" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="var(--muted)">Flip(L, SetPit(0, true, Done))</text>
+<line x1="748" x2="762" y1="67.0" y2="67.0" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M760,63.0 L766,67.0 L760,71.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="766" y="30" width="160" height="74" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="2"/>
+<text x="774" y="47" font-size="12" font-weight="700" fill="var(--ink)">the game acts</text>
+<text x="774" y="64" font-size="11" fill="var(--muted)">each command, as its own</text>
+<text x="774" y="78" font-size="11" fill="var(--muted)">code would: lever, pit</text>
+<text x="0" y="166" font-size="13" font-weight="700" fill="var(--ink)">One edit</text>
+<rect x="0" y="176" width="176" height="74" rx="8" fill="var(--paper)" stroke="var(--warn)" stroke-width="2"/>
+<text x="8" y="193" font-size="12" font-weight="700" fill="var(--ink)">the tiles, in a frame</text>
+<text x="8" y="210" font-size="11" fill="var(--muted)">Hazel&#x27;s app: the module</text>
+<text x="8" y="224" font-size="11" fill="var(--muted)">in tiles, error marks</text>
+<line x1="180" x2="190" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M188,209.0 L194,213.0 L188,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M182,209.0 L176,213.0 L182,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="194" y="176" width="176" height="74" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="2"/>
+<text x="202" y="193" font-size="12" font-weight="700" fill="var(--ink)">📜 the module&#x27;s box</text>
+<text x="202" y="210" font-size="11" fill="var(--muted)">Common, or one room;</text>
+<text x="202" y="224" font-size="11" fill="var(--muted)">an edit from either side</text>
+<line x1="370" x2="384" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M382,209.0 L388,213.0 L382,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="388" y="176" width="190" height="74" rx="8" fill="var(--paper)" stroke="var(--accent)" stroke-width="2"/>
+<text x="396" y="193" font-size="12" font-weight="700" fill="var(--ink)">Hazel.runProgram</text>
+<text x="396" y="210" font-size="11" fill="var(--muted)">the one program, built;</text>
+<text x="396" y="224" font-size="11" fill="var(--muted)">errors, holes per module</text>
+<line x1="578" x2="592" y1="213.0" y2="213.0" stroke="var(--muted)" stroke-width="1.4"/>
+<path d="M590,209.0 L596,213.0 L590,217.0" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+<rect x="596" y="176" width="206" height="74" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="2"/>
+<text x="604" y="193" font-size="12" font-weight="700" fill="var(--ink)">ready?</text>
+<text x="604" y="210" font-size="11" fill="var(--muted)">yes: each room&#x27;s on_event</text>
+<text x="604" y="224" font-size="11" fill="var(--muted)">no: the rooms run their JS</text>
+<path d="M699,176 V136 H436 V108" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3"/><path d="M432,114 L436,108 L440,114" fill="none" stroke="var(--muted)" stroke-width="1.2"/><text x="444" y="130" font-size="10.5" fill="var(--muted)">the handlers the next event calls</text>
+<rect x="0" y="282" width="14" height="12" rx="3" fill="var(--paper)" stroke="var(--accent2)" stroke-width="2"/><text x="20" y="292" font-size="11.5" fill="var(--muted)">the game&#x27;s own JS</text>
+<rect x="148.8" y="282" width="14" height="12" rx="3" fill="var(--paper)" stroke="var(--accent)" stroke-width="2"/><text x="168.8" y="292" font-size="11.5" fill="var(--muted)">the library (#2711, #2719)</text>
+<rect x="355.20000000000005" y="282" width="14" height="12" rx="3" fill="var(--paper)" stroke="var(--good)" stroke-width="2"/><text x="375.20000000000005" y="292" font-size="11.5" fill="var(--muted)">the room&#x27;s rule, in Hazel</text>
+<rect x="555.2" y="282" width="14" height="12" rx="3" fill="var(--paper)" stroke="var(--warn)" stroke-width="2"/><text x="575.2" y="292" font-size="11.5" fill="var(--muted)">the tiles&#x27; branch (embed-editable)</text>
+<text x="0" y="316" font-size="11.5" fill="var(--muted)">The trap room's rule, as the game ships it (0.0.474); Pull(L) with the pits wired normally.</text>
+</svg></div>
+<figcaption>Figure 1. One event in the first Hazlet, and one edit of its rules. Top: the game hands an event and the room's view to the room's Hazel function, and acts out the commands it answers. Bottom: an edit in the 📜 tab rebuilds the program; while it is not ready, the room's JS answers instead. Each box's border says where that piece comes from: the game's own code, the library (<a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>), or the tiles' branch. Read from the game's <code>js/25-scripting.js</code> at 0.0.474.</figcaption></figure>
+<p><a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a> reads what the rules are told today in detail: a view built for each room, with numbers for names. It proposes names for every place and thing in the game, and types built on them.</p>
+
+<h2 id="timeline">Progress so far<a class="anchor" href="#timeline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="timeline" title="copy this section's address">copy link</button></h2>
+<div class="scroll"><table>
+<tr><th>When</th><th>What</th><th>Where</th></tr>
+<tr><td class="n">2026-10-20</td><td>Hazel as a JS library: <code>Hazel.analyze</code> and <code>Hazel.run</code> on any page, Hazel values as plain JS values, JS functions in and out.</td><td><a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, draft</td></tr>
+<tr><td class="n">2026-10-21</td><td>Programs of named modules (<code>analyzeProgram</code>, <code>runProgram</code>), and embed mode: Hazel's tiles in another page's frame. The same day, Matthew's meeting with Cyrus encouraged Hazel as a game script system, starting with this game (<a href="../030/"><code class="ref"><b>^report(</b>30<b>)</b></code></a>).</td><td><a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, draft, stacked on <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a></td></tr>
+<tr><td class="n">2026-10-22</td><td>What one call into Hazel costs, for the game's World rule: most of it a type annotation re-checked at run time, which <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> removes; under it, a floor for crossing the boundary that grows with the argument.</td><td><a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a></td></tr>
+<tr><td class="n">2026-10-22</td><td>The same rules in Fumola, beside Hazel and the game's JS.</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-542"><code class="ref"><b>^ticket(</b>542<b>)</b></code></a></td></tr>
+<tr><td class="n">2026-10-22 to 23</td><td>Tiles in the frame that select, take edits and post each edit's text back; themes, fonts, line numbers, go-to-definition.</td><td><code>embed-editable</code>, 12 commits, no PR</td></tr>
+<tr><td class="n">2026-10-23</td><td>Two days in: five rooms and Common in Hazel and in Fumola, each checked against the game's JS; fixes for Hazel's speed on trial branches.</td><td><a href="../030/"><code class="ref"><b>^report(</b>30<b>)</b></code></a></td></tr>
+<tr><td class="n">2026-10-23</td><td>The game loaded with each of the three as its default, timed as a speed run.</td><td><a href="../032/"><code class="ref"><b>^report(</b>32<b>)</b></code></a>, a draft</td></tr>
+<tr><td class="n">2026-10-24</td><td>📜 Scripting released in the game (0.0.412): the panel, tiles in every box, the event log, Fumola with types, a JS, Hazel or Fumola chip per room.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/pull/1">matthewhammer/kids-choice-games#1</a></td></tr>
+<tr><td class="n">2026-10-25</td><td>A case study of the rules: what they are told, and names and types for every place and thing.</td><td><a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a></td></tr>
+<tr><td class="n">2026-10-26</td><td>Should the library be official? A suggestion: merge it as experimental, and promise stability for a small core once a second user has used it.</td><td><a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a></td></tr>
+<tr><td class="n">2026-10-29</td><td>Hazel's branch builds moved to build.hazel.org; the game followed (0.0.467), or its tiles' messages were dropped.</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-658"><code class="ref"><b>^ticket(</b>658<b>)</b></code></a></td></tr>
+<tr><td class="n">2026-11-02</td><td>"Hazlet" named. <code>hazeljs</code> 0.0.1 published on npm; <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a> updated with what the release carries beyond dev. Tickets for the package, and for the trap room live in a report.</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-668"><code class="ref"><b>^ticket(</b>668<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-675"><code class="ref"><b>^ticket(</b>675<b>)</b></code></a></td></tr>
+</table></div>
+
+<h2 id="status">Where each piece stands<a class="anchor" href="#status" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status" title="copy this section's address">copy link</button></h2>
+<div class="scroll"><table>
+<tr><th>Piece</th><th>State</th><th>As of</th><th>Ticket or PR</th></tr>
+<tr><td>The library: <code>hazel-lib.js</code>, which puts <code>window.Hazel</code> on a page (<code>analyze</code>, <code>run</code>, the value mapping)</td><td><span class="st st-warn">●</span> Draft PR, CI green; GitHub reports a conflict with today's dev</td><td class="n">2026-11-03</td><td><a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> (opened 2026-10-20)</td></tr>
+<tr><td>Programs of named modules (<code>analyzeProgram</code>, <code>runProgram</code>) and embed mode: Hazel's tiles in a frame, read-only</td><td><span class="st st-warn">●</span> Draft PR stacked on <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, CI green</td><td class="n">2026-11-03</td><td><a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> (opened 2026-10-21)</td></tr>
+<tr><td>Tiles in a frame that a reader can select and edit, each edit's text posted back to the page</td><td><span class="st st-muted">●</span> Branch <code>embed-editable</code>, 12 commits (2026-10-22 and 23), no PR yet</td><td class="n">2026-11-03</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-677"><code class="ref"><b>^ticket(</b>677<b>)</b></code></a></td></tr>
+<tr><td>Messed Up Dress Up's 📜 Scripting tab: five rooms' rules and a Common module, each room run by its JS, Hazel or Fumola</td><td><span class="st st-good">●</span> Live since 0.0.412 (2026-10-24); the game is at 0.0.474. It loads the library from <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s branch build and the tiles from <code>embed-editable</code>'s, on build.hazel.org</td><td class="n">2026-11-03</td><td><a href="https://github.com/matthewhammer/kids-choice-games/pull/1">matthewhammer/kids-choice-games#1</a> (merged 2026-10-24)</td></tr>
+<tr><td>Speed fixes the game's rules want: a value known to have a type is not walked again for it</td><td><span class="st st-warn">●</span> Open against dev, waiting for review; the other fixes <a href="../030/"><code class="ref"><b>^report(</b>30<b>)</b></code></a> measured are on trial branches, not in the game</td><td class="n">2026-11-03</td><td><a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a></td></tr>
+<tr><td>The npm package <code>hazeljs</code> 0.0.1: the library as one file, entry points for <code>require</code>, <code>import</code> and a script tag, TypeScript declarations, a README</td><td><span class="st st-good">●</span> Published 2026-11-02 11:03 MST, under Matthew's npm account. Installed from the registry into a fresh project: the README's examples run through <code>require</code> and <code>import</code>; jsDelivr and unpkg serve the file. Its source is not yet in a public repository</td><td class="n">2026-11-02 13:23</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-668"><code class="ref"><b>^ticket(</b>668<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-669"><code class="ref"><b>^ticket(</b>669<b>)</b></code></a> to <a href="https://matthewhammer.org/hazel/dashboard/#ticket-671"><code class="ref"><b>^ticket(</b>671<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-673"><code class="ref"><b>^ticket(</b>673<b>)</b></code></a></td></tr>
+<tr><td>The package's checks: a browser page and TypeScript examples, and a GitHub workflow that installs the packed package into each</td><td><span class="st st-muted">●</span> Not started</td><td class="n">2026-11-02 13:23</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-672"><code class="ref"><b>^ticket(</b>672<b>)</b></code></a></td></tr>
+<tr><td>A placeholder version npm made first, <code>0.0.0-stage</code></td><td><span class="st st-warn">●</span> Still listed; to be deprecated, which needs Matthew's two-factor code</td><td class="n">2026-11-03</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-673"><code class="ref"><b>^ticket(</b>673<b>)</b></code></a></td></tr>
+<tr><td>The game loading its Hazel from the package, pinned to a version, instead of a branch build</td><td><span class="st st-muted">●</span> Not started</td><td class="n">2026-11-02</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-674"><code class="ref"><b>^ticket(</b>674<b>)</b></code></a></td></tr>
+<tr><td>The trap room live in <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>, its Hazel rule editable in tiles</td><td><span class="st st-muted">●</span> Not started (Matthew's ask, 2026-11-02)</td><td class="n">2026-11-02</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-675"><code class="ref"><b>^ticket(</b>675<b>)</b></code></a> to <a href="https://matthewhammer.org/hazel/dashboard/#ticket-678"><code class="ref"><b>^ticket(</b>678<b>)</b></code></a></td></tr>
+</table></div>
+<p class="note">Read on 2026-11-03 07:20 MST. A ticket's number links to its row on the work dashboard.</p>
+
+<h2 id="speed">How fast it is<a class="anchor" href="#speed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="speed" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>A lever, in the game</b> (<a href="../032/"><code class="ref"><b>^report(</b>32<b>)</b></code></a>, a draft, 60 pulls each in a browser): a Hazel rule answers in about 3.5 ms, a Fumola rule in about 1.6 ms. The commands then take the game about 9 ms either way, so a whole pull is 9.7 ms with JS, 10.7 with Fumola and 13.7 with Hazel, under a 60 Hz frame. Hazel's one slow event is the first after a reset, 0.5 to 0.7 s, while the program is built; Fumola's slowest is 12 to 21 ms. Hazel's tiles take about 3.7 s to fill all six boxes, while the page keeps drawing.</li>
+<li><b>Crossing the boundary</b> (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>, in Node): the library turns the whole JS argument into Hazel syntax, gives every node a fresh id, and evaluates it back into the value it already was. For the World rule's argument at 16&times;16 that floor is 8.5 to 10.6 ms a call, whatever the rule does.</li>
+<li><b>On trial branches</b> (<a href="../030/"><code class="ref"><b>^report(</b>30<b>)</b></code></a>, on GitHub's runners): with closures kept across the boundary, lists not re-typed in loops, a big value crossing once as a handle, and values skipping the evaluator's stages, a World move went from 241 ms to 0.97 ms. None of these are in the library the game loads.</li>
+</ul>
+
+<h2 id="package">The npm package, <code>hazeljs</code><a class="anchor" href="#package" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="package" title="copy this section's address">copy link</button></h2>
+<p>A first, experimental release: <code>npm install hazeljs</code>, or a script tag from jsDelivr or unpkg. Version 0.0.1 has 9 files, 2.8 MB unpacked (about 640 KB gzipped). <code>require("hazeljs")</code> and <code>import Hazel from "hazeljs"</code> give the same <code>Hazel</code> object that a script tag puts on the page. The package also has TypeScript declarations for the API and the values, and a README that npmjs.com shows. The README covers install, the API call by call, the values table, programs of modules, size and speed, limits, and the game as a use case. It sends readers to hazel.org and to the contributors on GitHub for who makes Hazel. The name, <code>hazeljs</code>, is Matthew's choice; <i>Hazlet</i> stays the pattern's name. License MIT, as Hazel's.</p>
+<p><b>What it is built from:</b> <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s head, <code>0d66c36618</code>, which is dev of 2026-10-19 plus the library's own 11 commits. There are no modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>), no livelits, and none of the performance PRs still open against dev. As of 2026-10-29 the release was 151 commits, 24 PRs, behind dev (<a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a> lists them).</p>
+<p><b>Measured, in Node 22 on a laptop</b> (the README): <code>require</code> about 170 ms; a small program run about 30 ms; a module of 100 short members analyzed in about 110 ms, of 400 in about 2.3 s.</p>
+<p><b>Known issues</b>, in its CHANGELOG: a module of about 150 members overflows Node's default stack; the result's <code>ms</code> field reads 0 under Node (a bug in the library's timing, not yet traced); a text only Hazel's slower, recovering parser can read prints a <code>SLOW PARSE</code> line to the console. Also open: npm lists a placeholder it made first, <code>0.0.0-stage</code>, to be deprecated; and the package's own source is not yet in a public repository.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<h3 id="next-package">The package<a class="anchor" href="#next-package" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next-package" title="copy this section's address">copy link</button></h3>
+<ol>
+<li>The checks: a browser page and a TypeScript example (checked by <code>tsc --noEmit</code>), and a GitHub workflow that packs the package, installs it into each example as a user would, and runs them, the page in headless Firefox (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-672"><code class="ref"><b>^ticket(</b>672<b>)</b></code></a>).</li>
+<li>Deprecate <code>0.0.0-stage</code>. Decide where the package's source lives (a folder on <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>'s branch, built by dune, or a repository of its own), how versions after 0.0.1 name the Hazel commit they are built from, and whether it moves to an <code>@hazelgrove</code> organization on npm (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-673"><code class="ref"><b>^ticket(</b>673<b>)</b></code></a>).</li>
+<li>The game loads Hazel from the package, pinned to a version, so the game is the package's first real user; its speed run is the check (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-674"><code class="ref"><b>^ticket(</b>674<b>)</b></code></a>).</li>
+</ol>
+<h3 id="next-room">The trap room live in a report<a class="anchor" href="#next-room" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next-room" title="copy this section's address">copy link</button></h3>
+<p>Matthew's ask (2026-11-02): a reader plays the trap room on <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>'s page and edits its Hazel rule in tiles, the room answering each edit at once (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-675"><code class="ref"><b>^ticket(</b>675<b>)</b></code></a>). Three pieces, in order:</p>
+<ol>
+<li>The trap room outside the game: first a link that opens the game at the trap room with its 📜 tab showing and Hazel chosen, so a report can frame it; later the room as a package of its own, which means pulling it out of the game's shared state (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-676"><code class="ref"><b>^ticket(</b>676<b>)</b></code></a>).</li>
+<li>Tiles in a page: a PR for <code>embed-editable</code>, stacked on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, and a place to serve it from that a report can frame (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-677"><code class="ref"><b>^ticket(</b>677<b>)</b></code></a>). The library package has no editor.</li>
+<li>The wiring: the report's page posts the room's module text to the tiles, takes each edit back, runs it with <code>hazeljs</code>, and hands the new <code>on_event</code> to the room (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-678"><code class="ref"><b>^ticket(</b>678<b>)</b></code></a>).</li>
+</ol>
+<h3 id="next-library">The library, toward dev<a class="anchor" href="#next-library" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next-library" title="copy this section's address">copy link</button></h3>
+<p>From <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>'s list, still open:</p>
+<ol>
+<li>Ready <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>: resolve its conflict with dev, bring its description up to date, take it out of draft.</li>
+<li>Open the PR for <code>embed-editable</code> (the same step as above), so all that the game uses is under review.</li>
+<li>Decide whether the library's programs take their outline and navigation from modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>) before the library grows its own.</li>
+<li>Convert JS values straight into Hazel values at the boundary, rather than through syntax evaluated again (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>'s floor), and land <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a>, which the game's typed rules want.</li>
+<li>Run analysis in a worker inside the library, as the app does, so a slow read never freezes a page.</li>
+<li>Find a second Hazlet, a course page or the docs' own examples, before promising stability beyond the core.</li>
+</ol>
+<h3 id="next-rules">The game's rules<a class="anchor" href="#next-rules" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next-rules" title="copy this section's address">copy link</button></h3>
+<p><a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a>'s steps: names for every place and thing, kept through moves; a <code>RuleState</code> for the tree room first, built from those names, beside today's <code>Globals</code>; then the trap room.</p>
+
+<h2 id="meeting">For the meeting on 2026-11-04<a class="anchor" href="#meeting" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="meeting" title="copy this section's address">copy link</button></h2>
+<p>From <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a>, the agenda's section 2:</p>
+<ul>
+<li><a href="../037/#mudu-demo">The demo</a>: Cyrus's read of the rules' types, and of what a Hazlet should give its handlers: a view built per room, as today, or the program's whole state under readable names?</li>
+<li><a href="../037/#library">The library</a>: merge it as experimental, yes or no? And who else might build the second Hazlet?</li>
+<li><a href="../037/#npm">The package</a>: keep it under Matthew's npm account, or move it to a Hazel organization on npm? Is it the library alone, or also a helper for the Hazlet pattern, one that turns a program of modules into JS event handlers as the game does?</li>
+</ul>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>Nothing new was measured.</b> The times are from <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>, <a href="../030/"><code class="ref"><b>^report(</b>30<b>)</b></code></a> and <a href="../032/"><code class="ref"><b>^report(</b>32<b>)</b></code></a>, and the package's README, each as its source states them.</li>
+<li><b>The state of each piece</b> was read on 2026-11-03 near 07:20 MST: <code>gh pr view</code> and <code>gh pr checks</code> for <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> and <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a>; <code>git ls-remote</code> and <code>git log</code> for <code>embed-editable</code> against <code>js-library-embed</code>; <code>npm view hazeljs</code>; the game's source at Dress Up 0.0.474 (4d8384b6), <code>js/25-scripting.js</code>, for the program's types and the build URLs it loads; and the work dashboard's tickets 668 to 678.</li>
+<li><b>The data</b>: the status table is <code>039/data/status.json</code>; the page is made by <code>039/gen039.py</code> from <code>039/body.html</code>.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/039/data"><code>039/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main>
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-10-21T22:03:19Z", "base": "js-library"}, "matthewhammer/kids-choice-games#1": {"author": "matthewhammer", "comments": 0, "created": "2026-10-20T17:43:16Z", "kind": "pull", "state": "merged", "title": "🧩 Scripting: the trap room's levers through a Hazel rule", "updated": "2026-10-24T14:57:10Z", "base": "main"}}, BUILT = "2026-11-03";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    const b = li.querySelector("b, strong");
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 39,
+ "title": "Hazlets, So Far",
+ "date": "2026-11-03",
+ "kind": "status",
+ "status": "work in progress",
+ "question": "Where do Hazlets stand: what a Hazlet is, the progress so far with dates, the state of each piece, and the next steps? Matthew, 2026-11-03, for the meeting with Cyrus on 2026-11-04 (^ticket(664)).",
+ "measurements": "None new. The times quoted are from ^report(25), ^report(30) and ^report(32), and the package's README. The state of each piece was read on 2026-11-03 near 07:20 MST: gh pr view and gh pr checks for #2711, #2719 and #2681 (hazelgrove/hazel); git ls-remote for embed-editable; npm view hazeljs; the game's source at Dress Up 0.0.474 (4d8384b6, js/25-scripting.js); and the work dashboard's tickets 668 to 678.",
+ "builds": [
+  {
+   "what": "the library and embed mode",
+   "branch": "js-library-embed (#2719, stacked on #2711's js-library at 77059807e9)",
+   "commit": "0d66c36618"
+  },
+  {
+   "what": "editable tiles in a frame",
+   "branch": "embed-editable (12 commits on #2719's branch, no PR)",
+   "commit": "0da790fb20"
+  },
+  {
+   "what": "the npm package hazeljs 0.0.1",
+   "branch": "built from 0d66c36618",
+   "commit": "0d66c36618"
+  },
+  {
+   "what": "Messed Up Dress Up 0.0.474",
+   "branch": "matthewhammer/kids-choice-games main",
+   "commit": "4d8384b6"
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/status.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Progress so far",
+   "section_id": "timeline",
+   "columns": [
+    "When",
+    "What",
+    "Where"
+   ],
+   "rows": [
+    [
+     "2026-10-20",
+     "Hazel as a JS library: Hazel.analyze and Hazel.run on any page, Hazel values as plain JS values, JS functions in and out.",
+     "#2711, draft"
+    ],
+    [
+     "2026-10-21",
+     "Programs of named modules (analyzeProgram, runProgram), and embed mode: Hazel's tiles in another page's frame. The same day, Matthew's meeting with Cyrus encouraged Hazel as a game script system, starting with this game (^report(30)).",
+     "#2719, draft, stacked on #2711"
+    ],
+    [
+     "2026-10-22",
+     "What one call into Hazel costs, for the game's World rule: most of it a type annotation re-checked at run time, which #2681 removes; under it, a floor for crossing the boundary that grows with the argument.",
+     "^report(25)"
+    ],
+    [
+     "2026-10-22",
+     "The same rules in Fumola, beside Hazel and the game's JS.",
+     "^ticket(542)"
+    ],
+    [
+     "2026-10-22 to 23",
+     "Tiles in the frame that select, take edits and post each edit's text back; themes, fonts, line numbers, go-to-definition.",
+     "embed-editable, 12 commits, no PR"
+    ],
+    [
+     "2026-10-23",
+     "Two days in: five rooms and Common in Hazel and in Fumola, each checked against the game's JS; fixes for Hazel's speed on trial branches.",
+     "^report(30)"
+    ],
+    [
+     "2026-10-23",
+     "The game loaded with each of the three as its default, timed as a speed run.",
+     "^report(32), a draft"
+    ],
+    [
+     "2026-10-24",
+     "📜 Scripting released in the game (0.0.412): the panel, tiles in every box, the event log, Fumola with types, a JS, Hazel or Fumola chip per room.",
+     "matthewhammer/kids-choice-games#1"
+    ],
+    [
+     "2026-10-25",
+     "A case study of the rules: what they are told, and names and types for every place and thing.",
+     "^report(33)"
+    ],
+    [
+     "2026-10-26",
+     "Should the library be official? A suggestion: merge it as experimental, and promise stability for a small core once a second user has used it.",
+     "^report(34)"
+    ],
+    [
+     "2026-10-29",
+     "Hazel's branch builds moved to build.hazel.org; the game followed (0.0.467), or its tiles' messages were dropped.",
+     "^ticket(658)"
+    ],
+    [
+     "2026-11-02",
+     "\"Hazlet\" named. hazeljs 0.0.1 published on npm; ^report(34) updated with what the release carries beyond dev. Tickets for the package, and for the trap room live in a report.",
+     "^ticket(668), ^ticket(675)"
+    ]
+   ]
+  },
+  {
+   "section": "Where each piece stands",
+   "section_id": "status",
+   "columns": [
+    "Piece",
+    "State",
+    "As of",
+    "Ticket or PR"
+   ],
+   "rows": [
+    [
+     "The library: hazel-lib.js, which puts window.Hazel on a page (analyze, run, the value mapping)",
+     "● Draft PR, CI green; GitHub reports a conflict with today's dev",
+     "2026-11-03",
+     "#2711 (opened 2026-10-20)"
+    ],
+    [
+     "Programs of named modules (analyzeProgram, runProgram) and embed mode: Hazel's tiles in a frame, read-only",
+     "● Draft PR stacked on #2711, CI green",
+     "2026-11-03",
+     "#2719 (opened 2026-10-21)"
+    ],
+    [
+     "Tiles in a frame that a reader can select and edit, each edit's text posted back to the page",
+     "● Branch embed-editable, 12 commits (2026-10-22 and 23), no PR yet",
+     "2026-11-03",
+     "^ticket(677)"
+    ],
+    [
+     "Messed Up Dress Up's 📜 Scripting tab: five rooms' rules and a Common module, each room run by its JS, Hazel or Fumola",
+     "● Live since 0.0.412 (2026-10-24); the game is at 0.0.474. It loads the library from #2719's branch build and the tiles from embed-editable's, on build.hazel.org",
+     "2026-11-03",
+     "matthewhammer/kids-choice-games#1 (merged 2026-10-24)"
+    ],
+    [
+     "Speed fixes the game's rules want: a value known to have a type is not walked again for it",
+     "● Open against dev, waiting for review; the other fixes ^report(30) measured are on trial branches, not in the game",
+     "2026-11-03",
+     "#2681"
+    ],
+    [
+     "The npm package hazeljs 0.0.1: the library as one file, entry points for require, import and a script tag, TypeScript declarations, a README",
+     "● Published 2026-11-02 11:03 MST, under Matthew's npm account. Installed from the registry into a fresh project: the README's examples run through require and import; jsDelivr and unpkg serve the file. Its source is not yet in a public repository",
+     "2026-11-02 13:23",
+     "^ticket(668), ^ticket(669) to ^ticket(671), ^ticket(673)"
+    ],
+    [
+     "The package's checks: a browser page and TypeScript examples, and a GitHub workflow that installs the packed package into each",
+     "● Not started",
+     "2026-11-02 13:23",
+     "^ticket(672)"
+    ],
+    [
+     "A placeholder version npm made first, 0.0.0-stage",
+     "● Still listed; to be deprecated, which needs Matthew's two-factor code",
+     "2026-11-03",
+     "^ticket(673)"
+    ],
+    [
+     "The game loading its Hazel from the package, pinned to a version, instead of a branch build",
+     "● Not started",
+     "2026-11-02",
+     "^ticket(674)"
+    ],
+    [
+     "The trap room live in ^report(34), its Hazel rule editable in tiles",
+     "● Not started (Matthew's ask, 2026-11-02)",
+     "2026-11-02",
+     "^ticket(675) to ^ticket(678)"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/039/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>
