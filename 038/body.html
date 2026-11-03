@@ -61,10 +61,51 @@
 </ul>
 <p>So a compacted entry is smaller, but not free. How much it keeps at <i>n</i> definitions, and how much of it consecutive entries share, has not been measured (<a href="#notyet">below</a>).</p>
 
+<h2 id="how">How the compaction works</h2>
+<p>An example first. Start with a page <b>A</b>, make three edits, to <b>B</b>, <b>C</b> and <b>D</b>, then undo twice and redo once. In the table a whole entry is in bold, and a compacted one, its derived data dropped, is plain.</p>
+<table>
+<tr><th>Step</th><th>Undo stack, top first</th><th>The page</th><th>Redo stack, top first</th><th>What the step costs</th></tr>
+<tr><td>Start</td><td>—</td><td>A</td><td>—</td><td></td></tr>
+<tr><td>Edit</td><td><b>A</b></td><td>B</td><td>—</td><td>an edit</td></tr>
+<tr><td>Edit</td><td><b>B</b>, A</td><td>C</td><td>—</td><td>an edit; A is compacted as B goes on top of it</td></tr>
+<tr><td>Edit</td><td><b>C</b>, B, A</td><td>D</td><td>—</td><td>an edit; B is compacted</td></tr>
+<tr><td>Undo</td><td>B, A</td><td>C</td><td><b>D</b></td><td>C was whole: no rebuild</td></tr>
+<tr><td>Undo</td><td>A</td><td>B</td><td><b>C</b>, D</td><td>B was compacted: its syntax is rebuilt; D is compacted</td></tr>
+<tr><td>Redo</td><td><b>B</b>, A</td><td>C</td><td>D</td><td>C was whole: no rebuild</td></tr>
+</table>
+<p>The rules behind the table, as <code>History.re</code> on #2635 (243874eecd) applies them:</p>
+<ol>
+<li><b>An edit</b> puts the page as it was onto the undo stack, whole. The entry that was on top is compacted (<code>compact_head</code>). The stack is then cut to its newest 250 entries, always: dev's cut runs only when the setting <code>cap_undo_stack</code> is on. The redo stack is emptied.</li>
+<li><b>An undo</b> takes the top entry off the undo stack, and it becomes the page (<code>Page.carry_over</code>). The page as it was goes onto the redo stack, whole, and the entry that was on top of the redo stack is compacted.</li>
+<li><b>A redo</b> is the same, the other way round.</li>
+<li><b>A tentative step</b>, one that can still be taken back, keeps the redo stack it emptied. Taking the step back puts that stack back.</li>
+</ol>
+<p><b>Compacting a page</b> (<code>compact</code>) touches only its scratch slides and documentation slides. Tutorials, exercises and the configuration slide are never compacted. In each editor of those slides it:</p>
+<ul>
+<li>keeps the zipper: the editor's text and its caret;</li>
+<li>replaces the syntax (its tiles, terms and layout) with a placeholder, a single hole marked out of date. Each placeholder gets its own empty caches for layout and terms, because restored editors sharing one cache would keep evicting each other's entries;</li>
+<li>empties the statics and the evaluation states;</li>
+<li>keeps of the result only what autosave keeps, such as the stepper's position or a proof's progress. The value itself is evaluated again.</li>
+</ul>
+<p>Compacting is cheap: a few new records per editor. What it frees is the derived data that no other entry holds. The work comes later, in a restore. <code>Page.carry_over</code> rebuilds the restored page's syntax from its zipper, using the live editors' parse and layout caches, which hit for every piece the step did not change. The restored page keeps the live statics and results until the typing debounce analyzes it again, as it would after a keystroke. That is why the code counts an undo or a redo as an edit.</p>
+
 <h2 id="price">The price in time</h2>
 <p>An entry without its derived data has to rebuild that data when it is restored. ^report(14)'s update timed an edit, an undo and a redo in the browser on Full Body, five runs per build: seconds from the key press to the picture changing.</p>
 {{TABLE_TIMES}}
 <p>With the compaction alone, every redo on #2597 took about as long as an edit, and half the undos did too. On #2635 a redo took about three edits. Keeping the newest entry whole gave back the latest undo and redo: on #2635 every one was done within 0.3 s, the check's own polling interval, and the memory kept over 12 edits was the same within about 1 MB. On #2597 it cost 49 MB more (208 against 159). An undo further back than the newest entry still rebuilds.</p>
+
+<h2 id="precompact">Open question: could entries be compact from the start?</h2>
+<p>Could the history never hold derived data that it later has to drop, or never need to drop it? The question has two readings, with different answers.</p>
+<p><b>Push entries already compacted.</b> This saves almost nothing, since compacting is a few new records per editor. And it loses the one fast path: the newest entry is kept whole so that the latest undo and redo restore without rebuilding. With every entry compacted, a redo on #2635 took about three edits (<a href="#price">above</a>).</p>
+<p><b>Keep the derived data, shared.</b> The real prize is an entry that keeps its derived data at the cost of only what its own edit changed. Then nothing would be compacted, and no restore would rebuild anything. Zippers are persistent already, so the text and caret of consecutive entries could share most of their pieces, though that has not been checked. The derived data is where it gets hard:</p>
+<ul>
+<li><b>Whole-program passes build new structure on every edit.</b> Rebuilding the top-level term, statics' walk down the chain of definitions, the outline and layout's walk each touch every definition (<a href="#time">below</a>). So what they build is new in every entry, O(<i>n</i>) of it, even after a one-character edit.</li>
+<li><b>The caches are changed in place.</b> The layout and term caches are hash tables, updated as they are used, so two entries cannot share one. That is why compaction gives each restored editor caches of its own.</li>
+<li><b>Statics may already be close.</b> DefStatics analyzes one definition at a time and keeps the analyses that did not change. In ^ticket(666)'s probe of 2026-11-03 on Full Body, after a one-number edit, 1 of its 167 top-level definitions had a new analysis. Whether consecutive entries then share the other 166 in memory has not been measured.</li>
+<li><b>Results come back mostly as new objects.</b> The values the page decodes from the evaluation worker are new objects, except the larger parts it already holds. In the same probe, none of the 192 blocks of Kids' Choice's result came back as the objects decoded the time before, and 60 of Full Body's 137 did. Entries could share results only as far as decoding keeps those identities.</li>
+<li><b>What a compacted entry still holds is not yet understood.</b> The code's comment names frozen typing contexts and master segments. Whether consecutive entries share them is the first thing to measure (<a href="#notyet">below</a>).</li>
+</ul>
+<p>The balanced tree of definitions in <a href="#next">What next</a> is this idea taken all the way. Each node keeps its own derived summaries, a snapshot is a root that shares every node the edit did not touch, and an undo is a swap of roots, with nothing to compact and nothing to rebuild. The challenge is that every whole-program pass above would have to work on that tree, one path at a time.</p>
 
 <h2 id="time">Time: what a step costs as the program grows</h2>
 <p>^report(36) measured an edit, an undo and a redo against the size of the program, in Node, on #2635 after dev's merge day. A program of <i>n</i> definitions, <code>let v0 = 0 in let v1 = v0 + 1 in &hellip;</code>, an edit in the middle one, then undos and redos, each through the app's own update loop. In short:</p>
@@ -138,6 +179,7 @@ realized
 <li>Dev's undo history still keeps every edit's whole editor state. Should dev get the compaction now, or with #2469?</li>
 <li>Should the outline be kept with each undo entry, or found again by the restored program's identity? It is a third of an undo.</li>
 <li>Is the balanced tree of definitions the direction for both costs, time per step and space per entry?</li>
+<li>Could undo entries keep their derived data, shared, at the cost of what each edit changed, so that nothing is compacted (<a href="#precompact">the open question</a>)? What would each whole-program pass need for that?</li>
 </ul>
 <p>The agenda's item for this is <a href="../037/#undo">^report(37), Undo in O(log n)?</a></p>
 

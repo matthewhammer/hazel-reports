@@ -292,10 +292,51 @@ document.addEventListener("DOMContentLoaded", () => {
 </ul>
 <p>So a compacted entry is smaller, but not free. How much it keeps at <i>n</i> definitions, and how much of it consecutive entries share, has not been measured (<a href="#notyet">below</a>).</p>
 
+<h2 id="how">How the compaction works<a class="anchor" href="#how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="how" title="copy this section's address">copy link</button></h2>
+<p>An example first. Start with a page <b>A</b>, make three edits, to <b>B</b>, <b>C</b> and <b>D</b>, then undo twice and redo once. In the table a whole entry is in bold, and a compacted one, its derived data dropped, is plain.</p>
+<table>
+<tr><th>Step</th><th>Undo stack, top first</th><th>The page</th><th>Redo stack, top first</th><th>What the step costs</th></tr>
+<tr><td>Start</td><td>—</td><td>A</td><td>—</td><td></td></tr>
+<tr><td>Edit</td><td><b>A</b></td><td>B</td><td>—</td><td>an edit</td></tr>
+<tr><td>Edit</td><td><b>B</b>, A</td><td>C</td><td>—</td><td>an edit; A is compacted as B goes on top of it</td></tr>
+<tr><td>Edit</td><td><b>C</b>, B, A</td><td>D</td><td>—</td><td>an edit; B is compacted</td></tr>
+<tr><td>Undo</td><td>B, A</td><td>C</td><td><b>D</b></td><td>C was whole: no rebuild</td></tr>
+<tr><td>Undo</td><td>A</td><td>B</td><td><b>C</b>, D</td><td>B was compacted: its syntax is rebuilt; D is compacted</td></tr>
+<tr><td>Redo</td><td><b>B</b>, A</td><td>C</td><td>D</td><td>C was whole: no rebuild</td></tr>
+</table>
+<p>The rules behind the table, as <code>History.re</code> on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (243874eecd) applies them:</p>
+<ol>
+<li><b>An edit</b> puts the page as it was onto the undo stack, whole. The entry that was on top is compacted (<code>compact_head</code>). The stack is then cut to its newest 250 entries, always: dev's cut runs only when the setting <code>cap_undo_stack</code> is on. The redo stack is emptied.</li>
+<li><b>An undo</b> takes the top entry off the undo stack, and it becomes the page (<code>Page.carry_over</code>). The page as it was goes onto the redo stack, whole, and the entry that was on top of the redo stack is compacted.</li>
+<li><b>A redo</b> is the same, the other way round.</li>
+<li><b>A tentative step</b>, one that can still be taken back, keeps the redo stack it emptied. Taking the step back puts that stack back.</li>
+</ol>
+<p><b>Compacting a page</b> (<code>compact</code>) touches only its scratch slides and documentation slides. Tutorials, exercises and the configuration slide are never compacted. In each editor of those slides it:</p>
+<ul>
+<li>keeps the zipper: the editor's text and its caret;</li>
+<li>replaces the syntax (its tiles, terms and layout) with a placeholder, a single hole marked out of date. Each placeholder gets its own empty caches for layout and terms, because restored editors sharing one cache would keep evicting each other's entries;</li>
+<li>empties the statics and the evaluation states;</li>
+<li>keeps of the result only what autosave keeps, such as the stepper's position or a proof's progress. The value itself is evaluated again.</li>
+</ul>
+<p>Compacting is cheap: a few new records per editor. What it frees is the derived data that no other entry holds. The work comes later, in a restore. <code>Page.carry_over</code> rebuilds the restored page's syntax from its zipper, using the live editors' parse and layout caches, which hit for every piece the step did not change. The restored page keeps the live statics and results until the typing debounce analyzes it again, as it would after a keystroke. That is why the code counts an undo or a redo as an edit.</p>
+
 <h2 id="price">The price in time<a class="anchor" href="#price" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="price" title="copy this section's address">copy link</button></h2>
 <p>An entry without its derived data has to rebuild that data when it is restored. <a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update timed an edit, an undo and a redo in the browser on Full Body, five runs per build: seconds from the key press to the picture changing.</p>
 <table><thead><tr><th>Build</th><th>Edit, s</th><th>Undo, s</th><th>Redo, s</th></tr></thead><tbody><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> as built</td><td>6.7 (6.3–7.2)</td><td>2.6 (2.6–2.6)</td><td>3.0 (2.7–3.1)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>, compaction ported</td><td>6.9 (6.2–8.4)</td><td>5.8 (2.0–5.9)</td><td>6.1 (6.0–6.5)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>, newest entry whole too</td><td>6.6 (6.1–7.4)</td><td>2.6 (2.5–2.6)</td><td>3.0 (2.5–3.0)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> as it was (653ebc4adf: Andrew&#x27;s compaction)</td><td>1.2 (1.1–1.4)</td><td>3.6 (1.2–3.9)</td><td>3.9 (3.6–4.2)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, newest entry whole (032fe3aca6)</td><td>1.1 (1.1–1.7)</td><td>0.3 (0.2–0.3)</td><td>0.3 (0.2–0.3)</td></tr></tbody></table>
 <p>With the compaction alone, every redo on <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> took about as long as an edit, and half the undos did too. On <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> a redo took about three edits. Keeping the newest entry whole gave back the latest undo and redo: on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> every one was done within 0.3 s, the check's own polling interval, and the memory kept over 12 edits was the same within about 1 MB. On <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> it cost 49 MB more (208 against 159). An undo further back than the newest entry still rebuilds.</p>
+
+<h2 id="precompact">Open question: could entries be compact from the start?<a class="anchor" href="#precompact" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="precompact" title="copy this section's address">copy link</button></h2>
+<p>Could the history never hold derived data that it later has to drop, or never need to drop it? The question has two readings, with different answers.</p>
+<p><b>Push entries already compacted.</b> This saves almost nothing, since compacting is a few new records per editor. And it loses the one fast path: the newest entry is kept whole so that the latest undo and redo restore without rebuilding. With every entry compacted, a redo on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> took about three edits (<a href="#price">above</a>).</p>
+<p><b>Keep the derived data, shared.</b> The real prize is an entry that keeps its derived data at the cost of only what its own edit changed. Then nothing would be compacted, and no restore would rebuild anything. Zippers are persistent already, so the text and caret of consecutive entries could share most of their pieces, though that has not been checked. The derived data is where it gets hard:</p>
+<ul>
+<li><b>Whole-program passes build new structure on every edit.</b> Rebuilding the top-level term, statics' walk down the chain of definitions, the outline and layout's walk each touch every definition (<a href="#time">below</a>). So what they build is new in every entry, O(<i>n</i>) of it, even after a one-character edit.</li>
+<li><b>The caches are changed in place.</b> The layout and term caches are hash tables, updated as they are used, so two entries cannot share one. That is why compaction gives each restored editor caches of its own.</li>
+<li><b>Statics may already be close.</b> DefStatics analyzes one definition at a time and keeps the analyses that did not change. In <a href="https://matthewhammer.org/hazel/dashboard/#ticket-666"><code class="ref"><b>^ticket(</b>666<b>)</b></code></a>'s probe of 2026-11-03 on Full Body, after a one-number edit, 1 of its 167 top-level definitions had a new analysis. Whether consecutive entries then share the other 166 in memory has not been measured.</li>
+<li><b>Results come back mostly as new objects.</b> The values the page decodes from the evaluation worker are new objects, except the larger parts it already holds. In the same probe, none of the 192 blocks of Kids' Choice's result came back as the objects decoded the time before, and 60 of Full Body's 137 did. Entries could share results only as far as decoding keeps those identities.</li>
+<li><b>What a compacted entry still holds is not yet understood.</b> The code's comment names frozen typing contexts and master segments. Whether consecutive entries share them is the first thing to measure (<a href="#notyet">below</a>).</li>
+</ul>
+<p>The balanced tree of definitions in <a href="#next">What next</a> is this idea taken all the way. Each node keeps its own derived summaries, a snapshot is a root that shares every node the edit did not touch, and an undo is a swap of roots, with nothing to compact and nothing to rebuild. The challenge is that every whole-program pass above would have to work on that tree, one path at a time.</p>
 
 <h2 id="time">Time: what a step costs as the program grows<a class="anchor" href="#time" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="time" title="copy this section's address">copy link</button></h2>
 <p><a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a> measured an edit, an undo and a redo against the size of the program, in Node, on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> after dev's merge day. A program of <i>n</i> definitions, <code>let v0 = 0 in let v1 = v0 + 1 in &hellip;</code>, an edit in the middle one, then undos and redos, each through the app's own update loop. In short:</p>
@@ -369,6 +410,7 @@ realized
 <li>Dev's undo history still keeps every edit's whole editor state. Should dev get the compaction now, or with <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>?</li>
 <li>Should the outline be kept with each undo entry, or found again by the restored program's identity? It is a third of an undo.</li>
 <li>Is the balanced tree of definitions the direction for both costs, time per step and space per entry?</li>
+<li>Could undo entries keep their derived data, shared, at the cost of what each edit changed, so that nothing is compacted (<a href="#precompact">the open question</a>)? What would each whole-program pass need for that?</li>
 </ul>
 <p>The agenda's item for this is <a href="../037/#undo"><code class="ref"><b>^report(</b>37<b>)</b></code>, Undo in O(log n)?</a></p>
 
@@ -533,7 +575,7 @@ realized
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-03T00:30:23Z", "base": "integration/livelits-splicerefs-full"}}, BUILT = "2026-11-03";
+  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-03T16:23:10Z", "base": "integration/livelits-splicerefs-full"}}, BUILT = "2026-11-03";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -800,6 +842,68 @@ realized
      "1",
      "52",
      "1.6"
+    ]
+   ]
+  },
+  {
+   "section": "How the compaction works",
+   "section_id": "how",
+   "columns": [
+    "Step",
+    "Undo stack, top first",
+    "The page",
+    "Redo stack, top first",
+    "What the step costs"
+   ],
+   "rows": [
+    [
+     "Start",
+     "—",
+     "A",
+     "—",
+     ""
+    ],
+    [
+     "Edit",
+     "A",
+     "B",
+     "—",
+     "an edit"
+    ],
+    [
+     "Edit",
+     "B, A",
+     "C",
+     "—",
+     "an edit; A is compacted as B goes on top of it"
+    ],
+    [
+     "Edit",
+     "C, B, A",
+     "D",
+     "—",
+     "an edit; B is compacted"
+    ],
+    [
+     "Undo",
+     "B, A",
+     "C",
+     "D",
+     "C was whole: no rebuild"
+    ],
+    [
+     "Undo",
+     "A",
+     "B",
+     "C, D",
+     "B was compacted: its syntax is rebuilt; D is compacted"
+    ],
+    [
+     "Redo",
+     "B, A",
+     "C",
+     "D",
+     "C was whole: no rebuild"
     ]
    ]
   },
