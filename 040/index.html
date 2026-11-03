@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Converting JS Values Directly</title>
+<meta name="description" content="What converting JavaScript values directly into Hazel values saves at the call boundary of Hazel's JS library, in time and in space: the package's build against the lib-floor, lib-closures and handles trials, measured on GitHub.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  .muted { color: var(--muted); font-size: 0.9em; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>40<b>)</b></code> · Hazel as a JS library · started 2026-11-03, updated 2026-11-03 11:33 MST · <span class="wip">work in progress</span> · after <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a> and <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Converting JS Values Directly</h1>
+<p class="sub"><a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>'s next steps include this one: <b>convert JavaScript values directly into Hazel values at the call boundary</b>, not through syntax that Hazel then evaluates again. This report measures what that saves, in time and in space, with the trial branches that already do it. Asked by Matthew, 2026-11-03 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-681"><code class="ref"><b>^ticket(</b>681<b>)</b></code></a>).</p>
+
+<div class="headline">
+<p><b>Short answers.</b> All measured on GitHub's machines in Node, two rounds; the method is at the end.</p>
+<ol class="ans">
+<li><p><b>A call takes 60 to 85% less time.</b> Passing 4,096 cells from JavaScript to a Hazel function took 139.2 ms with the package's build and 51.3 ms with the trial that converts directly (-63%). Without a type annotation on the parameter: 107.5 ms against 18.3 (-83%).</p></li>
+<li><p><b>A call allocates 75 to 85% less memory.</b> At 1,024 cells, a typed call allocated 80.4 MB with the package's build and 20.2 MB with the trial; an untyped call 71.2 MB against 11.0 MB.</p></li>
+<li><p><b>A function that holds a value stops paying for it on every call.</b> A function Hazel returned, holding 4,096 numbers, took 5.31 ms and allocated 29.0 MB a call with the package's build, growing with what it holds. With the closures trial: 0.025 ms and 93 KB at every size, about 215 times faster.</p></li>
+<li><p><b>A value converted once and passed as a handle costs almost nothing:</b> 0.024 ms a call at every size, against 66.5 ms converted each time, at 4,096 cells.</p></li>
+<li><p><b>What is left is the type annotation's check.</b> With the trial, a typed call still takes about 2.8 times an untyped one: Hazel checks the converted value against the parameter's type again. That is <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a>'s work, not this step's.</p></li>
+<li><p><b>Next:</b> the three trials have green CI, and wait on Matthew's call on how they go up: lib-floor first (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-539"><code class="ref"><b>^ticket(</b>539<b>)</b></code></a>), then the closures (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-558"><code class="ref"><b>^ticket(</b>558<b>)</b></code></a>) and the handles (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-551"><code class="ref"><b>^ticket(</b>551<b>)</b></code></a>) stacked on it.</p></li>
+</ol>
+</div>
+
+<h2 id="step">The step<a class="anchor" href="#step" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="step" title="copy this section's address">copy link</button></h2>
+<p>When a JavaScript program calls a Hazel function through Hazel's JS library, the argument has to become a Hazel value. Today the library turns it into Hazel <i>syntax</i>, a term with a fresh id on every node, and the evaluator then steps that term back into the value it already was, and checks it against the parameter's type. <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a> measured that as the floor every call pays, whatever the function does. <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>'s step 4 is to stop doing that.</p>
+<p>Three trial branches each take part of the step. Each is a branch of <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> with green CI, built by Hazel's own Deploy workflow:</p>
+<ul>
+<li><b>lib-floor</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-539"><code class="ref"><b>^ticket(</b>539<b>)</b></code></a>): the converted argument is bound in the environment, and the function is applied to its name, so the evaluator never steps it again.</li>
+<li><b>lib-closures</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-547"><code class="ref"><b>^ticket(</b>547<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-558"><code class="ref"><b>^ticket(</b>558<b>)</b></code></a>): a function the library returns is the evaluator's own closure, its environment kept apart. Before, the environment was written into the function's body, so a held list became a literal that every call evaluated again.</li>
+<li><b>handles</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-551"><code class="ref"><b>^ticket(</b>551<b>)</b></code></a>): <code>Hazel.value(x)</code> converts a value once and returns a handle; a call given the handle binds the stored value, with no conversion at all.</li>
+</ul>
+
+<h2 id="time">Time<a class="anchor" href="#time" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="time" title="copy this section's address">copy link</button></h2>
+<p>A Hazel function given a list of cells, each a record of two numbers and a string, and returning 0 at once: so the time is the boundary's alone. "Typed" annotates the parameter, <code>(cells : [Cell])</code>; "untyped" does not.</p>
+<figure class="fig" id="fig1"><div class="figscroll"><svg viewBox="0 0 640 300" width="100%" role="img" aria-label="Milliseconds a call against the number of cells passed, on log scales: the package&#39;s build and lib-floor, each typed and untyped. lib-floor is below the package&#39;s build at every size.">
+<line x1="56" x2="490" y1="260.0" y2="260.0" stroke="var(--line)" stroke-width="1"/><text x="50" y="264.0" font-size="11" text-anchor="end" fill="var(--muted)">0.1 ms</text>
+<line x1="56" x2="490" y1="185.5" y2="185.5" stroke="var(--line)" stroke-width="1"/><text x="50" y="189.5" font-size="11" text-anchor="end" fill="var(--muted)">1 ms</text>
+<line x1="56" x2="490" y1="111.0" y2="111.0" stroke="var(--line)" stroke-width="1"/><text x="50" y="115.0" font-size="11" text-anchor="end" fill="var(--muted)">10 ms</text>
+<line x1="56" x2="490" y1="36.4" y2="36.4" stroke="var(--line)" stroke-width="1"/><text x="50" y="40.4" font-size="11" text-anchor="end" fill="var(--muted)">100 ms</text>
+<text x="77.6" y="278" font-size="11" text-anchor="middle" fill="var(--muted)">64</text>
+<text x="207.9" y="278" font-size="11" text-anchor="middle" fill="var(--muted)">256</text>
+<text x="338.1" y="278" font-size="11" text-anchor="middle" fill="var(--muted)">1,024</text>
+<text x="468.4" y="278" font-size="11" text-anchor="middle" fill="var(--muted)">4,096</text>
+<text x="273" y="294" font-size="11.5" text-anchor="middle" fill="var(--muted)">cells passed from JavaScript</text>
+<polyline points="77.6,172.6 207.9,126.0 338.1,70.9 468.4,25.7" fill="none" stroke="var(--accent2)" stroke-width="2.2"/>
+<circle cx="77.6" cy="172.6" r="3" fill="var(--accent2)"/>
+<circle cx="207.9" cy="126.0" r="3" fill="var(--accent2)"/>
+<circle cx="338.1" cy="70.9" r="3" fill="var(--accent2)"/>
+<circle cx="468.4" cy="25.7" r="3" fill="var(--accent2)"/>
+<text x="476.4" y="29.7" font-size="11.5" fill="var(--accent2)">the package&#x27;s build, typed</text>
+<polyline points="77.6,182.9 207.9,137.8 338.1,86.3 468.4,34.1" fill="none" stroke="var(--accent2)" stroke-width="2.2" stroke-dasharray="5 4"/>
+<circle cx="77.6" cy="182.9" r="3" fill="var(--accent2)"/>
+<circle cx="207.9" cy="137.8" r="3" fill="var(--accent2)"/>
+<circle cx="338.1" cy="86.3" r="3" fill="var(--accent2)"/>
+<circle cx="468.4" cy="34.1" r="3" fill="var(--accent2)"/>
+<text x="476.4" y="38.1" font-size="11.5" fill="var(--accent2)">the package&#x27;s build, untyped</text>
+<polyline points="77.6,201.1 207.9,160.5 338.1,110.5 468.4,58.0" fill="none" stroke="var(--good)" stroke-width="2.2"/>
+<circle cx="77.6" cy="201.1" r="3" fill="var(--good)"/>
+<circle cx="207.9" cy="160.5" r="3" fill="var(--good)"/>
+<circle cx="338.1" cy="110.5" r="3" fill="var(--good)"/>
+<circle cx="468.4" cy="58.0" r="3" fill="var(--good)"/>
+<text x="476.4" y="62.0" font-size="11.5" fill="var(--good)">lib-floor, typed</text>
+<polyline points="77.6,221.6 207.9,180.3 338.1,136.0 468.4,91.4" fill="none" stroke="var(--good)" stroke-width="2.2" stroke-dasharray="5 4"/>
+<circle cx="77.6" cy="221.6" r="3" fill="var(--good)"/>
+<circle cx="207.9" cy="180.3" r="3" fill="var(--good)"/>
+<circle cx="338.1" cy="136.0" r="3" fill="var(--good)"/>
+<circle cx="468.4" cy="91.4" r="3" fill="var(--good)"/>
+<text x="476.4" y="95.4" font-size="11.5" fill="var(--good)">lib-floor, untyped</text>
+</svg></div>
+<figcaption>Figure 1. Milliseconds a call against the number of cells passed, both on log scales; the mean of two rounds. Solid lines are typed calls, dashed lines untyped. The trial (lib-floor) is below the package's build at every size, and further below without an annotation.</figcaption></figure>
+<div class="scroll"><table>
+<tr><th>Cells</th><th>Call</th><th>The package's build</th><th>lib-floor</th><th>Change</th><th>lib-closures</th></tr>
+<tr><td class="n">64</td><td>typed</td><td class="n">1.49 ms</td><td class="n">0.62 ms</td><td class="n"><b>-59%</b></td><td class="n">0.59 ms</td></tr>
+<tr><td class="n">64</td><td>untyped</td><td class="n">1.08 ms</td><td class="n">0.33 ms</td><td class="n"><b>-70%</b></td><td class="n">0.31 ms</td></tr>
+<tr><td class="n">256</td><td>typed</td><td class="n">6.28 ms</td><td class="n">2.16 ms</td><td class="n"><b>-66%</b></td><td class="n">2.10 ms</td></tr>
+<tr><td class="n">256</td><td>untyped</td><td class="n">4.37 ms</td><td class="n">1.18 ms</td><td class="n"><b>-73%</b></td><td class="n">1.15 ms</td></tr>
+<tr><td class="n">1,024</td><td>typed</td><td class="n">34.5 ms</td><td class="n">10.2 ms</td><td class="n"><b>-71%</b></td><td class="n">10.3 ms</td></tr>
+<tr><td class="n">1,024</td><td>untyped</td><td class="n">21.4 ms</td><td class="n">4.61 ms</td><td class="n"><b>-78%</b></td><td class="n">4.52 ms</td></tr>
+<tr><td class="n">4,096</td><td>typed</td><td class="n">139.2 ms</td><td class="n">51.3 ms</td><td class="n"><b>-63%</b></td><td class="n">52.1 ms</td></tr>
+<tr><td class="n">4,096</td><td>untyped</td><td class="n">107.5 ms</td><td class="n">18.3 ms</td><td class="n"><b>-83%</b></td><td class="n">18.1 ms</td></tr>
+</table></div>
+<p>lib-closures includes lib-floor's change, and reads the same here: this call holds nothing, so the closures have nothing to save.</p>
+
+<h2 id="space">Space<a class="anchor" href="#space" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="space" title="copy this section's address">copy link</button></h2>
+<p>The bytes one call allocates: the growth of the heap over a single call, made just after a forced collection, with a young generation large enough that no collection runs during the call. The 4,096-cell calls are left out: there the package's build allocates more than that space holds, a collection runs during the call, and the reading is too low.</p>
+<div class="scroll"><table>
+<tr><th>Cells</th><th>Call</th><th>The package's build</th><th>lib-floor</th><th>Change</th></tr>
+<tr><td class="n">64</td><td>typed</td><td class="n">5.2 MB</td><td class="n">1.3 MB</td><td class="n"><b>-74%</b></td></tr>
+<tr><td class="n">64</td><td>untyped</td><td class="n">4.6 MB</td><td class="n">752 KB</td><td class="n"><b>-84%</b></td></tr>
+<tr><td class="n">256</td><td>typed</td><td class="n">20.5 MB</td><td class="n">5.1 MB</td><td class="n"><b>-75%</b></td></tr>
+<tr><td class="n">256</td><td>untyped</td><td class="n">18.2 MB</td><td class="n">2.8 MB</td><td class="n"><b>-85%</b></td></tr>
+<tr><td class="n">1,024</td><td>typed</td><td class="n">80.4 MB</td><td class="n">20.2 MB</td><td class="n"><b>-75%</b></td></tr>
+<tr><td class="n">1,024</td><td>untyped</td><td class="n">71.2 MB</td><td class="n">11.0 MB</td><td class="n"><b>-85%</b></td></tr>
+</table></div>
+
+<h2 id="held">Holding a value<a class="anchor" href="#held" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="held" title="copy this section's address">copy link</button></h2>
+<p>A Hazel function returns a function that holds a list of numbers and reads it on every call (it asks whether the list is empty), as a rule over a held world would. JavaScript then calls the returned function.</p>
+<div class="scroll"><table>
+<tr><th>Numbers held</th><th>the package's build</th><th>lib-floor</th><th>lib-closures</th></tr>
+<tr><td class="n">64</td><td class="n">0.11 ms<br><span class="muted">551 KB</span></td><td class="n">0.11 ms<br><span class="muted">557 KB</span></td><td class="n">0.034 ms<br><span class="muted">93 KB</span></td></tr>
+<tr><td class="n">256</td><td class="n">0.35 ms<br><span class="muted">1.9 MB</span></td><td class="n">0.35 ms<br><span class="muted">1.9 MB</span></td><td class="n">0.025 ms<br><span class="muted">93 KB</span></td></tr>
+<tr><td class="n">1,024</td><td class="n">1.30 ms<br><span class="muted">7.4 MB</span></td><td class="n">1.34 ms<br><span class="muted">7.4 MB</span></td><td class="n">0.024 ms<br><span class="muted">93 KB</span></td></tr>
+<tr><td class="n">4,096</td><td class="n">5.31 ms<br><span class="muted">29.0 MB</span></td><td class="n">5.81 ms<br><span class="muted">29.1 MB</span></td><td class="n">0.025 ms<br><span class="muted">93 KB</span></td></tr>
+</table></div>
+<p>The package's build and lib-floor pay for the whole list on every call, in time and in memory, because the list was written into the function's body as a literal. lib-closures keeps the list in the closure's environment, so a call costs the same whatever it holds. On <a href="https://matthewhammer.org/hazel/dashboard/#ticket-558"><code class="ref"><b>^ticket(</b>558<b>)</b></code></a>'s laptop measurements, Messed Up Dress Up's World rule, its map held as a tree, went from 90 to 0.75 ms a move at 64×64 the same way.</p>
+
+<h2 id="handles">Handles<a class="anchor" href="#handles" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="handles" title="copy this section's address">copy link</button></h2>
+<p>The handles trial is built on a branch that counts the evaluator's steps, so its times are not comparable with the other builds'. Within itself, the same typed call, given the cells each time and given a handle made once:</p>
+<div class="scroll"><table>
+<tr><th>Cells</th><th>Typed, converted each call</th><th>Typed, given a handle</th></tr>
+<tr><td class="n">64</td><td class="n">0.75 ms</td><td class="n"><b>0.026 ms</b></td></tr>
+<tr><td class="n">256</td><td class="n">2.51 ms</td><td class="n"><b>0.025 ms</b></td></tr>
+<tr><td class="n">1,024</td><td class="n">11.3 ms</td><td class="n"><b>0.030 ms</b></td></tr>
+<tr><td class="n">4,096</td><td class="n">66.5 ms</td><td class="n"><b>0.024 ms</b></td></tr>
+</table></div>
+
+<h2 id="notshown">What this does not show<a class="anchor" href="#notshown" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="notshown" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>The browser.</b> These are Node's numbers on GitHub's machines. <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>'s and the trials' own laptop numbers agree on the direction and roughly on the size.</li>
+<li><b>The game's real rules,</b> beyond what <a href="https://matthewhammer.org/hazel/dashboard/#ticket-558"><code class="ref"><b>^ticket(</b>558<b>)</b></code></a> measured. The functions here do nothing but return, so the boundary is all there is to measure.</li>
+<li><b>What a held value keeps.</b> The driver also reads the heap kept by a held function, but its readings are noisy at these sizes; all three builds keep about the list itself, about 1.9 MB for 4,096 numbers.</li>
+<li><b>Correctness.</b> That is CI's: each trial has Fast checks and Full tests green, with tests of its own (curried functions, functions a call returns, handles in a call and in an argument tuple).</li>
+</ul>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>The driver</b> is <a href="https://github.com/hazelgrove/hazeljs/blob/main/bench/boundary.mjs"><code>bench/boundary.mjs</code></a> in hazelgrove/hazeljs, run by its <b>Boundary benchmark</b> workflow, which anyone can start. A call's time is the median of at least 15 calls, and of at least 300 ms of them, after 3 to warm up. Its allocation is the median of 7 single calls, each after a forced collection (<code>node --expose-gc --max-semi-space-size=256</code>).</li>
+<li><b>The run:</b> 2026-11-03, workflow run 41693524506, GitHub's ubuntu-latest runner, Node 22. Two rounds, each running the four builds one after another; the tables show the mean of the two. The rounds agree within about 10%, except the typed calls at 1,024 cells on the trials (8.8 to 11.8 ms).</li>
+<li><b>The builds:</b> the package's is hazeljs 0.0.3's <code>hazel-lib.js</code> from jsDelivr (hazelgrove/hazel at 0d66c36618, <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>). The trials' are Hazel's own Deploy builds from build.hazel.org: lib-floor at 409e8f2116, lib-closures at 7563919f60, and the handles trial at 0220562cee.</li>
+<li><b>The data:</b> in this page (<code>script#report-data</code>) and in <code>040/data/boundary.json</code>, each round's numbers kept.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/040/data"><code>040/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main>
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T18:17:37Z", "base": "js-library"}}, BUILT = "2026-11-03";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    const b = li.querySelector("b, strong");
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 40,
+ "title": "Converting JS Values Directly",
+ "date": "2026-11-03",
+ "kind": "measurement",
+ "status": "work in progress",
+ "question": "What does converting JavaScript values directly into Hazel values at the call boundary save, in time and in space? ^report(34)'s step 4; Matthew, 2026-11-03 (^ticket(681)).",
+ "measurements": "New: hazeljs's Boundary benchmark (bench/boundary.mjs at 9753e44), GitHub workflow run 41693524506 on 2026-11-03, ubuntu-latest, Node 22, two rounds of four builds: per call, the median ms and the bytes allocated, for a typed and an untyped call given n*n cells, a held function reading n*n numbers, and a typed call given a handle.",
+ "builds": [
+  {
+   "what": "the package's build",
+   "branch": "hazeljs 0.0.3 on npm (hazelgrove/hazel js-library-embed, #2719)",
+   "commit": "0d66c36618"
+  },
+  {
+   "what": "arguments converted directly",
+   "branch": "lib-floor (^ticket(539))",
+   "commit": "409e8f2116"
+  },
+  {
+   "what": "and closures kept as closures",
+   "branch": "lib-closures (^ticket(558))",
+   "commit": "7563919f60"
+  },
+  {
+   "what": "handles (a counter build)",
+   "branch": "trial/r25-handles (^ticket(551))",
+   "commit": "0220562cee"
+  }
+ ],
+ "files": [
+  "data/boundary.json",
+  "data/meta.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Time",
+   "section_id": "time",
+   "columns": [
+    "Cells",
+    "Call",
+    "The package's build",
+    "lib-floor",
+    "Change",
+    "lib-closures"
+   ],
+   "rows": [
+    [
+     "64",
+     "typed",
+     "1.49 ms",
+     "0.62 ms",
+     "-59%",
+     "0.59 ms"
+    ],
+    [
+     "64",
+     "untyped",
+     "1.08 ms",
+     "0.33 ms",
+     "-70%",
+     "0.31 ms"
+    ],
+    [
+     "256",
+     "typed",
+     "6.28 ms",
+     "2.16 ms",
+     "-66%",
+     "2.10 ms"
+    ],
+    [
+     "256",
+     "untyped",
+     "4.37 ms",
+     "1.18 ms",
+     "-73%",
+     "1.15 ms"
+    ],
+    [
+     "1,024",
+     "typed",
+     "34.5 ms",
+     "10.2 ms",
+     "-71%",
+     "10.3 ms"
+    ],
+    [
+     "1,024",
+     "untyped",
+     "21.4 ms",
+     "4.61 ms",
+     "-78%",
+     "4.52 ms"
+    ],
+    [
+     "4,096",
+     "typed",
+     "139.2 ms",
+     "51.3 ms",
+     "-63%",
+     "52.1 ms"
+    ],
+    [
+     "4,096",
+     "untyped",
+     "107.5 ms",
+     "18.3 ms",
+     "-83%",
+     "18.1 ms"
+    ]
+   ]
+  },
+  {
+   "section": "Space",
+   "section_id": "space",
+   "columns": [
+    "Cells",
+    "Call",
+    "The package's build",
+    "lib-floor",
+    "Change"
+   ],
+   "rows": [
+    [
+     "64",
+     "typed",
+     "5.2 MB",
+     "1.3 MB",
+     "-74%"
+    ],
+    [
+     "64",
+     "untyped",
+     "4.6 MB",
+     "752 KB",
+     "-84%"
+    ],
+    [
+     "256",
+     "typed",
+     "20.5 MB",
+     "5.1 MB",
+     "-75%"
+    ],
+    [
+     "256",
+     "untyped",
+     "18.2 MB",
+     "2.8 MB",
+     "-85%"
+    ],
+    [
+     "1,024",
+     "typed",
+     "80.4 MB",
+     "20.2 MB",
+     "-75%"
+    ],
+    [
+     "1,024",
+     "untyped",
+     "71.2 MB",
+     "11.0 MB",
+     "-85%"
+    ]
+   ]
+  },
+  {
+   "section": "Holding a value",
+   "section_id": "held",
+   "columns": [
+    "Numbers held",
+    "the package's build",
+    "lib-floor",
+    "lib-closures"
+   ],
+   "rows": [
+    [
+     "64",
+     "0.11 ms551 KB",
+     "0.11 ms557 KB",
+     "0.034 ms93 KB"
+    ],
+    [
+     "256",
+     "0.35 ms1.9 MB",
+     "0.35 ms1.9 MB",
+     "0.025 ms93 KB"
+    ],
+    [
+     "1,024",
+     "1.30 ms7.4 MB",
+     "1.34 ms7.4 MB",
+     "0.024 ms93 KB"
+    ],
+    [
+     "4,096",
+     "5.31 ms29.0 MB",
+     "5.81 ms29.1 MB",
+     "0.025 ms93 KB"
+    ]
+   ]
+  },
+  {
+   "section": "Handles",
+   "section_id": "handles",
+   "columns": [
+    "Cells",
+    "Typed, converted each call",
+    "Typed, given a handle"
+   ],
+   "rows": [
+    [
+     "64",
+     "0.75 ms",
+     "0.026 ms"
+    ],
+    [
+     "256",
+     "2.51 ms",
+     "0.025 ms"
+    ],
+    [
+     "1,024",
+     "11.3 ms",
+     "0.030 ms"
+    ],
+    [
+     "4,096",
+     "66.5 ms",
+     "0.024 ms"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/040/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>

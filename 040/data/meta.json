@@ -1,0 +1,33 @@
+{
+ "title": "Converting JS Values Directly",
+ "date": "2026-11-03",
+ "kind": "measurement",
+ "status": "work in progress",
+ "question": "What does converting JavaScript values directly into Hazel values at the call boundary save, in time and in space? ^report(34)'s step 4; Matthew, 2026-11-03 (^ticket(681)).",
+ "measurements": "New: hazeljs's Boundary benchmark (bench/boundary.mjs at 9753e44), GitHub workflow run 41693524506 on 2026-11-03, ubuntu-latest, Node 22, two rounds of four builds: per call, the median ms and the bytes allocated, for a typed and an untyped call given n*n cells, a held function reading n*n numbers, and a typed call given a handle.",
+ "builds": [
+  {
+   "what": "the package's build",
+   "branch": "hazeljs 0.0.3 on npm (hazelgrove/hazel js-library-embed, #2719)",
+   "commit": "0d66c36618"
+  },
+  {
+   "what": "arguments converted directly",
+   "branch": "lib-floor (^ticket(539))",
+   "commit": "409e8f2116"
+  },
+  {
+   "what": "and closures kept as closures",
+   "branch": "lib-closures (^ticket(558))",
+   "commit": "7563919f60"
+  },
+  {
+   "what": "handles (a counter build)",
+   "branch": "trial/r25-handles (^ticket(551))",
+   "commit": "0220562cee"
+  }
+ ],
+ "files": [
+  "boundary.json"
+ ]
+}

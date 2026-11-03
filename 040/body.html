@@ -1,0 +1,64 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 040 · Hazel as a JS library · started 2026-11-03, updated {{updated}} MST · <span class="wip">work in progress</span> · after reports 025 and 034</p>
+<h1>Converting JS Values Directly</h1>
+<p class="sub">^report(34)'s next steps include this one: <b>convert JavaScript values directly into Hazel values at the call boundary</b>, not through syntax that Hazel then evaluates again. This report measures what that saves, in time and in space, with the trial branches that already do it. Asked by Matthew, 2026-11-03 (^ticket(681)).</p>
+
+<div class="headline">
+<p><b>Short answers.</b> All measured on GitHub's machines in Node, two rounds; the method is at the end.</p>
+<ol class="ans">
+<li><p><b>A call takes 60 to 85% less time.</b> Passing {{cells_64}} cells from JavaScript to a Hazel function took {{t_typed_64}} ms with the package's build and {{f_typed_64}} ms with the trial that converts directly ({{p_typed_64}}). Without a type annotation on the parameter: {{t_untyped_64}} ms against {{f_untyped_64}} ({{p_untyped_64}}).</p></li>
+<li><p><b>A call allocates 75 to 85% less memory.</b> At 1,024 cells, a typed call allocated {{a_typed_32}} with the package's build and {{af_typed_32}} with the trial; an untyped call {{a_untyped_32}} against {{af_untyped_32}}.</p></li>
+<li><p><b>A function that holds a value stops paying for it on every call.</b> A function Hazel returned, holding {{cells_64}} numbers, took {{h_base_64}} ms and allocated {{h_base_mb_64}} a call with the package's build, growing with what it holds. With the closures trial: {{h_clo_64}} ms and {{h_clo_mb_64}} at every size, about {{h_ratio}} times faster.</p></li>
+<li><p><b>A value converted once and passed as a handle costs almost nothing:</b> {{hd_64}} ms a call at every size, against {{hd_conv_64}} ms converted each time, at {{cells_64}} cells.</p></li>
+<li><p><b>What is left is the type annotation's check.</b> With the trial, a typed call still takes about {{ratio_typed}} times an untyped one: Hazel checks the converted value against the parameter's type again. That is #2681's work, not this step's.</p></li>
+<li><p><b>Next:</b> the three trials have green CI, and wait on Matthew's call on how they go up: lib-floor first (^ticket(539)), then the closures (^ticket(558)) and the handles (^ticket(551)) stacked on it.</p></li>
+</ol>
+</div>
+
+<h2 id="step">The step</h2>
+<p>When a JavaScript program calls a Hazel function through Hazel's JS library, the argument has to become a Hazel value. Today the library turns it into Hazel <i>syntax</i>, a term with a fresh id on every node, and the evaluator then steps that term back into the value it already was, and checks it against the parameter's type. ^report(25) measured that as the floor every call pays, whatever the function does. ^report(34)'s step 4 is to stop doing that.</p>
+<p>Three trial branches each take part of the step. Each is a branch of #2719 with green CI, built by Hazel's own Deploy workflow:</p>
+<ul>
+<li><b>lib-floor</b> (^ticket(539)): the converted argument is bound in the environment, and the function is applied to its name, so the evaluator never steps it again.</li>
+<li><b>lib-closures</b> (^ticket(547), ^ticket(558)): a function the library returns is the evaluator's own closure, its environment kept apart. Before, the environment was written into the function's body, so a held list became a literal that every call evaluated again.</li>
+<li><b>handles</b> (^ticket(551)): <code>Hazel.value(x)</code> converts a value once and returns a handle; a call given the handle binds the stored value, with no conversion at all.</li>
+</ul>
+
+<h2 id="time">Time</h2>
+<p>A Hazel function given a list of cells, each a record of two numbers and a string, and returning 0 at once: so the time is the boundary's alone. "Typed" annotates the parameter, <code>(cells : [Cell])</code>; "untyped" does not.</p>
+<figure class="fig" id="fig1"><div class="figscroll">{{FIG_TIME}}</div>
+<figcaption>Figure 1. Milliseconds a call against the number of cells passed, both on log scales; the mean of two rounds. Solid lines are typed calls, dashed lines untyped. The trial (lib-floor) is below the package's build at every size, and further below without an annotation.</figcaption></figure>
+{{TABLE_TIME}}
+<p>lib-closures includes lib-floor's change, and reads the same here: this call holds nothing, so the closures have nothing to save.</p>
+
+<h2 id="space">Space</h2>
+<p>The bytes one call allocates: the growth of the heap over a single call, made just after a forced collection, with a young generation large enough that no collection runs during the call. The 4,096-cell calls are left out: there the package's build allocates more than that space holds, a collection runs during the call, and the reading is too low.</p>
+{{TABLE_SPACE}}
+
+<h2 id="held">Holding a value</h2>
+<p>A Hazel function returns a function that holds a list of numbers and reads it on every call (it asks whether the list is empty), as a rule over a held world would. JavaScript then calls the returned function.</p>
+{{TABLE_HELD}}
+<p>The package's build and lib-floor pay for the whole list on every call, in time and in memory, because the list was written into the function's body as a literal. lib-closures keeps the list in the closure's environment, so a call costs the same whatever it holds. On ^ticket(558)'s laptop measurements, Messed Up Dress Up's World rule, its map held as a tree, went from 90 to 0.75 ms a move at 64×64 the same way.</p>
+
+<h2 id="handles">Handles</h2>
+<p>The handles trial is built on a branch that counts the evaluator's steps, so its times are not comparable with the other builds'. Within itself, the same typed call, given the cells each time and given a handle made once:</p>
+{{TABLE_HANDLES}}
+
+<h2 id="notshown">What this does not show</h2>
+<ul>
+<li><b>The browser.</b> These are Node's numbers on GitHub's machines. ^report(25)'s and the trials' own laptop numbers agree on the direction and roughly on the size.</li>
+<li><b>The game's real rules,</b> beyond what ^ticket(558) measured. The functions here do nothing but return, so the boundary is all there is to measure.</li>
+<li><b>What a held value keeps.</b> The driver also reads the heap kept by a held function, but its readings are noisy at these sizes; all three builds keep about the list itself, about 1.9 MB for 4,096 numbers.</li>
+<li><b>Correctness.</b> That is CI's: each trial has Fast checks and Full tests green, with tests of its own (curried functions, functions a call returns, handles in a call and in an argument tuple).</li>
+</ul>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>The driver</b> is <a href="https://github.com/hazelgrove/hazeljs/blob/main/bench/boundary.mjs"><code>bench/boundary.mjs</code></a> in hazelgrove/hazeljs, run by its <b>Boundary benchmark</b> workflow, which anyone can start. A call's time is the median of at least 15 calls, and of at least 300 ms of them, after 3 to warm up. Its allocation is the median of 7 single calls, each after a forced collection (<code>node --expose-gc --max-semi-space-size=256</code>).</li>
+<li><b>The run:</b> 2026-11-03, workflow run 41693524506, GitHub's ubuntu-latest runner, Node 22. Two rounds, each running the four builds one after another; the tables show the mean of the two. The rounds agree within about 10%, except the typed calls at 1,024 cells on the trials (8.8 to 11.8 ms).</li>
+<li><b>The builds:</b> the package's is hazeljs 0.0.3's <code>hazel-lib.js</code> from jsDelivr (hazelgrove/hazel at 0d66c36618, #2719). The trials' are Hazel's own Deploy builds from build.hazel.org: lib-floor at 409e8f2116, lib-closures at 7563919f60, and the handles trial at 0220562cee.</li>
+<li><b>The data:</b> in this page (<code>script#report-data</code>) and in <code>040/data/boundary.json</code>, each round's numbers kept.</li>
+</ul>
+</main>
+</body>
+</html>

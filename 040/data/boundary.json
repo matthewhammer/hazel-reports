@@ -1,0 +1,963 @@
+{
+ "meta": {
+  "source": "hazelgrove/hazeljs, Boundary benchmark workflow, run 41693524506 (2026-11-03), bench/boundary.mjs at 9753e44",
+  "machine": "GitHub's ubuntu-latest runner, Node 22",
+  "rounds": 2,
+  "builds": {
+   "base": "hazeljs 0.0.3's hazel-lib.js (hazelgrove/hazel 0d66c36618, #2719), from jsDelivr",
+   "floor": "lib-floor (409e8f2116, ^ticket(539)), from build.hazel.org",
+   "closures": "lib-closures (7563919f60, ^ticket(558): lib-floor plus ^ticket(547)'s closures), from build.hazel.org",
+   "handles": "trial/r25-handles (0220562cee, ^ticket(551)), a counter build: compared only with itself"
+  }
+ },
+ "rows": [
+  {
+   "build": "base",
+   "kind": "held",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.1141,
+    0.113
+   ],
+   "ms_mean": 0.1135,
+   "bytes": [
+    551008,
+    551008
+   ],
+   "bytes_mean": 551008,
+   "kept": [
+    12224,
+    21256
+   ]
+  },
+  {
+   "build": "base",
+   "kind": "held",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    0.3505,
+    0.3515
+   ],
+   "ms_mean": 0.351,
+   "bytes": [
+    1927152,
+    1929736
+   ],
+   "bytes_mean": 1928444,
+   "kept": [
+    107448,
+    110376
+   ]
+  },
+  {
+   "build": "base",
+   "kind": "held",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    1.2967,
+    1.2964
+   ],
+   "ms_mean": 1.2965,
+   "bytes": [
+    7385816,
+    7373224
+   ],
+   "bytes_mean": 7379520,
+   "kept": [
+    449760,
+    464856
+   ]
+  },
+  {
+   "build": "base",
+   "kind": "held",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    5.1873,
+    5.4317
+   ],
+   "ms_mean": 5.3095,
+   "bytes": [
+    28961240,
+    29020912
+   ],
+   "bytes_mean": 28991076,
+   "kept": [
+    1875552,
+    1881824
+   ]
+  },
+  {
+   "build": "base",
+   "kind": "typed",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    1.4947,
+    1.4836
+   ],
+   "ms_mean": 1.4891,
+   "bytes": [
+    5201192,
+    5222008
+   ],
+   "bytes_mean": 5211600
+  },
+  {
+   "build": "base",
+   "kind": "typed",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    6.1633,
+    6.4005
+   ],
+   "ms_mean": 6.2819,
+   "bytes": [
+    20541168,
+    20553784
+   ],
+   "bytes_mean": 20547476
+  },
+  {
+   "build": "base",
+   "kind": "typed",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    33.6693,
+    35.3596
+   ],
+   "ms_mean": 34.5144,
+   "bytes": [
+    80530696,
+    80281112
+   ],
+   "bytes_mean": 80405904
+  },
+  {
+   "build": "base",
+   "kind": "typed",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    140.1598,
+    138.175
+   ],
+   "ms_mean": 139.1674,
+   "bytes": [
+    72767960,
+    72873704
+   ],
+   "bytes_mean": 72820832
+  },
+  {
+   "build": "base",
+   "kind": "untyped",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    1.0725,
+    1.0944
+   ],
+   "ms_mean": 1.0835,
+   "bytes": [
+    4629512,
+    4636608
+   ],
+   "bytes_mean": 4633060
+  },
+  {
+   "build": "base",
+   "kind": "untyped",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    4.2042,
+    4.5311
+   ],
+   "ms_mean": 4.3677,
+   "bytes": [
+    18199184,
+    18144328
+   ],
+   "bytes_mean": 18171756
+  },
+  {
+   "build": "base",
+   "kind": "untyped",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    20.3764,
+    22.4199
+   ],
+   "ms_mean": 21.3982,
+   "bytes": [
+    71272776,
+    71183168
+   ],
+   "bytes_mean": 71227972
+  },
+  {
+   "build": "base",
+   "kind": "untyped",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    109.0046,
+    105.9047
+   ],
+   "ms_mean": 107.4547,
+   "bytes": [
+    35974568,
+    35724408
+   ],
+   "bytes_mean": 35849488
+  },
+  {
+   "build": "closures",
+   "kind": "held",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.0331,
+    0.0342
+   ],
+   "ms_mean": 0.0336,
+   "bytes": [
+    93128,
+    93128
+   ],
+   "bytes_mean": 93128,
+   "kept": [
+    17664,
+    31864
+   ]
+  },
+  {
+   "build": "closures",
+   "kind": "held",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    0.0244,
+    0.0246
+   ],
+   "ms_mean": 0.0245,
+   "bytes": [
+    93048,
+    93048
+   ],
+   "bytes_mean": 93048,
+   "kept": [
+    120696,
+    120696
+   ]
+  },
+  {
+   "build": "closures",
+   "kind": "held",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    0.0245,
+    0.0244
+   ],
+   "ms_mean": 0.0244,
+   "bytes": [
+    93016,
+    93048
+   ],
+   "bytes_mean": 93032,
+   "kept": [
+    477376,
+    477376
+   ]
+  },
+  {
+   "build": "closures",
+   "kind": "held",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    0.0248,
+    0.0246
+   ],
+   "ms_mean": 0.0247,
+   "bytes": [
+    93016,
+    93016
+   ],
+   "bytes_mean": 93016,
+   "kept": [
+    1897208,
+    1909712
+   ]
+  },
+  {
+   "build": "closures",
+   "kind": "typed",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.6007,
+    0.5782
+   ],
+   "ms_mean": 0.5895,
+   "bytes": [
+    1335696,
+    1335944
+   ],
+   "bytes_mean": 1335820
+  },
+  {
+   "build": "closures",
+   "kind": "typed",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    2.1528,
+    2.0443
+   ],
+   "ms_mean": 2.0985,
+   "bytes": [
+    5124440,
+    5115912
+   ],
+   "bytes_mean": 5120176
+  },
+  {
+   "build": "closures",
+   "kind": "typed",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    11.7879,
+    8.8412
+   ],
+   "ms_mean": 10.3146,
+   "bytes": [
+    20215184,
+    20214344
+   ],
+   "bytes_mean": 20214764
+  },
+  {
+   "build": "closures",
+   "kind": "typed",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    54.5697,
+    49.7068
+   ],
+   "ms_mean": 52.1382,
+   "bytes": [
+    80378584,
+    80374368
+   ],
+   "bytes_mean": 80376476
+  },
+  {
+   "build": "closures",
+   "kind": "untyped",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.3183,
+    0.305
+   ],
+   "ms_mean": 0.3116,
+   "bytes": [
+    743752,
+    743752
+   ],
+   "bytes_mean": 743752
+  },
+  {
+   "build": "closures",
+   "kind": "untyped",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    1.1733,
+    1.123
+   ],
+   "ms_mean": 1.1482,
+   "bytes": [
+    2787728,
+    2787728
+   ],
+   "bytes_mean": 2787728
+  },
+  {
+   "build": "closures",
+   "kind": "untyped",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    4.6009,
+    4.4317
+   ],
+   "ms_mean": 4.5163,
+   "bytes": [
+    10905336,
+    10921568
+   ],
+   "bytes_mean": 10913452
+  },
+  {
+   "build": "closures",
+   "kind": "untyped",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    18.5039,
+    17.7391
+   ],
+   "ms_mean": 18.1215,
+   "bytes": [
+    43410120,
+    43410464
+   ],
+   "bytes_mean": 43410292
+  },
+  {
+   "build": "floor",
+   "kind": "held",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.1134,
+    0.1125
+   ],
+   "ms_mean": 0.1129,
+   "bytes": [
+    557168,
+    557152
+   ],
+   "bytes_mean": 557160,
+   "kept": [
+    40832,
+    37264
+   ]
+  },
+  {
+   "build": "floor",
+   "kind": "held",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    0.3519,
+    0.3574
+   ],
+   "ms_mean": 0.3547,
+   "bytes": [
+    1933416,
+    1934256
+   ],
+   "bytes_mean": 1933836,
+   "kept": [
+    104768,
+    112936
+   ]
+  },
+  {
+   "build": "floor",
+   "kind": "held",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    1.3623,
+    1.3207
+   ],
+   "ms_mean": 1.3415,
+   "bytes": [
+    7432888,
+    7419376
+   ],
+   "bytes_mean": 7426132,
+   "kept": [
+    460904,
+    480992
+   ]
+  },
+  {
+   "build": "floor",
+   "kind": "held",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    6.023,
+    5.6005
+   ],
+   "ms_mean": 5.8117,
+   "bytes": [
+    29006536,
+    29208048
+   ],
+   "bytes_mean": 29107292,
+   "kept": [
+    1899840,
+    1906608
+   ]
+  },
+  {
+   "build": "floor",
+   "kind": "typed",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.6242,
+    0.6082
+   ],
+   "ms_mean": 0.6162,
+   "bytes": [
+    1343328,
+    1343328
+   ],
+   "bytes_mean": 1343328
+  },
+  {
+   "build": "floor",
+   "kind": "typed",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    2.1959,
+    2.1263
+   ],
+   "ms_mean": 2.1611,
+   "bytes": [
+    5135440,
+    5136680
+   ],
+   "bytes_mean": 5136060
+  },
+  {
+   "build": "floor",
+   "kind": "typed",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    11.3381,
+    8.9738
+   ],
+   "ms_mean": 10.156,
+   "bytes": [
+    20215400,
+    20204472
+   ],
+   "bytes_mean": 20209936
+  },
+  {
+   "build": "floor",
+   "kind": "typed",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    50.7902,
+    51.7674
+   ],
+   "ms_mean": 51.2788,
+   "bytes": [
+    80394880,
+    80395720
+   ],
+   "bytes_mean": 80395300
+  },
+  {
+   "build": "floor",
+   "kind": "untyped",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.3283,
+    0.3259
+   ],
+   "ms_mean": 0.3271,
+   "bytes": [
+    751680,
+    751680
+   ],
+   "bytes_mean": 751680
+  },
+  {
+   "build": "floor",
+   "kind": "untyped",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    1.1934,
+    1.1573
+   ],
+   "ms_mean": 1.1753,
+   "bytes": [
+    2793816,
+    2793800
+   ],
+   "bytes_mean": 2793808
+  },
+  {
+   "build": "floor",
+   "kind": "untyped",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    4.6884,
+    4.5365
+   ],
+   "ms_mean": 4.6124,
+   "bytes": [
+    10973592,
+    10928256
+   ],
+   "bytes_mean": 10950924
+  },
+  {
+   "build": "floor",
+   "kind": "untyped",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    18.3282,
+    18.2478
+   ],
+   "ms_mean": 18.288,
+   "bytes": [
+    43419280,
+    43417872
+   ],
+   "bytes_mean": 43418576
+  },
+  {
+   "build": "handles",
+   "kind": "held",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.0583,
+    0.0593
+   ],
+   "ms_mean": 0.0588,
+   "bytes": [
+    131384,
+    131360
+   ],
+   "bytes_mean": 131372,
+   "kept": [
+    36736,
+    36472
+   ]
+  },
+  {
+   "build": "handles",
+   "kind": "held",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    0.0477,
+    0.0454
+   ],
+   "ms_mean": 0.0466,
+   "bytes": [
+    131024,
+    131024
+   ],
+   "bytes_mean": 131024,
+   "kept": [
+    112936,
+    113096
+   ]
+  },
+  {
+   "build": "handles",
+   "kind": "held",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    0.0543,
+    0.0488
+   ],
+   "ms_mean": 0.0515,
+   "bytes": [
+    130992,
+    130992
+   ],
+   "bytes_mean": 130992,
+   "kept": [
+    534720,
+    530592
+   ]
+  },
+  {
+   "build": "handles",
+   "kind": "held",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    0.048,
+    0.0468
+   ],
+   "ms_mean": 0.0474,
+   "bytes": [
+    130992,
+    130992
+   ],
+   "bytes_mean": 130992,
+   "kept": [
+    2195984,
+    2171176
+   ]
+  },
+  {
+   "build": "handles",
+   "kind": "typed",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.7422,
+    0.7602
+   ],
+   "ms_mean": 0.7512,
+   "bytes": [
+    1409272,
+    1409272
+   ],
+   "bytes_mean": 1409272
+  },
+  {
+   "build": "handles",
+   "kind": "typed",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    2.5646,
+    2.4565
+   ],
+   "ms_mean": 2.5106,
+   "bytes": [
+    5400776,
+    5424792
+   ],
+   "bytes_mean": 5412784
+  },
+  {
+   "build": "handles",
+   "kind": "typed",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    11.4568,
+    11.0975
+   ],
+   "ms_mean": 11.2771,
+   "bytes": [
+    21293832,
+    21324096
+   ],
+   "bytes_mean": 21308964
+  },
+  {
+   "build": "handles",
+   "kind": "typed",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    66.9351,
+    66.0967
+   ],
+   "ms_mean": 66.5159,
+   "bytes": [
+    84559296,
+    84607984
+   ],
+   "bytes_mean": 84583640
+  },
+  {
+   "build": "handles",
+   "kind": "typed, a handle",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.0265,
+    0.0255
+   ],
+   "ms_mean": 0.026,
+   "bytes": [
+    79824,
+    79824
+   ],
+   "bytes_mean": 79824
+  },
+  {
+   "build": "handles",
+   "kind": "typed, a handle",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    0.0256,
+    0.025
+   ],
+   "ms_mean": 0.0253,
+   "bytes": [
+    79776,
+    79776
+   ],
+   "bytes_mean": 79776
+  },
+  {
+   "build": "handles",
+   "kind": "typed, a handle",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    0.034,
+    0.0255
+   ],
+   "ms_mean": 0.0297,
+   "bytes": [
+    79776,
+    79776
+   ],
+   "bytes_mean": 79776
+  },
+  {
+   "build": "handles",
+   "kind": "typed, a handle",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    0.0249,
+    0.0235
+   ],
+   "ms_mean": 0.0242,
+   "bytes": [
+    79776,
+    79776
+   ],
+   "bytes_mean": 79776
+  },
+  {
+   "build": "handles",
+   "kind": "untyped",
+   "n": 8,
+   "cells": 64,
+   "rounds": 2,
+   "ms": [
+    0.3471,
+    0.3577
+   ],
+   "ms_mean": 0.3524,
+   "bytes": [
+    761432,
+    761448
+   ],
+   "bytes_mean": 761440
+  },
+  {
+   "build": "handles",
+   "kind": "untyped",
+   "n": 16,
+   "cells": 256,
+   "rounds": 2,
+   "ms": [
+    1.1907,
+    1.2587
+   ],
+   "ms_mean": 1.2247,
+   "bytes": [
+    2805520,
+    2805520
+   ],
+   "bytes_mean": 2805520
+  },
+  {
+   "build": "handles",
+   "kind": "untyped",
+   "n": 32,
+   "cells": 1024,
+   "rounds": 2,
+   "ms": [
+    4.7007,
+    4.9083
+   ],
+   "ms_mean": 4.8045,
+   "bytes": [
+    10985296,
+    10922128
+   ],
+   "bytes_mean": 10953712
+  },
+  {
+   "build": "handles",
+   "kind": "untyped",
+   "n": 64,
+   "cells": 4096,
+   "rounds": 2,
+   "ms": [
+    18.5035,
+    19.5545
+   ],
+   "ms_mean": 19.029,
+   "bytes": [
+    43424160,
+    43434240
+   ],
+   "bytes_mean": 43429200
+  }
+ ]
+}
