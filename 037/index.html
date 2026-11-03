@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agenda for November 4</title>
 <style>
@@ -62,6 +66,15 @@
   h3 button.copy-item.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
   section.item:target { outline: 2px solid color-mix(in srgb, var(--good, #15803d) 40%, transparent); border-radius: 6px; }
 </style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
 </head>
 <body>
 <main>
@@ -72,17 +85,17 @@
 <div class="headline">
 <p><b>In short.</b> As of 2026-11-03 07:30 MST.</p>
 <ol>
-  <li><b>Performance: an edit and an undo each cost time in proportion to the program, and an undo about three edits.</b> Measured on #2635 at five sizes: at 6,400 definitions an edit takes about 106 ms and an undo about 292, each followed by about 78 ms of statics. Two cheap fixes are on #2635 and took 31 to 46% off at the larger sizes; what is left is whole-program passes around incremental caches that already work. In space, Andrew Blinn's compaction of undo entries cut what a #2597 tab kept after 12 edits from 1,048 MB to 159; dev does not have it yet. Getting to O(log n) is a design question for the meeting (<a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a>, both stories; <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>, in progress).</li>
+  <li><b>Performance: an edit and an undo each cost time in proportion to the program, and an undo about three edits.</b> Measured on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> at five sizes: at 6,400 definitions an edit takes about 106 ms and an undo about 292, each followed by about 78 ms of statics. Two cheap fixes are on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> and took 31 to 46% off at the larger sizes; what is left is whole-program passes around incremental caches that already work. In space, Andrew Blinn's compaction of undo entries cut what a <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> tab kept after 12 edits from 1,048 MB to 159; dev does not have it yet. Getting to O(log n) is a design question for the meeting (<a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a>, both stories; <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>, in progress).</li>
   <li><b>Hazlets: Hazel embedded in a JS program's event handlers.</b> A new word for the pattern Messed Up Dress Up uses, the first and so far only one. A demo of the game's scripts, the question <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a> asks (should the library be official?), and a prototype npm package, <code>hazeljs</code> 0.0.1, published on npm on 2026-11-02.</li>
   <li><b>DSL tile editors as a kind of livelit:</b> Matthew's proposal. The livelit's literal is a Hazel value describing a grammar, its view is a tile editor for that grammar, and its expansion is the parse tree. Is this the shape Cyrus wants, and what should the first demo be?</li>
 </ol>
 </div>
 
-<h2 id="items">The items, by section</h2>
+<h2 id="items">The items, by section<a class="anchor" href="#items" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="items" title="copy this section's address">copy link</button></h2>
 <div class="scroll"><table>
   <tr><th></th><th>Item</th><th>Status</th></tr>
   <tr class="sec"><td></td><td colspan="2"><a href="#perf"><b>1. Performance, and the cost of undo</b></a></td></tr>
-  <tr><td class="n">1</td><td><a href="#undo">Undo in O(log n)? What an edit and an undo cost now</a></td><td><span class="chip good">measured; two fixes on #2635; the outline&#x27;s part separated</span></td></tr>
+  <tr><td class="n">1</td><td><a href="#undo">Undo in O(log n)? What an edit and an undo cost now</a></td><td><span class="chip good">measured; two fixes on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>; the outline&#x27;s part separated</span></td></tr>
   <tr><td class="n">2</td><td><a href="#worker-sharing">How much sharing is lost passing data to and from the eval worker</a></td><td><span class="chip muted">not started</span></td></tr>
   <tr><td class="n">3</td><td><a href="#half-steps">Why #2635's evaluator takes half dev's steps on the PerfBudgets program</a></td><td><span class="chip muted">not started</span></td></tr>
   <tr><td class="n">4</td><td><a href="#dev-merge">#2635 is up to date with dev's merge day</a></td><td><span class="chip warn">merged; Firefox deck: 3 of 12 cases fail</span></td></tr>
@@ -94,19 +107,19 @@
   <tr><td class="n">8</td><td><a href="#dsl-livelit">A livelit whose literal is a grammar and whose view is a tile editor for it</a></td><td><span class="chip accent">idea</span></td></tr>
 </table></div>
 
-<h2 id="perf">1. Performance, and the cost of undo</h2>
-<p>What an edit and an undo cost as programs grow, and the questions next to it. Measured in Node on #2635 (livelits &times; modular editors). The whole investigation of undo, in time and in space, is <a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a> (in progress, 2026-11-03); its time measurements are <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>; the series is <a href="../035/"><code class="ref"><b>^report(</b>35<b>)</b></code></a> and before.</p>
+<h2 id="perf">1. Performance, and the cost of undo<a class="anchor" href="#perf" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="perf" title="copy this section's address">copy link</button></h2>
+<p>What an edit and an undo cost as programs grow, and the questions next to it. Measured in Node on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (livelits &times; modular editors). The whole investigation of undo, in time and in space, is <a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a> (in progress, 2026-11-03); its time measurements are <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>; the series is <a href="../035/"><code class="ref"><b>^report(</b>35<b>)</b></code></a> and before.</p>
 
 <section class="item good" id="undo">
-<h3><span class="n">1.</span> Undo in O(log n)? What an edit and an undo cost now <span class="chip good">measured; two fixes on #2635; the outline&#x27;s part separated</span> <a class="item-link" href="#undo" title="A link to this item">#1</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 1 (&quot;undo&quot;): &quot;Undo in O(log n)? What an edit and an undo cost now&quot;. https://matthewhammer.org/hazel/reports/037/#undo" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="1-undo-in-o-log-n-what-an-edit-and-an-undo-cost"><span class="n">1.</span> Undo in O(log n)? What an edit and an undo cost now <span class="chip good">measured; two fixes on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>; the outline&#x27;s part separated</span> <a class="item-link" href="#undo" title="A link to this item">#1</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 1 (&quot;undo&quot;): &quot;Undo in O(log n)? What an edit and an undo cost now&quot;. https://matthewhammer.org/hazel/reports/037/#undo" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#1-undo-in-o-log-n-what-an-edit-and-an-undo-cost" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="1-undo-in-o-log-n-what-an-edit-and-an-undo-cost" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-11-02 · <a href="https://matthewhammer.org/hazel/dashboard/#ticket-665"><code class="ref"><b>^ticket(</b>665<b>)</b></code></a> · as of 2026-11-03 07:30</p>
-<p><b>Measured:</b> a program of <i>n</i> top-level definitions (<code>let v1 = v0 + 1 in &hellip;</code>), an edit in the middle one, then undos and redos, each through the app's own update loop. From 400 to 6,400 definitions every step grows in proportion to <i>n</i>. At 6,400, after the fixes: an edit about 106 ms, an undo 292, a redo 184 (medians of 12), each followed by about 78 ms of statics. An undo costs about three edits and a redo about two. A quarter of each undo and redo (24 to 30% at every size, about 58 ms at 6,400) is the outline, which only the modular editors have, rebuilt from scratch every time; without it a redo costs about 1.2 edits and an undo still about 2.2 (<a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a>, measured 2026-11-03). Pushing and popping the history itself costs almost nothing.</p><p><b>In space:</b> the history once kept a whole copy of the editor for every edit, and never cut it. On #2597 a Full Body tab kept 1,048 MB after 12 edits, 89 MB more with each. Andrew Blinn's compaction (6010128b7d, on #2469) keeps older entries without their derived data and always caps the history: 159 MB, level after the third edit. #2635 has it (52 MB); dev does not yet. It was found in October in five steps, after a test cap that never ran (<a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update). The whole story, and what is next for both costs, is in <a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a>.</p><p><b>Why it is linear:</b> the incremental caches work (each step parses 1 or 2 definitions again, re-measures 1 or 2 chunks, compares 2 definitions' heads in statics), but around them are passes over every definition: rebuilding the top-level term, statics' walk down the chain of definitions, the outline (rebuilt on every undo and redo), layout's walk.</p><p><b>Fixed, on #2635</b> (394552d5d0, bfa36a6ede, pushed 2026-11-02): the auto-probe recomputed the whole top level's skeleton every frame, and completion suggestions were computed after every typed digit. 31 to 46% off each step at 3,200 and 6,400 definitions.</p>
+<p><b>Measured:</b> a program of <i>n</i> top-level definitions (<code>let v1 = v0 + 1 in &hellip;</code>), an edit in the middle one, then undos and redos, each through the app's own update loop. From 400 to 6,400 definitions every step grows in proportion to <i>n</i>. At 6,400, after the fixes: an edit about 106 ms, an undo 292, a redo 184 (medians of 12), each followed by about 78 ms of statics. An undo costs about three edits and a redo about two. A quarter of each undo and redo (24 to 30% at every size, about 58 ms at 6,400) is the outline, which only the modular editors have, rebuilt from scratch every time; without it a redo costs about 1.2 edits and an undo still about 2.2 (<a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a>, measured 2026-11-03). Pushing and popping the history itself costs almost nothing.</p><p><b>In space:</b> the history once kept a whole copy of the editor for every edit, and never cut it. On <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> a Full Body tab kept 1,048 MB after 12 edits, 89 MB more with each. Andrew Blinn's compaction (6010128b7d, on <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>) keeps older entries without their derived data and always caps the history: 159 MB, level after the third edit. <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> has it (52 MB); dev does not yet. It was found in October in five steps, after a test cap that never ran (<a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update). The whole story, and what is next for both costs, is in <a href="../038/"><code class="ref"><b>^report(</b>38<b>)</b></code></a>.</p><p><b>Why it is linear:</b> the incremental caches work (each step parses 1 or 2 definitions again, re-measures 1 or 2 chunks, compares 2 definitions' heads in statics), but around them are passes over every definition: rebuilding the top-level term, statics' walk down the chain of definitions, the outline (rebuilt on every undo and redo), layout's walk.</p><p><b>Fixed, on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a></b> (394552d5d0, bfa36a6ede, pushed 2026-11-02): the auto-probe recomputed the whole top level's skeleton every frame, and completion suggestions were computed after every typed digit. 31 to 46% off each step at 3,200 and 6,400 definitions.</p>
 
 <p class="ask"><b>For the meeting:</b> O(log n) per edit and per undo needs the top level as a balanced tree of definitions, not a chain of nested lets: each node keeps summaries (the names its subtree binds, its rows, its part of the skeleton), so each pass touches only the edited definition's path, and a snapshot shares every other node, so an undo can be a swap of roots. Is that the direction, and how much of it is worth doing before the livelits land?</p>
 </section>
 
 <section class="item muted" id="worker-sharing">
-<h3><span class="n">2.</span> How much sharing is lost passing data to and from the eval worker <span class="chip muted">not started</span> <a class="item-link" href="#worker-sharing" title="A link to this item">#2</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 2 (&quot;worker-sharing&quot;): &quot;How much sharing is lost passing data to and from the eval worker&quot;. https://matthewhammer.org/hazel/reports/037/#worker-sharing" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="2-how-much-sharing-is-lost-passing-data-to-and-f"><span class="n">2.</span> How much sharing is lost passing data to and from the eval worker <span class="chip muted">not started</span> <a class="item-link" href="#worker-sharing" title="A link to this item">#2</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 2 (&quot;worker-sharing&quot;): &quot;How much sharing is lost passing data to and from the eval worker&quot;. https://matthewhammer.org/hazel/reports/037/#worker-sharing" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#2-how-much-sharing-is-lost-passing-data-to-and-f" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="2-how-much-sharing-is-lost-passing-data-to-and-f" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-11-02 · <a href="https://matthewhammer.org/hazel/dashboard/#ticket-666"><code class="ref"><b>^ticket(</b>666<b>)</b></code></a> · as of 2026-11-02 10:35</p>
 <p>Values cross to the worker and back by Marshal, with ShareCodec's tables on both sides sending a value already sent as a reference (993e3d5f91, 2b080af683). Still lost: small values, first sends, everything after a table reset; and every value decoded on the page is a new object, so the page's identity-keyed memos miss on it and hash it again. To measure per request and response: bytes with and without sharing, hit rate, encode, decode and hash time, for a slider release, a Full Body edit and an undo.</p>
 
@@ -114,26 +127,26 @@
 </section>
 
 <section class="item muted" id="half-steps">
-<h3><span class="n">3.</span> Why #2635's evaluator takes half dev's steps on the PerfBudgets program <span class="chip muted">not started</span> <a class="item-link" href="#half-steps" title="A link to this item">#3</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 3 (&quot;half-steps&quot;): &quot;Why #2635&#x27;s evaluator takes half dev&#x27;s steps on the PerfBudgets program&quot;. https://matthewhammer.org/hazel/reports/037/#half-steps" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="3-why-2635-s-evaluator-takes-half-dev-s-steps-on"><span class="n">3.</span> Why <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>'s evaluator takes half dev's steps on the PerfBudgets program <span class="chip muted">not started</span> <a class="item-link" href="#half-steps" title="A link to this item">#3</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 3 (&quot;half-steps&quot;): &quot;Why #2635&#x27;s evaluator takes half dev&#x27;s steps on the PerfBudgets program&quot;. https://matthewhammer.org/hazel/reports/037/#half-steps" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#3-why-2635-s-evaluator-takes-half-dev-s-steps-on" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="3-why-2635-s-evaluator-takes-half-dev-s-steps-on" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-11-02 · <a href="https://matthewhammer.org/hazel/dashboard/#ticket-667"><code class="ref"><b>^ticket(</b>667<b>)</b></code></a> · as of 2026-11-02 10:35</p>
-<p>Cyrus's PerfBudgets test (#2678) counts the evaluator's steps on a fixed program: 206,834 on dev, 96,438 on #2635 after this week's dev merge. Either a gain to bring to dev, or steps the counter misses.</p>
+<p>Cyrus's PerfBudgets test (<a href="https://github.com/hazelgrove/hazel/pull/2678">#2678</a>) counts the evaluator's steps on a fixed program: 206,834 on dev, 96,438 on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> after this week's dev merge. Either a gain to bring to dev, or steps the counter misses.</p>
 
 <p class="ask"><b>For the meeting:</b> If it is a gain, which change makes it, and should it go to dev on its own?</p>
 </section>
 
 <section class="item warn" id="dev-merge">
-<h3><span class="n">4.</span> #2635 is up to date with dev's merge day <span class="chip warn">merged; Firefox deck: 3 of 12 cases fail</span> <a class="item-link" href="#dev-merge" title="A link to this item">#4</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 4 (&quot;dev-merge&quot;): &quot;#2635 is up to date with dev&#x27;s merge day&quot;. https://matthewhammer.org/hazel/reports/037/#dev-merge" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="4-2635-is-up-to-date-with-dev-s-merge-day-merged"><span class="n">4.</span> <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> is up to date with dev's merge day <span class="chip warn">merged; Firefox deck: 3 of 12 cases fail</span> <a class="item-link" href="#dev-merge" title="A link to this item">#4</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 4 (&quot;dev-merge&quot;): &quot;#2635 is up to date with dev&#x27;s merge day&quot;. https://matthewhammer.org/hazel/reports/037/#dev-merge" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#4-2635-is-up-to-date-with-dev-s-merge-day-merged" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="4-2635-is-up-to-date-with-dev-s-merge-day-merged" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-11-02 · <a href="https://matthewhammer.org/hazel/dashboard/#ticket-663"><code class="ref"><b>^ticket(</b>663<b>)</b></code></a> · as of 2026-11-03 07:15</p>
-<p>Dev's 10-29 merge day (149 commits: curried function definitions #2403, .rei interfaces, PerfBudgets #2678, the quick tests #2714 and more) merged into #2635 at 2cab658ef1. CI passed (Fast checks, Full tests, Static checks), and the 8 long-known Full-test failures are gone. The Firefox deck check failed on a workflow line the merge left stale (it ran dune through opam, which dev's toolchain step leaves off the path).</p><p><b>Since:</b> the fix, 1d17541aaf, pushed 2026-11-02 16:29. On it the deck builds and runs, and 9 of its 12 cases pass. Three fail, all on the eye that reveals a livelit's syntax: Kids' Choice's params line, the toggle staying visible while the mouse is in the livelit, and the sweep of every slide's livelits (5 of 126 uses: the pane closed, or the GUI changed and the revealed model did not). Fast checks, Full tests and Static checks pass. Not yet known: whether dev's merge broke these, or they are flaky.</p>
+<p>Dev's 10-29 merge day (149 commits: curried function definitions <a href="https://github.com/hazelgrove/hazel/pull/2403">#2403</a>, .rei interfaces, PerfBudgets <a href="https://github.com/hazelgrove/hazel/pull/2678">#2678</a>, the quick tests <a href="https://github.com/hazelgrove/hazel/pull/2714">#2714</a> and more) merged into <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> at 2cab658ef1. CI passed (Fast checks, Full tests, Static checks), and the 8 long-known Full-test failures are gone. The Firefox deck check failed on a workflow line the merge left stale (it ran dune through opam, which dev's toolchain step leaves off the path).</p><p><b>Since:</b> the fix, 1d17541aaf, pushed 2026-11-02 16:29. On it the deck builds and runs, and 9 of its 12 cases pass. Three fail, all on the eye that reveals a livelit's syntax: Kids' Choice's params line, the toggle staying visible while the mouse is in the livelit, and the sweep of every slide's livelits (5 of 126 uses: the pane closed, or the GUI changed and the revealed model did not). Fast checks, Full tests and Static checks pass. Not yet known: whether dev's merge broke these, or they are flaky.</p>
 
-<p class="ask"><b>For the meeting:</b> The landing order: #2469 into dev, then #2635 retargeted to dev?</p>
+<p class="ask"><b>For the meeting:</b> The landing order: <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> into dev, then <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> retargeted to dev?</p>
 </section>
 
-<h2 id="hazlet">2. Hazlets: Hazel embedded in a JS program</h2>
-<p><b>Hazlet</b>, our shorthand from here on: Hazel embedded as a library within the event-handler system of a JavaScript program, so that some of the program's handlers are Hazel functions it calls with events and whose results it acts on. Messed Up Dress Up (MUDU), the game Matthew makes with M and N, is the canonical example, and so far the only one: five of its rooms hand their events to Hazel rules, <code>on_event : (Globals, Event) -&gt; Cmd</code>, through a draft library, hazel-lib.js (#2711, with #2719 stacked on it). <a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a> is a case study of those rules; <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a> asks whether the library should be official. <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a> gathers the Hazlet work so far: what runs today, where each piece stands, and what is next (in progress, 2026-11-03).</p>
+<h2 id="hazlet">2. Hazlets: Hazel embedded in a JS program<a class="anchor" href="#hazlet" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="hazlet" title="copy this section's address">copy link</button></h2>
+<p><b>Hazlet</b>, our shorthand from here on: Hazel embedded as a library within the event-handler system of a JavaScript program, so that some of the program's handlers are Hazel functions it calls with events and whose results it acts on. Messed Up Dress Up (MUDU), the game Matthew makes with M and N, is the canonical example, and so far the only one: five of its rooms hand their events to Hazel rules, <code>on_event : (Globals, Event) -&gt; Cmd</code>, through a draft library, hazel-lib.js (<a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, with <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> stacked on it). <a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a> is a case study of those rules; <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a> asks whether the library should be official. <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a> gathers the Hazlet work so far: what runs today, where each piece stands, and what is next (in progress, 2026-11-03).</p>
 
 <section class="item accent2" id="mudu-demo">
-<h3><span class="n">5.</span> A demo: MUDU's game scripts <span class="chip accent2">to show</span> <a class="item-link" href="#mudu-demo" title="A link to this item">#5</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 5 (&quot;mudu-demo&quot;): &quot;A demo: MUDU&#x27;s game scripts&quot;. https://matthewhammer.org/hazel/reports/037/#mudu-demo" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="5-a-demo-mudu-s-game-scripts-to-show-5-copy-item"><span class="n">5.</span> A demo: MUDU's game scripts <span class="chip accent2">to show</span> <a class="item-link" href="#mudu-demo" title="A link to this item">#5</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 5 (&quot;mudu-demo&quot;): &quot;A demo: MUDU&#x27;s game scripts&quot;. https://matthewhammer.org/hazel/reports/037/#mudu-demo" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#5-a-demo-mudu-s-game-scripts-to-show-5-copy-item" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="5-a-demo-mudu-s-game-scripts-to-show-5-copy-item" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-11-02 · as of 2026-11-02 10:35</p>
 <p>The game, live at <a href="https://matthewhammer.org/kids-choice-games/dress-up/">matthewhammer.org/kids-choice-games/dress-up/</a>: its Scripting tab, where a room's rule is written in Hazel, in Fumola or in JS and runs as the room's event handler. <a class="unpub" title="not published yet"><code class="ref"><b>^report(</b>32<b>)</b></code></a> times the game loading and checking every script in each of the three. <a href="../033/"><code class="ref"><b>^report(</b>33<b>)</b></code></a> reads what the rules meet today (a per-room view of the game, not its state) and proposes names for every place and thing, and types built on them.</p>
 
@@ -141,40 +154,40 @@
 </section>
 
 <section class="item accent" id="library">
-<h3><span class="n">6.</span> Should the library be official? <span class="chip accent">proposal</span> <a class="item-link" href="#library" title="A link to this item">#6</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 6 (&quot;library&quot;): &quot;Should the library be official?&quot;. https://matthewhammer.org/hazel/reports/037/#library" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="6-should-the-library-be-official-proposal-6-copy"><span class="n">6.</span> Should the library be official? <span class="chip accent">proposal</span> <a class="item-link" href="#library" title="A link to this item">#6</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 6 (&quot;library&quot;): &quot;Should the library be official?&quot;. https://matthewhammer.org/hazel/reports/037/#library" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#6-should-the-library-be-official-proposal-6-copy" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="6-should-the-library-be-official-proposal-6-copy" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-10-26 · as of 2026-11-02 10:35</p>
-<p><a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>'s suggestion: merge #2711 and #2719 as an experimental library, built on dev and labelled so; promise stability only for the small core (analyze, run, the value mapping) once a second Hazlet besides MUDU has used it.</p>
+<p><a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>'s suggestion: merge <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> as an experimental library, built on dev and labelled so; promise stability only for the small core (analyze, run, the value mapping) once a second Hazlet besides MUDU has used it.</p>
 
 <p class="ask"><b>For the meeting:</b> Merge as experimental, yes or no; and who else might build the second Hazlet?</p>
 </section>
 
 <section class="item good" id="npm">
-<h3><span class="n">7.</span> A prototype npm package: <code>hazeljs</code> <span class="chip good">hazeljs 0.0.1 is on npm</span> <a class="item-link" href="#npm" title="A link to this item">#7</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 7 (&quot;npm&quot;): &quot;A prototype npm package: hazeljs&quot;. https://matthewhammer.org/hazel/reports/037/#npm" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="7-a-prototype-npm-package-hazeljs-hazeljs-0-0-1"><span class="n">7.</span> A prototype npm package: <code>hazeljs</code> <span class="chip good">hazeljs 0.0.1 is on npm</span> <a class="item-link" href="#npm" title="A link to this item">#7</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 7 (&quot;npm&quot;): &quot;A prototype npm package: hazeljs&quot;. https://matthewhammer.org/hazel/reports/037/#npm" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#7-a-prototype-npm-package-hazeljs-hazeljs-0-0-1" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="7-a-prototype-npm-package-hazeljs-hazeljs-0-0-1" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-11-02 · <a href="https://matthewhammer.org/hazel/dashboard/#ticket-668"><code class="ref"><b>^ticket(</b>668<b>)</b></code></a> · as of 2026-11-03 07:15</p>
-<p>A task for Claude: what it takes to publish a prototype npm package that anyone can install and use, documented the way npm packages are. Split into linked tickets: the package's build for node and the browser (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-669"><code class="ref"><b>^ticket(</b>669<b>)</b></code></a>), TypeScript declarations (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-670"><code class="ref"><b>^ticket(</b>670<b>)</b></code></a>), the README and a CHANGELOG (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-671"><code class="ref"><b>^ticket(</b>671<b>)</b></code></a>), examples and an install check on GitHub (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-672"><code class="ref"><b>^ticket(</b>672<b>)</b></code></a>), the name, license, versions and who publishes (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-673"><code class="ref"><b>^ticket(</b>673<b>)</b></code></a>), and MUDU loading its Hazel from the published package (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-674"><code class="ref"><b>^ticket(</b>674<b>)</b></code></a>).</p><p><b>A first version, the same day:</b> <code>hazeljs</code> 0.0.1 (the name is Matthew's pick; <i>Hazlet</i> stays the name of the pattern), built from #2719 at <code>0d66c36618</code>: hazel-lib.js, entry points for <code>require</code> and <code>import</code> and a browser script tag, TypeScript declarations, and a README the npm way, which sends readers to hazel.org and to the GitHub contributors for who makes Hazel. 648.5 kB packed (2.8 MB unpacked). Installed from its tarball into a fresh project, every example in the README runs. Found on the way: a module of about 150 members overflows Node's default stack, and the <code>ms</code> field always reads 0; both are in the README's limits.</p><p><b>Published</b> 2026-11-02 at 11:03 MST, under Matthew's npm account: <a href="https://www.npmjs.com/package/hazeljs">npmjs.com/package/hazeljs</a>, so <code>npm install hazeljs</code> works. Checked from the registry, not the tarball: a fresh project installs it and runs the README's examples through <code>require</code> and <code>import</code>, and jsDelivr and unpkg both serve hazel-lib.js for a script tag. npm also lists a placeholder it made first, 0.0.0-stage, to be deprecated. Not done yet: the browser and TypeScript examples, the install check on GitHub, and MUDU loading its Hazel from the package.</p><p><b>Matthew's next ask:</b> the trap room live in <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>, its Hazel rule editable in Hazel's tiles and the room answering each edit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-675"><code class="ref"><b>^ticket(</b>675<b>)</b></code></a>); not started.</p>
+<p>A task for Claude: what it takes to publish a prototype npm package that anyone can install and use, documented the way npm packages are. Split into linked tickets: the package's build for node and the browser (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-669"><code class="ref"><b>^ticket(</b>669<b>)</b></code></a>), TypeScript declarations (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-670"><code class="ref"><b>^ticket(</b>670<b>)</b></code></a>), the README and a CHANGELOG (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-671"><code class="ref"><b>^ticket(</b>671<b>)</b></code></a>), examples and an install check on GitHub (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-672"><code class="ref"><b>^ticket(</b>672<b>)</b></code></a>), the name, license, versions and who publishes (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-673"><code class="ref"><b>^ticket(</b>673<b>)</b></code></a>), and MUDU loading its Hazel from the published package (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-674"><code class="ref"><b>^ticket(</b>674<b>)</b></code></a>).</p><p><b>A first version, the same day:</b> <code>hazeljs</code> 0.0.1 (the name is Matthew's pick; <i>Hazlet</i> stays the name of the pattern), built from <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> at <code>0d66c36618</code>: hazel-lib.js, entry points for <code>require</code> and <code>import</code> and a browser script tag, TypeScript declarations, and a README the npm way, which sends readers to hazel.org and to the GitHub contributors for who makes Hazel. 648.5 kB packed (2.8 MB unpacked). Installed from its tarball into a fresh project, every example in the README runs. Found on the way: a module of about 150 members overflows Node's default stack, and the <code>ms</code> field always reads 0; both are in the README's limits.</p><p><b>Published</b> 2026-11-02 at 11:03 MST, under Matthew's npm account: <a href="https://www.npmjs.com/package/hazeljs">npmjs.com/package/hazeljs</a>, so <code>npm install hazeljs</code> works. Checked from the registry, not the tarball: a fresh project installs it and runs the README's examples through <code>require</code> and <code>import</code>, and jsDelivr and unpkg both serve hazel-lib.js for a script tag. npm also lists a placeholder it made first, 0.0.0-stage, to be deprecated. Not done yet: the browser and TypeScript examples, the install check on GitHub, and MUDU loading its Hazel from the package.</p><p><b>Matthew's next ask:</b> the trap room live in <a href="../034/"><code class="ref"><b>^report(</b>34<b>)</b></code></a>, its Hazel rule editable in Hazel's tiles and the room answering each edit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-675"><code class="ref"><b>^ticket(</b>675<b>)</b></code></a>); not started.</p>
 
 <p class="ask"><b>For the meeting:</b> Keep it under Matthew's npm account, or move it to a Hazel organization on npm (@hazelgrove)? And is the package the library alone, or also the Hazlet pattern: a helper that turns a program of modules into JS event handlers, as MUDU uses it?</p>
 </section>
 
-<h2 id="dsl">3. DSL tile editors as a kind of livelit</h2>
+<h2 id="dsl">3. DSL tile editors as a kind of livelit<a class="anchor" href="#dsl" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="dsl" title="copy this section's address">copy link</button></h2>
 <p>Matthew's proposal, for discussion: a new kind of livelit, perhaps built in, for languages defined inside Hazel.</p>
 
 <section class="item accent" id="dsl-livelit">
-<h3><span class="n">8.</span> A livelit whose literal is a grammar and whose view is a tile editor for it <span class="chip accent">idea</span> <a class="item-link" href="#dsl-livelit" title="A link to this item">#8</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 8 (&quot;dsl-livelit&quot;): &quot;A livelit whose literal is a grammar and whose view is a tile editor for it&quot;. https://matthewhammer.org/hazel/reports/037/#dsl-livelit" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<h3 id="8-a-livelit-whose-literal-is-a-grammar-and-whose"><span class="n">8.</span> A livelit whose literal is a grammar and whose view is a tile editor for it <span class="chip accent">idea</span> <a class="item-link" href="#dsl-livelit" title="A link to this item">#8</a> <button type="button" class="copy-item" data-copy="^report(37), the agenda, item 8 (&quot;dsl-livelit&quot;): &quot;A livelit whose literal is a grammar and whose view is a tile editor for it&quot;. https://matthewhammer.org/hazel/reports/037/#dsl-livelit" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button><a class="anchor" href="#8-a-livelit-whose-literal-is-a-grammar-and-whose" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="8-a-livelit-whose-literal-is-a-grammar-and-whose" title="copy this section's address">copy link</button></h3>
 <p class="meta">Asked by Matthew, 2026-11-02 · as of 2026-11-02 10:35</p>
-<ul><li><b>The literal</b> is a Hazel datatype describing a context-free grammar: its production rules.</li><li><b>Behind the scenes,</b> a parser generator reads that grammar. Menhir is one candidate; a simpler generator could come first if needed.</li><li><b>The livelit's model, view and update</b> present a tile-based editor for those production rules.</li><li><b>The expansion</b> is the program's abstract syntax as a parse tree, as a Hazel value, or something analogous.</li></ul><p><b>Related so far.</b> Cyrus's interest in DSLs in Hazel as tile-based livelits, and his pointer to language boxes (Diekmann and Tratt's Eco editor: each box has its own lexer and parser, and is one token to its parent) for #2542, the shared-tokenizer limit on sub-language tiles. Fumola as tiles: a sort in Hazel's own tile grammar (#2529), and <code>^fumola_wip</code> on the remote-splices branch (2026-09-29), a livelit that edits Fumola code as tiles, a first prototype of a DSL as a tile livelit. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>); this would make the grammar a value a program writes.</p><p><b>A question the parser raises:</b> Menhir generates OCaml code when Hazel is built, so on its own it cannot read a grammar written in a running program. A grammar given at run time needs a parser built at run time, such as an Earley parser, which accepts any context-free grammar, or tables built in the browser. Or the grammar's definition could be compiled ahead of time for built-in DSLs only.</p>
+<ul><li><b>The literal</b> is a Hazel datatype describing a context-free grammar: its production rules.</li><li><b>Behind the scenes,</b> a parser generator reads that grammar. Menhir is one candidate; a simpler generator could come first if needed.</li><li><b>The livelit's model, view and update</b> present a tile-based editor for those production rules.</li><li><b>The expansion</b> is the program's abstract syntax as a parse tree, as a Hazel value, or something analogous.</li></ul><p><b>Related so far.</b> Cyrus's interest in DSLs in Hazel as tile-based livelits, and his pointer to language boxes (Diekmann and Tratt's Eco editor: each box has its own lexer and parser, and is one token to its parent) for <a href="https://github.com/hazelgrove/hazel/issues/2542">#2542</a>, the shared-tokenizer limit on sub-language tiles. Fumola as tiles: a sort in Hazel's own tile grammar (<a href="https://github.com/hazelgrove/hazel/pull/2529">#2529</a>), and <code>^fumola_wip</code> on the remote-splices branch (2026-09-29), a livelit that edits Fumola code as tiles, a first prototype of a DSL as a tile livelit. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>); this would make the grammar a value a program writes.</p><p><b>A question the parser raises:</b> Menhir generates OCaml code when Hazel is built, so on its own it cannot read a grammar written in a running program. A grammar given at run time needs a parser built at run time, such as an Earley parser, which accepts any context-free grammar, or tables built in the browser. Or the grammar's definition could be compiled ahead of time for built-in DSLs only.</p>
 
 <p class="ask"><b>For the meeting:</b> Is this the shape Cyrus has in mind for DSLs in Hazel? Built-in, or user-defined livelits? Grammars given at run time, or compiled ahead of time? And what is the first demo: a small grammar (arithmetic, or a JSON-like data language), its tile editor, and its expansion as a Hazel value?</p>
 </section>
 
-<h2 id="if-time">If there is time</h2>
+<h2 id="if-time">If there is time<a class="anchor" href="#if-time" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="if-time" title="copy this section's address">copy link</button></h2>
 <ul>
-  <li><b>The landing order for the livelits</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-642"><code class="ref"><b>^ticket(</b>642<b>)</b></code></a>): #2469 to dev, then #2635 retargeted, now that #2635 has dev's merge day.</li>
+  <li><b>The landing order for the livelits</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-642"><code class="ref"><b>^ticket(</b>642<b>)</b></code></a>): <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> to dev, then <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> retargeted, now that <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> has dev's merge day.</li>
   <li><b>Evaluator trials with green CI</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-559"><code class="ref"><b>^ticket(</b>559<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-548"><code class="ref"><b>^ticket(</b>548<b>)</b></code></a>): the fast path for final terms, and lists without an id per element. PRs to dev, or not yet? <a href="../035/"><code class="ref"><b>^report(</b>35<b>)</b></code></a> weighs the options.</li>
   <li><b>Livelit views evaluated in the worker</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-18"><code class="ref"><b>^ticket(</b>18<b>)</b></code></a>), which the worker-sharing question bears on.</li>
 </ul>
 
-<h2 id="method">How this agenda is kept</h2>
+<h2 id="method">How this agenda is kept<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
 <ul>
   <li>Started 2026-11-02 from the meeting's ticket on the work dashboard (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-664"><code class="ref"><b>^ticket(</b>664<b>)</b></code></a>), which collects the topics as they come in; Matthew adds topics through Wednesday. The three sections are his.</li>
   <li>Each item gives who asked, its status and the time that status is from. PRs are hazelgrove/hazel's; commits are on the PR named beside them.</li>
@@ -292,6 +305,143 @@ if (location.hash) { const t = document.getElementById(location.hash.slice(1)); 
 })();
 </script>
 <!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2403": {"author": "MaxCarroll0", "comments": 2, "created": "2026-07-28T15:36:18Z", "kind": "pull", "state": "merged", "title": "Curried function definition syntax", "updated": "2026-10-29T23:10:10Z", "base": "dev"}, "hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2529": {"author": "matthewhammer", "comments": 2, "created": "2026-09-11T21:46:26Z", "kind": "pull", "state": "draft", "title": "Fumola with Hazel editor tiles.", "updated": "2026-09-17T18:59:47Z", "base": "dev"}, "hazelgrove/hazel#2542": {"author": "matthewhammer", "comments": 1, "created": "2026-09-12T21:08:45Z", "kind": "issues", "state": "open", "title": "Sub-language tiles: the shared tokenizer is the binding constraint, not the grammar", "updated": "2026-09-16T15:46:07Z"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-03T00:30:23Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2678": {"author": "matthewhammer", "comments": 2, "created": "2026-10-12T17:06:58Z", "kind": "pull", "state": "merged", "title": "CI fails when an evaluation does more work than its budget", "updated": "2026-10-29T17:39:32Z", "base": "dev"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2714": {"author": "disconcision", "comments": 2, "created": "2026-10-21T06:00:32Z", "kind": "pull", "state": "merged", "title": "Quick tests run in under a minute", "updated": "2026-10-29T16:51:34Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-10-21T22:03:19Z", "base": "js-library"}}, BUILT = "2026-11-03";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
 
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
 </body>
 </html>
