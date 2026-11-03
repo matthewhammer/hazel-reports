@@ -1,0 +1,93 @@
+{
+ "what": "What the undo history keeps, and what it costs in time: ^report(14)'s update of 2026-10-14/15, on the Livelit Playground's Full Body slide in a browser, copied here from 014/index.html (the update's tables) and 014/data/update-2026-10-14/. Kept = the live JS heap after 12 slider edits and two forced GCs; growth = the slope from the 4th edit to the 12th.",
+ "kept": [
+  {
+   "key": "asbuilt",
+   "build": "#2597 as built",
+   "commit": "c4e411f9c2",
+   "what": "nothing changed",
+   "runs": 1,
+   "kept_mb": 1048,
+   "growth_mb": 89.0
+  },
+  {
+   "key": "cap2",
+   "build": "undo always capped at 2",
+   "commit": "",
+   "what": "History.re cuts the history to 2 states whatever the setting (a probe, not a fix)",
+   "runs": 2,
+   "kept_mb": 284,
+   "growth_mb": 4.3
+  },
+  {
+   "key": "compact",
+   "build": "compaction ported",
+   "commit": "d41c7a0298",
+   "what": "Andrew Blinn's 6010128b7d, adapted to #2597",
+   "runs": 1,
+   "kept_mb": 159,
+   "growth_mb": -0.4
+  },
+  {
+   "key": "newest",
+   "build": "compaction, newest entry whole",
+   "commit": "f8ae6f2b9c",
+   "what": "on top of the port: the newest entry of each stack stays whole until the next is pushed",
+   "runs": 1,
+   "kept_mb": 208,
+   "growth_mb": 3.5
+  },
+  {
+   "key": "2635",
+   "build": "#2635",
+   "commit": "9fb2bdf067",
+   "what": "livelits with modular editors: has Andrew's compaction",
+   "runs": 1,
+   "kept_mb": 52,
+   "growth_mb": 1.6
+  }
+ ],
+ "cap2_note": "the two runs read 284 and 284 MB, growth 4.4 and 4.2 MB per edit",
+ "times_s": {
+  "what": "seconds from the key press to the picture changing (undo_check.mjs), 5 runs each, median (range); compare within this table only",
+  "rows": [
+   {
+    "build": "#2597 as built",
+    "edit": "6.7 (6.3-7.2)",
+    "undo": "2.6 (2.6-2.6)",
+    "redo": "3.0 (2.7-3.1)"
+   },
+   {
+    "build": "#2597, compaction ported",
+    "edit": "6.9 (6.2-8.4)",
+    "undo": "5.8 (2.0-5.9)",
+    "redo": "6.1 (6.0-6.5)"
+   },
+   {
+    "build": "#2597, newest entry whole too",
+    "edit": "6.6 (6.1-7.4)",
+    "undo": "2.6 (2.5-2.6)",
+    "redo": "3.0 (2.5-3.0)"
+   },
+   {
+    "build": "#2635 as it was (653ebc4adf: Andrew's compaction)",
+    "edit": "1.2 (1.1-1.4)",
+    "undo": "3.6 (1.2-3.9)",
+    "redo": "3.9 (3.6-4.2)"
+   },
+   {
+    "build": "#2635, newest entry whole (032fe3aca6)",
+    "edit": "1.1 (1.1-1.7)",
+    "undo": "0.3 (0.2-0.3)",
+    "redo": "0.3 (0.2-0.3)"
+   }
+  ]
+ },
+ "found": [
+  "not what the browser holds: over six edits the heap grew 400 to 900 MB while listeners (609), DOM nodes (47,923, detached ones too), observers and timers stayed the same",
+  "not on #2635: the same sampled profile over four edits keeps 37.5 MB there, against 390 MB on #2597",
+  "a snapshot, at last: a probe build keeps ValueHash's memo only within one synchronous run; a snapshot after six edits completes, 2.3 GB of JSON in 75 s",
+  "two snapshots, one session: objects new between edit 3 and edit 6 (12.2 million, 257 MB); a dominator tree (29 million nodes, 4.6 s, a small C program) shows three copies of one 35 MB structure, Full Body's editor with its derived data, two of them hanging from the undo history's first two entries",
+  "confirmed by a build that always cuts the history to 2 states: 284 MB kept after 12 edits, against 1,048"
+ ]
+}

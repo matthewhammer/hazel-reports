@@ -1,0 +1,29 @@
+{
+ "title": "Undo, in Time and Space",
+ "date": "2026-11-03",
+ "kind": "measurement and status",
+ "status": "work in progress",
+ "question": "What does undo cost in Hazel's editor, in memory and in time, how did we find out, where does the investigation stand, and what is next? Matthew, 2026-11-03, for the meeting with Cyrus on 2026-11-04 (^ticket(665)); he asked for the outline's rebuild, which only the modular editors have, to be separated from the rest.",
+ "measurements": "Space: ^report(14)'s update (2026-10-14/15), Full Body in a browser, 12 slider edits, live JS heap after two forced GCs; copied in data/space.json. Time: ^report(36)'s probe medians (036/data/steps.json, release build). The outline's part: new, data/outline_split.json, the probe in the dev profile under node --cpu-prof, 2 runs per size, Node 22 on the same laptop (Intel Core i7-1370P, Linux), nice, 64 MB stack under a 256 MB system stack.",
+ "builds": [
+  {
+   "what": "the probe with the two fixes (^report(36)'s 'after')",
+   "branch": "local perf/665-cheap",
+   "commit": "d06473240f"
+  }
+ ],
+ "files": [
+  "space.json",
+  "outline_split.json",
+  "runs/out3-1600-1.txt",
+  "runs/out3-1600-2.txt",
+  "runs/out3-3200-1.txt",
+  "runs/out3-3200-2.txt",
+  "runs/out3-400-1.txt",
+  "runs/out3-400-2.txt",
+  "runs/out3-6400-1.txt",
+  "runs/out3-6400-2.txt",
+  "runs/out3-800-1.txt",
+  "runs/out3-800-2.txt"
+ ]
+}

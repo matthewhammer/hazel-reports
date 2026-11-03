@@ -1,0 +1,525 @@
+{
+ "what": "The outline's part of each undo and redo, at each size: node --cpu-prof (200 us) over the undo probe at d06473240f (#2635 at 2cab658ef1 + the probe + the two fixes, the same code as ^report(36)'s 'after' build), compiled in js_of_ocaml's dev profile so functions map to source; 2 runs per size, 2026-11-03 07:23-07:24 MST. profile_ms: samples under the probe's `sample` (12 steps and 12 statics refreshes). parts_ms: inclusive time under Outline.of_source (Outline.re:290), MakeTerm.go_incr (MakeTerm.re:3382), DefStatics.calc (DefStatics.re:1934), separate branches below `sample`. measured_ms: the same run's own Sys.time sum of the 24 phases. outline_share_of_undo_redo: the outline's time, scaled by measured/profile, over the 8 undo and redo steps' measured time (the outline is built only on undo and redo in this probe).",
+ "rows": [
+  {
+   "n": 400,
+   "run": 1,
+   "profile_ms": 269,
+   "parts_ms": {
+    "outline": 39,
+    "term": 89,
+    "statics": 51
+   },
+   "measured_ms": 321.0,
+   "steps_ms": {
+    "edit": [
+     18.0,
+     11.0,
+     12.0,
+     15.0
+    ],
+    "undo": [
+     31.0,
+     23.0,
+     25.0,
+     24.0
+    ],
+    "redo": [
+     14.0,
+     13.0,
+     15.0,
+     24.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     9.0,
+     10.0,
+     11.0,
+     11.0
+    ],
+    "undo": [
+     7.0,
+     10.0,
+     6.0,
+     6.0
+    ],
+    "redo": [
+     7.0,
+     6.0,
+     7.0,
+     6.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2776
+  },
+  {
+   "n": 400,
+   "run": 2,
+   "profile_ms": 283,
+   "parts_ms": {
+    "outline": 41,
+    "term": 91,
+    "statics": 60
+   },
+   "measured_ms": 341.0,
+   "steps_ms": {
+    "edit": [
+     19.0,
+     13.0,
+     14.0,
+     12.0
+    ],
+    "undo": [
+     34.0,
+     27.0,
+     25.0,
+     23.0
+    ],
+    "redo": [
+     18.0,
+     16.0,
+     15.0,
+     20.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     8.0,
+     7.0,
+     9.0,
+     14.0
+    ],
+    "undo": [
+     8.0,
+     8.0,
+     8.0,
+     6.0
+    ],
+    "redo": [
+     17.0,
+     7.0,
+     7.0,
+     6.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2741
+  },
+  {
+   "n": 800,
+   "run": 1,
+   "profile_ms": 408,
+   "parts_ms": {
+    "outline": 61,
+    "term": 141,
+    "statics": 83
+   },
+   "measured_ms": 528.0,
+   "steps_ms": {
+    "edit": [
+     37.0,
+     20.0,
+     18.0,
+     17.0
+    ],
+    "undo": [
+     42.0,
+     42.0,
+     41.0,
+     49.0
+    ],
+    "redo": [
+     23.0,
+     25.0,
+     23.0,
+     37.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     19.0,
+     15.0,
+     14.0,
+     13.0
+    ],
+    "undo": [
+     11.0,
+     14.0,
+     12.0,
+     12.0
+    ],
+    "redo": [
+     11.0,
+     11.0,
+     12.0,
+     10.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2792
+  },
+  {
+   "n": 800,
+   "run": 2,
+   "profile_ms": 414,
+   "parts_ms": {
+    "outline": 67,
+    "term": 141,
+    "statics": 84
+   },
+   "measured_ms": 535.0,
+   "steps_ms": {
+    "edit": [
+     42.0,
+     20.0,
+     16.0,
+     16.0
+    ],
+    "undo": [
+     48.0,
+     44.0,
+     40.0,
+     47.0
+    ],
+    "redo": [
+     22.0,
+     23.0,
+     26.0,
+     41.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     19.0,
+     17.0,
+     19.0,
+     14.0
+    ],
+    "undo": [
+     11.0,
+     11.0,
+     11.0,
+     10.0
+    ],
+    "redo": [
+     10.0,
+     10.0,
+     8.0,
+     10.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2984
+  },
+  {
+   "n": 1600,
+   "run": 1,
+   "profile_ms": 686,
+   "parts_ms": {
+    "outline": 109,
+    "term": 251,
+    "statics": 136
+   },
+   "measured_ms": 934.0,
+   "steps_ms": {
+    "edit": [
+     57.0,
+     29.0,
+     31.0,
+     24.0
+    ],
+    "undo": [
+     84.0,
+     82.0,
+     75.0,
+     73.0
+    ],
+    "redo": [
+     52.0,
+     53.0,
+     50.0,
+     72.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     24.0,
+     23.0,
+     23.0,
+     22.0
+    ],
+    "undo": [
+     17.0,
+     21.0,
+     19.0,
+     20.0
+    ],
+    "redo": [
+     25.0,
+     18.0,
+     21.0,
+     19.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2739
+  },
+  {
+   "n": 1600,
+   "run": 2,
+   "profile_ms": 677,
+   "parts_ms": {
+    "outline": 114,
+    "term": 239,
+    "statics": 136
+   },
+   "measured_ms": 924.0,
+   "steps_ms": {
+    "edit": [
+     49.0,
+     32.0,
+     30.0,
+     30.0
+    ],
+    "undo": [
+     94.0,
+     87.0,
+     76.0,
+     70.0
+    ],
+    "redo": [
+     45.0,
+     47.0,
+     44.0,
+     65.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     30.0,
+     24.0,
+     21.0,
+     23.0
+    ],
+    "undo": [
+     22.0,
+     21.0,
+     21.0,
+     21.0
+    ],
+    "redo": [
+     18.0,
+     18.0,
+     17.0,
+     19.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2961
+  },
+  {
+   "n": 3200,
+   "run": 1,
+   "profile_ms": 1254,
+   "parts_ms": {
+    "outline": 192,
+    "term": 475,
+    "statics": 259
+   },
+   "measured_ms": 1800.0,
+   "steps_ms": {
+    "edit": [
+     100.0,
+     58.0,
+     55.0,
+     54.0
+    ],
+    "undo": [
+     185.0,
+     151.0,
+     143.0,
+     136.0
+    ],
+    "redo": [
+     93.0,
+     95.0,
+     90.0,
+     131.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     48.0,
+     50.0,
+     53.0,
+     40.0
+    ],
+    "undo": [
+     41.0,
+     42.0,
+     39.0,
+     40.0
+    ],
+    "redo": [
+     38.0,
+     40.0,
+     37.0,
+     41.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2695
+  },
+  {
+   "n": 3200,
+   "run": 2,
+   "profile_ms": 1426,
+   "parts_ms": {
+    "outline": 221,
+    "term": 529,
+    "statics": 279
+   },
+   "measured_ms": 1985.0,
+   "steps_ms": {
+    "edit": [
+     94.0,
+     57.0,
+     56.0,
+     56.0
+    ],
+    "undo": [
+     198.0,
+     164.0,
+     164.0,
+     161.0
+    ],
+    "redo": [
+     116.0,
+     113.0,
+     111.0,
+     166.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     45.0,
+     45.0,
+     42.0,
+     45.0
+    ],
+    "undo": [
+     41.0,
+     43.0,
+     48.0,
+     44.0
+    ],
+    "redo": [
+     45.0,
+     43.0,
+     46.0,
+     42.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2573
+  },
+  {
+   "n": 6400,
+   "run": 1,
+   "profile_ms": 2624,
+   "parts_ms": {
+    "outline": 379,
+    "term": 975,
+    "statics": 567
+   },
+   "measured_ms": 3949.0,
+   "steps_ms": {
+    "edit": [
+     182.0,
+     117.0,
+     116.0,
+     112.0
+    ],
+    "undo": [
+     489.0,
+     304.0,
+     302.0,
+     296.0
+    ],
+    "redo": [
+     214.0,
+     199.0,
+     198.0,
+     306.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     98.0,
+     89.0,
+     86.0,
+     125.0
+    ],
+    "undo": [
+     100.0,
+     89.0,
+     85.0,
+     84.0
+    ],
+    "redo": [
+     89.0,
+     94.0,
+     86.0,
+     89.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.247
+  },
+  {
+   "n": 6400,
+   "run": 2,
+   "profile_ms": 2931,
+   "parts_ms": {
+    "outline": 390,
+    "term": 1068,
+    "statics": 617
+   },
+   "measured_ms": 4249.0,
+   "steps_ms": {
+    "edit": [
+     221.0,
+     135.0,
+     129.0,
+     209.0
+    ],
+    "undo": [
+     385.0,
+     333.0,
+     314.0,
+     323.0
+    ],
+    "redo": [
+     237.0,
+     219.0,
+     224.0,
+     327.0
+    ]
+   },
+   "refresh_ms": {
+    "edit": [
+     107.0,
+     97.0,
+     124.0,
+     110.0
+    ],
+    "undo": [
+     91.0,
+     94.0,
+     94.0,
+     94.0
+    ],
+    "redo": [
+     100.0,
+     100.0,
+     94.0,
+     88.0
+    ]
+   },
+   "outline_share_of_undo_redo": 0.2393
+  }
+ ]
+}

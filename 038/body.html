@@ -1,0 +1,126 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 038 · the editor and undo · 2026-11-03 · <span class="wip">work in progress</span> · after reports 014 and 036</p>
+<h1>Undo, in Time and Space</h1>
+<p class="sub">What does an undo cost in Hazel's editor, in memory and in time? How did we find out, where does the investigation stand, and what comes next? The memory story is ^report(14)'s update (2026-10-14 and 15); the time story is ^report(36) (2026-11-02). This report puts them together and adds one new measurement: the modular editors' outline, rebuilt on every undo and redo, separated from the rest. For Matthew's meeting with Cyrus on 2026-11-04 (^report(37)).</p>
+
+<div class="headline">
+<p><b>Short answers.</b> Space: one slide (Full Body) in a browser, 12 slider edits, the live heap after each. Time: a program of <i>n</i> definitions in Node, an edit in the middle one, then undos and redos. The methods are at the end.</p>
+<ol class="ans">
+<li><div class="row"><p><b>The undo history kept a whole copy of the editor for every edit, and nothing capped it.</b> On #2597 a Full Body tab kept {{kept_asbuilt}} MB after 12 edits, {{grow_asbuilt}} MB more for each one. Andrew Blinn's compaction of undo snapshots (6010128b7d, on #2469) brought that to {{kept_compact}} MB, level after the third edit: {{kept_ratio}} times less. #2635 has it and kept {{kept_2635}} MB. Dev still keeps whole copies, capped only when a setting that is off by default is turned on (<a href="#space">space</a>).</p>
+<figure class="mini">{{FIG_SPACE_MINI}}<figcaption>MB kept after 12 edits: as built, capped at 2, compacted, compacted with the newest entry whole, #2635. All of it in <a href="#fig1">Figure 1</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>It was found in five steps, after a false negative.</b> A first build that "capped the undo history at 2" changed nothing, so the history was ruled out. But that cap runs only when the setting is on, so the build never applied it. Heap snapshots of a 2.3 GB tab were made to work, and two of them, a few edits apart, showed three copies of one 35 MB structure: Full Body's editor with everything derived from it. Two of the copies hang from the undo history's first two entries (<a href="#found">how it was found</a>).</p></div></li>
+<li><div class="row"><p><b>Saving the space costs time, and keeping one entry whole buys it back.</b> A compacted entry has dropped its derived data, so restoring it rebuilds that data. With compaction alone, a redo took about as long as an edit: on #2635, 3.6 to 4.2 s against 1.2 s for an edit. Keeping the newest entry of each stack whole (032fe3aca6, on #2635 since 2026-10-15) brought the latest undo and redo to 0.3 s, for about 1 MB more (<a href="#price">the price</a>).</p></div></li>
+<li><div class="row"><p><b>In time, every step grows in proportion to the program.</b> At 6,400 definitions an edit takes {{edit_6400}} ms, an undo {{undo_6400}} and a redo {{redo_6400}}, each followed by about 78 ms of statics (^report(36)). The incremental caches work; the passes around them walk every definition (<a href="#time">time</a>).</p></div></li>
+<li><div class="row"><p><b>New: the outline is {{share_lo}} to {{share_hi}}% of every undo and redo, at every size.</b> The outline is the tree of a program's definitions that the sidebar and the agent read, and it came with the modular editors (#2469); dev has none. An undo or a redo rebuilds it from scratch: about {{outline_3200}} ms at 3,200 definitions and {{outline_6400}} at 6,400. It is {{redo_extra_lo}} to {{redo_extra_hi}}% of what a redo costs beyond an edit, so without it a redo costs {{rrx_lo}} to {{rrx_hi}} edits. But it is only {{undo_extra_lo}} to {{undo_extra_hi}}% of an undo's extra: without it an undo still costs {{urx_lo}} to {{urx_hi}} edits, for reasons not yet explained (<a href="#outline">the outline</a>).</p>
+<figure class="mini">{{FIG_SPLIT_MINI}}<figcaption>At 6,400 definitions: the dashed top of the undo and the redo is the outline's rebuild. Every size in <a href="#fig2">Figure 2</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>Next:</b> let a restored program find its outline instead of rebuilding it; profile undo alone for the rest of its extra; measure what one undo entry keeps as the program grows; decide whether dev gets the compaction before #2469 lands; and the balanced tree of definitions, which would make each step and each entry O(log <i>n</i>) (<a href="#next">what next</a>).</p></div></li>
+</ol>
+</div>
+
+<h2 id="question">The question</h2>
+<p>On 2026-11-03 Matthew read the meeting's agenda, ^report(37). Its undo item mentioned compacted snapshots, a large saving in memory, but never said how large the saving was or how it was found. He asked for one report, all about what undo costs, in time and in space: the investigation so far, where it stands, and what is next. He also asked for the cost of rebuilding the outline, which only the modular editors have, to be separated from the rest. That is the one new measurement here.</p>
+
+<h2 id="status">Where it stands</h2>
+<table><thead><tr><th>When</th><th>What we learned</th><th>Where</th></tr></thead><tbody>
+<tr><td>2026-10-14</td><td>A #2597 tab keeps about 90 MB more after every slider edit on Full Body, and none of the caches tried is the reason. A build "with the undo history capped at 2" still grew 92 MB per edit.</td><td>^report(14), ^ticket(45)</td></tr>
+<tr><td>2026-10-14, night</td><td>The undo history keeps it: whole page models, never cut. The "capped at 2" build had never applied its cap.</td><td>^report(14)'s update, ^ticket(58)</td></tr>
+<tr><td>2026-10-15</td><td>Andrew's compaction ported to #2597 (d41c7a0298), with the newest entry of each stack kept whole (f8ae6f2b9c). The same newest-entry change on #2635 (032fe3aca6): the latest undo and redo in 0.3 s.</td><td>^report(14)'s update, ^ticket(86)</td></tr>
+<tr><td>2026-10-15</td><td>Dev left alone, to get the compaction when #2469 merges (Matthew's call).</td><td>^report(14)'s update</td></tr>
+<tr><td>2026-11-02</td><td>Time: every step is linear in the program; an undo costs about three edits. Two whole-program passes removed on #2635 (394552d5d0, bfa36a6ede), 31 to 46% off at the large sizes.</td><td>^report(36), ^ticket(665)</td></tr>
+<tr><td>2026-11-03</td><td>The outline's rebuild separated from the rest at each size: a quarter of each undo and redo.</td><td>this report</td></tr>
+<tr><td>open</td><td>What one undo entry keeps as the program grows; why an undo costs more than a redo; dev's history; the balanced tree.</td><td><a href="#notyet">not yet measured</a>, <a href="#next">what next</a></td></tr>
+</tbody></table>
+
+<h2 id="space">Space: what the undo history keeps</h2>
+<p>The undo history (<code>History.Model</code> in <code>src/web/app/History.re</code>) is two lists, the undo stack and the redo stack. Before every edit, the page as it was goes onto the undo stack. On #2597 as built, each entry is a whole page model: every slide's editor, with that editor's syntax, statics and layout. On Full Body that is about 90 MB per edit, and nothing else keeps it. The lists are meant to stop at 250 entries, but they are cut only when the setting <code>cap_undo_stack</code> is on, and <code>Settings.re</code> sets it off.</p>
+<figure id="fig1">{{FIG_SPACE}}<figcaption>Figure 1. The live JavaScript heap after 12 slider edits on Full Body, two forced garbage collections after each edit, for five builds (^report(14)'s update, 2026-10-14 and 15). Under each name: the growth per edit, the slope from the 4th edit to the 12th. Hover a bar for its values.</figcaption></figure>
+{{TABLE_SPACE}}
+<p>The capped build levels off once its history is full, but each of its two entries is still a whole page. The compaction keeps no derived data in any entry but the newest, so it levels off at a lower line. #2635, with the same compaction, kept less still; why it is lower than #2597 compacted was not examined. Over 30 edits, #2635 rose to 94 MB at the tenth edit and fell back to 46 MB at the eleventh, and again at the 22nd. The likely cause is the tables of values shared with the evaluation worker, which start over at their cap. That is not confirmed.</p>
+<p><b>Dev today.</b> Dev's <code>History.re</code> at f042cced44 (2026-11-02) still keeps whole page models and cuts them only when <code>cap_undo_stack</code> is on, and its default is still off. Dev's growth per edit has not been measured. Its slides differ from #2597's, so the 90 MB is #2597's figure, not dev's.</p>
+
+<h2 id="found">How it was found</h2>
+<p>^report(14) first ruled out every cache and table it could switch off, each in a build of its own. One of those builds was meant to cap the undo history at 2 states. It changed the 250 in <code>capped_undo_stack_size</code>, but the cut that uses it runs only when the setting is on. So the build kept every state, grew 92 MB per edit like the others, and the history looked innocent. When a cap changes nothing, check that its code runs before ruling it out. Then, in five steps, each one taking a suspect off the list:</p>
+<ol>
+<li><b>Not what the browser holds.</b> Over six edits the heap grew from 400 to 900 MB, while the page's event listeners (609), DOM nodes, detached ones included (47,923), observers and timers stayed exactly the same.</li>
+<li><b>Not on #2635.</b> The same sampled heap profile, over the same four edits, keeps 37.5 MB on #2635, against 390 MB on #2597, and almost none of it in types, statics, terms or layout.</li>
+<li><b>A heap snapshot, at last.</b> On this tab the usual tool killed the renderer at once. The lead was ValueHash's memo of hashes, a WeakMap of roughly two million entries: a test page with a WeakMap that size never finished its snapshot. A probe build keeps that memo only within one synchronous run. The tab still grew 68 MB per edit, and a snapshot after six edits completed: 2.3 GB of JSON in 75 seconds.</li>
+<li><b>Two snapshots, one session.</b> V8 keeps each object's snapshot id for the life of the tab. So the objects in a snapshot after edit 6 that a snapshot after edit 3 lacks were made by edits 4 to 6: 12.2 million objects, 257 MB. A dominator tree of the second snapshot (29 million nodes, 4.6 s, computed by a small C program) shows three copies of one 35 MB structure: Full Body's editor with its derived data. Two hang from the first and second entries of the undo history. The third is the one view in the projector view cache, which is replaced, not added to.</li>
+<li><b>Confirmed by a build</b> that always cuts the history to 2 states, whatever the setting: {{kept_cap2}} MB after 12 edits, against {{kept_asbuilt}}, in two runs.</li>
+</ol>
+<p><b>The fix was already written.</b> Andrew Blinn had met the same growth on the modular editors, on a much larger program, and fixed it in 6010128b7d (2026-08-26): each page model saved for undo drops its derived data, and the cap always applies. That is why #2635, which has #2469 merged in, did not grow.</p>
+
+<h2 id="compaction">What a compacted entry keeps</h2>
+<p>On #2635 (<code>History.re</code> at 1d17541aaf), pushing an entry compacts the one below it:</p>
+<ul>
+<li><b>Dropped:</b> the syntax, replaced by a small shared placeholder marked out of date; the statics; the evaluation states and results.</li>
+<li><b>Kept:</b> the zippers, the editor's own form of the text and the caret. The code's own comment adds that compacted entries still hold frozen typing contexts and the master segments, and that a deep stack of them runs out of memory on large programs. That is why the cap of 250 stays.</li>
+<li><b>The newest entry of each stack stays whole</b>, and is compacted only when the next one is pushed above it. That is at most two whole page models.</li>
+<li><b>Restoring a compacted entry</b> rebuilds its syntax against the live editor's parse and layout caches (<code>Page.carry_over</code>), which hit for every piece the step did not change. Statics and results wait for the typing debounce, as after a keystroke.</li>
+</ul>
+<p>So a compacted entry is smaller, but not free. How much it keeps at <i>n</i> definitions, and how much of it consecutive entries share, has not been measured (<a href="#notyet">below</a>).</p>
+
+<h2 id="price">The price in time</h2>
+<p>An entry without its derived data has to rebuild that data when it is restored. ^report(14)'s update timed an edit, an undo and a redo in the browser on Full Body, five runs per build: seconds from the key press to the picture changing.</p>
+{{TABLE_TIMES}}
+<p>With the compaction alone, every redo on #2597 took about as long as an edit, and half the undos did too. On #2635 a redo took about three edits. Keeping the newest entry whole gave back the latest undo and redo: on #2635 every one was done within 0.3 s, the check's own polling interval, and the memory kept over 12 edits was the same within about 1 MB. On #2597 it cost 49 MB more (208 against 159). An undo further back than the newest entry still rebuilds.</p>
+
+<h2 id="time">Time: what a step costs as the program grows</h2>
+<p>^report(36) measured an edit, an undo and a redo against the size of the program, in Node, on #2635 after dev's merge day. A program of <i>n</i> definitions, <code>let v0 = 0 in let v1 = v0 + 1 in &hellip;</code>, an edit in the middle one, then undos and redos, each through the app's own update loop. In short:</p>
+<ul>
+<li><b>Every step is linear in the program,</b> a slope of 1.10 to 1.16 on a log-log plot from 800 to 6,400 definitions. At 6,400: an edit {{edit_6400}} ms, an undo {{undo_6400}}, a redo {{redo_6400}}, and about 78 ms of statics after each.</li>
+<li><b>The incremental work is constant.</b> Whatever <i>n</i>, a step parses 1 or 2 definitions again, measures 1 or 2 chunks of layout and compares 2 definitions' heads in statics. What grows is the walks around that work: rebuilding the top-level term (38% at 3,200 definitions), statics' walk down the chain of definitions (20%), the outline (15%, on undo and redo only) and layout's walk (6%).</li>
+<li><b>The undo history itself costs almost nothing</b> in time: an entry is pushed and popped at the head of a list.</li>
+<li><b>Two fixes,</b> now on #2635, took 31 to 46% off at the two largest sizes. The auto-probe had rebuilt the whole top level's skeleton on every frame (394552d5d0), and completion suggestions were computed after every typed digit (bfa36a6ede).</li>
+</ul>
+<p>Figures, tables and code are in ^report(36).</p>
+
+<h2 id="outline">The outline's part, separated</h2>
+<p><b>What the outline is.</b> <code>Outline.of_source</code> builds the tree of a program's definitions, which the sidebar's code map and the agent's view read. It came to #2635 with the modular editors, #2469; its first commit is 99b9e25d7d (2026-10-23). Dev has no outline, so on dev an undo does not pay for one.</p>
+<p><b>Why an undo rebuilds it.</b> Restoring an entry schedules a second frame, <code>RealizeView</code>, which asks for the program's outline. The outline is memoized on the last four programs, found by the segment's identity and then by <code>Segment.same_program</code>. The restored program is none of them, so the outline is built from scratch. In the probe an edit never builds it, because nothing draws the sidebar. In the app the sidebar may ask for it after edits too; that is not measured here.</p>
+<p><b>How it was separated.</b> The same probe as ^report(36), with its two fixes (d06473240f), built so the profiler can name each function's source, and profiled at each size, twice. In each run, the time under <code>Outline.of_source</code> is taken as a share of the eight undo and redo steps, the only steps that build it. That share is then applied to ^report(36)'s timings, which are of the faster release build, and spread evenly over the undos and the redos. The profile does not tell an undo's outline from a redo's.</p>
+<figure id="fig2">{{FIG_SPLIT}}<figcaption>Figure 2. An edit, an undo and a redo at each size, medians from ^report(36) after the fixes. The dashed top of each undo and redo is the outline's rebuild, from this report's profiles. The edit has no outline part. Each panel has its own scale; the numbers are milliseconds.</figcaption></figure>
+{{TABLE_SPLIT}}
+<p>Milliseconds per step. "Its outline" is the outline's share times the undo's and redo's mean; "the rest" is the step without it. "In edits" divides the rest by the edit's time at that size.</p>
+<ul>
+<li><b>The outline is a quarter of an undo or a redo at every size,</b> {{share_lo}} to {{share_hi}}% in the ten runs. It grows with the program like the rest of the step, about {{ol_per_def_us}} µs per definition from 1,600 definitions up.</li>
+<li><b>Without it, a redo costs little more than an edit</b> ({{rrx_lo}} to {{rrx_hi}} edits from 1,600 definitions up). The outline is {{redo_extra_lo}} to {{redo_extra_hi}}% of what a redo costs beyond an edit.</li>
+<li><b>Without it, an undo still costs about two edits</b> ({{urx_lo}} to {{urx_hi}}): the outline is only {{undo_extra_lo}} to {{undo_extra_hi}}% of an undo's extra. An undo parses 2 definitions where an edit parses 1, but that is constant work. The rest of an undo's extra is not explained yet.</li>
+</ul>
+
+<h2 id="notyet">Not yet measured</h2>
+<ul>
+<li><b>Space against the size of the program, on #2635.</b> What a compacted entry and a whole entry keep at <i>n</i> definitions, and how much consecutive entries share. Zippers are persistent, so an entry after a small edit could share most of its pieces with the one before; that has not been checked.</li>
+<li><b>Dev's growth per edit,</b> on its own slides, today.</li>
+<li><b>The outline after edits in the app,</b> where the sidebar may ask for it too.</li>
+<li><b>An undo in the browser</b> with evaluation and drawing: Node runs no worker and builds no view or DOM.</li>
+<li><b>Sharing across the worker boundary,</b> which an undo also crosses when it re-evaluates (^ticket(666)).</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Let a restored program find its outline instead of rebuilding it: keep the outline with its undo entry, or find it by the restored program's identity. Then measure again; the table above predicts about {{outline_6400}} ms off each undo and redo at 6,400 definitions.</li>
+<li>Profile undo steps alone, to explain why an undo still costs about two edits without the outline.</li>
+<li>Measure space against size on #2635 in Node: the heap after a forced collection with 0, 1, 10 and 100 undo entries, at each size, compacted and whole.</li>
+<li>Decide dev: a small PR with the compaction and an always-on cap now, or wait for #2469 to bring them (the 2026-10-15 call was to wait).</li>
+<li>Try the top level as a balanced tree of definitions (^report(36)'s Figure 5). A snapshot of a persistent tree is its root: it shares every node the edit did not touch, so an entry would keep O(log <i>n</i>) new nodes, and an undo could be a swap of roots, with its derived data kept.</li>
+<li>Time an edit and an undo in the browser on Full Body, with evaluation and drawing.</li>
+</ol>
+
+<h2 id="meeting">For the meeting</h2>
+<ul>
+<li>Dev's undo history still keeps every edit's whole editor state. Should dev get the compaction now, or with #2469?</li>
+<li>Should the outline be kept with each undo entry, or found again by the restored program's identity?</li>
+<li>Is the balanced tree of definitions the direction for both costs, time per step and space per entry?</li>
+</ul>
+<p>The agenda's item for this is <a href="../037/#undo">^report(37), Undo in O(log n)?</a></p>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>Space</b> is ^report(14)'s update, measured 2026-10-14 and 15 in Chromium 155 on Full Body: 12 slider edits per run, two forced garbage collections after each, then the page's live JavaScript heap. The times in the price table are from the same update's undo check, five runs per build, read by a DevTools-protocol driver. Both are copied into <code>038/data/space.json</code>; the update's own data is in <code>014/data/update-2026-10-14/</code>.</li>
+<li><b>Time</b> is ^report(36)'s probe, 2026-11-02: medians of 12 steps, 3 runs per build, release build, Node 22.23 on a laptop (Intel Core i7-1370P, Linux). Read from <code>036/data/steps.json</code>.</li>
+<li><b>The outline's part</b> is new, 2026-11-03 near 07:23 MST: the probe at d06473240f (#2635 at 2cab658ef1, the probe, and the two fixes), built in js_of_ocaml's dev profile so that its source markers name each function, and run under <code>node --cpu-prof</code> at a 200 µs interval, 2 runs per size, on the same laptop with <code>nice</code>, a 64 MB stack under a 256 MB system stack. <code>038/drivers/split.py</code> sums the time under the probe's <code>sample</code>, and within it under <code>Outline.of_source</code> (<code>Outline.re:290</code>), <code>MakeTerm.go_incr</code> and <code>DefStatics.calc</code>, which are separate branches of the call tree. The outline's time is scaled by the run's own measured time over its profiled time, then divided by the eight undo and redo steps' measured time. Profiled runs are slower than ^report(36)'s release runs, so the share is applied to ^report(36)'s times rather than the profiled ones.</li>
+<li><b>The data:</b> in this page (<code>script#report-data</code>) and as files in <code>038/data/</code>: the space readings, the outline split per run with each run's raw output (<code>runs/</code>). The profiles themselves (about 30 MB each) are not kept.</li>
+</ul>
+</main>
+</body>
+</html>

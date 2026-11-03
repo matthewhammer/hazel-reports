@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Undo, in Time and Space</title>
+<meta name="description" content="What undo costs in Hazel's editor. Space: an uncapped history of whole editor states kept 1,048 MB after 12 edits on #2597, 159 with Andrew Blinn's compaction; how that was found. Time: every step linear in the program; the modular editors' outline rebuild is 24 to 30% of each undo and redo. Where it stands and what is next.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>38<b>)</b></code> · the editor and undo · 2026-11-03 · <span class="wip">work in progress</span> · after <a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a> and <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Undo, in Time and Space</h1>
+<p class="sub">What does an undo cost in Hazel's editor, in memory and in time? How did we find out, where does the investigation stand, and what comes next? The memory story is <a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update (2026-10-14 and 15); the time story is <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a> (2026-11-02). This report puts them together and adds one new measurement: the modular editors' outline, rebuilt on every undo and redo, separated from the rest. For Matthew's meeting with Cyrus on 2026-11-04 (<a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a>).</p>
+
+<div class="headline">
+<p><b>Short answers.</b> Space: one slide (Full Body) in a browser, 12 slider edits, the live heap after each. Time: a program of <i>n</i> definitions in Node, an edit in the middle one, then undos and redos. The methods are at the end.</p>
+<ol class="ans">
+<li><div class="row"><p><b>The undo history kept a whole copy of the editor for every edit, and nothing capped it.</b> On <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> a Full Body tab kept 1,048 MB after 12 edits, 89.0 MB more for each one. Andrew Blinn's compaction of undo snapshots (6010128b7d, on <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>) brought that to 159 MB, level after the third edit: 6.6 times less. <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> has it and kept 52 MB. Dev still keeps whole copies, capped only when a setting that is off by default is turned on (<a href="#space">space</a>).</p>
+<figure class="mini"><svg viewBox="0 0 300 180" role="img" aria-label="MB kept after 12 edits, five builds" style="width:100%;height:auto"><line x1="8.0" x2="8.0" y1="8" y2="160" stroke="var(--line)"/><text x="8.0" y="174" font-size="11" text-anchor="middle" fill="var(--muted)">0 MB</text><line x1="108.9" x2="108.9" y1="8" y2="160" stroke="var(--line)"/><text x="108.9" y="174" font-size="11" text-anchor="middle" fill="var(--muted)">500 MB</text><line x1="209.8" x2="209.8" y1="8" y2="160" stroke="var(--line)"/><text x="209.8" y="174" font-size="11" text-anchor="middle" fill="var(--muted)">1,000 MB</text><rect x="8" y="12" width="211.5" height="18" rx="3" fill="var(--bad)"><title>#2597 as built: 1,048 MB kept after 12 edits, 89.0 MB more per edit</title></rect><text x="225.5" y="25.0" font-size="12" font-weight="700" fill="var(--bad)">1,048</text><rect x="8" y="42" width="57.3" height="18" rx="3" fill="var(--muted)"><title>undo always capped at 2: 284 MB kept after 12 edits, 4.3 MB more per edit</title></rect><text x="71.3" y="55.0" font-size="12" font-weight="700" fill="var(--muted)">284</text><rect x="8" y="72" width="32.1" height="18" rx="3" fill="var(--good)"><title>compaction ported: 159 MB kept after 12 edits, -0.4 MB more per edit</title></rect><text x="46.1" y="85.0" font-size="12" font-weight="700" fill="var(--good)">159</text><rect x="8" y="102" width="42.0" height="18" rx="3" fill="var(--accent)"><title>compaction, newest entry whole: 208 MB kept after 12 edits, 3.5 MB more per edit</title></rect><text x="56.0" y="115.0" font-size="12" font-weight="700" fill="var(--accent)">208</text><rect x="8" y="132" width="10.5" height="18" rx="3" fill="var(--accent2)"><title>#2635: 52 MB kept after 12 edits, 1.6 MB more per edit</title></rect><text x="24.5" y="145.0" font-size="12" font-weight="700" fill="var(--accent2)">52</text></svg><figcaption>MB kept after 12 edits: as built, capped at 2, compacted, compacted with the newest entry whole, <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>. All of it in <a href="#fig1">Figure 1</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>It was found in five steps, after a false negative.</b> A first build that "capped the undo history at 2" changed nothing, so the history was ruled out. But that cap runs only when the setting is on, so the build never applied it. Heap snapshots of a 2.3 GB tab were made to work, and two of them, a few edits apart, showed three copies of one 35 MB structure: Full Body's editor with everything derived from it. Two of the copies hang from the undo history's first two entries (<a href="#found">how it was found</a>).</p></div></li>
+<li><div class="row"><p><b>Saving the space costs time, and keeping one entry whole buys it back.</b> A compacted entry has dropped its derived data, so restoring it rebuilds that data. With compaction alone, a redo took about as long as an edit: on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, 3.6 to 4.2 s against 1.2 s for an edit. Keeping the newest entry of each stack whole (032fe3aca6, on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> since 2026-10-15) brought the latest undo and redo to 0.3 s, for about 1 MB more (<a href="#price">the price</a>).</p></div></li>
+<li><div class="row"><p><b>In time, every step grows in proportion to the program.</b> At 6,400 definitions an edit takes 106 ms, an undo 292 and a redo 184, each followed by about 78 ms of statics (<a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>). The incremental caches work; the passes around them walk every definition (<a href="#time">time</a>).</p></div></li>
+<li><div class="row"><p><b>New: the outline is 24 to 30% of every undo and redo, at every size.</b> The outline is the tree of a program's definitions that the sidebar and the agent read, and it came with the modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>); dev has none. An undo or a redo rebuilds it from scratch: about 27 ms at 3,200 definitions and 58 at 6,400. It is 64 to 76% of what a redo costs beyond an edit, so without it a redo costs 1.2 to 1.3 edits. But it is only 31 to 37% of an undo's extra: without it an undo still costs 2.1 to 2.2 edits, for reasons not yet explained (<a href="#outline">the outline</a>).</p>
+<figure class="mini"><svg viewBox="0 0 300 170" role="img" aria-label="An edit, an undo and a redo at each size, the outline's part marked" style="width:100%;height:auto"><text x="150.0" y="16" font-size="13" font-weight="700" text-anchor="middle" fill="var(--ink)">6,400 definitions</text><line x1="10.0" x2="290.0" y1="130.0" y2="130.0" stroke="var(--line)"/><rect x="15.0" y="97.5" width="84.0" height="32.5" fill="var(--accent2)" rx="2"><title>6,400 definitions, edit: 106 ms; the outline 0 of it</title></rect><text x="57.0" y="93.5" font-size="12" text-anchor="middle" fill="var(--ink)">106</text><text x="57.0" y="145" font-size="12" text-anchor="middle" fill="var(--muted)">edit</text><rect x="108.0" y="58.4" width="84.0" height="71.6" fill="var(--accent)" rx="2"><title>6,400 definitions, undo: 292 ms; the outline 58 of it</title></rect><rect x="108.0" y="40.7" width="84.0" height="17.7" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 58 ms</title></rect><text x="150.0" y="36.7" font-size="12" text-anchor="middle" fill="var(--ink)">292</text><text x="150.0" y="145" font-size="12" text-anchor="middle" fill="var(--muted)">undo</text><rect x="201.0" y="91.7" width="84.0" height="38.3" fill="var(--warn)" rx="2"><title>6,400 definitions, redo: 184 ms; the outline 58 of it</title></rect><rect x="201.0" y="74.0" width="84.0" height="17.7" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 58 ms</title></rect><text x="243.0" y="70.0" font-size="12" text-anchor="middle" fill="var(--ink)">184</text><text x="243.0" y="145" font-size="12" text-anchor="middle" fill="var(--muted)">redo</text><text x="150.0" y="164" font-size="11.5" text-anchor="middle" fill="var(--muted)">ms per step, each size on its own scale; the dashed top of an undo or a redo is the outline's rebuild</text></svg><figcaption>At 6,400 definitions: the dashed top of the undo and the redo is the outline's rebuild. Every size in <a href="#fig2">Figure 2</a>.</figcaption></figure></div></li>
+<li><div class="row"><p><b>Next:</b> let a restored program find its outline instead of rebuilding it; profile undo alone for the rest of its extra; measure what one undo entry keeps as the program grows; decide whether dev gets the compaction before <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> lands; and the balanced tree of definitions, which would make each step and each entry O(log <i>n</i>) (<a href="#next">what next</a>).</p></div></li>
+</ol>
+</div>
+
+<h2 id="question">The question<a class="anchor" href="#question" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="question" title="copy this section's address">copy link</button></h2>
+<p>On 2026-11-03 Matthew read the meeting's agenda, <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a>. Its undo item mentioned compacted snapshots, a large saving in memory, but never said how large the saving was or how it was found. He asked for one report, all about what undo costs, in time and in space: the investigation so far, where it stands, and what is next. He also asked for the cost of rebuilding the outline, which only the modular editors have, to be separated from the rest. That is the one new measurement here.</p>
+
+<h2 id="status">Where it stands<a class="anchor" href="#status" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status" title="copy this section's address">copy link</button></h2>
+<table><thead><tr><th>When</th><th>What we learned</th><th>Where</th></tr></thead><tbody>
+<tr><td>2026-10-14</td><td>A <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> tab keeps about 90 MB more after every slider edit on Full Body, and none of the caches tried is the reason. A build "with the undo history capped at 2" still grew 92 MB per edit.</td><td><a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-45"><code class="ref"><b>^ticket(</b>45<b>)</b></code></a></td></tr>
+<tr><td>2026-10-14, night</td><td>The undo history keeps it: whole page models, never cut. The "capped at 2" build had never applied its cap.</td><td><a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-58"><code class="ref"><b>^ticket(</b>58<b>)</b></code></a></td></tr>
+<tr><td>2026-10-15</td><td>Andrew's compaction ported to <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> (d41c7a0298), with the newest entry of each stack kept whole (f8ae6f2b9c). The same newest-entry change on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (032fe3aca6): the latest undo and redo in 0.3 s.</td><td><a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-86"><code class="ref"><b>^ticket(</b>86<b>)</b></code></a></td></tr>
+<tr><td>2026-10-15</td><td>Dev left alone, to get the compaction when <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> merges (Matthew's call).</td><td><a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update</td></tr>
+<tr><td>2026-11-02</td><td>Time: every step is linear in the program; an undo costs about three edits. Two whole-program passes removed on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (394552d5d0, bfa36a6ede), 31 to 46% off at the large sizes.</td><td><a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-665"><code class="ref"><b>^ticket(</b>665<b>)</b></code></a></td></tr>
+<tr><td>2026-11-03</td><td>The outline's rebuild separated from the rest at each size: a quarter of each undo and redo.</td><td>this report</td></tr>
+<tr><td>open</td><td>What one undo entry keeps as the program grows; why an undo costs more than a redo; dev's history; the balanced tree.</td><td><a href="#notyet">not yet measured</a>, <a href="#next">what next</a></td></tr>
+</tbody></table>
+
+<h2 id="space">Space: what the undo history keeps<a class="anchor" href="#space" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="space" title="copy this section's address">copy link</button></h2>
+<p>The undo history (<code>History.Model</code> in <code>src/web/app/History.re</code>) is two lists, the undo stack and the redo stack. Before every edit, the page as it was goes onto the undo stack. On <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> as built, each entry is a whole page model: every slide's editor, with that editor's syntax, statics and layout. On Full Body that is about 90 MB per edit, and nothing else keeps it. The lists are meant to stop at 250 entries, but they are cut only when the setting <code>cap_undo_stack</code> is on, and <code>Settings.re</code> sets it off.</p>
+<figure id="fig1"><svg viewBox="0 0 760 232" role="img" aria-label="MB kept after 12 edits on Full Body, by build" style="width:100%;height:auto"><line x1="250.0" x2="250.0" y1="10" y2="212" stroke="var(--line)"/><text x="250.0" y="226" font-size="11.5" text-anchor="middle" fill="var(--muted)">0 MB</text><line x1="345.5" x2="345.5" y1="10" y2="212" stroke="var(--line)"/><text x="345.5" y="226" font-size="11.5" text-anchor="middle" fill="var(--muted)">250 MB</text><line x1="440.9" x2="440.9" y1="10" y2="212" stroke="var(--line)"/><text x="440.9" y="226" font-size="11.5" text-anchor="middle" fill="var(--muted)">500 MB</text><line x1="536.4" x2="536.4" y1="10" y2="212" stroke="var(--line)"/><text x="536.4" y="226" font-size="11.5" text-anchor="middle" fill="var(--muted)">750 MB</text><line x1="631.8" x2="631.8" y1="10" y2="212" stroke="var(--line)"/><text x="631.8" y="226" font-size="11.5" text-anchor="middle" fill="var(--muted)">1,000 MB</text><rect x="250" y="14" width="400.1" height="26" rx="3" fill="var(--bad)"><title>#2597 as built: 1,048 MB kept after 12 edits, 89.0 MB more per edit</title></rect><text x="656.1" y="31.0" font-size="13" font-weight="700" fill="var(--bad)">1,048</text><text x="240" y="25.0" font-size="13" text-anchor="end" fill="var(--ink)">#2597 as built</text><text x="240" y="39.0" font-size="11" text-anchor="end" fill="var(--muted)">+89.0 MB per edit</text><rect x="250" y="54" width="108.4" height="26" rx="3" fill="var(--muted)"><title>undo always capped at 2: 284 MB kept after 12 edits, 4.3 MB more per edit</title></rect><text x="364.4" y="71.0" font-size="13" font-weight="700" fill="var(--muted)">284</text><text x="240" y="65.0" font-size="13" text-anchor="end" fill="var(--ink)">undo always capped at 2</text><text x="240" y="79.0" font-size="11" text-anchor="end" fill="var(--muted)">+4.3 MB per edit</text><rect x="250" y="94" width="60.7" height="26" rx="3" fill="var(--good)"><title>compaction ported: 159 MB kept after 12 edits, -0.4 MB more per edit</title></rect><text x="316.7" y="111.0" font-size="13" font-weight="700" fill="var(--good)">159</text><text x="240" y="105.0" font-size="13" text-anchor="end" fill="var(--ink)">compaction ported</text><text x="240" y="119.0" font-size="11" text-anchor="end" fill="var(--muted)">&minus;0.4 MB per edit</text><rect x="250" y="134" width="79.4" height="26" rx="3" fill="var(--accent)"><title>compaction, newest entry whole: 208 MB kept after 12 edits, 3.5 MB more per edit</title></rect><text x="335.4" y="151.0" font-size="13" font-weight="700" fill="var(--accent)">208</text><text x="240" y="145.0" font-size="13" text-anchor="end" fill="var(--ink)">compaction, newest entry whole</text><text x="240" y="159.0" font-size="11" text-anchor="end" fill="var(--muted)">+3.5 MB per edit</text><rect x="250" y="174" width="19.9" height="26" rx="3" fill="var(--accent2)"><title>#2635: 52 MB kept after 12 edits, 1.6 MB more per edit</title></rect><text x="275.9" y="191.0" font-size="13" font-weight="700" fill="var(--accent2)">52</text><text x="240" y="185.0" font-size="13" text-anchor="end" fill="var(--ink)">#2635</text><text x="240" y="199.0" font-size="11" text-anchor="end" fill="var(--muted)">+1.6 MB per edit</text></svg><figcaption>Figure 1. The live JavaScript heap after 12 slider edits on Full Body, two forced garbage collections after each edit, for five builds (<a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update, 2026-10-14 and 15). Under each name: the growth per edit, the slope from the 4th edit to the 12th. Hover a bar for its values.</figcaption></figure>
+<table><thead><tr><th>Build</th><th>What it changes</th><th>Runs</th><th>Kept after 12 edits, MB</th><th>Growth per edit, edits 4–12, MB</th></tr></thead><tbody><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> as built (c4e411f9c2)</td><td>nothing changed</td><td>1</td><td>1,048</td><td>89.0</td></tr><tr><td>undo always capped at 2</td><td>History.re cuts the history to 2 states whatever the setting (a probe, not a fix)</td><td>2</td><td>284 and 284</td><td>4.4 and 4.2</td></tr><tr><td>compaction ported (d41c7a0298)</td><td>Andrew Blinn&#x27;s 6010128b7d, adapted to <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a></td><td>1</td><td>159</td><td>-0.4</td></tr><tr><td>compaction, newest entry whole (f8ae6f2b9c)</td><td>on top of the port: the newest entry of each stack stays whole until the next is pushed</td><td>1</td><td>208</td><td>3.5</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (9fb2bdf067)</td><td>livelits with modular editors: has Andrew&#x27;s compaction</td><td>1</td><td>52</td><td>1.6</td></tr></tbody></table>
+<p>The capped build levels off once its history is full, but each of its two entries is still a whole page. The compaction keeps no derived data in any entry but the newest, so it levels off at a lower line. <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, with the same compaction, kept less still; why it is lower than <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> compacted was not examined. Over 30 edits, <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> rose to 94 MB at the tenth edit and fell back to 46 MB at the eleventh, and again at the 22nd. The likely cause is the tables of values shared with the evaluation worker, which start over at their cap. That is not confirmed.</p>
+<p><b>Dev today.</b> Dev's <code>History.re</code> at f042cced44 (2026-11-02) still keeps whole page models and cuts them only when <code>cap_undo_stack</code> is on, and its default is still off. Dev's growth per edit has not been measured. Its slides differ from <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>'s, so the 90 MB is <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>'s figure, not dev's.</p>
+
+<h2 id="found">How it was found<a class="anchor" href="#found" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="found" title="copy this section's address">copy link</button></h2>
+<p><a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a> first ruled out every cache and table it could switch off, each in a build of its own. One of those builds was meant to cap the undo history at 2 states. It changed the 250 in <code>capped_undo_stack_size</code>, but the cut that uses it runs only when the setting is on. So the build kept every state, grew 92 MB per edit like the others, and the history looked innocent. When a cap changes nothing, check that its code runs before ruling it out. Then, in five steps, each one taking a suspect off the list:</p>
+<ol>
+<li><b>Not what the browser holds.</b> Over six edits the heap grew from 400 to 900 MB, while the page's event listeners (609), DOM nodes, detached ones included (47,923), observers and timers stayed exactly the same.</li>
+<li><b>Not on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>.</b> The same sampled heap profile, over the same four edits, keeps 37.5 MB on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, against 390 MB on <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>, and almost none of it in types, statics, terms or layout.</li>
+<li><b>A heap snapshot, at last.</b> On this tab the usual tool killed the renderer at once. The lead was ValueHash's memo of hashes, a WeakMap of roughly two million entries: a test page with a WeakMap that size never finished its snapshot. A probe build keeps that memo only within one synchronous run. The tab still grew 68 MB per edit, and a snapshot after six edits completed: 2.3 GB of JSON in 75 seconds.</li>
+<li><b>Two snapshots, one session.</b> V8 keeps each object's snapshot id for the life of the tab. So the objects in a snapshot after edit 6 that a snapshot after edit 3 lacks were made by edits 4 to 6: 12.2 million objects, 257 MB. A dominator tree of the second snapshot (29 million nodes, 4.6 s, computed by a small C program) shows three copies of one 35 MB structure: Full Body's editor with its derived data. Two hang from the first and second entries of the undo history. The third is the one view in the projector view cache, which is replaced, not added to.</li>
+<li><b>Confirmed by a build</b> that always cuts the history to 2 states, whatever the setting: 284 MB after 12 edits, against 1,048, in two runs.</li>
+</ol>
+<p><b>The fix was already written.</b> Andrew Blinn had met the same growth on the modular editors, on a much larger program, and fixed it in 6010128b7d (2026-08-26): each page model saved for undo drops its derived data, and the cap always applies. That is why <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, which has <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> merged in, did not grow.</p>
+
+<h2 id="compaction">What a compacted entry keeps<a class="anchor" href="#compaction" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="compaction" title="copy this section's address">copy link</button></h2>
+<p>On <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (<code>History.re</code> at 1d17541aaf), pushing an entry compacts the one below it:</p>
+<ul>
+<li><b>Dropped:</b> the syntax, replaced by a small shared placeholder marked out of date; the statics; the evaluation states and results.</li>
+<li><b>Kept:</b> the zippers, the editor's own form of the text and the caret. The code's own comment adds that compacted entries still hold frozen typing contexts and the master segments, and that a deep stack of them runs out of memory on large programs. That is why the cap of 250 stays.</li>
+<li><b>The newest entry of each stack stays whole</b>, and is compacted only when the next one is pushed above it. That is at most two whole page models.</li>
+<li><b>Restoring a compacted entry</b> rebuilds its syntax against the live editor's parse and layout caches (<code>Page.carry_over</code>), which hit for every piece the step did not change. Statics and results wait for the typing debounce, as after a keystroke.</li>
+</ul>
+<p>So a compacted entry is smaller, but not free. How much it keeps at <i>n</i> definitions, and how much of it consecutive entries share, has not been measured (<a href="#notyet">below</a>).</p>
+
+<h2 id="price">The price in time<a class="anchor" href="#price" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="price" title="copy this section's address">copy link</button></h2>
+<p>An entry without its derived data has to rebuild that data when it is restored. <a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update timed an edit, an undo and a redo in the browser on Full Body, five runs per build: seconds from the key press to the picture changing.</p>
+<table><thead><tr><th>Build</th><th>Edit, s</th><th>Undo, s</th><th>Redo, s</th></tr></thead><tbody><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> as built</td><td>6.7 (6.3–7.2)</td><td>2.6 (2.6–2.6)</td><td>3.0 (2.7–3.1)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>, compaction ported</td><td>6.9 (6.2–8.4)</td><td>5.8 (2.0–5.9)</td><td>6.1 (6.0–6.5)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>, newest entry whole too</td><td>6.6 (6.1–7.4)</td><td>2.6 (2.5–2.6)</td><td>3.0 (2.5–3.0)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> as it was (653ebc4adf: Andrew&#x27;s compaction)</td><td>1.2 (1.1–1.4)</td><td>3.6 (1.2–3.9)</td><td>3.9 (3.6–4.2)</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, newest entry whole (032fe3aca6)</td><td>1.1 (1.1–1.7)</td><td>0.3 (0.2–0.3)</td><td>0.3 (0.2–0.3)</td></tr></tbody></table>
+<p>With the compaction alone, every redo on <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> took about as long as an edit, and half the undos did too. On <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> a redo took about three edits. Keeping the newest entry whole gave back the latest undo and redo: on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> every one was done within 0.3 s, the check's own polling interval, and the memory kept over 12 edits was the same within about 1 MB. On <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> it cost 49 MB more (208 against 159). An undo further back than the newest entry still rebuilds.</p>
+
+<h2 id="time">Time: what a step costs as the program grows<a class="anchor" href="#time" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="time" title="copy this section's address">copy link</button></h2>
+<p><a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a> measured an edit, an undo and a redo against the size of the program, in Node, on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> after dev's merge day. A program of <i>n</i> definitions, <code>let v0 = 0 in let v1 = v0 + 1 in &hellip;</code>, an edit in the middle one, then undos and redos, each through the app's own update loop. In short:</p>
+<ul>
+<li><b>Every step is linear in the program,</b> a slope of 1.10 to 1.16 on a log-log plot from 800 to 6,400 definitions. At 6,400: an edit 106 ms, an undo 292, a redo 184, and about 78 ms of statics after each.</li>
+<li><b>The incremental work is constant.</b> Whatever <i>n</i>, a step parses 1 or 2 definitions again, measures 1 or 2 chunks of layout and compares 2 definitions' heads in statics. What grows is the walks around that work: rebuilding the top-level term (38% at 3,200 definitions), statics' walk down the chain of definitions (20%), the outline (15%, on undo and redo only) and layout's walk (6%).</li>
+<li><b>The undo history itself costs almost nothing</b> in time: an entry is pushed and popped at the head of a list.</li>
+<li><b>Two fixes,</b> now on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, took 31 to 46% off at the two largest sizes. The auto-probe had rebuilt the whole top level's skeleton on every frame (394552d5d0), and completion suggestions were computed after every typed digit (bfa36a6ede).</li>
+</ul>
+<p>Figures, tables and code are in <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>.</p>
+
+<h2 id="outline">The outline's part, separated<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<p><b>What the outline is.</b> <code>Outline.of_source</code> builds the tree of a program's definitions, which the sidebar's code map and the agent's view read. It came to <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> with the modular editors, <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>; its first commit is 99b9e25d7d (2026-10-23). Dev has no outline, so on dev an undo does not pay for one.</p>
+<p><b>Why an undo rebuilds it.</b> Restoring an entry schedules a second frame, <code>RealizeView</code>, which asks for the program's outline. The outline is memoized on the last four programs, found by the segment's identity and then by <code>Segment.same_program</code>. The restored program is none of them, so the outline is built from scratch. In the probe an edit never builds it, because nothing draws the sidebar. In the app the sidebar may ask for it after edits too; that is not measured here.</p>
+<p><b>How it was separated.</b> The same probe as <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>, with its two fixes (d06473240f), built so the profiler can name each function's source, and profiled at each size, twice. In each run, the time under <code>Outline.of_source</code> is taken as a share of the eight undo and redo steps, the only steps that build it. That share is then applied to <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>'s timings, which are of the faster release build, and spread evenly over the undos and the redos. The profile does not tell an undo's outline from a redo's.</p>
+<figure id="fig2"><svg viewBox="0 0 900 230" role="img" aria-label="An edit, an undo and a redo at each size, the outline's part marked" style="width:100%;height:auto"><text x="90.0" y="16" font-size="12.5" font-weight="700" text-anchor="middle" fill="var(--ink)">400 definitions</text><line x1="10.0" x2="170.0" y1="190.0" y2="190.0" stroke="var(--line)"/><rect x="15.0" y="108.9" width="44.0" height="81.1" fill="var(--accent2)" rx="2"><title>400 definitions, edit: 10.5 ms; the outline 0 of it</title></rect><text x="37.0" y="104.9" font-size="11" text-anchor="middle" fill="var(--ink)">10.5</text><text x="37.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">edit</text><rect x="68.0" y="80.7" width="44.0" height="109.3" fill="var(--accent)" rx="2"><title>400 definitions, undo: 18.5 ms; the outline 4.3 of it</title></rect><rect x="68.0" y="47.1" width="44.0" height="33.5" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 4.3 ms</title></rect><text x="90.0" y="43.1" font-size="11" text-anchor="middle" fill="var(--ink)">18.5</text><text x="90.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">undo</text><rect x="121.0" y="123.2" width="44.0" height="66.8" fill="var(--warn)" rx="2"><title>400 definitions, redo: 13 ms; the outline 4.3 of it</title></rect><rect x="121.0" y="89.6" width="44.0" height="33.5" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 4.3 ms</title></rect><text x="143.0" y="85.6" font-size="11" text-anchor="middle" fill="var(--ink)">13</text><text x="143.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">redo</text><text x="270.0" y="16" font-size="12.5" font-weight="700" text-anchor="middle" fill="var(--ink)">800 definitions</text><line x1="190.0" x2="350.0" y1="190.0" y2="190.0" stroke="var(--line)"/><rect x="195.0" y="141.6" width="44.0" height="48.4" fill="var(--accent2)" rx="2"><title>800 definitions, edit: 10 ms; the outline 0 of it</title></rect><text x="217.0" y="137.6" font-size="11" text-anchor="middle" fill="var(--ink)">10</text><text x="217.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">edit</text><rect x="248.0" y="79.3" width="44.0" height="110.7" fill="var(--accent)" rx="2"><title>800 definitions, undo: 30 ms; the outline 6.6 of it</title></rect><rect x="248.0" y="47.1" width="44.0" height="32.2" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 6.6 ms</title></rect><text x="270.0" y="43.1" font-size="11" text-anchor="middle" fill="var(--ink)">30</text><text x="270.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">undo</text><rect x="301.0" y="142.3" width="44.0" height="47.7" fill="var(--warn)" rx="2"><title>800 definitions, redo: 16.5 ms; the outline 6.6 of it</title></rect><rect x="301.0" y="110.1" width="44.0" height="32.2" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 6.6 ms</title></rect><text x="323.0" y="106.1" font-size="11" text-anchor="middle" fill="var(--ink)">16.5</text><text x="323.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">redo</text><text x="450.0" y="16" font-size="12.5" font-weight="700" text-anchor="middle" fill="var(--ink)">1,600 definitions</text><line x1="370.0" x2="530.0" y1="190.0" y2="190.0" stroke="var(--line)"/><rect x="375.0" y="138.5" width="44.0" height="51.5" fill="var(--accent2)" rx="2"><title>1,600 definitions, edit: 22 ms; the outline 0 of it</title></rect><text x="397.0" y="134.5" font-size="11" text-anchor="middle" fill="var(--ink)">22</text><text x="397.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">edit</text><rect x="428.0" y="81.2" width="44.0" height="108.8" fill="var(--accent)" rx="2"><title>1,600 definitions, undo: 61 ms; the outline 14.5 of it</title></rect><rect x="428.0" y="47.1" width="44.0" height="34.0" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 14.5 ms</title></rect><text x="450.0" y="43.1" font-size="11" text-anchor="middle" fill="var(--ink)">61</text><text x="450.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">undo</text><rect x="481.0" y="128.0" width="44.0" height="62.0" fill="var(--warn)" rx="2"><title>1,600 definitions, redo: 41 ms; the outline 14.5 of it</title></rect><rect x="481.0" y="94.0" width="44.0" height="34.0" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 14.5 ms</title></rect><text x="503.0" y="90.0" font-size="11" text-anchor="middle" fill="var(--ink)">41</text><text x="503.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">redo</text><text x="630.0" y="16" font-size="12.5" font-weight="700" text-anchor="middle" fill="var(--ink)">3,200 definitions</text><line x1="550.0" x2="710.0" y1="190.0" y2="190.0" stroke="var(--line)"/><rect x="555.0" y="138.8" width="44.0" height="51.2" fill="var(--accent2)" rx="2"><title>3,200 definitions, edit: 43 ms; the outline 0 of it</title></rect><text x="577.0" y="134.8" font-size="11" text-anchor="middle" fill="var(--ink)">43</text><text x="577.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">edit</text><rect x="608.0" y="79.3" width="44.0" height="110.7" fill="var(--accent)" rx="2"><title>3,200 definitions, undo: 120 ms; the outline 27 of it</title></rect><rect x="608.0" y="47.1" width="44.0" height="32.1" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 27 ms</title></rect><text x="630.0" y="43.1" font-size="11" text-anchor="middle" fill="var(--ink)">120</text><text x="630.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">undo</text><rect x="661.0" y="121.0" width="44.0" height="69.0" fill="var(--warn)" rx="2"><title>3,200 definitions, redo: 85 ms; the outline 27 of it</title></rect><rect x="661.0" y="88.8" width="44.0" height="32.1" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 27 ms</title></rect><text x="683.0" y="84.8" font-size="11" text-anchor="middle" fill="var(--ink)">85</text><text x="683.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">redo</text><text x="810.0" y="16" font-size="12.5" font-weight="700" text-anchor="middle" fill="var(--ink)">6,400 definitions</text><line x1="730.0" x2="890.0" y1="190.0" y2="190.0" stroke="var(--line)"/><rect x="735.0" y="138.0" width="44.0" height="52.0" fill="var(--accent2)" rx="2"><title>6,400 definitions, edit: 106 ms; the outline 0 of it</title></rect><text x="757.0" y="134.0" font-size="11" text-anchor="middle" fill="var(--ink)">106</text><text x="757.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">edit</text><rect x="788.0" y="75.4" width="44.0" height="114.6" fill="var(--accent)" rx="2"><title>6,400 definitions, undo: 292 ms; the outline 58 of it</title></rect><rect x="788.0" y="47.1" width="44.0" height="28.3" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 58 ms</title></rect><text x="810.0" y="43.1" font-size="11" text-anchor="middle" fill="var(--ink)">292</text><text x="810.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">undo</text><rect x="841.0" y="128.6" width="44.0" height="61.4" fill="var(--warn)" rx="2"><title>6,400 definitions, redo: 184 ms; the outline 58 of it</title></rect><rect x="841.0" y="100.4" width="44.0" height="28.3" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 58 ms</title></rect><text x="863.0" y="96.4" font-size="11" text-anchor="middle" fill="var(--ink)">184</text><text x="863.0" y="205" font-size="11" text-anchor="middle" fill="var(--muted)">redo</text><text x="450.0" y="224" font-size="11.5" text-anchor="middle" fill="var(--muted)">ms per step, each size on its own scale; the dashed top of an undo or a redo is the outline's rebuild</text></svg><figcaption>Figure 2. An edit, an undo and a redo at each size, medians from <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a> after the fixes. The dashed top of each undo and redo is the outline's rebuild, from this report's profiles. The edit has no outline part. Each panel has its own scale; the numbers are milliseconds.</figcaption></figure>
+<table><thead><tr><th>definitions</th><th>an edit</th><th>an undo</th><th>its outline</th><th>the rest</th><th>a redo</th><th>its outline</th><th>the rest</th><th>outline's share (2 runs)</th><th>undo, rest, in edits</th><th>redo, rest, in edits</th></tr></thead><tbody><tr><td>400</td><td>10.5</td><td>18.5</td><td>4.3</td><td>14.2</td><td>13</td><td>4.3</td><td>8.7</td><td>28% and 27%</td><td>1.3</td><td>0.8</td></tr><tr><td>800</td><td>10</td><td>30</td><td>6.6</td><td>23</td><td>16.5</td><td>6.6</td><td>9.9</td><td>28% and 30%</td><td>2.3</td><td>1.0</td></tr><tr><td>1,600</td><td>22</td><td>61</td><td>14.5</td><td>46</td><td>41</td><td>14.5</td><td>26</td><td>27% and 30%</td><td>2.1</td><td>1.2</td></tr><tr><td>3,200</td><td>43</td><td>120</td><td>27</td><td>93</td><td>85</td><td>27</td><td>58</td><td>27% and 26%</td><td>2.2</td><td>1.3</td></tr><tr><td>6,400</td><td>106</td><td>292</td><td>58</td><td>235</td><td>184</td><td>58</td><td>126</td><td>25% and 24%</td><td>2.2</td><td>1.2</td></tr></tbody></table>
+<p>Milliseconds per step. "Its outline" is the outline's share times the undo's and redo's mean; "the rest" is the step without it. "In edits" divides the rest by the edit's time at that size.</p>
+<ul>
+<li><b>The outline is a quarter of an undo or a redo at every size,</b> 24 to 30% in the ten runs. It grows with the program like the rest of the step, about 9 µs per definition from 1,600 definitions up.</li>
+<li><b>Without it, a redo costs little more than an edit</b> (1.2 to 1.3 edits from 1,600 definitions up). The outline is 64 to 76% of what a redo costs beyond an edit.</li>
+<li><b>Without it, an undo still costs about two edits</b> (2.1 to 2.2): the outline is only 31 to 37% of an undo's extra. An undo parses 2 definitions where an edit parses 1, but that is constant work. The rest of an undo's extra is not explained yet.</li>
+</ul>
+
+<h2 id="notyet">Not yet measured<a class="anchor" href="#notyet" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="notyet" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>Space against the size of the program, on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>.</b> What a compacted entry and a whole entry keep at <i>n</i> definitions, and how much consecutive entries share. Zippers are persistent, so an entry after a small edit could share most of its pieces with the one before; that has not been checked.</li>
+<li><b>Dev's growth per edit,</b> on its own slides, today.</li>
+<li><b>The outline after edits in the app,</b> where the sidebar may ask for it too.</li>
+<li><b>An undo in the browser</b> with evaluation and drawing: Node runs no worker and builds no view or DOM.</li>
+<li><b>Sharing across the worker boundary,</b> which an undo also crosses when it re-evaluates (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-666"><code class="ref"><b>^ticket(</b>666<b>)</b></code></a>).</li>
+</ul>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>Let a restored program find its outline instead of rebuilding it: keep the outline with its undo entry, or find it by the restored program's identity. Then measure again; the table above predicts about 58 ms off each undo and redo at 6,400 definitions.</li>
+<li>Profile undo steps alone, to explain why an undo still costs about two edits without the outline.</li>
+<li>Measure space against size on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> in Node: the heap after a forced collection with 0, 1, 10 and 100 undo entries, at each size, compacted and whole.</li>
+<li>Decide dev: a small PR with the compaction and an always-on cap now, or wait for <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> to bring them (the 2026-10-15 call was to wait).</li>
+<li>Try the top level as a balanced tree of definitions (<a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>'s Figure 5). A snapshot of a persistent tree is its root: it shares every node the edit did not touch, so an entry would keep O(log <i>n</i>) new nodes, and an undo could be a swap of roots, with its derived data kept.</li>
+<li>Time an edit and an undo in the browser on Full Body, with evaluation and drawing.</li>
+</ol>
+
+<h2 id="meeting">For the meeting<a class="anchor" href="#meeting" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="meeting" title="copy this section's address">copy link</button></h2>
+<ul>
+<li>Dev's undo history still keeps every edit's whole editor state. Should dev get the compaction now, or with <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>?</li>
+<li>Should the outline be kept with each undo entry, or found again by the restored program's identity?</li>
+<li>Is the balanced tree of definitions the direction for both costs, time per step and space per entry?</li>
+</ul>
+<p>The agenda's item for this is <a href="../037/#undo"><code class="ref"><b>^report(</b>37<b>)</b></code>, Undo in O(log n)?</a></p>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>Space</b> is <a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>'s update, measured 2026-10-14 and 15 in Chromium 155 on Full Body: 12 slider edits per run, two forced garbage collections after each, then the page's live JavaScript heap. The times in the price table are from the same update's undo check, five runs per build, read by a DevTools-protocol driver. Both are copied into <code>038/data/space.json</code>; the update's own data is in <code>014/data/update-2026-10-14/</code>.</li>
+<li><b>Time</b> is <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>'s probe, 2026-11-02: medians of 12 steps, 3 runs per build, release build, Node 22.23 on a laptop (Intel Core i7-1370P, Linux). Read from <code>036/data/steps.json</code>.</li>
+<li><b>The outline's part</b> is new, 2026-11-03 near 07:23 MST: the probe at d06473240f (<a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> at 2cab658ef1, the probe, and the two fixes), built in js_of_ocaml's dev profile so that its source markers name each function, and run under <code>node --cpu-prof</code> at a 200 µs interval, 2 runs per size, on the same laptop with <code>nice</code>, a 64 MB stack under a 256 MB system stack. <code>038/drivers/split.py</code> sums the time under the probe's <code>sample</code>, and within it under <code>Outline.of_source</code> (<code>Outline.re:290</code>), <code>MakeTerm.go_incr</code> and <code>DefStatics.calc</code>, which are separate branches of the call tree. The outline's time is scaled by the run's own measured time over its profiled time, then divided by the eight undo and redo steps' measured time. Profiled runs are slower than <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>'s release runs, so the share is applied to <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>'s times rather than the profiled ones.</li>
+<li><b>The data:</b> in this page (<code>script#report-data</code>) and as files in <code>038/data/</code>: the space readings, the outline split per run with each run's raw output (<code>runs/</code>). The profiles themselves (about 30 MB each) are not kept.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/038/data"><code>038/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main>
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-10-26T10:39:19Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-03T00:30:23Z", "base": "integration/livelits-splicerefs-full"}}, BUILT = "2026-11-03";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    const b = li.querySelector("b, strong");
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 38,
+ "title": "Undo, in Time and Space",
+ "date": "2026-11-03",
+ "kind": "measurement and status",
+ "status": "work in progress",
+ "question": "What does undo cost in Hazel's editor, in memory and in time, how did we find out, where does the investigation stand, and what is next? Matthew, 2026-11-03, for the meeting with Cyrus on 2026-11-04 (^ticket(665)); he asked for the outline's rebuild, which only the modular editors have, to be separated from the rest.",
+ "measurements": "Space: ^report(14)'s update (2026-10-14/15), Full Body in a browser, 12 slider edits, live JS heap after two forced GCs; copied in data/space.json. Time: ^report(36)'s probe medians (036/data/steps.json, release build). The outline's part: new, data/outline_split.json, the probe in the dev profile under node --cpu-prof, 2 runs per size, Node 22 on the same laptop (Intel Core i7-1370P, Linux), nice, 64 MB stack under a 256 MB system stack.",
+ "builds": [
+  {
+   "what": "the probe with the two fixes (^report(36)'s 'after')",
+   "branch": "local perf/665-cheap",
+   "commit": "d06473240f"
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/outline_split.json",
+  "data/runs",
+  "data/space.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Where it stands",
+   "section_id": "status",
+   "columns": [
+    "When",
+    "What we learned",
+    "Where"
+   ],
+   "rows": [
+    [
+     "2026-10-14",
+     "A #2597 tab keeps about 90 MB more after every slider edit on Full Body, and none of the caches tried is the reason. A build \"with the undo history capped at 2\" still grew 92 MB per edit.",
+     "^report(14), ^ticket(45)"
+    ],
+    [
+     "2026-10-14, night",
+     "The undo history keeps it: whole page models, never cut. The \"capped at 2\" build had never applied its cap.",
+     "^report(14)'s update, ^ticket(58)"
+    ],
+    [
+     "2026-10-15",
+     "Andrew's compaction ported to #2597 (d41c7a0298), with the newest entry of each stack kept whole (f8ae6f2b9c). The same newest-entry change on #2635 (032fe3aca6): the latest undo and redo in 0.3 s.",
+     "^report(14)'s update, ^ticket(86)"
+    ],
+    [
+     "2026-10-15",
+     "Dev left alone, to get the compaction when #2469 merges (Matthew's call).",
+     "^report(14)'s update"
+    ],
+    [
+     "2026-11-02",
+     "Time: every step is linear in the program; an undo costs about three edits. Two whole-program passes removed on #2635 (394552d5d0, bfa36a6ede), 31 to 46% off at the large sizes.",
+     "^report(36), ^ticket(665)"
+    ],
+    [
+     "2026-11-03",
+     "The outline's rebuild separated from the rest at each size: a quarter of each undo and redo.",
+     "this report"
+    ],
+    [
+     "open",
+     "What one undo entry keeps as the program grows; why an undo costs more than a redo; dev's history; the balanced tree.",
+     "not yet measured, what next"
+    ]
+   ]
+  },
+  {
+   "section": "Space: what the undo history keeps",
+   "section_id": "space",
+   "columns": [
+    "Build",
+    "What it changes",
+    "Runs",
+    "Kept after 12 edits, MB",
+    "Growth per edit, edits 4–12, MB"
+   ],
+   "rows": [
+    [
+     "#2597 as built (c4e411f9c2)",
+     "nothing changed",
+     "1",
+     "1,048",
+     "89.0"
+    ],
+    [
+     "undo always capped at 2",
+     "History.re cuts the history to 2 states whatever the setting (a probe, not a fix)",
+     "2",
+     "284 and 284",
+     "4.4 and 4.2"
+    ],
+    [
+     "compaction ported (d41c7a0298)",
+     "Andrew Blinn's 6010128b7d, adapted to #2597",
+     "1",
+     "159",
+     "-0.4"
+    ],
+    [
+     "compaction, newest entry whole (f8ae6f2b9c)",
+     "on top of the port: the newest entry of each stack stays whole until the next is pushed",
+     "1",
+     "208",
+     "3.5"
+    ],
+    [
+     "#2635 (9fb2bdf067)",
+     "livelits with modular editors: has Andrew's compaction",
+     "1",
+     "52",
+     "1.6"
+    ]
+   ]
+  },
+  {
+   "section": "The price in time",
+   "section_id": "price",
+   "columns": [
+    "Build",
+    "Edit, s",
+    "Undo, s",
+    "Redo, s"
+   ],
+   "rows": [
+    [
+     "#2597 as built",
+     "6.7 (6.3–7.2)",
+     "2.6 (2.6–2.6)",
+     "3.0 (2.7–3.1)"
+    ],
+    [
+     "#2597, compaction ported",
+     "6.9 (6.2–8.4)",
+     "5.8 (2.0–5.9)",
+     "6.1 (6.0–6.5)"
+    ],
+    [
+     "#2597, newest entry whole too",
+     "6.6 (6.1–7.4)",
+     "2.6 (2.5–2.6)",
+     "3.0 (2.5–3.0)"
+    ],
+    [
+     "#2635 as it was (653ebc4adf: Andrew's compaction)",
+     "1.2 (1.1–1.4)",
+     "3.6 (1.2–3.9)",
+     "3.9 (3.6–4.2)"
+    ],
+    [
+     "#2635, newest entry whole (032fe3aca6)",
+     "1.1 (1.1–1.7)",
+     "0.3 (0.2–0.3)",
+     "0.3 (0.2–0.3)"
+    ]
+   ]
+  },
+  {
+   "section": "The outline's part, separated",
+   "section_id": "outline",
+   "columns": [
+    "definitions",
+    "an edit",
+    "an undo",
+    "its outline",
+    "the rest",
+    "a redo",
+    "its outline",
+    "the rest",
+    "outline's share (2 runs)",
+    "undo, rest, in edits",
+    "redo, rest, in edits"
+   ],
+   "rows": [
+    [
+     "400",
+     "10.5",
+     "18.5",
+     "4.3",
+     "14.2",
+     "13",
+     "4.3",
+     "8.7",
+     "28% and 27%",
+     "1.3",
+     "0.8"
+    ],
+    [
+     "800",
+     "10",
+     "30",
+     "6.6",
+     "23",
+     "16.5",
+     "6.6",
+     "9.9",
+     "28% and 30%",
+     "2.3",
+     "1.0"
+    ],
+    [
+     "1,600",
+     "22",
+     "61",
+     "14.5",
+     "46",
+     "41",
+     "14.5",
+     "26",
+     "27% and 30%",
+     "2.1",
+     "1.2"
+    ],
+    [
+     "3,200",
+     "43",
+     "120",
+     "27",
+     "93",
+     "85",
+     "27",
+     "58",
+     "27% and 26%",
+     "2.2",
+     "1.3"
+    ],
+    [
+     "6,400",
+     "106",
+     "292",
+     "58",
+     "235",
+     "184",
+     "58",
+     "126",
+     "25% and 24%",
+     "2.2",
+     "1.2"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/038/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>

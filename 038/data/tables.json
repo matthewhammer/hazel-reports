@@ -1,0 +1,222 @@
+[
+ {
+  "section": "Where it stands",
+  "section_id": "status",
+  "columns": [
+   "When",
+   "What we learned",
+   "Where"
+  ],
+  "rows": [
+   [
+    "2026-10-14",
+    "A #2597 tab keeps about 90 MB more after every slider edit on Full Body, and none of the caches tried is the reason. A build \"with the undo history capped at 2\" still grew 92 MB per edit.",
+    "^report(14), ^ticket(45)"
+   ],
+   [
+    "2026-10-14, night",
+    "The undo history keeps it: whole page models, never cut. The \"capped at 2\" build had never applied its cap.",
+    "^report(14)'s update, ^ticket(58)"
+   ],
+   [
+    "2026-10-15",
+    "Andrew's compaction ported to #2597 (d41c7a0298), with the newest entry of each stack kept whole (f8ae6f2b9c). The same newest-entry change on #2635 (032fe3aca6): the latest undo and redo in 0.3 s.",
+    "^report(14)'s update, ^ticket(86)"
+   ],
+   [
+    "2026-10-15",
+    "Dev left alone, to get the compaction when #2469 merges (Matthew's call).",
+    "^report(14)'s update"
+   ],
+   [
+    "2026-11-02",
+    "Time: every step is linear in the program; an undo costs about three edits. Two whole-program passes removed on #2635 (394552d5d0, bfa36a6ede), 31 to 46% off at the large sizes.",
+    "^report(36), ^ticket(665)"
+   ],
+   [
+    "2026-11-03",
+    "The outline's rebuild separated from the rest at each size: a quarter of each undo and redo.",
+    "this report"
+   ],
+   [
+    "open",
+    "What one undo entry keeps as the program grows; why an undo costs more than a redo; dev's history; the balanced tree.",
+    "not yet measured, what next"
+   ]
+  ]
+ },
+ {
+  "section": "Space: what the undo history keeps",
+  "section_id": "space",
+  "columns": [
+   "Build",
+   "What it changes",
+   "Runs",
+   "Kept after 12 edits, MB",
+   "Growth per edit, edits 4–12, MB"
+  ],
+  "rows": [
+   [
+    "#2597 as built (c4e411f9c2)",
+    "nothing changed",
+    "1",
+    "1,048",
+    "89.0"
+   ],
+   [
+    "undo always capped at 2",
+    "History.re cuts the history to 2 states whatever the setting (a probe, not a fix)",
+    "2",
+    "284 and 284",
+    "4.4 and 4.2"
+   ],
+   [
+    "compaction ported (d41c7a0298)",
+    "Andrew Blinn's 6010128b7d, adapted to #2597",
+    "1",
+    "159",
+    "-0.4"
+   ],
+   [
+    "compaction, newest entry whole (f8ae6f2b9c)",
+    "on top of the port: the newest entry of each stack stays whole until the next is pushed",
+    "1",
+    "208",
+    "3.5"
+   ],
+   [
+    "#2635 (9fb2bdf067)",
+    "livelits with modular editors: has Andrew's compaction",
+    "1",
+    "52",
+    "1.6"
+   ]
+  ]
+ },
+ {
+  "section": "The price in time",
+  "section_id": "price",
+  "columns": [
+   "Build",
+   "Edit, s",
+   "Undo, s",
+   "Redo, s"
+  ],
+  "rows": [
+   [
+    "#2597 as built",
+    "6.7 (6.3–7.2)",
+    "2.6 (2.6–2.6)",
+    "3.0 (2.7–3.1)"
+   ],
+   [
+    "#2597, compaction ported",
+    "6.9 (6.2–8.4)",
+    "5.8 (2.0–5.9)",
+    "6.1 (6.0–6.5)"
+   ],
+   [
+    "#2597, newest entry whole too",
+    "6.6 (6.1–7.4)",
+    "2.6 (2.5–2.6)",
+    "3.0 (2.5–3.0)"
+   ],
+   [
+    "#2635 as it was (653ebc4adf: Andrew's compaction)",
+    "1.2 (1.1–1.4)",
+    "3.6 (1.2–3.9)",
+    "3.9 (3.6–4.2)"
+   ],
+   [
+    "#2635, newest entry whole (032fe3aca6)",
+    "1.1 (1.1–1.7)",
+    "0.3 (0.2–0.3)",
+    "0.3 (0.2–0.3)"
+   ]
+  ]
+ },
+ {
+  "section": "The outline's part, separated",
+  "section_id": "outline",
+  "columns": [
+   "definitions",
+   "an edit",
+   "an undo",
+   "its outline",
+   "the rest",
+   "a redo",
+   "its outline",
+   "the rest",
+   "outline's share (2 runs)",
+   "undo, rest, in edits",
+   "redo, rest, in edits"
+  ],
+  "rows": [
+   [
+    "400",
+    "10.5",
+    "18.5",
+    "4.3",
+    "14.2",
+    "13",
+    "4.3",
+    "8.7",
+    "28% and 27%",
+    "1.3",
+    "0.8"
+   ],
+   [
+    "800",
+    "10",
+    "30",
+    "6.6",
+    "23",
+    "16.5",
+    "6.6",
+    "9.9",
+    "28% and 30%",
+    "2.3",
+    "1.0"
+   ],
+   [
+    "1,600",
+    "22",
+    "61",
+    "14.5",
+    "46",
+    "41",
+    "14.5",
+    "26",
+    "27% and 30%",
+    "2.1",
+    "1.2"
+   ],
+   [
+    "3,200",
+    "43",
+    "120",
+    "27",
+    "93",
+    "85",
+    "27",
+    "58",
+    "27% and 26%",
+    "2.2",
+    "1.3"
+   ],
+   [
+    "6,400",
+    "106",
+    "292",
+    "58",
+    "235",
+    "184",
+    "58",
+    "126",
+    "25% and 24%",
+    "2.2",
+    "1.2"
+   ]
+  ]
+ }
+]
