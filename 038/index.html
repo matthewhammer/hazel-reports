@@ -244,7 +244,8 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><div class="row"><p><b>In time, every step grows in proportion to the program.</b> At 6,400 definitions an edit takes 106 ms, an undo 292 and a redo 184, each followed by about 78 ms of statics (<a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>). The incremental caches work; the passes around them walk every definition (<a href="#time">time</a>).</p></div></li>
 <li><div class="row"><p><b>New: an undo is a redo plus a rebuild of the outline.</b> The outline is the tree of a program's definitions that the sidebar and the agent read; it came with the modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>), and dev has none. An undo rebuilds it from scratch every time, about 39 ms at 3,200 definitions: 32 to 40% of the undo. A redo finds it in a memo of the last four programs, except when the program is not among them, which is why the last of the probe's redos is as slow as an undo, or slower. Even a redo that finds its outline still costs 1.7 to 1.9 edits; a restore spends longer than an edit rebuilding the program's syntax, and why is the next question. And in the app, where the sidebar shows the outline, the rebuild moves onto every edit: at 3,200 definitions about 44 ms after an edit of 51 (<a href="#outline">the outline</a>).</p>
 <figure class="mini"><svg viewBox="0 0 300 180" role="img" aria-label="An edit, an undo, a redo and the last redo at each size, the outline's rebuild marked" style="width:100%;height:auto"><text x="150.0" y="16" font-size="13" font-weight="700" text-anchor="middle" fill="var(--ink)">3,200 definitions</text><line x1="8.0" x2="292.0" y1="136.0" y2="136.0" stroke="var(--line)"/><rect x="12.0" y="103.0" width="64.0" height="33.0" fill="var(--accent2)" rx="2"><title>3,200 definitions, edit: 43 ms</title></rect><text x="44.0" y="99.0" font-size="12" text-anchor="middle" fill="var(--ink)">43</text><text x="44.0" y="150" font-size="12" text-anchor="middle" fill="var(--muted)">edit</text><rect x="82.0" y="73.8" width="64.0" height="62.2" fill="var(--accent)" rx="2"><title>3,200 definitions, undo: 120 ms</title></rect><rect x="82.0" y="43.8" width="64.0" height="30.0" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 39 ms</title></rect><text x="114.0" y="39.8" font-size="12" text-anchor="middle" fill="var(--ink)">120</text><text x="114.0" y="150" font-size="12" text-anchor="middle" fill="var(--muted)">undo</text><rect x="152.0" y="73.8" width="64.0" height="62.2" fill="var(--warn)" rx="2"><title>3,200 definitions, redo: 81 ms</title></rect><text x="184.0" y="69.8" font-size="12" text-anchor="middle" fill="var(--ink)">81</text><text x="184.0" y="150" font-size="12" text-anchor="middle" fill="var(--muted)">redo</text><rect x="222.0" y="73.0" width="64.0" height="63.0" fill="var(--warn)" rx="2"><title>3,200 definitions, last redo: 121 ms</title></rect><rect x="222.0" y="43.0" width="64.0" height="30.0" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2" rx="2"><title>the outline, rebuilt: about 39 ms</title></rect><text x="254.0" y="39.0" font-size="12" text-anchor="middle" fill="var(--ink)">121</text><text x="254.0" y="150" font-size="12" text-anchor="middle" fill="var(--muted)">last</text><text x="254.0" y="162" font-size="12" text-anchor="middle" fill="var(--muted)">redo</text><text x="150.0" y="176" font-size="11.5" text-anchor="middle" fill="var(--muted)">ms per step, each size on its own scale; the dashed top is the outline's rebuild</text></svg><figcaption>At 3,200 definitions: the dashed top of the undo and of the last redo is the outline's rebuild. Every size in <a href="#fig2">Figure 2</a>.</figcaption></figure></div></li>
-<li><div class="row"><p><b>Next:</b> let a restored program find its outline instead of rebuilding it; find why a restore rebuilds more syntax than an edit; measure what one undo entry keeps as the program grows; decide whether dev gets the compaction before <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> lands; and the balanced tree of definitions, which would make each step and each entry O(log <i>n</i>) (<a href="#next">what next</a>).</p></div></li>
+<li><div class="row"><p><b>New: an undo rebuilt the syntax twice, and a one-line fix takes 40% off an undo and 57% off a redo</b> at 3,200 definitions. The frame an undo schedules to realize the view counted as an edit, so it rebuilt in full the syntax the undo's own frame had just rebuilt. With it counted as an edit only when it changes the program, a redo costs what an edit does, 41 ms against 46, and an undo an edit plus the outline. On a trial branch, not yet on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (<a href="#twice">the fix</a>).</p></div></li>
+<li><div class="row"><p><b>Next:</b> put the fix on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>; make the outline's build touch only what changed; measure what one undo entry keeps as the program grows; decide whether dev gets the compaction before <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> lands; and the balanced tree of definitions, which would make each step and each entry O(log <i>n</i>) (<a href="#next">what next</a>).</p></div></li>
 </ol>
 <p><b>Corrected 2026-11-03, 07:52 MST.</b> This report's first version, published at 07:38, spread the outline's time evenly over undos and redos, and so said that without the outline a redo costs about an edit while most of an undo's extra was unexplained. A profile that tells an undo from a redo shows the opposite: the outline is nearly all of what an undo costs beyond a redo, and both cost more than an edit for another reason (<a href="#outline">the outline</a>).</p>
 </div>
@@ -316,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <ul>
 <li><b>An undo is a redo plus the outline.</b> The rebuild is 32 to 40% of an undo from 1,600 definitions up, about 39 ms at 3,200, and it grows with the program like the rest of the step.</li>
 <li><b>A redo rebuilds it only when its memo misses.</b> In the probe that is the last redo, as slow as an undo or slower; in use, it would be any undo or redo to a program the memo no longer holds.</li>
-<li><b>Without the outline, a restore still costs 1.7 to 1.9 edits.</b> In the profile, a redo spends about 1.8 times an edit's time rebuilding the program's syntax (<code>CachedSyntax.mk</code>), 534 against 296 ms of profile at 3,200 definitions: a restore rebuilds it against the live caches. It is not only the compaction: the newest entry keeps its syntax whole, and <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a> found it restores no faster. Every whole-program pass under it costs 1.8 to 2 times an edit's (the top-level term, its spans, the missing-shards check, the term map), as if the restore rebuilt the syntax twice, and the probe's counts agree: a restore parses 2 definitions in full and measures 2 chunks of layout, an edit 1 and 1. Where a second pass would come from is not yet found.</li>
+<li><b>Without the outline, a restore still costs 1.7 to 1.9 edits.</b> In the profile, a redo spends about 1.8 times an edit's time rebuilding the program's syntax (<code>CachedSyntax.mk</code>), 534 against 296 ms of profile at 3,200 definitions: a restore rebuilds it against the live caches. It is not only the compaction: the newest entry keeps its syntax whole, and <a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a> found it restores no faster. Every whole-program pass under it costs 1.8 to 2 times an edit's: the restore rebuilt the syntax twice (<a href="#twice">below</a>).</li>
 </ul>
 
 <h3 id="sidebar">With the sidebar, every edit pays for the outline<a class="anchor" href="#sidebar" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="sidebar" title="copy this section's address">copy link</button></h3>
@@ -327,6 +328,21 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>Each edit rebuilds the outline,</b> about as much again as the edit itself: 44 ms after an edit of 51 at 3,200 definitions, 84 after 113 at 6,400. The edit changed the program, so the memo misses.</li>
 <li><b>Then an undo finds its outline,</b> since the edits left it in the memo, and costs what a redo does: 89 and 90 ms at 3,200. The fourth undo, to the program before the edits, is out of the memo's four and rebuilds it.</li>
 <li><b>So the outline is a cost of every step that changes the program,</b> on the edit when the sidebar shows it and on the undo when it does not. Making the outline's build touch only what changed would take it off both. Today its top level walks every definition: <code>Outline.level</code> visits each span of the top level, reusing the entries below an unchanged one.</li>
+</ul>
+
+<h3 id="twice">An undo rebuilt the syntax twice, and the fix<a class="anchor" href="#twice" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="twice" title="copy this section's address">copy link</button></h3>
+<p><b>Found.</b> The probe read PerfTimer's <code>editor-syntax</code> total in every frame (ab7dfd0188). An edit is one frame with one syntax pass, about 40 ms at 3,200 definitions. An undo or a redo is two frames, and each ran a full pass of about the same cost. The second frame is <code>RealizeView</code>, which the restore schedules. It returned through <code>Updated.return</code>, whose <code>is_edit</code> defaults to true, so its <code>calculate</code> marked the restored program's syntax out of date and rebuilt it again. The probe's own counts said so all along: a restore parsed 2 definitions in full and measured 2 chunks, an edit 1 and 1.</p>
+<p><b>The fix</b> (ed4d484671; on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>'s head as 9df1b2601e, pushed for CI to the branch trial/665-realize-not-edit, not to <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>): realizing the view counts as an edit only if it opened or closed a cell, that is, only if it changed the program.</p>
+<pre><code>let realized = realize(~info_map, code.view, code);
+realized
+|&gt; return(~is_edit=realized.program !== code.program, ~historic=false);</code></pre>
+<table><thead><tr><th>definitions</th><th>an edit</th><th>an undo, before</th><th>after</th><th>a redo, before</th><th>after</th><th>syntax passes in an undo, before</th><th>after</th></tr></thead><tbody><tr><td>1,600</td><td>28</td><td>69</td><td>50</td><td>44</td><td>22</td><td>2</td><td>1</td></tr><tr><td>3,200</td><td>46</td><td>141</td><td>84</td><td>96</td><td>41</td><td>2</td><td>1</td></tr><tr><td>6,400</td><td>148</td><td>263</td><td>184</td><td>182</td><td>96</td><td>2</td><td>1</td></tr></tbody></table>
+<p>Milliseconds per step, medians of one run of 4 per size and build, the dev-profile build in one session: every size before, then every size after. The edit column is after; an edit is unchanged by the fix. "Syntax passes" counts the frames of an undo that spent a millisecond or more rebuilding syntax.</p>
+<ul>
+<li><b>An undo: 40% off at 3,200 definitions</b> (141 to 84 ms) and 30% at 6,400 (263 to 184). It is now an edit plus the outline.</li>
+<li><b>A redo: 57% off</b> (96 to 41 ms at 3,200), now what an edit costs.</li>
+<li><b>A restore now parses 1 definition and measures 1 chunk,</b> like an edit, and the second frame does no syntax work.</li>
+<li><b>Checked locally,</b> before and after: the test groups that touch undo, the outline and realizing the view all pass (Undo 11, OpenMember 6, UndoCaches 5, UndoStatics 3, ProbePersist 5, OutlineRename 15, OutlineText 47, StackFocus 14). Dev has no <code>RealizeView</code>; <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> has the same code.</li>
 </ul>
 
 <h2 id="notyet">Not yet measured<a class="anchor" href="#notyet" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="notyet" title="copy this section's address">copy link</button></h2>
@@ -341,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol>
 <li>Make the outline's build touch only the definitions that changed, so that neither an edit with the sidebar shown nor an undo pays a walk of every definition: about 44 ms per edit and 39 per undo at 3,200 definitions. A cheaper first step for undo alone: keep the outline with its undo entry.</li>
-<li>Find why a restore rebuilds more syntax than an edit, when both parse 1 or 2 definitions again: the profile's <code>CachedSyntax.mk</code> under a redo against under an edit.</li>
+<li>Put the fix for the second syntax pass on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> (9df1b2601e), once its CI is green, and measure an undo again in the browser.</li>
 <li>Measure space against size on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> in Node: the heap after a forced collection with 0, 1, 10 and 100 undo entries, at each size, compacted and whole.</li>
 <li>Decide dev: a small PR with the compaction and an always-on cap now, or wait for <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> to bring them (the 2026-10-15 call was to wait).</li>
 <li>Try the top level as a balanced tree of definitions (<a href="../036/"><code class="ref"><b>^report(</b>36<b>)</b></code></a>'s Figure 5). A snapshot of a persistent tree is its root: it shares every node the edit did not touch, so an entry would keep O(log <i>n</i>) new nodes, and an undo could be a swap of roots, with its derived data kept.</li>
@@ -669,6 +685,16 @@ document.addEventListener("DOMContentLoaded", () => {
    "what": "the probe asking for the outline after each step, as the sidebar does (UNDO_VIEW_OUTLINE)",
    "branch": "local probe/665-undo-vs-redo",
    "commit": "5544ca12a3"
+  },
+  {
+   "what": "the probe reading each frame's syntax time",
+   "branch": "local probe/665-undo-vs-redo",
+   "commit": "ab7dfd0188"
+  },
+  {
+   "what": "the fix: after an undo or redo, RealizeView is an edit only if it changed the program",
+   "branch": "local trial/665-realize-not-edit; on #2635's head as 9df1b2601e (pushed to trial/665-realize-not-edit for CI)",
+   "commit": "ed4d484671"
   }
  ],
  "files": [
@@ -676,6 +702,7 @@ document.addEventListener("DOMContentLoaded", () => {
   "data/outline_kinds.json",
   "data/outline_split.json",
   "data/outline_view.json",
+  "data/realize_fix.json",
   "data/runs",
   "data/space.json",
   "data/tables.json"
@@ -947,6 +974,52 @@ document.addEventListener("DOMContentLoaded", () => {
      "330",
      "178",
      "194"
+    ]
+   ]
+  },
+  {
+   "section": "An undo rebuilt the syntax twice, and the fix",
+   "section_id": "twice",
+   "columns": [
+    "definitions",
+    "an edit",
+    "an undo, before",
+    "after",
+    "a redo, before",
+    "after",
+    "syntax passes in an undo, before",
+    "after"
+   ],
+   "rows": [
+    [
+     "1,600",
+     "28",
+     "69",
+     "50",
+     "44",
+     "22",
+     "2",
+     "1"
+    ],
+    [
+     "3,200",
+     "46",
+     "141",
+     "84",
+     "96",
+     "41",
+     "2",
+     "1"
+    ],
+    [
+     "6,400",
+     "148",
+     "263",
+     "184",
+     "182",
+     "96",
+     "2",
+     "1"
     ]
    ]
   }

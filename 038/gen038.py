@@ -163,6 +163,21 @@ def table_view():
     return h + "</tbody></table>"
 
 
+FIX = json.load(open(os.path.join(DATA, "realize_fix.json")))["sizes"]
+
+
+def table_fix():
+    h = ("<table><thead><tr><th>definitions</th><th>an edit</th><th>an undo, before</th><th>after</th><th>a redo, before</th><th>after</th>"
+         "<th>syntax passes in an undo, before</th><th>after</th></tr></thead><tbody>")
+    for n in ("1600", "3200", "6400"):
+        b, a = FIX[n]["before"], FIX[n]["after"]
+        md = lambda r, k: statistics.median(r[k]["step_ms"])
+        passes = lambda r: statistics.median(sum(1 for x in f if x >= 1) for f in r["undo"]["syntax_per_frame_ms"])
+        h += (f'<tr><td>{int(n):,}</td><td>{fmt(md(a, "edit"))}</td><td>{fmt(md(b, "undo"))}</td><td>{fmt(md(a, "undo"))}</td>'
+              f'<td>{fmt(md(b, "redo"))}</td><td>{fmt(md(a, "redo"))}</td><td>{passes(b):.0f}</td><td>{passes(a):.0f}</td></tr>')
+    return h + "</tbody></table>"
+
+
 # --- numbers for the prose ---
 
 V = {}
@@ -188,11 +203,18 @@ V["view_undo_3200"] = fmt(vmed(3200, "on", "undo", idx=(0, 1, 2)))
 V["view_redo_3200"] = fmt(vmed(3200, "on", "redo", idx=(0, 1, 2)))
 V["view_ol_6400"] = fmt(vmed(6400, "on", "edit", "outline_after_ms"))
 V["view_edit_6400"] = fmt(vmed(6400, "on", "edit", idx=(1, 2, 3)))
+_md = lambda n, w, k: statistics.median(FIX[n][w][k]["step_ms"])
+for n in ("3200", "6400"):
+    V[f"fix_undo_b_{n}"], V[f"fix_undo_a_{n}"] = fmt(_md(n, "before", "undo")), fmt(_md(n, "after", "undo"))
+    V[f"fix_redo_b_{n}"], V[f"fix_redo_a_{n}"] = fmt(_md(n, "before", "redo")), fmt(_md(n, "after", "redo"))
+    V[f"fix_undo_cut_{n}"] = f'{(1 - _md(n, "after", "undo") / _md(n, "before", "undo")) * 100:.0f}'
+    V[f"fix_redo_cut_{n}"] = f'{(1 - _md(n, "after", "redo") / _md(n, "before", "redo")) * 100:.0f}'
+    V[f"fix_edit_{n}"] = fmt(_md(n, "after", "edit"))
 SYN = json.load(open(os.path.join(DATA, "outline_kinds.json")))["syntax_ms"]
 V["redo_syn_3200"], V["edit_syn_3200"] = f'{SYN["3200"]["redo"]:,}', f'{SYN["3200"]["edit"]:,}'
 FIGS = {"FIG_SPACE": fig_space(), "FIG_SPACE_MINI": fig_space(W=300, mini=True),
         "FIG_SPLIT": fig_split(), "FIG_SPLIT_MINI": fig_split(W=300, mini=True, sizes=[3200]),
-        "TABLE_SPACE": table_space(), "TABLE_TIMES": table_times(), "TABLE_SPLIT": table_split(), "TABLE_VIEW": table_view()}
+        "TABLE_SPACE": table_space(), "TABLE_TIMES": table_times(), "TABLE_SPLIT": table_split(), "TABLE_VIEW": table_view(), "TABLE_FIX": table_fix()}
 BODY = open(os.path.join(HERE, "body.html")).read()
 BODY = re.sub(r"\{\{(\w+)\}\}", lambda m: FIGS.get(m.group(1)) or V[m.group(1)], BODY)
 HEAD = f"""<!doctype html>
