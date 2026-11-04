@@ -147,7 +147,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 09:52 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 10:15 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -242,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><p><b>Built: a slide, <i>Livelit Playground / Grammar: IMP</i>, on draft <a href="https://github.com/hazelgrove/hazel/pull/2806">#2806</a></b> into <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>'s branch. Its livelit's model is IMP's rules, in order, and each rule's alternatives, in order.</p></li>
 <li><p><b>Each alternative is edited as a line of words</b> and drawn beside its box as chips, one color per rule. Buttons move an alternative or a rule up, add an alternative, or drop one.</p></li>
 <li><p><b>The expansion is the grammar itself, a Hazel value.</b> The rest of the slide's program reads it. For each alternative of <code>Cmd</code>, the program writes the first sentence that alternative derives, trying alternatives in their order. So the order in the model shows up in the result.</p></li>
+<li><p><b>Tried in the branch's build: it draws, and a reorder updates the model, but the app then crashed</b> in the editor's selection highlighting (<code>find_shards: sel_of_tile</code>). That is a bug in how <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a> redraws after a livelit rewrites its use, not in the livelit's own code. After a revert, the program's result still showed the examples from before the reorder. <a href="#pictures">Pictures</a>.</p></li>
 <li><p><b>Next:</b> a parser built at run time, so that programs written in the grammar's language can be read. Then a second livelit that edits those programs as tiles, with the parse tree as its expansion.</p></li>
 </ol>
 </div>
@@ -290,7 +291,15 @@ type Grammar = [Rule] in
 <p>Move <code>Var + Var</code> above <code>Var</code> in <code>Exp</code>, and every <code>x := x</code> becomes <code>x := x + x</code>. That is the order in the model, at work in the result.</p>
 
 <h2 id="pictures">Pictures<a class="anchor" href="#pictures" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pictures" title="copy this section's address">copy link</button></h2>
-<p class="muted">To come, from the branch's build on GitHub: the livelit as it opens, and after a reordering.</p>
+<p>From <a href="https://github.com/hazelgrove/hazel/pull/2806">#2806</a>'s branch build on GitHub (<code>livelit-dsl-grammar@5807661</code>), in the app's browser pane. The outline and the side panel are closed to make room.</p>
+<figure class="fig" id="fig1"><img src="img/grammar-imp-opens.jpg" alt="The grammar livelit as it opens: three rules, Var, Cmd and Exp, each alternative a text box with its chips beside it" style="max-width:100%">
+<figcaption>Figure 1. The livelit as it opens. Each rule has its own color, which its name has wherever it appears. A rule used twice in one alternative is numbered: Cmd<sub>1</sub> ; Cmd<sub>2</sub>, Var<sub>1</sub> + Var<sub>2</sub>. The identifiers are in italics.</figcaption></figure>
+<figure class="fig" id="fig2"><img src="img/grammar-imp-reordered.jpg" alt="The livelit after Var + Var was moved up: Exp now reads Var + Var, Var, Var &lt; Var, with the up and drop buttons at the right of each row" style="max-width:100%">
+<figcaption>Figure 2. After clicking "up" on <code>Var + Var</code>: Exp now reads <code>Var + Var | Var | Var &lt; Var</code>. The click's update ran and the new model was written into the program. Each row ends in up and drop buttons, and up is greyed out on a rule's first alternative.</figcaption></figure>
+<p><b>Found by that click: a crash, not in the livelit's code.</b> Right after the new model was written, the app stopped with <code>Exception during View: Failure("find_shards: sel_of_tile")</code>. That message comes from the editor's selection highlighting (<code>src/web/app/editors/decoration/Highlight.re</code>), which looked for a tile that was no longer laid out after the use's text was rewritten. "Revert to previous state" brought the app back, and the reordered model was still there (Figure 2). The program's result still showed the examples from before the reorder. It should have read <code>x := x + x</code>, so either that result was stale after the revert or the expansion did not update. Not yet known.</p>
+<p>The console also logged "unrecognized attribute: Value" ten times: an input's value that was not a string when the view was drawn. The text boxes still showed their text, so it was probably drawn while a value was not finished yet. Not yet known.</p>
+<figure class="fig" id="fig3"><img src="img/grammar-imp-crash.jpg" alt="Hazel's exception screen: Exception during View, Failure find_shards: sel_of_tile" style="max-width:60%">
+<figcaption>Figure 3. The crash after the reorder.</figcaption></figure>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol>
