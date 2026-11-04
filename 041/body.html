@@ -1,0 +1,79 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 041 · livelits · started 2026-11-04, updated {{updated}} MST · <span class="wip">work in progress</span> · after report 037 (idea 8)</p>
+<h1>A Grammar Livelit</h1>
+<p class="sub">Idea 8 on the agenda for today's meeting (^report(37)): <b>a livelit whose literal is a grammar</b>, toward DSLs in Hazel as tile-based livelits. Matthew asked for a prototype, with a branch and a PR, built on livelits &times; modular editors (#2635). He framed the model as <b>a production rule system: production rules, in a certain order</b>, and started with the rules for IMP. Asked 2026-11-04 (^ticket(684)). Pictures are added as the branch's builds come in.</p>
+
+<div class="headline">
+<p><b>Where it stands.</b></p>
+<ol class="ans">
+<li><p><b>Built: a slide, <i>Livelit Playground / Grammar: IMP</i>, on draft #2806</b> into #2635's branch. Its livelit's model is IMP's rules, in order, and each rule's alternatives, in order.</p></li>
+<li><p><b>Each alternative is edited as a line of words</b> and drawn beside its box as chips, one color per rule. Buttons move an alternative or a rule up, add an alternative, or drop one.</p></li>
+<li><p><b>The expansion is the grammar itself, a Hazel value.</b> The rest of the slide's program reads it. For each alternative of <code>Cmd</code>, the program writes the first sentence that alternative derives, trying alternatives in their order. So the order in the model shows up in the result.</p></li>
+<li><p><b>Next:</b> a parser built at run time, so that programs written in the grammar's language can be read. Then a second livelit that edits those programs as tiles, with the parse tree as its expansion.</p></li>
+</ol>
+</div>
+
+<h2 id="idea">The idea</h2>
+<p>Cyrus's question, brought back for today: a new kind of livelit for languages defined inside Hazel. The literal is a Hazel datatype describing a context-free grammar. The livelit presents an editor for those production rules, and a parser reads the grammar behind the scenes. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>). Here the grammar would be a value that a program writes.</p>
+<p>Matthew's framing sets the model: <b>the rules, in order</b>. The order matters because a parser that tries alternatives in turn reads it, as a PEG's ordered choice does. It can also say which reading wins when two alternatives both match.</p>
+
+<h2 id="imp">IMP's rules</h2>
+<p>As Matthew gave them:</p>
+<pre class="bnf">Var ::= &lt;ids&gt;
+Cmd ::= Cmd1 ; Cmd2
+      | Var := Exp
+      | while Exp do { Cmd }
+      | if Exp then Cmd1 else Cmd2
+Exp ::= Var | Var + Var | Var &lt; Var</pre>
+<p>As the livelit's model, a Hazel value. A symbol is a terminal <code>T</code>, a nonterminal <code>N</code>, or <code>Ids</code>, any identifier. The numbering in <code>Cmd1 ; Cmd2</code> is notation for two uses of one rule, so both are <code>N("Cmd")</code>:</p>
+<pre class="bnf">type Sym = + T(String) + N(String) + Ids in
+type Alt = [Sym] in
+type Rule = (lhs = String, alts = [Alt]) in
+type Grammar = [Rule] in
+
+^^livelit(^grammar([
+  (lhs = "Var", alts = [[Ids]]),
+  (lhs = "Cmd", alts = [
+    [N("Cmd"), T(";"), N("Cmd")],
+    [N("Var"), T(":="), N("Exp")],
+    [T("while"), N("Exp"), T("do"), T("{"), N("Cmd"), T("}")],
+    [T("if"), N("Exp"), T("then"), N("Cmd"), T("else"), N("Cmd")]]),
+  (lhs = "Exp", alts = [
+    [N("Var")],
+    [N("Var"), T("+"), N("Var")],
+    [N("Var"), T("&lt;"), N("Var")]])
+]))</pre>
+
+<h2 id="livelit">The livelit, as built</h2>
+<ul>
+<li><p><b>Model:</b> <code>Grammar</code>, as above, and nothing else. The livelit keeps no state of its own beyond the rules.</p></li>
+<li><p><b>View:</b> one row per alternative. The first row of each rule has the rule's name and <code>::=</code>, and the later rows have <code>|</code>. Each row has a text box with the alternative's words. Beside the box, the alternative is drawn as chips: a nonterminal in its rule's color, a terminal in bold, and the identifiers in italics. A nonterminal used twice in one alternative is numbered, as Cmd<sub>1</sub> ; Cmd<sub>2</sub>.</p></li>
+<li><p><b>Reading a box:</b> words are separated by spaces. A rule's name is that nonterminal, and so is a rule's name followed by a digit (<code>Cmd1</code>). The word <code>&lt;ids&gt;</code> stands for the identifiers, and any other word is a terminal. Each keystroke previews the new grammar, and the change commits when the box loses focus. That is how #2635 commits any livelit's input.</p></li>
+<li><p><b>Update:</b> move an alternative up, move a rule up, set an alternative from its text, add an empty alternative, or drop one.</p></li>
+<li><p><b>Expansion:</b> <code>Functional</code>, the grammar itself.</p></li>
+</ul>
+<p>The program after the livelit uses the expansion. For each alternative of <code>Cmd</code>, it writes the first sentence that alternative derives within a depth of 3, trying each rule's alternatives in their order:</p>
+<pre class="bnf">["x := x ; x := x", "x := x", "while x do { x := x }", "if x then x := x else x := x"]</pre>
+<p>Move <code>Var + Var</code> above <code>Var</code> in <code>Exp</code>, and every <code>x := x</code> becomes <code>x := x + x</code>. That is the order in the model, at work in the result.</p>
+
+<h2 id="pictures">Pictures</h2>
+<p class="muted">To come, from the branch's build on GitHub: the livelit as it opens, and after a reordering.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li><p><b>A parser at run time.</b> Menhir generates its parser when Hazel is built, so it cannot read a grammar written in a running program. Three options: an Earley parser, which takes any context-free grammar and could be written in Hazel itself; tables built in the browser; or compiling the grammars of built-in DSLs ahead of time.</p></li>
+<li><p><b>Programs in the language, as tiles.</b> A second livelit whose literal is a program in the grammar's language. Its view would be tiles shaped by the grammar's rules, and its expansion the parse tree as a Hazel value. Hazel cannot make a new datatype at run time, so the tree would be generic, perhaps <code>+ Node(String, Int, [Tree]) + Leaf(String)</code>: a rule's name, which alternative, and the children.</p></li>
+<li><p><b>The language boxes question</b> (#2542): Eco's language boxes give each box its own lexer and parser, so a box is one token to its parent. A grammar livelit is a natural place to try that.</p></li>
+</ol>
+
+<h2 id="meeting">For the meeting</h2>
+<ul>
+<li><p>Is this the shape Cyrus has in mind: the grammar as an ordered list of rules, in a livelit?</p></li>
+<li><p>Should the order mean ordered choice (PEG), or only presentation, with ambiguity reported?</p></li>
+<li><p>Grammars at run time (an Earley parser), or ahead of time for built-in DSLs only?</p></li>
+</ul>
+
+<h2 id="method">How this was made</h2>
+<p>The slide is <code>hazel-programs/docs/livelits/playground/grammar-imp.hz</code> on branch <code>livelit-dsl-grammar</code> (58076619f2), from #2635's branch at c079fa2e24. It was checked with the Hazel command line from a build of #2635's branch: <code>analyze</code> found no static errors, and <code>run</code> gave the four sentences above. The view and the buttons are not checked from the command line. They are checked in the branch's build on GitHub, which the pictures will show.</p>
+</main></body>
+</html>
