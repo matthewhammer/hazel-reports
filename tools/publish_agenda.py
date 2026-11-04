@@ -29,14 +29,15 @@ if not os.path.isdir(dest):
     sys.exit(f"{dest} does not exist: publish the agenda the first time by hand (its series card, the Hazel page)")
 run("git", "pull", "-q", "--rebase", cwd=SITE)
 run("cp", "-r", f"{nnn}/index.html", f"{nnn}/img", f"{nnn}/data", f"{nnn}/drivers", dest + "/")
+# the copy has no link-preview tags (the site's own tool writes them): put them back before committing (2026-11-04)
+run("python3", "tools/og_previews.py", "hazel", cwd=SITE)
 msg = f"^report({int(nnn)}), the agenda: {what}"
-# Pushing this repository publishes every commit not yet pushed, and drafts (reports Matthew has not read) may be
-# among them (2026-10-19: report 21's draft went out with an agenda update). So push it only when the agenda's
-# commit is the only one waiting; otherwise leave it local and say so. The homepage is pushed either way.
+# Pushing this repository publishes every commit not yet pushed. Until 2026-11-04 drafts waited among them, so this
+# pushed only when the agenda's commit was the only one; since then every report is published by default.
 waiting = subprocess.run(["git", "rev-list", "--count", "origin/main..HEAD"], cwd=ROOT,
                          capture_output=True, text=True).stdout.strip()
 for repo, path in ((ROOT, nnn), (SITE, f"hazel/reports/{nnn}")):
-    run("git", "add", path, cwd=repo)
+    run("git", "add", path, *(["hazel/reports/og.png"] if repo == SITE else []), cwd=repo)
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo).returncode:
         run("git", "commit", "-q", "-m", msg + TRAILER, cwd=repo)
         if repo == SITE:
