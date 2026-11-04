@@ -134,7 +134,16 @@ h3.grp { margin-top: 1.2em; }
   .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
 
   .muted { color: var(--muted); font-size: 0.9em; }
-  pre.bnf { font-size: 0.92em; }
+  pre.hz { font-size: 0.92em; }
+
+pre.hz, pre.fu, pre.jx { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; line-height: 1.5; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+pre.jx .jk { color: #ff79c6; font-weight: 700; } pre.jx .jC { color: #8be9fd; } pre.jx .jv { color: #f8f8f2; } pre.jx .js { color: #f1fa8c; }
+pre.jx .jn { color: #bd93f9; } pre.jx .jc { color: #87ff87; font-style: italic; } pre.jx .jo { color: #ffd75f; }
+
 </style>
 <style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
@@ -147,7 +156,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 11:38 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 11:53 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -253,30 +262,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h2 id="imp">IMP's rules<a class="anchor" href="#imp" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="imp" title="copy this section's address">copy link</button></h2>
 <p>As Matthew gave them:</p>
-<pre class="bnf">Var ::= &lt;ids&gt;
-Cmd ::= Cmd1 ; Cmd2
-      | Var := Exp
-      | while Exp do { Cmd }
-      | if Exp then Cmd1 else Cmd2
-Exp ::= Var | Var + Var | Var &lt; Var</pre>
+<pre class="hz"><span class="hC">Var</span> <span class="ho">::</span><span class="ho">=</span> <span class="ho">&lt;</span><span class="hv">ids</span><span class="ho">&gt;</span>
+<span class="hC">Cmd</span> <span class="ho">::</span><span class="ho">=</span> <span class="hC">Cmd1</span> ; <span class="hC">Cmd2</span>
+      <span class="ho">|</span> <span class="hC">Var</span> <span class="ho">:</span><span class="ho">=</span> <span class="hC">Exp</span>
+      <span class="ho">|</span> <span class="hv">while</span> <span class="hC">Exp</span> <span class="hv">do</span> { <span class="hC">Cmd</span> }
+      <span class="ho">|</span> <span class="hk">if</span> <span class="hC">Exp</span> <span class="hk">then</span> <span class="hC">Cmd1</span> <span class="hk">else</span> <span class="hC">Cmd2</span>
+<span class="hC">Exp</span> <span class="ho">::</span><span class="ho">=</span> <span class="hC">Var</span> <span class="ho">|</span> <span class="hC">Var</span> <span class="ho">+</span> <span class="hC">Var</span> <span class="ho">|</span> <span class="hC">Var</span> <span class="ho">&lt;</span> <span class="hC">Var</span></pre>
 <p>As the livelit's model, a Hazel value. A symbol is a terminal <code>T</code>, a nonterminal <code>N</code>, or <code>Ids</code>, any identifier. The numbering in <code>Cmd1 ; Cmd2</code> is notation for two uses of one rule, so both are <code>N("Cmd")</code>:</p>
-<pre class="bnf">type Sym = + T(String) + N(String) + Ids in
-type Alt = [Sym] in
-type Rule = (lhs = String, alts = [Alt]) in
-type Grammar = [Rule] in
+<pre class="hz"><span class="hk">type</span> <span class="hC">Sym</span> <span class="ho">=</span> <span class="ho">+</span> <span class="hC">T</span><span class="ho">(</span><span class="hC">String</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">N</span><span class="ho">(</span><span class="hC">String</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Ids</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Alt</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Sym</span><span class="ho">]</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Rule</span> <span class="ho">=</span> <span class="ho">(</span><span class="hv">lhs</span> <span class="ho">=</span> <span class="hC">String</span><span class="ho">,</span> <span class="hv">alts</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Alt</span><span class="ho">]</span><span class="ho">)</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Grammar</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Rule</span><span class="ho">]</span> <span class="hk">in</span>
 
-^^livelit(^grammar([
-  (lhs = "Var", alts = [[Ids]]),
-  (lhs = "Cmd", alts = [
-    [N("Cmd"), T(";"), N("Cmd")],
-    [N("Var"), T(":="), N("Exp")],
-    [T("while"), N("Exp"), T("do"), T("{"), N("Cmd"), T("}")],
-    [T("if"), N("Exp"), T("then"), N("Cmd"), T("else"), N("Cmd")]]),
-  (lhs = "Exp", alts = [
-    [N("Var")],
-    [N("Var"), T("+"), N("Var")],
-    [N("Var"), T("&lt;"), N("Var")]])
-]))</pre>
+^^<span class="hv">livelit</span><span class="ho">(</span>^<span class="hv">grammar</span><span class="ho">(</span><span class="ho">[</span>
+  <span class="ho">(</span><span class="hv">lhs</span> <span class="ho">=</span> <span class="hs">&quot;Var&quot;</span><span class="ho">,</span> <span class="hv">alts</span> <span class="ho">=</span> <span class="ho">[</span><span class="ho">[</span><span class="hC">Ids</span><span class="ho">]</span><span class="ho">]</span><span class="ho">)</span><span class="ho">,</span>
+  <span class="ho">(</span><span class="hv">lhs</span> <span class="ho">=</span> <span class="hs">&quot;Cmd&quot;</span><span class="ho">,</span> <span class="hv">alts</span> <span class="ho">=</span> <span class="ho">[</span>
+    <span class="ho">[</span><span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Cmd&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;;&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Cmd&quot;</span><span class="ho">)</span><span class="ho">]</span><span class="ho">,</span>
+    <span class="ho">[</span><span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Var&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;:=&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Exp&quot;</span><span class="ho">)</span><span class="ho">]</span><span class="ho">,</span>
+    <span class="ho">[</span><span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;while&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Exp&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;do&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;{&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Cmd&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;}&quot;</span><span class="ho">)</span><span class="ho">]</span><span class="ho">,</span>
+    <span class="ho">[</span><span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;if&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Exp&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;then&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Cmd&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;else&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Cmd&quot;</span><span class="ho">)</span><span class="ho">]</span><span class="ho">]</span><span class="ho">)</span><span class="ho">,</span>
+  <span class="ho">(</span><span class="hv">lhs</span> <span class="ho">=</span> <span class="hs">&quot;Exp&quot;</span><span class="ho">,</span> <span class="hv">alts</span> <span class="ho">=</span> <span class="ho">[</span>
+    <span class="ho">[</span><span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Var&quot;</span><span class="ho">)</span><span class="ho">]</span><span class="ho">,</span>
+    <span class="ho">[</span><span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Var&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;+&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Var&quot;</span><span class="ho">)</span><span class="ho">]</span><span class="ho">,</span>
+    <span class="ho">[</span><span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Var&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">T</span><span class="ho">(</span><span class="hs">&quot;&lt;&quot;</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">N</span><span class="ho">(</span><span class="hs">&quot;Var&quot;</span><span class="ho">)</span><span class="ho">]</span><span class="ho">]</span><span class="ho">)</span>
+<span class="ho">]</span><span class="ho">)</span><span class="ho">)</span></pre>
 
 <h2 id="livelit">The livelit, as built<a class="anchor" href="#livelit" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="livelit" title="copy this section's address">copy link</button></h2>
 <ul>
@@ -287,7 +296,7 @@ type Grammar = [Rule] in
 <li><p><b>Expansion:</b> <code>Functional</code>, the grammar itself.</p></li>
 </ul>
 <p>The program after the livelit uses the expansion. For each alternative of <code>Cmd</code>, it writes the first sentence that alternative derives within a depth of 3, trying each rule's alternatives in their order:</p>
-<pre class="bnf">["x := x ; x := x", "x := x", "while x do { x := x }", "if x then x := x else x := x"]</pre>
+<pre class="hz"><span class="ho">[</span><span class="hs">&quot;x := x ; x := x&quot;</span><span class="ho">,</span> <span class="hs">&quot;x := x&quot;</span><span class="ho">,</span> <span class="hs">&quot;while x do { x := x }&quot;</span><span class="ho">,</span> <span class="hs">&quot;if x then x := x else x := x&quot;</span><span class="ho">]</span></pre>
 <p>Move <code>Var + Var</code> above <code>Var</code> in <code>Exp</code>, and every <code>x := x</code> becomes <code>x := x + x</code>. That is the order in the model, at work in the result.</p>
 
 <h2 id="pictures">Pictures<a class="anchor" href="#pictures" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pictures" title="copy this section's address">copy link</button></h2>

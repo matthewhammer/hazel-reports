@@ -2,7 +2,9 @@
 """^report(41), A Grammar Livelit: writes 041/index.html from body.html.
 
 {{name}} in body.html is a value from V. Then the series tools run over the page (build.sh)."""
-import os, re, subprocess
+import html, os, re, subprocess, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+from codehl import hazel_hl, HL_CSS   # (2026-11-04, Matthew: "please use high contrast / dark theme Hazel for the code")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -11,6 +13,8 @@ CSS = s35[s35.index("<style>") + 7: s35.index("</style>")]
 V = {"updated": subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True, text=True).stdout.strip()}
 BODY = open(os.path.join(HERE, "body.html")).read()
 BODY = re.sub(r"\{\{(\w+)\}\}", lambda m: V[m.group(1)], BODY)
+# every code block, in the series' high-contrast Hazel colours (bright on black), as ^report(30) and ^report(33)
+BODY = re.sub(r'<pre class="bnf">([\s\S]*?)</pre>', lambda m: '<pre class="hz">' + hazel_hl(html.unescape(m.group(1))) + "</pre>", BODY)
 HEAD = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,7 +22,8 @@ HEAD = """<!doctype html>
 <meta name="description" content="A livelit whose model is a grammar: production rules, in order, edited in Hazel; the first prototype, on IMP's rules, and what comes next (a parser at run time, and programs in the language as tiles).">
 <style>""" + CSS + """
   .muted { color: var(--muted); font-size: 0.9em; }
-  pre.bnf { font-size: 0.92em; }
+  pre.hz { font-size: 0.92em; }
+""" + HL_CSS + """
 </style>
 </head>
 """
