@@ -156,7 +156,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 11:59 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 12:08 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -262,12 +262,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h2 id="imp">IMP's rules<a class="anchor" href="#imp" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="imp" title="copy this section's address">copy link</button></h2>
 <p>As Matthew gave them:</p>
-<pre class="hz"><span class="hC">Var</span> <span class="ho">::</span><span class="ho">=</span> <span class="ho">&lt;</span><span class="hv">ids</span><span class="ho">&gt;</span>
-<span class="hC">Cmd</span> <span class="ho">::</span><span class="ho">=</span> <span class="hC">Cmd1</span> ; <span class="hC">Cmd2</span>
-      <span class="ho">|</span> <span class="hC">Var</span> <span class="ho">:</span><span class="ho">=</span> <span class="hC">Exp</span>
-      <span class="ho">|</span> <span class="hv">while</span> <span class="hC">Exp</span> <span class="hv">do</span> { <span class="hC">Cmd</span> }
+<pre class="hz"><span class="hC">Var</span> <span class="ho">::=</span> <span class="hn">&lt;ids&gt;</span>
+<span class="hC">Cmd</span> <span class="ho">::=</span> <span class="hC">Cmd1</span> <span class="hk">;</span> <span class="hC">Cmd2</span>
+      <span class="ho">|</span> <span class="hC">Var</span> <span class="hk">:=</span> <span class="hC">Exp</span>
+      <span class="ho">|</span> <span class="hk">while</span> <span class="hC">Exp</span> <span class="hk">do</span> <span class="hk">{</span> <span class="hC">Cmd</span> <span class="hk">}</span>
       <span class="ho">|</span> <span class="hk">if</span> <span class="hC">Exp</span> <span class="hk">then</span> <span class="hC">Cmd1</span> <span class="hk">else</span> <span class="hC">Cmd2</span>
-<span class="hC">Exp</span> <span class="ho">::</span><span class="ho">=</span> <span class="hC">Var</span> <span class="ho">|</span> <span class="hC">Var</span> <span class="ho">+</span> <span class="hC">Var</span> <span class="ho">|</span> <span class="hC">Var</span> <span class="ho">&lt;</span> <span class="hC">Var</span></pre>
+<span class="hC">Exp</span> <span class="ho">::=</span> <span class="hC">Var</span> <span class="ho">|</span> <span class="hC">Var</span> <span class="hk">+</span> <span class="hC">Var</span> <span class="ho">|</span> <span class="hC">Var</span> <span class="hk">&lt;</span> <span class="hC">Var</span></pre>
 <p>As the livelit's model, a Hazel value. A symbol is a terminal <code>T</code>, a nonterminal <code>N</code>, or <code>Ids</code>, any identifier. The numbering in <code>Cmd1 ; Cmd2</code> is notation for two uses of one rule, so both are <code>N("Cmd")</code>:</p>
 <pre class="hz"><span class="hk">type</span> <span class="hC">Sym</span> <span class="ho">=</span> <span class="ho">+</span> <span class="hC">T</span><span class="ho">(</span><span class="hC">String</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">N</span><span class="ho">(</span><span class="hC">String</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Ids</span> <span class="hk">in</span>
 <span class="hk">type</span> <span class="hC">Alt</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Sym</span><span class="ho">]</span> <span class="hk">in</span>

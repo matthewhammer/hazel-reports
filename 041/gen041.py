@@ -13,6 +13,17 @@ CSS = s35[s35.index("<style>") + 7: s35.index("</style>")]
 V = {"updated": subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True, text=True).stdout.strip()}
 BODY = open(os.path.join(HERE, "body.html")).read()
 BODY = re.sub(r"\{\{(\w+)\}\}", lambda m: V[m.group(1)], BODY)
+# IMP's rules, as a grammar in the same palette: a nonterminal pink, every terminal (while, do, if, :=, ;, ...) cyan,
+# the grammar's own ::= and | yellow, <ids> purple. Hazel's own highlighter would colour only Hazel's keywords
+# (if, then, else) and leave IMP's (while, do) plain (Matthew, 2026-11-04: "Yes, fix it").
+def grammar_hl(t):
+    out = []
+    for m in re.finditer(r"(::=)|(\|)|(<ids>)|([A-Z][A-Za-z0-9_]*)|([a-z_][A-Za-z0-9_]*|:=|\S)|(\s+)", t):
+        g = m.group(0)
+        cls = "ho" if m.group(1) or m.group(2) else "hn" if m.group(3) else "hC" if m.group(4) else "hk" if m.group(5) else None
+        out.append(f'<span class="{cls}">{html.escape(g)}</span>' if cls else g)
+    return "".join(out)
+BODY = re.sub(r'<pre class="grammar">([\s\S]*?)</pre>', lambda m: '<pre class="hz">' + grammar_hl(html.unescape(m.group(1))) + "</pre>", BODY)
 # every code block, in the series' high-contrast Hazel colours (bright on black), as ^report(30) and ^report(33)
 BODY = re.sub(r'<pre class="bnf">([\s\S]*?)</pre>', lambda m: '<pre class="hz">' + hazel_hl(html.unescape(m.group(1))) + "</pre>", BODY)
 HEAD = """<!doctype html>
