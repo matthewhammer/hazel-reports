@@ -1,7 +1,7 @@
 <body><main>
 <p class="series"><a href="../">Hazel reports</a> · report 041 · livelits · started 2026-11-04, updated {{updated}} MST · <span class="wip">work in progress</span> · after report 037 (idea 8)</p>
 <h1>A Grammar Livelit</h1>
-<p class="sub">Idea 8 on the agenda for today's meeting (^report(37)): <b>a livelit whose literal is a grammar</b>, toward DSLs in Hazel as tile-based livelits. Matthew asked for a prototype, with a branch and a PR, built on livelits &times; modular editors (#2635). He framed the model as <b>a production rule system: production rules, in a certain order</b>, and started with the rules for IMP. Asked 2026-11-04 (^ticket(684)). Pictures are added as the branch's builds come in.</p>
+<p class="sub">Idea 8 on the agenda for the meeting with Cyrus, Thursday 2026-11-05 (^report(37)): <b>a livelit whose literal is a grammar</b>, toward DSLs in Hazel as tile-based livelits. Matthew asked for a prototype, with a branch and a PR, built on livelits &times; modular editors (#2635). He framed the model as <b>a production rule system: production rules, in a certain order</b>, and started with the rules for IMP. Asked 2026-11-04 (^ticket(684)). Pictures are added as the branch's builds come in.</p>
 
 <div class="headline">
 <p><b>Where it stands.</b></p>
@@ -15,7 +15,7 @@
 </div>
 
 <h2 id="idea">The idea</h2>
-<p>Cyrus's question, brought back for today: a new kind of livelit for languages defined inside Hazel. The literal is a Hazel datatype describing a context-free grammar. The livelit presents an editor for those production rules, and a parser reads the grammar behind the scenes. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>). Here the grammar would be a value that a program writes.</p>
+<p>Cyrus's question, brought back for the meeting: a new kind of livelit for languages defined inside Hazel. The literal is a Hazel datatype describing a context-free grammar. The livelit presents an editor for those production rules, and a parser reads the grammar behind the scenes. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>). Here the grammar would be a value that a program writes.</p>
 <p>Matthew's framing sets the model: <b>the rules, in order</b>. The order matters because a parser that tries alternatives in turn reads it, as a PEG's ordered choice does. It can also say which reading wins when two alternatives both match.</p>
 
 <h2 id="imp">IMP's rules</h2>

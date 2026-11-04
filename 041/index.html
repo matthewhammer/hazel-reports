@@ -156,7 +156,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 11:53 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>41<b>)</b></code> · livelits · started 2026-11-04, updated 2026-11-04 11:59 MST · <span class="wip">work in progress</span> · after <a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a> (idea 8)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -243,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- listen: end -->
 <h1>A Grammar Livelit</h1>
-<p class="sub">Idea 8 on the agenda for today's meeting (<a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a>): <b>a livelit whose literal is a grammar</b>, toward DSLs in Hazel as tile-based livelits. Matthew asked for a prototype, with a branch and a PR, built on livelits &times; modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>). He framed the model as <b>a production rule system: production rules, in a certain order</b>, and started with the rules for IMP. Asked 2026-11-04 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-684"><code class="ref"><b>^ticket(</b>684<b>)</b></code></a>). Pictures are added as the branch's builds come in.</p>
+<p class="sub">Idea 8 on the agenda for the meeting with Cyrus, Thursday 2026-11-05 (<a href="../037/"><code class="ref"><b>^report(</b>37<b>)</b></code></a>): <b>a livelit whose literal is a grammar</b>, toward DSLs in Hazel as tile-based livelits. Matthew asked for a prototype, with a branch and a PR, built on livelits &times; modular editors (<a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>). He framed the model as <b>a production rule system: production rules, in a certain order</b>, and started with the rules for IMP. Asked 2026-11-04 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-684"><code class="ref"><b>^ticket(</b>684<b>)</b></code></a>). Pictures are added as the branch's builds come in.</p>
 
 <div class="headline">
 <p><b>Where it stands.</b></p>
@@ -257,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
 
 <h2 id="idea">The idea<a class="anchor" href="#idea" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="idea" title="copy this section's address">copy link</button></h2>
-<p>Cyrus's question, brought back for today: a new kind of livelit for languages defined inside Hazel. The literal is a Hazel datatype describing a context-free grammar. The livelit presents an editor for those production rules, and a parser reads the grammar behind the scenes. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>). Here the grammar would be a value that a program writes.</p>
+<p>Cyrus's question, brought back for the meeting: a new kind of livelit for languages defined inside Hazel. The literal is a Hazel datatype describing a context-free grammar. The livelit presents an editor for those production rules, and a parser reads the grammar behind the scenes. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>). Here the grammar would be a value that a program writes.</p>
 <p>Matthew's framing sets the model: <b>the rules, in order</b>. The order matters because a parser that tries alternatives in turn reads it, as a PEG's ordered choice does. It can also say which reading wins when two alternatives both match.</p>
 
 <h2 id="imp">IMP's rules<a class="anchor" href="#imp" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="imp" title="copy this section's address">copy link</button></h2>
