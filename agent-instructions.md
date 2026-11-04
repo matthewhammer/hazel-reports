@@ -61,6 +61,8 @@ A published report's story is never rewritten. **Pictures that only illustrate w
 - add a **dated note after each claim it explains or supersedes**, linking where the new answer is;
 - add an **Update section** (`#update`) with the numbers, when there is more than a note's worth.
 
+- **A summary box is short, and an agenda's comes after its outline** (Matthew, 2026-11-04, on ^report(37)): "put the 'in short' section after the outline, and make it shorter, in general, as a rule". In an agenda, "The items, by section" (the table) is the outline: the order is the table, then **In short**, then the item cards. In short is one sentence per section; the detail lives in the cards. Any report's summary box (short answers, where it stands) stays as short.
+
 ## Publishing
 
 **A report is published as work in progress as soon as it has a first version, and each revision is republished as it is made** (Matthew, 2026-11-04: "by default, publish all reports that are WIP so there's less friction to viewing them for anyone, including me. There's no harm in having WIP information change over time."). Nothing waits for him to say publish. The "work in progress" mark, on the series line and on the card, comes off only on his word. To publish:
