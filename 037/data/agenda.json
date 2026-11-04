@@ -4,7 +4,7 @@
  "meeting": "2026-11-04",
  "meeting_time": "12:00 MST (noon in Boulder, Colorado)",
  "started": "2026-11-02",
- "updated": "2026-11-03 11:22 MST",
+ "updated": "2026-11-04 07:48 MST",
  "page_title": "Agenda for November 4",
  "title": "Agenda: Matthew and Cyrus, Wednesday 2026-11-04, noon Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Wednesday 2026-11-04 at noon Mountain time (12:00 MST, Boulder), in three parts: performance, Hazel embedded in JS programs, and DSL tile editors as livelits. <b>A work in progress:</b> compiled over the two days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
@@ -88,9 +88,9 @@
      "ticket": null,
      "status": "proposal",
      "tone": "accent",
-     "as_of": "2026-11-02 10:35",
-     "body": "<p><a href=\"../034/\"><code class=\"ref\"><b>^report(</b>34<b>)</b></code></a>'s suggestion: merge #2711 and #2719 as an experimental library, built on dev and labelled so; promise stability only for the small core (analyze, run, the value mapping) once a second Hazlet besides MUDU has used it.</p>",
-     "meeting": "Merge as experimental, yes or no; and who else might build the second Hazlet?"
+     "as_of": "2026-11-04 07:48",
+     "body": "<p><a href=\"../034/\"><code class=\"ref\"><b>^report(</b>34<b>)</b></code></a>'s suggestion: merge #2711 and #2719 as an experimental library, built on dev and labelled so; promise stability only for the small core (analyze, run, the value mapping) once a second Hazlet besides MUDU has used it.</p><p><b>A question beside it: where does a program's outline come from?</b> MUDU's max-size script view has an outline on the left: each module's types, then its functions with their types, and a click goes to the definition. The game draws that outline itself, from the text. It asks Hazel only for each member's inferred type, through <code>Hazel.outlineProgram</code> (^ticket(587): two commits on #2719's branch, CI green, not merged yet, so the game does not use it yet).</p><ul><li><b>Without modular editors (dev, #2711, #2719), this works.</b> <code>outlineProgram</code> walks our own <code>ModuleProgram</code>, the library's way of joining named modules into one program, not #2469's code. Revealing a definition and goto definition also work without modular editors, in the embed.</li><li><b>With modular editors (#2469), there is a second outline.</b> Its <code>OutlineTree</code> builds the outline in the editor's sidebar: modules, functions, values and types. It has no inferred types, case counts or source ranges, and it reads #2469's own program forms, which dev and the library do not have. So today there are two outline walkers, over two shapes of program.</li><li><b>One path:</b> keep <code>outlineProgram</code> in the experimental part, outside the stable core. If #2469 lands on dev, expose its <code>OutlineTree</code> through the library instead, with types and source ranges added, and retire ours.</li></ul>",
+     "meeting": "Merge as experimental, yes or no; and who else might build the second Hazlet? And the outline: keep the library's own walker for now, or build the library's outline on #2469's once it lands on dev?"
     },
     {
      "id": "npm",
