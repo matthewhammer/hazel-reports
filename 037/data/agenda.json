@@ -4,15 +4,15 @@
  "meeting": "2026-11-05",
  "meeting_time": "10:00 MST (10 a.m. in Boulder, Colorado)",
  "started": "2026-11-02",
- "updated": "2026-11-04 11:55 MST",
+ "updated": "2026-11-04 11:57 MST",
  "page_title": "Agenda for November 5",
  "title": "Agenda: Matthew and Cyrus, Thursday 2026-11-05, 10:00 Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Thursday 2026-11-05 at 10:00 Mountain time (10:00 MST, Boulder; moved from Wednesday 2026-11-04 at noon), in four parts: performance, Hazel embedded in JS programs, DSL tile editors as livelits, and long types shown whole. <b>A work in progress:</b> compiled over the days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
  "short": [
-  "<b>Performance: an edit and an undo each cost time in proportion to the program.</b> Measured on #2635 at five sizes: at 6,400 definitions an edit takes about 106 ms, followed by about 78 ms of statics. Three fixes are on #2635: two took 31 to 46% off every step at the larger sizes, and the third stops an undo rebuilding the syntax twice, so at 3,200 definitions an undo costs under two edits instead of about three, and a redo about one; what is left is whole-program passes around incremental caches that already work. In space, Andrew Blinn's compaction of undo entries cut what a #2597 tab kept after 12 edits from 1,048 MB to 159; dev does not have it yet. Across the worker boundary, sharing keeps an edit's request small (Full Body: 27 KB, not 1.95 MB), but two slides were sent whole, about 200 ms a request. That is fixed on #2635 (a repeat send now takes 1.8 ms); the worker now spends 47 ms a request putting the pieces back together, the next target. Getting to O(log n) is a design question for the meeting (^report(38), both stories; <a href=\"../036/\"><code class=\"ref\"><b>^report(</b>36<b>)</b></code></a>, in progress).",
-  "<b>Hazlets: Hazel embedded in a JS program's event handlers.</b> A new word for the pattern Messed Up Dress Up uses, the first and so far only one. A demo of the game's scripts, the question <a href=\"../034/\"><code class=\"ref\"><b>^report(</b>34<b>)</b></code></a> asks (should the library be official?), and a prototype npm package, <code>hazeljs</code>: on npm since 2026-11-02, at 0.0.4 now, and MUDU loads its Hazel from it.",
-  "<b>DSL tile editors as a kind of livelit:</b> Cyrus's idea, from about two weeks ago, which Matthew brings back. The livelit's literal is a Hazel value describing a grammar, its view is a tile editor for that grammar, and its expansion is the parse tree. Is this the shape Cyrus meant, and what should the first demo be?",
-  "<b>Long types, shown whole.</b> #2676 (the cursor inspector's full view of a type) is green and merges cleanly into dev, but is not reviewed and is 174 commits behind. &Gamma;'s version is draft #2698 toward dev, and on #2635 with a setting for how to offer it, waiting on Matthew's pick."
+  "<b>Performance:</b> an edit and an undo each cost time in proportion to the program; three fixes on #2635 cut that, and O(log n) per edit is the question for the meeting.",
+  "<b>Hazlets</b>, Hazel in a JS program's event handlers: the game's scripts, whether the library should be official, and <code>hazeljs</code> on npm.",
+  "<b>DSL tile editors as livelits:</b> Cyrus's idea, now with a first prototype on IMP's grammar (#2806); is this the shape he meant?",
+  "<b>Long types, shown whole:</b> #2676 is green but not reviewed; &Gamma;'s version waits on Matthew's pick of how to offer it."
  ],
  "sections": [
   {
