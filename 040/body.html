@@ -11,7 +11,7 @@
 <li><p><b>A function that holds a value stops paying for it on every call.</b> A function Hazel returned, holding {{cells_64}} numbers, took {{h_base_64}} ms and allocated {{h_base_mb_64}} a call with the package's build, growing with what it holds. With the closures trial: {{h_clo_64}} ms and {{h_clo_mb_64}} at every size, about {{h_ratio}} times faster.</p></li>
 <li><p><b>A value converted once and passed as a handle costs almost nothing:</b> {{hd_64}} ms a call at every size, against {{hd_conv_64}} ms converted each time, at {{cells_64}} cells.</p></li>
 <li><p><b>What is left is the type annotation's check.</b> With the trial, a typed call still takes about {{ratio_typed}} times an untyped one: Hazel checks the converted value against the parameter's type again. That is #2681's work, not this step's.</p></li>
-<li><p><b>Next:</b> the three trials have green CI, and wait on Matthew's call on how they go up: lib-floor first (^ticket(539)), then the closures (^ticket(558)) and the handles (^ticket(551)) stacked on it.</p></li>
+<li><p><b>Up as PRs since 2026-11-04</b>, on Matthew's word, stacked on #2719: lib-floor is #2807 (^ticket(539)); the closures with the complexity test are #2808 (^ticket(558), ^ticket(552)); the handles are #2809 (^ticket(551)), moved onto the closures from their measuring branch.</p></li>
 </ol>
 </div>
 
