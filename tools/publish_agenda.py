@@ -41,8 +41,9 @@ for repo, path in ((ROOT, nnn), (SITE, f"hazel/reports/{nnn}")):
         run("git", "commit", "-q", "-m", msg + TRAILER, cwd=repo)
         if repo == SITE:
             run("git", "pull", "-q", "--rebase", cwd=SITE)
+        # (until 2026-11-04 this refused to push the sources while other commits waited, since those were drafts Matthew had
+        # not seen; since then every report is published as work in progress by default, so nothing waits: push them all)
         if repo == ROOT and waiting != "0":
-            print(f"not pushing {ROOT}: {waiting} other commit(s) wait unpushed (drafts?); the agenda's commit stays local too")
-            continue
+            print(f"pushing {ROOT} with {waiting} other commit(s) that were waiting: every report is published by default now")
         run("git", "push", "-q", "origin", "HEAD", cwd=repo)
 print(f"published: https://matthewhammer.org/hazel/reports/{nnn}/ (live after the Pages build, about 2 minutes)")
