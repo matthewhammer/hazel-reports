@@ -148,17 +148,18 @@ page = f"""<!doctype html>
 <h1>{A["title"]}</h1>
 <p class="sub">{A["sub"]}</p>
 
-<div class="headline">
-<p><b>In short.</b> As of {esc(A["updated"])}.</p>
-<ol>
-{"".join(f"  <li>{s}</li>" + chr(10) for s in A["short"])}</ol>
-</div>
-
 {outline_html}<h2 id="items">The items, by section</h2>
 <div class="scroll"><table>
   <tr><th></th><th>Item</th><th>Status</th></tr>
 {rows}
 </table></div>
+
+<!-- (2026-11-04, Matthew: "put the 'in short' section after the outline", the items table, "and make it shorter, in general, as a rule": one sentence a section) -->
+<div class="headline">
+<p><b>In short.</b> As of {esc(A["updated"])}.</p>
+<ol>
+{"".join(f"  <li>{s}</li>" + chr(10) for s in A["short"])}</ol>
+</div>
 
 {items}
 
