@@ -1,13 +1,13 @@
 {
  "report": 37,
  "kind": "agenda",
- "meeting": "2026-11-04",
- "meeting_time": "12:00 MST (noon in Boulder, Colorado)",
+ "meeting": "2026-11-05",
+ "meeting_time": "10:00 MST (10 a.m. in Boulder, Colorado)",
  "started": "2026-11-02",
- "updated": "2026-11-04 09:10 MST",
- "page_title": "Agenda for November 4",
- "title": "Agenda: Matthew and Cyrus, Wednesday 2026-11-04, noon Mountain",
- "sub": "The topics Matthew brings to his meeting with Cyrus on Wednesday 2026-11-04 at noon Mountain time (12:00 MST, Boulder), in four parts: performance, Hazel embedded in JS programs, DSL tile editors as livelits, and long types shown whole. <b>A work in progress:</b> compiled over the two days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
+ "updated": "2026-11-04 11:55 MST",
+ "page_title": "Agenda for November 5",
+ "title": "Agenda: Matthew and Cyrus, Thursday 2026-11-05, 10:00 Mountain",
+ "sub": "The topics Matthew brings to his meeting with Cyrus on Thursday 2026-11-05 at 10:00 Mountain time (10:00 MST, Boulder; moved from Wednesday 2026-11-04 at noon), in four parts: performance, Hazel embedded in JS programs, DSL tile editors as livelits, and long types shown whole. <b>A work in progress:</b> compiled over the days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
  "short": [
   "<b>Performance: an edit and an undo each cost time in proportion to the program.</b> Measured on #2635 at five sizes: at 6,400 definitions an edit takes about 106 ms, followed by about 78 ms of statics. Three fixes are on #2635: two took 31 to 46% off every step at the larger sizes, and the third stops an undo rebuilding the syntax twice, so at 3,200 definitions an undo costs under two edits instead of about three, and a redo about one; what is left is whole-program passes around incremental caches that already work. In space, Andrew Blinn's compaction of undo entries cut what a #2597 tab kept after 12 edits from 1,048 MB to 159; dev does not have it yet. Across the worker boundary, sharing keeps an edit's request small (Full Body: 27 KB, not 1.95 MB), but two slides were sent whole, about 200 ms a request. That is fixed on #2635 (a repeat send now takes 1.8 ms); the worker now spends 47 ms a request putting the pieces back together, the next target. Getting to O(log n) is a design question for the meeting (^report(38), both stories; <a href=\"../036/\"><code class=\"ref\"><b>^report(</b>36<b>)</b></code></a>, in progress).",
   "<b>Hazlets: Hazel embedded in a JS program's event handlers.</b> A new word for the pattern Messed Up Dress Up uses, the first and so far only one. A demo of the game's scripts, the question <a href=\"../034/\"><code class=\"ref\"><b>^report(</b>34<b>)</b></code></a> asks (should the library be official?), and a prototype npm package, <code>hazeljs</code>: on npm since 2026-11-02, at 0.0.4 now, and MUDU loads its Hazel from it.",
@@ -115,11 +115,11 @@
      "id": "dsl-livelit",
      "title": "A livelit whose literal is a grammar and whose view is a tile editor for it",
      "asked": "Cyrus, late October (his idea; Matthew brings it back, 2026-11-02)",
-     "ticket": null,
-     "status": "idea",
+     "ticket": 684,
+     "status": "idea; a first prototype on draft #2806",
      "tone": "accent",
-     "as_of": "2026-11-02 10:35",
-     "body": "<ul><li><b>The literal</b> is a Hazel datatype describing a context-free grammar: its production rules.</li><li><b>Behind the scenes,</b> a parser generator reads that grammar. Menhir is one candidate; a simpler generator could come first if needed.</li><li><b>The livelit's model, view and update</b> present a tile-based editor for those production rules.</li><li><b>The expansion</b> is the program's abstract syntax as a parse tree, as a Hazel value, or something analogous.</li></ul><p><b>Related so far.</b> Cyrus's interest in DSLs in Hazel as tile-based livelits, and his pointer to language boxes (Diekmann and Tratt's Eco editor: each box has its own lexer and parser, and is one token to its parent) for #2542, the shared-tokenizer limit on sub-language tiles. Fumola as tiles: a sort in Hazel's own tile grammar (#2529), and <code>^fumola_wip</code> on the remote-splices branch (2026-09-29), a livelit that edits Fumola code as tiles, a first prototype of a DSL as a tile livelit. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>); this would make the grammar a value a program writes.</p><p><b>A question the parser raises:</b> Menhir generates OCaml code when Hazel is built, so on its own it cannot read a grammar written in a running program. A grammar given at run time needs a parser built at run time, such as an Earley parser, which accepts any context-free grammar, or tables built in the browser. Or the grammar's definition could be compiled ahead of time for built-in DSLs only.</p>",
+     "as_of": "2026-11-04 11:55",
+     "body": "<ul><li><b>The literal</b> is a Hazel datatype describing a context-free grammar: its production rules.</li><li><b>Behind the scenes,</b> a parser generator reads that grammar. Menhir is one candidate; a simpler generator could come first if needed.</li><li><b>The livelit's model, view and update</b> present a tile-based editor for those production rules.</li><li><b>The expansion</b> is the program's abstract syntax as a parse tree, as a Hazel value, or something analogous.</li></ul><p><b>Related so far.</b> Cyrus's interest in DSLs in Hazel as tile-based livelits, and his pointer to language boxes (Diekmann and Tratt's Eco editor: each box has its own lexer and parser, and is one token to its parent) for #2542, the shared-tokenizer limit on sub-language tiles. Fumola as tiles: a sort in Hazel's own tile grammar (#2529), and <code>^fumola_wip</code> on the remote-splices branch (2026-09-29), a livelit that edits Fumola code as tiles, a first prototype of a DSL as a tile livelit. Hazel's own tiles come from a fixed table of forms in its source (<code>src/haz3lcore/lang/Form.re</code>); this would make the grammar a value a program writes.</p><p><b>A question the parser raises:</b> Menhir generates OCaml code when Hazel is built, so on its own it cannot read a grammar written in a running program. A grammar given at run time needs a parser built at run time, such as an Earley parser, which accepts any context-free grammar, or tables built in the browser. Or the grammar's definition could be compiled ahead of time for built-in DSLs only.</p><p><b>A first prototype, since 2026-11-04</b> (Matthew's ask: the model is a production rule system, its rules in a certain order; IMP's rules first): the slide <i>Livelit Playground / Grammar: IMP</i> on draft #2806, into #2635's branch, written up in <a href=\"../041/\"><code class=\"ref\"><b>^report(</b>41<b>)</b></code></a>. Its model is the rules, in order; each alternative is edited as a line of words and drawn as chips colored by rule; its expansion is the grammar itself, a Hazel value, which the slide's program reads to write an example sentence for each alternative, so reordering the rules changes the examples. Not built yet: a parser at run time, and programs in the language as tiles. Trying it found a crash in #2635 (the explainer's highlighting with the caret on any livelit), fixed in #2810.</p>",
      "meeting": "Is this the shape Cyrus has in mind for DSLs in Hazel? Built-in, or user-defined livelits? Grammars given at run time, or compiled ahead of time? And what is the first demo: a small grammar (arithmetic, or a JSON-like data language), its tile editor, and its expansion as a Hazel value?"
     }
    ]
@@ -127,7 +127,7 @@
   {
    "id": "types",
    "title": "4. Long types, shown whole",
-   "intro": "Matthew's two questions from the morning of the meeting: where the type expansion PRs stand on the way to dev, and whether the types in &Gamma; get the same treatment.",
+   "intro": "Matthew's two questions from the morning of 2026-11-04: where the type expansion PRs stand on the way to dev, and whether the types in &Gamma; get the same treatment.",
    "items": [
     {
      "id": "type-expansion",
