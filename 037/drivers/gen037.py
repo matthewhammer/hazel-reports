@@ -108,6 +108,10 @@ for sec in A["sections"]:
         parts.append(item(n, it))
     parts.append(next_steps(sec))
 items = "\n\n".join(p for p in parts if p)
+# what the meeting decided, from Matthew's notes after it (agenda.json "decided", 2026-11-05)
+decided_html = ("" if not A.get("decided") else
+    '<h2 id="decided">Decided at the meeting</h2>\n<div class="next"><p><b>From Matthew\'s notes after the meeting, ' + esc(A["meeting"][:10]) + '.</b></p><ol>\n'
+    + "".join(f"  <li>{chips(s)}</li>\n" for s in A["decided"]) + "</ol></div>\n\n")
 outline_html = outline_section(A.get("outline"))
 data_js = json.dumps(A, ensure_ascii=False).replace("</", "<\\/")
 
@@ -202,7 +206,7 @@ page = f"""<!doctype html>
 {"".join(f"  <li>{s}</li>" + chr(10) for s in A["short"])}</ol>
 </div>
 
-{items}
+{decided_html}{items}
 
 <h2 id="if-time">If there is time</h2>
 <ul>
