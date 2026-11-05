@@ -5,6 +5,9 @@
 repository's root, then the series tools (report_refs, link_prs, add_theme).
   python3 037/drivers/gen037.py"""
 import json, html, os, re
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import figs037  # each item's figures (Matthew, 2026-11-05: graphics for each item without having to click)
 
 A = json.load(open("037/data/agenda.json"))
 # the items are numbered through the sections, in order
@@ -40,6 +43,18 @@ def outline_section(o):
     pts = "".join("  <li>" + p["text"] + ("<ul>" + "".join(f"<li>{q}</li>" for q in p.get("sub", [])) + "</ul>" if p.get("sub") else "") + "</li>" + chr(10) for p in o["points"])
     return f'<h2 id="outline">{o["title"]}</h2>' + chr(10) + f'<p>{o["intro"]}</p>' + chr(10) + "<ul>" + chr(10) + pts + "</ul>" + chr(10) + chr(10)
 
+def chips(s):
+    """^report(N) and ^ticket(N) in a caption, written as the series' chips (tools/report_refs.py links them)"""
+    return re.sub(r"\^(report|ticket)\((\d+)\)", lambda m: f'<code class="ref"><b>^{m.group(1)}(</b>{m.group(2)}<b>)</b></code>', s)
+
+
+def figrow(it):
+    figs = figs037.FIGS.get(it["id"], [])
+    if not figs: return ""
+    return ('<div class="figrow">' + "".join(
+        f'<figure class="f{" wide" if wide else ""}">{h}<figcaption>{chips(c)}</figcaption></figure>' for h, c, wide in figs) + "</div>")
+
+
 def item(n, it):
     assert it["tone"] in TONES, it["tone"]
     ticket = (f' · <code class="ref"><b>^ticket(</b>{it["ticket"]}<b>)</b></code>'
@@ -51,6 +66,7 @@ def item(n, it):
     return f"""<section class="item {it["tone"]}" id="{it["id"]}">
 <h3><span class="n">{n}.</span> {it["title"]} <span class="chip {it["tone"]}">{esc(it["status"])}</span> <a class="item-link" href="#{it["id"]}" title="A link to this item">#{n}</a> <button type="button" class="copy-item" data-copy="{esc(copy_text(n, it))}" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
 <p class="meta">Asked by {esc(it["asked"])}{ticket} · as of {esc(it["as_of"])}</p>
+{figrow(it)}
 {it["body"]}
 {prs}
 <p class="ask"><b>For the meeting:</b> {it["meeting"]}</p>
@@ -71,9 +87,21 @@ rows = "\n".join(
      f'  <tr><td class="n">{n}</td><td><a href="#{it["id"]}">{it["title"]}</a></td>'
      f'<td><span class="chip {it["tone"]}">{esc(it["status"])}</span></td></tr>')
     for sec, n, it in numbered())
-items = "\n\n".join(
-    (f'<h2 id="{sec["id"]}">{sec["title"]}</h2>\n<p>{sec["intro"]}</p>' if it is None else item(n, it))
-    for sec, n, it in numbered())
+def next_steps(sec):
+    """(Matthew, 2026-11-05: "let's also state the 'next steps' for each section") after the section's items"""
+    if not sec.get("next"): return ""
+    return ('<div class="next"><p><b>Next steps for this section</b></p><ol>'
+            + "".join(f"<li>{x}</li>" for x in sec["next"]) + "</ol></div>")
+
+
+parts, n = [], 0
+for sec in A["sections"]:
+    parts.append(f'<h2 id="{sec["id"]}">{sec["title"]}</h2>\n<p>{sec["intro"]}</p>')
+    for it in sec["items"]:
+        n += 1
+        parts.append(item(n, it))
+    parts.append(next_steps(sec))
+items = "\n\n".join(p for p in parts if p)
 outline_html = outline_section(A.get("outline"))
 data_js = json.dumps(A, ensure_ascii=False).replace("</", "<\\/")
 
@@ -139,6 +167,11 @@ page = f"""<!doctype html>
     border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 2px; }}
   h3 button.copy-item:hover {{ color: inherit; }}
   h3 button.copy-item.done {{ color: var(--good, #15803d); border-color: var(--good, #15803d); }}
+  .figrow {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 18px; margin: 10px 0 14px; }}
+  .figrow figure {{ margin: 0; min-width: 0; }} .figrow figure.wide {{ grid-column: 1 / -1; }} .figrow figure:only-child:not(.wide) {{ max-width: 480px; }}
+  .figrow figcaption {{ color: var(--muted); font-size: 0.86em; line-height: 1.4; margin-top: 6px; max-width: none; }}
+  .next {{ background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--accent2); border-radius: 8px; padding: 8px 16px 6px; margin: 16px 0 8px; }}
+  .next p {{ margin: 4px 0; }} .next ol {{ margin: 4px 0 6px; padding-left: 1.4em; }} .next li {{ margin: 4px 0; max-width: none; }}
   section.item:target {{ outline: 2px solid color-mix(in srgb, var(--good, #15803d) 40%, transparent); border-radius: 6px; }}
 </style>
 </head>
