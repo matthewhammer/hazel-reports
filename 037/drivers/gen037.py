@@ -55,6 +55,12 @@ def figrow(it):
         f'<figure class="f{" wide" if wide else ""}">{h}<figcaption>{chips(c)}</figcaption></figure>' for h, c, wide in figs) + "</div>")
 
 
+def decided(it):
+    # what the meeting settled, from Matthew's notes after it (agenda.json "decided")
+    return (f'<p class="decided"><b>Decided at the meeting ({esc(A["meeting"][:10])}):</b> {it["decided"]}</p>\n'
+            if it.get("decided") else "")
+
+
 def item(n, it):
     assert it["tone"] in TONES, it["tone"]
     ticket = (f' · <code class="ref"><b>^ticket(</b>{it["ticket"]}<b>)</b></code>'
@@ -70,7 +76,7 @@ def item(n, it):
 {it["body"]}
 {prs}
 <p class="ask"><b>For the meeting:</b> {it["meeting"]}</p>
-</section>"""
+{decided(it)}</section>"""
 
 
 def numbered():
@@ -159,6 +165,7 @@ page = f"""<!doctype html>
   .item h3 .n {{ color: var(--muted); }}
   .meta {{ color: var(--muted); font-size: 0.9em; margin: 0 0 8px; }}
   .ask {{ border-top: 1px dashed var(--line); padding-top: 8px; margin-bottom: 2px; }}
+  .decided {{ border-left: 4px solid var(--good); background: var(--paper); padding: 6px 12px; border-radius: 6px; margin: 8px 0 4px; }}
   details {{ margin: 6px 0 10px; }} summary {{ cursor: pointer; color: var(--muted); }}
   ul.prs {{ columns: 2 22em; margin: 6px 0; }}
   h3 a.item-link {{ color: var(--muted, #666); text-decoration: none; font-size: 0.7em; font-weight: normal; margin-left: 4px; }}

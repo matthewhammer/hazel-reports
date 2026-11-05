@@ -4,7 +4,7 @@
  "meeting": "2026-11-05",
  "meeting_time": "10:00 MST (10 a.m. in Boulder, Colorado)",
  "started": "2026-11-02",
- "updated": "2026-11-05 08:57 MST",
+ "updated": "2026-11-05 12:11 MST",
  "page_title": "Agenda for November 5",
  "title": "Agenda: Matthew and Cyrus, Thursday 2026-11-05, 10:00 Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Thursday 2026-11-05 at 10:00 Mountain time (10:00 MST, Boulder; moved from Wednesday 2026-11-04 at noon), in four parts: performance, Hazel embedded in JS programs, DSL tile editors as livelits, and long types shown whole. <b>A work in progress:</b> compiled over the days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
@@ -60,9 +60,10 @@
      "ticket": 663,
      "status": "merged; #2635 all green, the deck included",
      "tone": "good",
-     "as_of": "2026-11-04 09:04",
+     "as_of": "2026-11-05 12:11",
      "body": "<p>Dev's 10-29 merge day (149 commits: curried function definitions #2403, .rei interfaces, PerfBudgets #2678, the quick tests #2714 and more) merged into #2635 at 2cab658ef1. CI passed (Fast checks, Full tests, Static checks), and the 8 long-known Full-test failures are gone. The Firefox deck check failed on a workflow line the merge left stale (it ran dune through opam, which dev's toolchain step leaves off the path).</p><p><b>Since:</b> the fix, 1d17541aaf, pushed 2026-11-02 16:29: the deck builds and runs. Three of its 12 cases failed, all on the eye that reveals a livelit's syntax, and a rerun failed a different set. <b>The cause is the test harness, not the app</b> (2026-11-03): dev's c206b02c25 gives a build of any branch but dev an IndexedDB database of its own, <code>hazel:&lt;branch&gt;</code>, and the deck's reset between cases (<code>/fresh</code>, in <code>scripts/dev_serve.py</code>) cleared only <code>hazel</code>, so each case met the edits of the one before. With the reset clearing the branch's database too, all 12 cases pass: on #2635 since 2026-11-03 (243874eecd). #2635 is green at its head, ab7273c984 (2026-11-05): Fast checks, Static checks, Full tests; the livelit deck in Firefox was green at c079fa2e24, the commit before the two pushed today.</p>",
-     "meeting": "The landing order: #2469 into dev, then #2635 retargeted to dev?"
+     "meeting": "The landing order: #2469 into dev, then #2635 retargeted to dev?",
+     "decided": "livelits go into dev; that is settled. Cyrus had said so on 2026-10-29. Still to decide: how, perhaps as several PRs rather than #2635 retargeted whole, and in what order with #2469."
     }
    ],
    "next": [
@@ -70,7 +71,7 @@
     "On the meeting's answer about O(log n): a design for the top level as a balanced tree of definitions (<code class=\"ref\"><b>^ticket(</b>665<b>)</b></code>), starting with the outline, which every undo pays for, and every edit while the sidebar is shown.",
     "The livelit definitions' last piece (<code class=\"ref\"><b>^ticket(</b>666<b>)</b></code>): option (a), keep each definition's run by its source, unless the meeting picks (b) or (c).",
     "#2793 as the meeting decides: take it whole, cut it to 602498d7aa, or close it.",
-    "The landing order: #2469 into dev, then #2635 retargeted; and whether dev gets the undo compaction now or with #2469."
+    "How livelits go into dev (that they go is settled): a proposed split of #2635 into PRs dev can review, and the order with #2469; and whether dev gets the undo compaction now or with #2469."
    ]
   },
   {
@@ -107,15 +108,16 @@
      "ticket": 668,
      "status": "hazeljs 0.0.4 is on npm",
      "tone": "good",
-     "as_of": "2026-11-04 09:04",
+     "as_of": "2026-11-05 12:11",
      "body": "<p>A task for Claude: what it takes to publish a prototype npm package that anyone can install and use, documented the way npm packages are. Split into linked tickets: the package's build for node and the browser (^ticket(669)), TypeScript declarations (^ticket(670)), the README and a CHANGELOG (^ticket(671)), examples and an install check on GitHub (^ticket(672)), the name, license, versions and who publishes (^ticket(673)), and MUDU loading its Hazel from the published package (^ticket(674)).</p><p><b>A first version, the same day:</b> <code>hazeljs</code> 0.0.1 (the name is Matthew's pick; <i>Hazlet</i> stays the name of the pattern), built from #2719 at <code>0d66c36618</code>: hazel-lib.js, entry points for <code>require</code> and <code>import</code> and a browser script tag, TypeScript declarations, and a README the npm way, which sends readers to hazel.org and to the GitHub contributors for who makes Hazel. 648.5 kB packed (2.8 MB unpacked). Installed from its tarball into a fresh project, every example in the README runs. Found on the way: a module of about 150 members overflows Node's default stack, and the <code>ms</code> field always reads 0; both went into the README's limits (the second is fixed in 0.0.4, below).</p><p><b>Published</b> 2026-11-02 at 11:03 MST, under Matthew's npm account: <a href=\"https://www.npmjs.com/package/hazeljs\">npmjs.com/package/hazeljs</a>, so <code>npm install hazeljs</code> works. Checked from the registry, not the tarball: a fresh project installs it and runs the README's examples through <code>require</code> and <code>import</code>, and jsDelivr and unpkg both serve hazel-lib.js for a script tag. npm also listed a placeholder it made first, 0.0.0-stage, since deprecated.</p><p><b>Since, three more versions</b> (all 2026-11-03), and the game on the package:</p><ul><li><b>0.0.2:</b> the package's source has a home, <a href=\"https://github.com/hazelgrove/hazeljs\">hazelgrove/hazeljs</a>, which npm's page now names. Examples (Node with <code>require</code> and with <code>import</code>, TypeScript in strict mode, a plain page), and a check on GitHub that packs the package, installs it and runs them on Node 18, 20 and 22.</li><li><b>0.0.3:</b> a tagline, <i>Hazel edit boxes that extend ordinary JavaScript programs with custom behavior</i>, and two README sections: errors, holes and unfinished code (MUDU's type error as the example), and how to check that hazel-lib.js really is the Hazel commit it names (a workflow rebuilds it from that commit and compares).</li><li><b>0.0.4:</b> hazel-lib.js from #2719 at <code>1ba138ef28</code>, with <code>ms</code> measured; it read 0 because js_of_ocaml moved the first reading of the clock to after the call. Built on GitHub, byte for byte the same file as Hazel's own deploy of that commit.</li><li><b>MUDU loads its Hazel from the package</b> (hazeljs 0.0.1, from jsDelivr) since Dress Up 0.0.476 (^ticket(674)).</li></ul><p><b>Matthew's next ask:</b> the trap room live in <a href=\"../034/\"><code class=\"ref\"><b>^report(</b>34<b>)</b></code></a>, its Hazel rule editable in Hazel's tiles and the room answering each edit (^ticket(675)). <b>A first version is live</b> since 2026-11-03: the game, opened at the trap room, on <a href=\"../034/#try\">^report(34)'s page</a>, where a reader pulls a lever or edits the room's rule in the Scripting tab. Next: Hazel's tiles and the room side by side on the page, wired through hazeljs (^ticket(677), ^ticket(678)).</p>",
-     "meeting": "Keep it under Matthew's npm account, or move it to a Hazel organization on npm (@hazelgrove)? And is the package the library alone, or also the Hazlet pattern: a helper that turns a program of modules into JS event handlers, as MUDU uses it?"
+     "meeting": "Keep it under Matthew's npm account, or move it to a Hazel organization on npm (@hazelgrove)? And is the package the library alone, or also the Hazlet pattern: a helper that turns a program of modules into JS event handlers, as MUDU uses it?",
+     "decided": "hazeljs should follow dev, perhaps once modular editors (#2469) lands on dev. Not urgent: until then it stays on #2719's line."
     }
    ],
    "next": [
     "Hazel's tiles and the trap room side by side on <code class=\"ref\"><b>^report(</b>34<b>)</b></code>'s page, wired through hazeljs (<code class=\"ref\"><b>^ticket(</b>677<b>)</b></code>, <code class=\"ref\"><b>^ticket(</b>678<b>)</b></code>).",
     "On the meeting's answer: #2711 and #2719 merged as an experimental library, or held.",
-    "hazeljs: under Matthew's npm account or @hazelgrove, and whether the Hazlet helper joins the package.",
+    "hazeljs to follow dev, perhaps after #2469 lands there (not urgent); meanwhile, under Matthew's npm account or @hazelgrove, and whether the Hazlet helper joins the package.",
     "Cyrus's read of the rules' types, into <code class=\"ref\"><b>^report(</b>33<b>)</b></code>'s names for places and things."
    ]
   },
