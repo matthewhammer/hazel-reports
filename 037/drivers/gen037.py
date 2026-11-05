@@ -169,6 +169,7 @@ page = f"""<!doctype html>
   h3 button.copy-item.done {{ color: var(--good, #15803d); border-color: var(--good, #15803d); }}
   .figrow {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 18px; margin: 10px 0 14px; }}
   .figrow figure {{ margin: 0; min-width: 0; }} .figrow figure.wide {{ grid-column: 1 / -1; }} .figrow figure:only-child:not(.wide) {{ max-width: 480px; }}
+  .figrow figure.wide {{ overflow-x: auto; }} .figrow figure.wide svg {{ min-width: 760px; }}
   .figrow figcaption {{ color: var(--muted); font-size: 0.86em; line-height: 1.4; margin-top: 6px; max-width: none; }}
   .next {{ background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--accent2); border-radius: 8px; padding: 8px 16px 6px; margin: 16px 0 8px; }}
   .next p {{ margin: 4px 0; }} .next ol {{ margin: 4px 0 6px; padding-left: 1.4em; }} .next li {{ margin: 4px 0; max-width: none; }}

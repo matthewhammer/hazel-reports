@@ -93,7 +93,7 @@ def fig_undo_fix():
         o.append(f'<rect x="{L}" y="{y}" width="{X(a) - L:.1f}" height="14" rx="3" fill="var(--muted)" opacity="0.45"><title>{k} before the fix: {a} ms</title></rect>')
         o.append(text(X(a) + 6, y + 11, f"{a} before", 11.5, "start", "var(--muted)"))
         o.append(f'<rect x="{L}" y="{y + 18}" width="{X(b) - L:.1f}" height="14" rx="3" fill="{col}"><title>{k} after the fix: {b} ms</title></rect>')
-        o.append(text(X(b) + 6, y + 29, f"{b} after", 11.5, "start", "var(--ink)", 700))
+        o.append(text(max(X(b), X(46)) + 6, y + 29, f"{b} after", 11.5, "start", "var(--ink)", 700))
     o.append(f'<line x1="{X(46):.1f}" x2="{X(46):.1f}" y1="{T - 22}" y2="{H - 34}" stroke="{EDIT}" stroke-width="2" stroke-dasharray="5 3"><title>an edit: about 46 ms</title></line>')
     o.append(text(X(46) + 5, T - 12, "an edit: 46 ms", 11.5, "start", EDIT, 700))
     o.append(text((L + W - R) / 2, H - 4, "ms per step at 3,200 definitions", 11, "middle", "var(--muted)"))
@@ -390,7 +390,8 @@ FIGS = {
     "library": [(fig_hazlet(), "What a Hazlet is, and the split ^report(34) proposes for the library.", True)],
     "npm": [(fig_npm(), "hazeljs on npm: four versions in two days (npmjs.com/package/hazeljs).", True)],
     "type-expansion": [(fig_type_prs(), "The two PRs toward dev, and the branches that already carry them.", False)],
-    "gamma-types": [(fig_unfold_ways(), "The three ways to offer unfolding in Γ, each a setting on #2635's Colors slide (^ticket(468)).", False)],
+    "gamma-types": [(img("img/gamma-json-unfolded.jpg", "Gamma on #2698's build, the tutorial: the JSON entry unfolded, its recursive sum laid out over five lines; KeyMod and Either still folded, each with its toggle"), "Γ on #2698's build (build.hazel.org/context-inspector-long-types, the tutorial): the JSON entry unfolded with its toggle (▾), its type laid out under its name; KeyMod and Either still folded (▸).", False),
+                    (fig_unfold_ways(), "The three ways to offer unfolding in Γ, each a setting on #2635's Colors slide (^ticket(468)).", False)],
     "dsl-livelit": [(img("img/grammar-imp-opens.jpg", "The grammar livelit as it opens: three rules, Var, Cmd and Exp, each alternative a text box with its chips beside it"), "The prototype on draft #2806: IMP's rules, each alternative drawn as chips coloured by rule (^report(41)).", False),
                     (fig_grammar_flow(), "What a DSL livelit needs, and what the prototype has.", False)],
 }
