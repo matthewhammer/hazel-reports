@@ -4,7 +4,7 @@
  "meeting": "2026-11-05",
  "meeting_time": "10:00 MST (10 a.m. in Boulder, Colorado)",
  "started": "2026-11-02",
- "updated": "2026-11-05 02:25 MST",
+ "updated": "2026-11-05 02:26 MST",
  "page_title": "Agenda for November 5",
  "title": "Agenda: Matthew and Cyrus, Thursday 2026-11-05, 10:00 Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Thursday 2026-11-05 at 10:00 Mountain time (10:00 MST, Boulder; moved from Wednesday 2026-11-04 at noon), in four parts: performance, Hazel embedded in JS programs, DSL tile editors as livelits, and long types shown whole. <b>A work in progress:</b> compiled over the days before the meeting and updated as items move, so each item says where it stands, as of when, and what it needs from the meeting.",
@@ -47,11 +47,11 @@
      "title": "Why #2635's evaluator takes half dev's steps on the PerfBudgets program",
      "asked": "Matthew, 2026-11-02",
      "ticket": 667,
-     "status": "explained; a PR to dev, #2793, waits for review",
+     "status": "explained; a PR to dev, #2793: reviewed, ambivalent (speed against special cases)",
      "tone": "good",
-     "as_of": "2026-11-04 09:04",
-     "body": "<p>Cyrus's PerfBudgets test (#2678) counts the evaluator's trampoline steps on a fixed program: 206,834 on dev, 96,438 on #2635 after this week's dev merge.</p><p><b>Why (2026-11-03):</b> the same reductions take fewer trampoline bounces on #2635, every form alike. A probe of 16 small programs counts about twice dev's steps on dev for each (a bare literal: 12 steps on dev, 0 on #2635). Two of our October commits, on #2597's line and so on #2635 but not on dev, remove the bounces: d0c56fb090 (binding a value that is already done calls its continuation directly) is half the gap, since #2635 with it reverted counts 152,746; 602498d7aa (the evaluator skips binds that only pass a value through) is, by its own measure, most of the rest. The first is mostly counting (allocation 4% lower, time inside the noise); the second was 16 to 25% faster on a call-heavy program.</p><p><b>Since: a PR to dev, #2793</b> (opened 2026-11-03). It brings both commits, the second rewritten for dev's own evaluator, and lowers PerfBudgets' budgets to match: dev then counts 96,438 steps cold and 270 after an edit, the same as #2635, against budgets of 106,000 and 300. Two new tests evaluate recursion 20,000 deep, to show the evaluator is still stack-safe. CI green (Fast checks, Static checks, Full tests); waiting for a review.</p>",
-     "meeting": "#2793 brings both commits to dev and halves dev's PerfBudgets count and budget: who should review it?"
+     "as_of": "2026-11-05 02:26",
+     "body": "<p>Cyrus's PerfBudgets test (#2678) counts the evaluator's trampoline steps on a fixed program: 206,834 on dev, 96,438 on #2635 after this week's dev merge.</p><p><b>Why (2026-11-03):</b> the same reductions take fewer trampoline bounces on #2635, every form alike. A probe of 16 small programs counts about twice dev's steps on dev for each (a bare literal: 12 steps on dev, 0 on #2635). Two of our October commits, on #2597's line and so on #2635 but not on dev, remove the bounces: d0c56fb090 (binding a value that is already done calls its continuation directly) is half the gap, since #2635 with it reverted counts 152,746; 602498d7aa (the evaluator skips binds that only pass a value through) is, by its own measure, most of the rest. The first is mostly counting (allocation 4% lower, time inside the noise); the second was 16 to 25% faster on a call-heavy program.</p><p><b>Since: a PR to dev, #2793</b> (opened 2026-11-03). It brings both commits, the second rewritten for dev's own evaluator, and lowers PerfBudgets' budgets to match: dev then counts 96,438 steps cold and 270 after an edit, the same as #2635, against budgets of 106,000 and 300. Two new tests evaluate recursion 20,000 deep, to show the evaluator is still stack-safe. CI green (Fast checks, Static checks, Full tests); waiting for a review.</p><p><b>A review (2026-11-03, Negabinary):</b> &ldquo;4% memory improvement, 15% speed improvement, slight readability loss bc we&rsquo;ve got more special-casing going on. Tradeoff make me ambivalent as to whether this goes in.&rdquo; The two commits are separable: 602498d7aa (skipping binds that only pass a value through) carries the speed; d0c56fb090 (calling a done value&rsquo;s continuation directly) is mostly the count, with the 4% allocation.</p>",
+     "meeting": "#2793: Negabinary weighs 15% speed and 4% memory against more special cases in the evaluator, and is ambivalent. Take it whole, take only the speed commit (602498d7aa), or close it and keep the halving on #2635's line only?"
     },
     {
      "id": "dev-merge",
