@@ -154,7 +154,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>44<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 11:29 MST · <span class="wip">work in progress</span> · after <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>44<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 11:38 MST · <span class="wip">work in progress</span> · after <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -307,7 +307,7 @@ let total = fun ss : [Shape] ->
 
 <h2 id="limits">Limits today<a class="anchor" href="#limits" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="limits" title="copy this section's address">copy link</button></h2>
 <ul>
-<li><b>The editor is a branch build</b> of Hazel, <code>build.hazel.org/embed-editable</code> (on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s branch, no PR yet), not part of <code>hazeljs</code>; a page has to find it. Planned: the editor in the package.</li>
+<li><b>The editor is a branch build</b> of Hazel, <code>build.hazel.org/embed-editable</code> (<a href="https://github.com/hazelgrove/hazel/pull/2814">#2814</a>, a draft stacked on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>), not part of <code>hazeljs</code>; a page has to find it. Planned: the editor in the package.</li>
 <li><b>It takes messages only from a few sites:</b> <code>https://matthewhammer.org</code> and <code>localhost</code> (and its own), a list built into the frame (<code>site_origins</code> in <code>src/web/embed/EmbedProtocol.re</code>). Another site's article needs its origin added there, until the policy changes: a frame that only shows a program and posts back its own text might well take any site.</li>
 <li><b>Go to definition starts only in an editable listing.</b> The read-only view has no Ctrl+click or F12, so a read-only listing can be gone to, but not gone from. That is why the script's listings are editable by default.</li>
 <li><b>Each listing loads Hazel's app</b> in its frame, so a page with many listings takes a while to start them all.</li>
@@ -483,7 +483,7 @@ let total = fun ss : [Shape] ->
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}}, BUILT = "2026-11-06";
+  const CACHED = {"hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 0, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T18:38:17Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */

@@ -67,7 +67,7 @@ let total = fun ss : [Shape] ->
 
 <h2 id="limits">Limits today</h2>
 <ul>
-<li><b>The editor is a branch build</b> of Hazel, <code>build.hazel.org/embed-editable</code> (on #2719's branch, no PR yet), not part of <code>hazeljs</code>; a page has to find it. Planned: the editor in the package.</li>
+<li><b>The editor is a branch build</b> of Hazel, <code>build.hazel.org/embed-editable</code> (#2814, a draft stacked on #2719), not part of <code>hazeljs</code>; a page has to find it. Planned: the editor in the package.</li>
 <li><b>It takes messages only from a few sites:</b> <code>https://matthewhammer.org</code> and <code>localhost</code> (and its own), a list built into the frame (<code>site_origins</code> in <code>src/web/embed/EmbedProtocol.re</code>). Another site's article needs its origin added there, until the policy changes: a frame that only shows a program and posts back its own text might well take any site.</li>
 <li><b>Go to definition starts only in an editable listing.</b> The read-only view has no Ctrl+click or F12, so a read-only listing can be gone to, but not gone from. That is why the script's listings are editable by default.</li>
 <li><b>Each listing loads Hazel's app</b> in its frame, so a page with many listings takes a while to start them all.</li>
