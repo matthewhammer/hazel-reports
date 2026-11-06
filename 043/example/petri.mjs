@@ -15,25 +15,56 @@ type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) 
 
 // ---- 2. The rules, as a user would write them in the app's editors: a module of helpers, and the module with on_event.
 const COMMON = `# the i-th of a list of Ints, 0 past its end #
-let nth = fun (xs, i) : ([Int], Int) -> case xs | [] => 0 | x :: rest => if i == 0 then x else nth(rest, i - 1) end;
-let len = fun xs : [Int] -> case xs | [] => 0 | _ :: rest => 1 + len(rest) end;
+let nth = fun (xs, i) : ([Int], Int) ->
+  case xs
+  | [] => 0
+  | x :: rest => if i == 0 then x else nth(rest, i - 1)
+  end;
+let len = fun xs : [Int] ->
+  case xs | [] => 0 | _ :: rest => 1 + len(rest) end;
 # the i-th transition, if there is one #
-let pick = fun (ts, i) : ([Transition], Int) -> case ts | [] => None | t :: rest => if i == 0 then Some(t) else pick(rest, i - 1) end;
+let pick = fun (ts, i) : ([Transition], Int) ->
+  case ts
+  | [] => None
+  | t :: rest => if i == 0 then Some(t) else pick(rest, i - 1)
+  end;
 # every input place holds at least its arc's weight #
-let has = fun (m, arcs) : ([Int], [Arc]) -> case arcs | [] => true | a :: rest => nth(m, a.place) >= a.weight && has(m, rest) end;
+let has = fun (m, arcs) : ([Int], [Arc]) ->
+  case arcs
+  | [] => true
+  | a :: rest => nth(m, a.place) >= a.weight && has(m, rest)
+  end;
 let enabled = fun (m, t) : ([Int], Transition) -> has(m, t.inputs);
 # the indices of the transitions that can fire #
-let ready = fun (m, ts, i) : ([Int], [Transition], Int) -> case ts | [] => [] | t :: rest => if enabled(m, t) then i :: ready(m, rest, i + 1) else ready(m, rest, i + 1) end;
+let ready = fun (m, ts, i) : ([Int], [Transition], Int) ->
+  case ts
+  | [] => []
+  | t :: rest =>
+    if enabled(m, t) then i :: ready(m, rest, i + 1)
+    else ready(m, rest, i + 1)
+  end;
 # firing: take each input's tokens, then put each output's #
-let takes = fun (arcs, k) : ([Arc], Cmd) -> case arcs | [] => k | a :: rest => Take(a.place, a.weight, takes(rest, k)) end;
-let puts = fun (arcs, k) : ([Arc], Cmd) -> case arcs | [] => k | a :: rest => Put(a.place, a.weight, puts(rest, k)) end;
-let fire = fun t : Transition -> Say(t.name, takes(t.inputs, puts(t.outputs, Done)))`;
+let takes = fun (arcs, k) : ([Arc], Cmd) ->
+  case arcs
+  | [] => k
+  | a :: rest => Take(a.place, a.weight, takes(rest, k))
+  end;
+let puts = fun (arcs, k) : ([Arc], Cmd) ->
+  case arcs
+  | [] => k
+  | a :: rest => Put(a.place, a.weight, puts(rest, k))
+  end;
+let fire = fun t : Transition ->
+  Say(t.name, takes(t.inputs, puts(t.outputs, Done)))`;
 
-const RULES = `# Fire(i): fire transition i if it can. Step: fire one of those that can, chosen by the app's random draw. #
+const RULES = `# Fire(i): fire transition i, if it can. #
+# Step: fire one of those that can, chosen by the app's draw. #
 let fire_at = fun (n, i) : (Net, Int) ->
   case Common.pick(n.transitions, i)
   | None => Say("there is no transition " ++ string_of_int(i), Done)
-  | Some(t) => if Common.enabled(n.marking, t) then Common.fire(t) else Say(t.name ++ " cannot fire now", Done)
+  | Some(t) =>
+    if Common.enabled(n.marking, t) then Common.fire(t)
+    else Say(t.name ++ " cannot fire now", Done)
   end;
 let on_event = fun (n, e) : (Net, Event) ->
   case e
@@ -42,7 +73,9 @@ let on_event = fun (n, e) : (Net, Event) ->
     let r = Common.ready(n.marking, n.transitions, 0) in
     let k = Common.len(r) in
     if k == 0 then Say("deadlock: nothing can fire", Done)
-    else fire_at(n, Common.nth(r, int_of_float(n.draw *. float_of_int(k))))
+    else
+      let j = int_of_float(n.draw *. float_of_int(k)) in
+      fire_at(n, Common.nth(r, j))
   end`;
 
 const spec = rules => ({ preamble: PREAMBLE, modules: [{ name: "Common", text: COMMON }, { name: "Rules", text: rules }],

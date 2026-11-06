@@ -137,6 +137,35 @@ h3.grp { margin-top: 1.2em; }
              overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }
   pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
   ol.steps > li { margin: 10px 0; }
+  /* the live example (live.js) */
+  /* (within the page's column: the nav beside it makes any width from the window wrong) two columns when the column is wide */
+  .live { container-type: inline-size; }
+  .live-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+  @container (min-width: 880px) { .live-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); } .live-left { position: sticky; top: 8px; } }
+  .live-left, .live-right { min-width: 0; }
+  .live-panel { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .live-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+  .live-controls button, .live-toggle { font: inherit; font-size: 0.9em; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--ink); cursor: pointer; }
+  .live-controls button:hover, .live-toggle:hover { border-color: var(--accent); }
+  .live-controls button:disabled { opacity: 0.5; cursor: default; }
+  .live:not(.on) .live-controls, .live:not(.on) .live-ed, .live:not(.on) #live-log { display: none; }
+  .live:not(.on) .live-nojs { display: block; } .live-nojs { display: none; }
+  #live-net .live-tr { cursor: pointer; } #live-net .live-tr.off { fill: var(--muted); opacity: 0.45; }
+  #live-net .live-tr:focus { outline: none; stroke: var(--ink); stroke-width: 2; }
+  .live-marking { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; color: var(--muted); }
+  .live-status { border-left: 4px solid var(--line); padding: 6px 10px; margin: 8px 0; border-radius: 6px; background: var(--bg); font-size: 0.92em; }
+  .live-status.ok { border-left-color: var(--good); } .live-status.no { border-left-color: var(--warn); }
+  .live-status ul { margin: 4px 0 0; padding-left: 1.2em; }
+  .live-ed { margin: 0 0 14px; }
+  .live-ed-head { margin: 0 0 4px; font-size: 0.92em; } .live-ed-head .muted, .muted { color: var(--muted); }
+  .live-why { color: var(--warn); font-size: 0.9em; }
+  .live-frame iframe { width: 100%; height: 120px; border: 1px solid var(--line); border-radius: 8px; display: block; background: var(--paper); }
+  .live-ed textarea { width: 100%; min-height: 18em; font: 0.84em/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: none; }
+  .live-ed[data-mode="text"] textarea { display: block; } .live-ed[data-mode="text"] .live-frame { display: none; }
+  #live-log { font-size: 0.86em; margin-top: 8px; } #live-log td { padding: 4px 6px; } #live-log code.cmd { font-size: 0.85em; }
+  #live-log .warn { color: var(--warn); }
 </style>
 <style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
@@ -149,7 +178,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 09:45 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 10:04 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -243,8 +272,8 @@ document.addEventListener("DOMContentLoaded", () => {
 <ol class="ans">
 <li><p><b>The pattern: your app keeps its state and its screen, and Hazel only decides.</b> On an event, the app calls a Hazel function with a typed view of its state and the event. It then carries out the command the function returns, which is plain data (<a href="#pattern">Figure 1</a>).</p></li>
 <li><p><b>Six steps.</b> Declare the vocabulary as Hazel types. Let users write modules against it. Build the program with <code>Hazel.runProgram</code>. Call the function only when the build is <code>ok</code>, and your own JS handler otherwise. Carry out its commands. Show its errors by module (<a href="#steps">the steps</a>).</p></li>
-<li><p><b>It carries over to a new domain on the first try.</b> A Petri net's firing rule is about 30 lines of Hazel in two modules, and it ran as written. In 2,000 random steps, the two processes were never both inside the shared section (<a href="#example">the example</a>).</p></li>
-<li><p><b>A call costs about 3.5 ms, against 0.7 µs for the same handler in JS.</b> That is fast enough for each click, but not yet for a simulator's inner loop. Building the program takes 337 to 438 ms, and rebuilding after an edit 140 to 171 ms (Node, three runs; <a href="#cost">Figure 4</a>).</p></li>
+<li><p><b>It carries over to a new domain on the first try.</b> A Petri net's firing rule is about 30 lines of Hazel in two modules, and it ran as written. In 2,000 random steps, the two processes were never both inside the shared section. <b>Try it on this page:</b> the net runs here, its rules are in Hazel's own editor, and <code>hazeljs</code> from npm builds every edit (<a href="#try">the example, live</a>).</p></li>
+<li><p><b>A call costs about 3.3 ms, against 0.7 µs for the same handler in JS.</b> That is fast enough for each click, but not yet for a simulator's inner loop. Building the program takes 338 to 366 ms, and rebuilding after an edit 138 to 154 ms (Node, three runs; <a href="#cost">Figure 4</a>).</p></li>
 </ol>
 </div>
 
@@ -324,29 +353,94 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 
 <h2 id="example">A worked example: a Petri net<a class="anchor" href="#example" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="example" title="copy this section's address">copy link</button></h2>
 <p>The net is the classic small one for mutual exclusion: two processes, each idle or busy, and one lock. To become busy, a process takes the lock; to become idle again, it gives the lock back (Figure 3). The JavaScript app keeps the marking (the tokens in each place), and draws it. The rule decides what an event does: <code>Fire(i)</code> fires transition <i>i</i> if it can, and <code>Step</code> fires one of those that can, chosen by a random draw the app passes in.</p>
-<figure class="fig" id="fig-net"><div class="figscroll"><svg viewBox="0 0 700 330" role="img" aria-label="The example's Petri net: two processes, each idle or busy, and one lock; entering takes the lock and leaving gives it back. idle1, idle2 and the lock start with one token each." style="width:100%;height:auto;display:block"><path d="M168 66 C 238 80, 238 100, 238 124" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M234.1 115.9 L238.0 124.0 L241.9 115.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M238 176 C 238 200, 238 220, 168 236" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M175.0 230.4 L168.0 236.0 L176.8 238.0" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M132 236 C 62 220, 62 200, 62 176" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M65.9 184.1 L62.0 176.0 L58.1 184.1" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M62 124 C 62 100, 62 80, 132 66" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M124.8 71.4 L132.0 66.0 L123.3 63.8" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><line x1="326.0" y1="150.0" x2="246.0" y2="150.0" stroke="var(--muted)" stroke-width="1.8"/><path d="M252.9 145.9 L246.0 150.0 L252.9 154.1" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M62 176 C 62 320, 350 320, 344 175" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M348.2 182.9 L344.0 175.0 L340.4 183.3" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><circle cx="150" cy="50" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>idle1: 1 token</title></circle><circle cx="150" cy="50" r="6" fill="var(--ink)"/><text x="150.0" y="92.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">idle1</text><circle cx="150" cy="250" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>busy1: 0 tokens</title></circle><text x="150.0" y="292.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">busy1</text><rect x="232" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition enter1</title></rect><text x="222.0" y="154.0" font-size="12" text-anchor="end" fill="var(--accent)" font-weight="700">enter1</text><rect x="56" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition leave1</title></rect><text x="46.0" y="154.0" font-size="12" text-anchor="end" fill="var(--accent)" font-weight="700">leave1</text><path d="M532 66 C 462 80, 462 100, 462 124" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M458.1 115.9 L462.0 124.0 L465.9 115.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M462 176 C 462 200, 462 220, 532 236" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M523.2 238.0 L532.0 236.0 L525.0 230.4" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M568 236 C 638 220, 638 200, 638 176" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M641.9 184.1 L638.0 176.0 L634.1 184.1" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M638 124 C 638 100, 638 80, 568 66" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M576.7 63.8 L568.0 66.0 L575.2 71.4" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><line x1="374.0" y1="150.0" x2="454.0" y2="150.0" stroke="var(--muted)" stroke-width="1.8"/><path d="M447.1 154.1 L454.0 150.0 L447.1 145.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M638 176 C 638 320, 350 320, 356 175" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M359.6 183.3 L356.0 175.0 L351.8 182.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><circle cx="550" cy="50" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>idle2: 1 token</title></circle><circle cx="550" cy="50" r="6" fill="var(--ink)"/><text x="550.0" y="92.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">idle2</text><circle cx="550" cy="250" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>busy2: 0 tokens</title></circle><text x="550.0" y="292.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">busy2</text><rect x="456" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition enter2</title></rect><text x="478.0" y="154.0" font-size="12" text-anchor="start" fill="var(--accent)" font-weight="700">enter2</text><rect x="632" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition leave2</title></rect><text x="654.0" y="154.0" font-size="12" text-anchor="start" fill="var(--accent)" font-weight="700">leave2</text><circle cx="350" cy="150" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>lock: 1 token</title></circle><circle cx="350" cy="150" r="6" fill="var(--ink)"/><text x="350.0" y="192.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">lock</text></svg></div>
-<figcaption>Figure 3. The example's net. Circles are places, with their starting tokens; bars are transitions. <code>enter1</code> takes a token from <code>idle1</code> and one from <code>lock</code>, and puts one in <code>busy1</code>; <code>leave1</code> does the reverse. Process 2 is the mirror image.</figcaption></figure>
-<p>The rules, as a user would write them in the app's two editors. <code>Common</code>:</p>
+
+<h3 id="try">Try it: this page is the app<a class="anchor" href="#try" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="try" title="copy this section's address">copy link</button></h3>
+<p>Below, this page plays the app. It loads <code>hazeljs</code> 0.0.4 from npm (through the jsDelivr CDN), keeps the net's marking, and draws it. The two modules of rules are in Hazel's own editor, one per module: Hazel's app in a frame, in the editable embed mode that Messed Up Dress Up uses. Every edit comes back to the page, which builds the program again with <code>Hazel.runProgram</code>. While the build is <code>ok</code>, Hazel's <code>on_event</code> answers each event. While it is not, the page's own JS handler answers, the status says why, and the log says who answered. Click a transition to fire it, or step at random.</p>
+<div class="live" id="live">
+<div class="live-grid">
+<div class="live-left">
+<div class="live-panel">
+<figure class="fig" id="fig-net" style="margin:0;border:0;padding:0"><div class="figscroll" id="live-net"><svg viewBox="0 0 700 330" role="img" aria-label="The example's Petri net: two processes, each idle or busy, and one lock; entering takes the lock and leaving gives it back. idle1, idle2 and the lock start with one token each." style="width:100%;height:auto;display:block"><path d="M168 66 C 238 80, 238 100, 238 124" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M234.1 115.9 L238.0 124.0 L241.9 115.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M238 176 C 238 200, 238 220, 168 236" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M175.0 230.4 L168.0 236.0 L176.8 238.0" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M132 236 C 62 220, 62 200, 62 176" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M65.9 184.1 L62.0 176.0 L58.1 184.1" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M62 124 C 62 100, 62 80, 132 66" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M124.8 71.4 L132.0 66.0 L123.3 63.8" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><line x1="326.0" y1="150.0" x2="246.0" y2="150.0" stroke="var(--muted)" stroke-width="1.8"/><path d="M252.9 145.9 L246.0 150.0 L252.9 154.1" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M62 176 C 62 320, 350 320, 344 175" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M348.2 182.9 L344.0 175.0 L340.4 183.3" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><circle cx="150" cy="50" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>idle1</title></circle><circle id="live-tok-0" cx="150" cy="50" r="6" fill="var(--ink)"/><text id="live-cnt-0" x="150" y="55" font-size="15" text-anchor="middle" fill="var(--ink)" font-weight="700" style="display:none"></text><text x="150.0" y="92.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">idle1</text><circle cx="150" cy="250" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>busy1</title></circle><circle id="live-tok-1" cx="150" cy="250" r="6" fill="var(--ink)" style="display:none"/><text id="live-cnt-1" x="150" y="255" font-size="15" text-anchor="middle" fill="var(--ink)" font-weight="700" style="display:none"></text><text x="150.0" y="292.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">busy1</text><rect id="live-tr-0" class="live-tr" x="232" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition enter1</title></rect><text x="222.0" y="154.0" font-size="12" text-anchor="end" fill="var(--accent)" font-weight="700">enter1</text><rect id="live-tr-1" class="live-tr" x="56" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition leave1</title></rect><text x="46.0" y="154.0" font-size="12" text-anchor="end" fill="var(--accent)" font-weight="700">leave1</text><path d="M532 66 C 462 80, 462 100, 462 124" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M458.1 115.9 L462.0 124.0 L465.9 115.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M462 176 C 462 200, 462 220, 532 236" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M523.2 238.0 L532.0 236.0 L525.0 230.4" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M568 236 C 638 220, 638 200, 638 176" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M641.9 184.1 L638.0 176.0 L634.1 184.1" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M638 124 C 638 100, 638 80, 568 66" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M576.7 63.8 L568.0 66.0 L575.2 71.4" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><line x1="374.0" y1="150.0" x2="454.0" y2="150.0" stroke="var(--muted)" stroke-width="1.8"/><path d="M447.1 154.1 L454.0 150.0 L447.1 145.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><path d="M638 176 C 638 320, 350 320, 356 175" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M359.6 183.3 L356.0 175.0 L351.8 182.9" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><circle cx="550" cy="50" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>idle2</title></circle><circle id="live-tok-2" cx="550" cy="50" r="6" fill="var(--ink)"/><text id="live-cnt-2" x="550" y="55" font-size="15" text-anchor="middle" fill="var(--ink)" font-weight="700" style="display:none"></text><text x="550.0" y="92.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">idle2</text><circle cx="550" cy="250" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>busy2</title></circle><circle id="live-tok-3" cx="550" cy="250" r="6" fill="var(--ink)" style="display:none"/><text id="live-cnt-3" x="550" y="255" font-size="15" text-anchor="middle" fill="var(--ink)" font-weight="700" style="display:none"></text><text x="550.0" y="292.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">busy2</text><rect id="live-tr-2" class="live-tr" x="456" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition enter2</title></rect><text x="478.0" y="154.0" font-size="12" text-anchor="start" fill="var(--accent)" font-weight="700">enter2</text><rect id="live-tr-3" class="live-tr" x="632" y="126" width="12" height="48" rx="2" fill="var(--accent)"><title>transition leave2</title></rect><text x="654.0" y="154.0" font-size="12" text-anchor="start" fill="var(--accent)" font-weight="700">leave2</text><circle cx="350" cy="150" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>lock</title></circle><circle id="live-tok-4" cx="350" cy="150" r="6" fill="var(--ink)"/><text id="live-cnt-4" x="350" y="155" font-size="15" text-anchor="middle" fill="var(--ink)" font-weight="700" style="display:none"></text><text x="350.0" y="192.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">lock</text></svg></div>
+<figcaption>Figure 3. The example's net, live. Circles are places, with their tokens; bars are transitions, grey when they cannot fire. <code>enter1</code> takes a token from <code>idle1</code> and one from <code>lock</code>, and puts one in <code>busy1</code>; <code>leave1</code> does the reverse. Process 2 is the mirror image.</figcaption></figure>
+<p class="live-marking" id="live-marking"></p>
+<div class="live-controls"><button type="button" id="live-step">Step</button><button type="button" id="live-run">Step ×100</button><button type="button" id="live-reset">Reset the net</button><button type="button" id="live-rules">Reset the rules</button></div>
+<div class="live-status wait" id="live-status"></div>
+<p class="live-nojs muted">With JavaScript on, this net runs, and the rules below are Hazel editors.</p>
+</div>
+<div class="scroll"><table id="live-log"><thead><tr><th>#</th><th>Event</th><th>Answered by</th><th>Said</th><th>The command</th><th>ms</th></tr></thead><tbody></tbody></table></div>
+</div>
+<div class="live-right">
+<p class="muted" style="margin-top:0">The vocabulary is the app's, and fixed: the preamble every module sees.</p>
+<pre class="code"><code>type Arc = (place = Int, weight = Int) in
+type Transition = (name = String, inputs = [Arc], outputs = [Arc]) in
+type Net = (marking = [Int], transitions = [Transition], draw = Float) in
+type Event = + Fire(Int) + Step in
+type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in</code></pre>
+<div class="live-ed" id="live-ed-Common" data-mode="tiles"><div class="live-ed-head"><b>Common</b> <span class="muted">helpers the rules use</span> <button type="button" class="live-toggle">edit as text</button> <span class="live-why"></span></div><div class="live-frame"><p class="muted live-wait">⏳ Hazel's editor for Common…</p></div><textarea id="live-text-Common" spellcheck="false" aria-label="The module Common, as text"></textarea></div>
+<div class="live-ed" id="live-ed-Rules" data-mode="tiles"><div class="live-ed-head"><b>Rules</b> <span class="muted">the handler, on_event</span> <button type="button" class="live-toggle">edit as text</button> <span class="live-why"></span></div><div class="live-frame"><p class="muted live-wait">⏳ Hazel's editor for Rules…</p></div><textarea id="live-text-Rules" spellcheck="false" aria-label="The module Rules, as text"></textarea></div>
+</div>
+</div>
+</div>
+<p><b>Things to try.</b></p>
+<ul>
+<li>In <code>Rules</code>, change <code>fire_at(n, i)</code> to <code>fire_at(n, "one")</code>. The status lists the type error by module, and the log shows the page's JS answering until you change it back.</li>
+<li>Replace the <code>Step</code> case's answer with <code>?</code>, a hole: no error, but not ready, and the status says so.</li>
+<li>Make <code>Step</code> always fire the first transition that can: <code>let j = 0 in</code>. Step ×100, and process 2 never runs: the rule decides who goes, not the app.</li>
+<li>In <code>Common</code>'s <code>fire</code>, leave out <code>takes(t.inputs, ...)</code>, so firing only puts tokens: the lock multiplies, and both processes can be busy at once. A rule can be well typed and still wrong; the types only fix the vocabulary.</li>
+</ul>
+<details><summary>The two modules as text, as they ran in Node</summary>
+<p><code>Common</code>:</p>
 <pre class="code"><code># the i-th of a list of Ints, 0 past its end #
-let nth = fun (xs, i) : ([Int], Int) -&gt; case xs | [] =&gt; 0 | x :: rest =&gt; if i == 0 then x else nth(rest, i - 1) end;
-let len = fun xs : [Int] -&gt; case xs | [] =&gt; 0 | _ :: rest =&gt; 1 + len(rest) end;
+let nth = fun (xs, i) : ([Int], Int) -&gt;
+  case xs
+  | [] =&gt; 0
+  | x :: rest =&gt; if i == 0 then x else nth(rest, i - 1)
+  end;
+let len = fun xs : [Int] -&gt;
+  case xs | [] =&gt; 0 | _ :: rest =&gt; 1 + len(rest) end;
 # the i-th transition, if there is one #
-let pick = fun (ts, i) : ([Transition], Int) -&gt; case ts | [] =&gt; None | t :: rest =&gt; if i == 0 then Some(t) else pick(rest, i - 1) end;
+let pick = fun (ts, i) : ([Transition], Int) -&gt;
+  case ts
+  | [] =&gt; None
+  | t :: rest =&gt; if i == 0 then Some(t) else pick(rest, i - 1)
+  end;
 # every input place holds at least its arc's weight #
-let has = fun (m, arcs) : ([Int], [Arc]) -&gt; case arcs | [] =&gt; true | a :: rest =&gt; nth(m, a.place) &gt;= a.weight &amp;&amp; has(m, rest) end;
+let has = fun (m, arcs) : ([Int], [Arc]) -&gt;
+  case arcs
+  | [] =&gt; true
+  | a :: rest =&gt; nth(m, a.place) &gt;= a.weight &amp;&amp; has(m, rest)
+  end;
 let enabled = fun (m, t) : ([Int], Transition) -&gt; has(m, t.inputs);
 # the indices of the transitions that can fire #
-let ready = fun (m, ts, i) : ([Int], [Transition], Int) -&gt; case ts | [] =&gt; [] | t :: rest =&gt; if enabled(m, t) then i :: ready(m, rest, i + 1) else ready(m, rest, i + 1) end;
+let ready = fun (m, ts, i) : ([Int], [Transition], Int) -&gt;
+  case ts
+  | [] =&gt; []
+  | t :: rest =&gt;
+    if enabled(m, t) then i :: ready(m, rest, i + 1)
+    else ready(m, rest, i + 1)
+  end;
 # firing: take each input's tokens, then put each output's #
-let takes = fun (arcs, k) : ([Arc], Cmd) -&gt; case arcs | [] =&gt; k | a :: rest =&gt; Take(a.place, a.weight, takes(rest, k)) end;
-let puts = fun (arcs, k) : ([Arc], Cmd) -&gt; case arcs | [] =&gt; k | a :: rest =&gt; Put(a.place, a.weight, puts(rest, k)) end;
-let fire = fun t : Transition -&gt; Say(t.name, takes(t.inputs, puts(t.outputs, Done)))</code></pre>
-<p>And <code>Rules</code>, with the handler:</p>
-<pre class="code"><code># Fire(i): fire transition i if it can. Step: fire one of those that can, chosen by the app's random draw. #
+let takes = fun (arcs, k) : ([Arc], Cmd) -&gt;
+  case arcs
+  | [] =&gt; k
+  | a :: rest =&gt; Take(a.place, a.weight, takes(rest, k))
+  end;
+let puts = fun (arcs, k) : ([Arc], Cmd) -&gt;
+  case arcs
+  | [] =&gt; k
+  | a :: rest =&gt; Put(a.place, a.weight, puts(rest, k))
+  end;
+let fire = fun t : Transition -&gt;
+  Say(t.name, takes(t.inputs, puts(t.outputs, Done)))</code></pre>
+<p><code>Rules</code>, with the handler:</p>
+<pre class="code"><code># Fire(i): fire transition i, if it can. #
+# Step: fire one of those that can, chosen by the app's draw. #
 let fire_at = fun (n, i) : (Net, Int) -&gt;
   case Common.pick(n.transitions, i)
   | None =&gt; Say("there is no transition " ++ string_of_int(i), Done)
-  | Some(t) =&gt; if Common.enabled(n.marking, t) then Common.fire(t) else Say(t.name ++ " cannot fire now", Done)
+  | Some(t) =&gt;
+    if Common.enabled(n.marking, t) then Common.fire(t)
+    else Say(t.name ++ " cannot fire now", Done)
   end;
 let on_event = fun (n, e) : (Net, Event) -&gt;
   case e
@@ -355,8 +449,14 @@ let on_event = fun (n, e) : (Net, Event) -&gt;
     let r = Common.ready(n.marking, n.transitions, 0) in
     let k = Common.len(r) in
     if k == 0 then Say("deadlock: nothing can fire", Done)
-    else fire_at(n, Common.nth(r, int_of_float(n.draw *. float_of_int(k))))
+    else
+      let j = int_of_float(n.draw *. float_of_int(k)) in
+      fire_at(n, Common.nth(r, j))
   end</code></pre>
+</details>
+<script type="application/json" id="live-data">{"preamble": "type Arc = (place = Int, weight = Int) in\ntype Transition = (name = String, inputs = [Arc], outputs = [Arc]) in\ntype Net = (marking = [Int], transitions = [Transition], draw = Float) in\ntype Event = + Fire(Int) + Step in\ntype Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in", "tail": "(Rules.on_event : (Net, Event) -> Cmd)", "modules": [{"name": "Common", "text": "# the i-th of a list of Ints, 0 past its end #\nlet nth = fun (xs, i) : ([Int], Int) ->\n  case xs\n  | [] => 0\n  | x :: rest => if i == 0 then x else nth(rest, i - 1)\n  end;\nlet len = fun xs : [Int] ->\n  case xs | [] => 0 | _ :: rest => 1 + len(rest) end;\n# the i-th transition, if there is one #\nlet pick = fun (ts, i) : ([Transition], Int) ->\n  case ts\n  | [] => None\n  | t :: rest => if i == 0 then Some(t) else pick(rest, i - 1)\n  end;\n# every input place holds at least its arc's weight #\nlet has = fun (m, arcs) : ([Int], [Arc]) ->\n  case arcs\n  | [] => true\n  | a :: rest => nth(m, a.place) >= a.weight && has(m, rest)\n  end;\nlet enabled = fun (m, t) : ([Int], Transition) -> has(m, t.inputs);\n# the indices of the transitions that can fire #\nlet ready = fun (m, ts, i) : ([Int], [Transition], Int) ->\n  case ts\n  | [] => []\n  | t :: rest =>\n    if enabled(m, t) then i :: ready(m, rest, i + 1)\n    else ready(m, rest, i + 1)\n  end;\n# firing: take each input's tokens, then put each output's #\nlet takes = fun (arcs, k) : ([Arc], Cmd) ->\n  case arcs\n  | [] => k\n  | a :: rest => Take(a.place, a.weight, takes(rest, k))\n  end;\nlet puts = fun (arcs, k) : ([Arc], Cmd) ->\n  case arcs\n  | [] => k\n  | a :: rest => Put(a.place, a.weight, puts(rest, k))\n  end;\nlet fire = fun t : Transition ->\n  Say(t.name, takes(t.inputs, puts(t.outputs, Done)))"}, {"name": "Rules", "text": "# Fire(i): fire transition i, if it can. #\n# Step: fire one of those that can, chosen by the app's draw. #\nlet fire_at = fun (n, i) : (Net, Int) ->\n  case Common.pick(n.transitions, i)\n  | None => Say(\"there is no transition \" ++ string_of_int(i), Done)\n  | Some(t) =>\n    if Common.enabled(n.marking, t) then Common.fire(t)\n    else Say(t.name ++ \" cannot fire now\", Done)\n  end;\nlet on_event = fun (n, e) : (Net, Event) ->\n  case e\n  | Fire(i) => fire_at(n, i)\n  | Step =>\n    let r = Common.ready(n.marking, n.transitions, 0) in\n    let k = Common.len(r) in\n    if k == 0 then Say(\"deadlock: nothing can fire\", Done)\n    else\n      let j = int_of_float(n.draw *. float_of_int(k)) in\n      fire_at(n, Common.nth(r, j))\n  end"}], "places": ["idle1", "busy1", "idle2", "busy2", "lock"], "transitions": [{"name": "enter1", "inputs": [{"place": 0, "weight": 1}, {"place": 4, "weight": 1}], "outputs": [{"place": 1, "weight": 1}]}, {"name": "leave1", "inputs": [{"place": 1, "weight": 1}], "outputs": [{"place": 0, "weight": 1}, {"place": 4, "weight": 1}]}, {"name": "enter2", "inputs": [{"place": 2, "weight": 1}, {"place": 4, "weight": 1}], "outputs": [{"place": 3, "weight": 1}]}, {"name": "leave2", "inputs": [{"place": 3, "weight": 1}], "outputs": [{"place": 2, "weight": 1}, {"place": 4, "weight": 1}]}], "marking": [1, 0, 1, 0, 1]}</script>
+
+<h3 id="node">What the Node runs showed<a class="anchor" href="#node" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="node" title="copy this section's address">copy link</button></h3>
 <p><b>Four events by hand</b> (the app's log, then the marking it keeps): the second shows the lock doing its job.</p>
 <div class="scroll"><table>
 <tr><th>Event</th><th>The rule's answer, as the app logs it</th><th>Marking after (idle1, busy1, idle2, busy2, lock)</th></tr>
@@ -373,18 +473,18 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
 <p><b>A rule still being written.</b> Replace the <code>Step</code> case's answer with a hole, <code>?</code>: no error, but <code>holes: {Rules: 1}</code>, and <code>ok</code> is false. That is the state of a rule in the middle of an edit, and the app can say exactly that, rather than "syntax error".</p>
 
 <h2 id="cost">What it costs<a class="anchor" href="#cost" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="cost" title="copy this section's address">copy link</button></h2>
-<figure class="fig" id="fig-cost"><div class="figscroll"><svg viewBox="0 0 760 196" role="img" aria-label="Costs: your app's own JS handler, one call, 0.7 µs; the Hazel rule, one call, 3.5 ms; rebuilding the program after an edit, 160 ms; the first build of the program, 356 ms" style="width:100%;height:auto;display:block"><text x="8.0" y="14.0" font-size="11.5" text-anchor="start" fill="var(--muted)">Milliseconds, logarithmic scale (medians of three runs)</text><line x1="328.6" x2="328.6" y1="30" y2="172" stroke="var(--line)"/><text x="328.6" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">1 µs</text><line x1="387.1" x2="387.1" y1="30" y2="172" stroke="var(--line)"/><text x="387.1" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">10 µs</text><line x1="445.7" x2="445.7" y1="30" y2="172" stroke="var(--line)"/><text x="445.7" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">0.1 ms</text><line x1="504.3" x2="504.3" y1="30" y2="172" stroke="var(--line)"/><text x="504.3" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">1 ms</text><line x1="562.9" x2="562.9" y1="30" y2="172" stroke="var(--line)"/><text x="562.9" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">10 ms</text><line x1="621.4" x2="621.4" y1="30" y2="172" stroke="var(--line)"/><text x="621.4" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">100 ms</text><line x1="680.0" x2="680.0" y1="30" y2="172" stroke="var(--line)"/><text x="680.0" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">1 s</text><line x1="575.9" x2="575.9" y1="24" y2="172" stroke="var(--bad)" stroke-dasharray="4 3"/><text x="579.9" y="22.0" font-size="10.5" text-anchor="start" fill="var(--bad)">one frame at 60 fps</text><text x="260.0" y="51.0" font-size="12.5" text-anchor="end" fill="var(--ink)">your app's own JS handler, one call</text><rect x="270" y="36" width="49.5" height="20" rx="3" fill="var(--accent2)"><title>your app's own JS handler, one call: 0.7 µs</title></rect><text x="325.5" y="51.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">0.7 µs</text><text x="260.0" y="85.0" font-size="12.5" text-anchor="end" fill="var(--ink)">the Hazel rule, one call</text><rect x="270" y="70" width="266.1" height="20" rx="3" fill="var(--accent)"><title>the Hazel rule, one call: 3.5 ms</title></rect><text x="542.1" y="85.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">3.5 ms</text><text x="260.0" y="119.0" font-size="12.5" text-anchor="end" fill="var(--ink)">rebuilding the program after an edit</text><rect x="270" y="104" width="363.4" height="20" rx="3" fill="var(--warn)"><title>rebuilding the program after an edit: 160 ms</title></rect><text x="639.4" y="119.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">160 ms</text><text x="260.0" y="153.0" font-size="12.5" text-anchor="end" fill="var(--ink)">the first build of the program</text><rect x="270" y="138" width="383.7" height="20" rx="3" fill="var(--warn)"><title>the first build of the program: 356 ms</title></rect><text x="659.7" y="153.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">356 ms</text></svg></div>
+<figure class="fig" id="fig-cost"><div class="figscroll"><svg viewBox="0 0 760 196" role="img" aria-label="Costs: your app's own JS handler, one call, 0.7 µs; the Hazel rule, one call, 3.3 ms; rebuilding the program after an edit, 151 ms; the first build of the program, 340 ms" style="width:100%;height:auto;display:block"><text x="8.0" y="14.0" font-size="11.5" text-anchor="start" fill="var(--muted)">Milliseconds, logarithmic scale (medians of three runs)</text><line x1="328.6" x2="328.6" y1="30" y2="172" stroke="var(--line)"/><text x="328.6" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">1 µs</text><line x1="387.1" x2="387.1" y1="30" y2="172" stroke="var(--line)"/><text x="387.1" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">10 µs</text><line x1="445.7" x2="445.7" y1="30" y2="172" stroke="var(--line)"/><text x="445.7" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">0.1 ms</text><line x1="504.3" x2="504.3" y1="30" y2="172" stroke="var(--line)"/><text x="504.3" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">1 ms</text><line x1="562.9" x2="562.9" y1="30" y2="172" stroke="var(--line)"/><text x="562.9" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">10 ms</text><line x1="621.4" x2="621.4" y1="30" y2="172" stroke="var(--line)"/><text x="621.4" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">100 ms</text><line x1="680.0" x2="680.0" y1="30" y2="172" stroke="var(--line)"/><text x="680.0" y="186.0" font-size="11" text-anchor="middle" fill="var(--muted)">1 s</text><line x1="575.9" x2="575.9" y1="24" y2="172" stroke="var(--bad)" stroke-dasharray="4 3"/><text x="579.9" y="22.0" font-size="10.5" text-anchor="start" fill="var(--bad)">one frame at 60 fps</text><text x="260.0" y="51.0" font-size="12.5" text-anchor="end" fill="var(--ink)">your app's own JS handler, one call</text><rect x="270" y="36" width="49.5" height="20" rx="3" fill="var(--accent2)"><title>your app's own JS handler, one call: 0.7 µs</title></rect><text x="325.5" y="51.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">0.7 µs</text><text x="260.0" y="85.0" font-size="12.5" text-anchor="end" fill="var(--ink)">the Hazel rule, one call</text><rect x="270" y="70" width="264.9" height="20" rx="3" fill="var(--accent)"><title>the Hazel rule, one call: 3.3 ms</title></rect><text x="540.9" y="85.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">3.3 ms</text><text x="260.0" y="119.0" font-size="12.5" text-anchor="end" fill="var(--ink)">rebuilding the program after an edit</text><rect x="270" y="104" width="361.9" height="20" rx="3" fill="var(--warn)"><title>rebuilding the program after an edit: 151 ms</title></rect><text x="637.9" y="119.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">151 ms</text><text x="260.0" y="153.0" font-size="12.5" text-anchor="end" fill="var(--ink)">the first build of the program</text><rect x="270" y="138" width="382.6" height="20" rx="3" fill="var(--warn)"><title>the first build of the program: 340 ms</title></rect><text x="658.6" y="153.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">340 ms</text></svg></div>
 <figcaption>Figure 4. The example's costs in Node, medians of three runs (the dashed line is one frame of an animation at 60 frames a second). A call to the Hazel rule is a few milliseconds, thousands of times the same handler written in JS; building the program is a few hundred.</figcaption></figure>
 <div class="scroll"><table>
 <tr><th>Run</th><th>First build</th><th>Hazel call, median (p90)</th><th>Same, tail unannotated</th><th>JS handler call, median</th><th>Rebuild: one module changed / unchanged</th></tr>
-<tr><td class="n">1</td><td class="n">356 ms</td><td class="n">3.50 ms (4.46)</td><td class="n">3.15 ms (3.70)</td><td class="n">0.7 µs</td><td class="n">160 / 140 ms</td></tr>
-<tr><td class="n">2</td><td class="n">337 ms</td><td class="n">3.25 ms (3.97)</td><td class="n">3.68 ms (5.60)</td><td class="n">0.7 µs</td><td class="n">159 / 159 ms</td></tr>
-<tr><td class="n">3</td><td class="n">438 ms</td><td class="n">3.70 ms (5.26)</td><td class="n">3.32 ms (4.18)</td><td class="n">0.7 µs</td><td class="n">160 / 171 ms</td></tr>
+<tr><td class="n">1</td><td class="n">366 ms</td><td class="n">3.45 ms (4.17)</td><td class="n">3.19 ms (3.79)</td><td class="n">0.7 µs</td><td class="n">154 / 148 ms</td></tr>
+<tr><td class="n">2</td><td class="n">340 ms</td><td class="n">3.33 ms (4.01)</td><td class="n">3.18 ms (3.96)</td><td class="n">0.7 µs</td><td class="n">151 / 148 ms</td></tr>
+<tr><td class="n">3</td><td class="n">338 ms</td><td class="n">3.23 ms (3.91)</td><td class="n">3.10 ms (3.76)</td><td class="n">0.7 µs</td><td class="n">145 / 138 ms</td></tr>
 </table></div>
 <ul>
-<li><b>A call is 3.3 to 3.7 ms</b> (medians per run): the view and the event converted into Hazel values, the rule evaluated by Hazel's interpreter, the command converted back. That fits well inside a click or a key, and inside one frame of an animation; the game measured about the same, 3.5 ms of a 13.7 ms lever pull (<a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a>). It does not fit a simulator's inner loop that fires millions of transitions: 2,000 steps took about 7 s of Hazel here.</li>
+<li><b>A call is 3.2 to 3.4 ms</b> (medians per run): the view and the event converted into Hazel values, the rule evaluated by Hazel's interpreter, the command converted back. That fits well inside a click or a key, and inside one frame of an animation; the game measured about the same, 3.5 ms of a 13.7 ms lever pull (<a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a>). It does not fit a simulator's inner loop that fires millions of transitions: 2,000 steps took about 7 s of Hazel here.</li>
 <li><b>The annotation in the tail is not the cost.</b> <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a> found that a call into Hazel re-checked a function's type annotation on every call, which <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> removes (not in 0.0.4). Building with the tail unannotated changed nothing measurable here (the table's fourth column). Where a call's time goes in this example is not measured yet; <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>'s other finding, a floor for crossing the boundary that grows with the argument, is the likely part, since every call here passes the whole net.</li>
-<li><b>Building takes 337 to 438 ms, and rebuilding after an edit 140 to 171 ms,</b> about the same whether a module changed or not. Fine for a build after a pause in typing; too slow for every keystroke on the main thread, which is why the game rebuilds only once typing has paused for 600 ms.</li>
+<li><b>Building takes 338 to 366 ms, and rebuilding after an edit 138 to 154 ms,</b> about the same whether a module changed or not. Fine for a build after a pause in typing; too slow for every keystroke on the main thread, which is why the game rebuilds only once typing has paused for 600 ms.</li>
 <li><b>The package is 2.8 MB unpacked, about 650 kB compressed:</b> one file, Hazel itself compiled to JS.</li>
 </ul>
 <p>Making the calls themselves faster is the subject of an experiment on the same agenda: compiling Hazel functions to JavaScript (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>, <a href="../042/#hazel-jit">item 2</a>).</p>
@@ -401,8 +501,7 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
 <ol>
 <li>Ask the group in Cambridge, through Cyrus, what their tools would want a Hazel rule to decide, and what their nets look like (sizes, colours, timing), before building more of the example.</li>
 <li>Measure where a call's 3 ms goes in this example: the boundary's conversions against the rule's own evaluation, and how both grow with the net's size.</li>
-<li>Put the example in a web page: the net drawn, the two modules in editors, the errors under each, and the app's JS answering while a rule is unfinished.</li>
-<li>Try the example's rule with hazel-jit, the compiler of Hazel to JavaScript being designed for livelits' views (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>, item 2), as a second measure of the best case.</li>
+<li>Once hazel-jit, the compiler of Hazel to JavaScript being designed for livelits' views (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>, item 2), can compile this rule: put the JS it makes beside the page's own handler, the JS a person would write, and compare the two, the code side by side and the time per call. How close does the compiled rule come to the hand-written one?</li>
 <li>A small helper in <code>hazeljs</code> for the pattern itself: give it the preamble, the modules and the handler's type, and get back a handler that falls back to yours while the rules are not ready.</li>
 </ol>
 
@@ -411,12 +510,14 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
 <li><b>The game</b> was read, not run: <code>js/25-scripting.js</code> in matthewhammer/kids-choice-games at 15181ee0 (Messed Up Dress Up 0.0.491). The links in <a href="#mudu">the table</a> go to that commit's lines.</li>
 <li><b>The example</b> is one file, <code>043/example/petri.mjs</code>: the preamble, the two modules, the app's JS (its own handler, the command walk) and every measurement in this report. The code shown above is cut from it by the page's generator, so it is the code that ran.</li>
 <li><b>The runs:</b> three, in Node v22.23.2 on a laptop (13th Gen Intel Core i7-1370P), with <code>hazeljs</code> 0.0.4 installed from npm into an empty folder (library version "0.1 (draft, js-library)", built from hazelgrove/hazel at 1ba138ef28). Times are <code>performance.now()</code> around each call; a call's figures are the median and 90th percentile of 2,000 calls in a run. The page shows the median of the three runs' medians. Each run's output is in <code>043/data/runs/</code>.</li>
+<li><b>The live example</b> is <code>043/live.js</code>: this page loads <code>hazeljs</code> 0.0.4 from jsDelivr, and frames Hazel's editor from <code>build.hazel.org/embed-editable</code>, a branch build of Hazel whose embed mode takes edits (12 commits on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s branch, no PR yet). Checked in a browser on 2026-11-06, served from a local port (the editor's frame takes messages only from this site and from local ports): both editors start and show the modules in Hazel's tiles; a click on a transition fires it; a type error typed into a module is listed by module, marked in the tiles, and the page's JS answers meanwhile; an edit typed in the tiles comes back to the page and is built again (about 180 ms in the browser); 100 steps took about 375 ms, close to Node's. Not checked: undo with Ctrl+Z in the tiles, which the test browser did not deliver to the frame. The times in the tables are Node's, not the page's.</li>
 <li><b>The data:</b> the runs as JSON in <code>043/data/runs/run1.json</code> to <code>run3.json</code>, their printed output beside them, and <code>043/data/meta.json</code>; the page is made by <code>043/gen043.py</code> from <code>043/body.html</code>.</li>
   <!-- data-line: begin -->
   <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/043/data"><code>043/data/</code></a>.</li>
   <!-- data-line: end -->
 </ul>
 </main>
+<script src="live.js?v=5"></script>
 <!-- theme: begin -->
 <style>
   .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
@@ -782,8 +883,21 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
    ]
   },
   {
-   "section": "A worked example: a Petri net",
-   "section_id": "example",
+   "section": "Try it: this page is the app",
+   "section_id": "try",
+   "columns": [
+    "#",
+    "Event",
+    "Answered by",
+    "Said",
+    "The command",
+    "ms"
+   ],
+   "rows": []
+  },
+  {
+   "section": "What the Node runs showed",
+   "section_id": "node",
    "columns": [
     "Event",
     "The rule's answer, as the app logs it",
@@ -826,27 +940,27 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
    "rows": [
     [
      "1",
-     "356 ms",
-     "3.50 ms (4.46)",
-     "3.15 ms (3.70)",
+     "366 ms",
+     "3.45 ms (4.17)",
+     "3.19 ms (3.79)",
      "0.7 µs",
-     "160 / 140 ms"
+     "154 / 148 ms"
     ],
     [
      "2",
-     "337 ms",
-     "3.25 ms (3.97)",
-     "3.68 ms (5.60)",
+     "340 ms",
+     "3.33 ms (4.01)",
+     "3.18 ms (3.96)",
      "0.7 µs",
-     "159 / 159 ms"
+     "151 / 148 ms"
     ],
     [
      "3",
-     "438 ms",
-     "3.70 ms (5.26)",
-     "3.32 ms (4.18)",
+     "338 ms",
+     "3.23 ms (3.91)",
+     "3.10 ms (3.76)",
      "0.7 µs",
-     "160 / 171 ms"
+     "145 / 138 ms"
     ]
    ]
   }

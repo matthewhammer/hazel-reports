@@ -8,7 +8,7 @@
 <ol class="ans">
 <li><p><b>The pattern: your app keeps its state and its screen, and Hazel only decides.</b> On an event, the app calls a Hazel function with a typed view of its state and the event. It then carries out the command the function returns, which is plain data (<a href="#pattern">Figure 1</a>).</p></li>
 <li><p><b>Six steps.</b> Declare the vocabulary as Hazel types. Let users write modules against it. Build the program with <code>Hazel.runProgram</code>. Call the function only when the build is <code>ok</code>, and your own JS handler otherwise. Carry out its commands. Show its errors by module (<a href="#steps">the steps</a>).</p></li>
-<li><p><b>It carries over to a new domain on the first try.</b> A Petri net's firing rule is about 30 lines of Hazel in two modules, and it ran as written. In 2,000 random steps, the two processes were never both inside the shared section (<a href="#example">the example</a>).</p></li>
+<li><p><b>It carries over to a new domain on the first try.</b> A Petri net's firing rule is about 30 lines of Hazel in two modules, and it ran as written. In 2,000 random steps, the two processes were never both inside the shared section. <b>Try it on this page:</b> the net runs here, its rules are in Hazel's own editor, and <code>hazeljs</code> from npm builds every edit (<a href="#try">the example, live</a>).</p></li>
 <li><p><b>A call costs about {{call_med}} ms, against {{js_us}} µs for the same handler in JS.</b> That is fast enough for each click, but not yet for a simulator's inner loop. Building the program takes {{build_lo}} to {{build_hi}} ms, and rebuilding after an edit {{rebuild_lo}} to {{rebuild_hi}} ms (Node, three runs; <a href="#cost">Figure 4</a>).</p></li>
 </ol>
 </div>
@@ -62,12 +62,46 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 
 <h2 id="example">A worked example: a Petri net</h2>
 <p>The net is the classic small one for mutual exclusion: two processes, each idle or busy, and one lock. To become busy, a process takes the lock; to become idle again, it gives the lock back (Figure 3). The JavaScript app keeps the marking (the tokens in each place), and draws it. The rule decides what an event does: <code>Fire(i)</code> fires transition <i>i</i> if it can, and <code>Step</code> fires one of those that can, chosen by a random draw the app passes in.</p>
-<figure class="fig" id="fig-net"><div class="figscroll">{{FIG_NET}}</div>
-<figcaption>Figure 3. The example's net. Circles are places, with their starting tokens; bars are transitions. <code>enter1</code> takes a token from <code>idle1</code> and one from <code>lock</code>, and puts one in <code>busy1</code>; <code>leave1</code> does the reverse. Process 2 is the mirror image.</figcaption></figure>
-<p>The rules, as a user would write them in the app's two editors. <code>Common</code>:</p>
+
+<h3 id="try">Try it: this page is the app</h3>
+<p>Below, this page plays the app. It loads <code>hazeljs</code> 0.0.4 from npm (through the jsDelivr CDN), keeps the net's marking, and draws it. The two modules of rules are in Hazel's own editor, one per module: Hazel's app in a frame, in the editable embed mode that Messed Up Dress Up uses. Every edit comes back to the page, which builds the program again with <code>Hazel.runProgram</code>. While the build is <code>ok</code>, Hazel's <code>on_event</code> answers each event. While it is not, the page's own JS handler answers, the status says why, and the log says who answered. Click a transition to fire it, or step at random.</p>
+<div class="live" id="live">
+<div class="live-grid">
+<div class="live-left">
+<div class="live-panel">
+<figure class="fig" id="fig-net" style="margin:0;border:0;padding:0"><div class="figscroll" id="live-net">{{FIG_NET}}</div>
+<figcaption>Figure 3. The example's net, live. Circles are places, with their tokens; bars are transitions, grey when they cannot fire. <code>enter1</code> takes a token from <code>idle1</code> and one from <code>lock</code>, and puts one in <code>busy1</code>; <code>leave1</code> does the reverse. Process 2 is the mirror image.</figcaption></figure>
+<p class="live-marking" id="live-marking"></p>
+<div class="live-controls"><button type="button" id="live-step">Step</button><button type="button" id="live-run">Step ×100</button><button type="button" id="live-reset">Reset the net</button><button type="button" id="live-rules">Reset the rules</button></div>
+<div class="live-status wait" id="live-status"></div>
+<p class="live-nojs muted">With JavaScript on, this net runs, and the rules below are Hazel editors.</p>
+</div>
+<div class="scroll"><table id="live-log"><thead><tr><th>#</th><th>Event</th><th>Answered by</th><th>Said</th><th>The command</th><th>ms</th></tr></thead><tbody></tbody></table></div>
+</div>
+<div class="live-right">
+<p class="muted" style="margin-top:0">The vocabulary is the app's, and fixed: the preamble every module sees.</p>
+<pre class="code"><code>{{PREAMBLE}}</code></pre>
+{{LIVE_COMMON}}
+{{LIVE_RULES}}
+</div>
+</div>
+</div>
+<p><b>Things to try.</b></p>
+<ul>
+<li>In <code>Rules</code>, change <code>fire_at(n, i)</code> to <code>fire_at(n, "one")</code>. The status lists the type error by module, and the log shows the page's JS answering until you change it back.</li>
+<li>Replace the <code>Step</code> case's answer with <code>?</code>, a hole: no error, but not ready, and the status says so.</li>
+<li>Make <code>Step</code> always fire the first transition that can: <code>let j = 0 in</code>. Step ×100, and process 2 never runs: the rule decides who goes, not the app.</li>
+<li>In <code>Common</code>'s <code>fire</code>, leave out <code>takes(t.inputs, ...)</code>, so firing only puts tokens: the lock multiplies, and both processes can be busy at once. A rule can be well typed and still wrong; the types only fix the vocabulary.</li>
+</ul>
+<details><summary>The two modules as text, as they ran in Node</summary>
+<p><code>Common</code>:</p>
 <pre class="code"><code>{{COMMON}}</code></pre>
-<p>And <code>Rules</code>, with the handler:</p>
+<p><code>Rules</code>, with the handler:</p>
 <pre class="code"><code>{{RULES}}</code></pre>
+</details>
+{{LIVE_DATA}}
+
+<h3 id="node">What the Node runs showed</h3>
 <p><b>Four events by hand</b> (the app's log, then the marking it keeps): the second shows the lock doing its job.</p>
 {{TABLE_BY_HAND}}
 <p><b>2,000 random steps</b>, from a fixed stream of draws: fired {{fired}}; the two processes were both busy in {{both_busy}} of the 2,000 markings, and the net ended where it began. The same counts in all three runs.</p>
@@ -101,8 +135,7 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 <ol>
 <li>Ask the group in Cambridge, through Cyrus, what their tools would want a Hazel rule to decide, and what their nets look like (sizes, colours, timing), before building more of the example.</li>
 <li>Measure where a call's 3 ms goes in this example: the boundary's conversions against the rule's own evaluation, and how both grow with the net's size.</li>
-<li>Put the example in a web page: the net drawn, the two modules in editors, the errors under each, and the app's JS answering while a rule is unfinished.</li>
-<li>Try the example's rule with hazel-jit, the compiler of Hazel to JavaScript being designed for livelits' views (^report(42), item 2), as a second measure of the best case.</li>
+<li>Once hazel-jit, the compiler of Hazel to JavaScript being designed for livelits' views (^report(42), item 2), can compile this rule: put the JS it makes beside the page's own handler, the JS a person would write, and compare the two, the code side by side and the time per call. How close does the compiled rule come to the hand-written one?</li>
 <li>A small helper in <code>hazeljs</code> for the pattern itself: give it the preamble, the modules and the handler's type, and get back a handler that falls back to yours while the rules are not ready.</li>
 </ol>
 
@@ -111,8 +144,10 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 <li><b>The game</b> was read, not run: <code>js/25-scripting.js</code> in matthewhammer/kids-choice-games at 15181ee0 (Messed Up Dress Up 0.0.491). The links in <a href="#mudu">the table</a> go to that commit's lines.</li>
 <li><b>The example</b> is one file, <code>043/example/petri.mjs</code>: the preamble, the two modules, the app's JS (its own handler, the command walk) and every measurement in this report. The code shown above is cut from it by the page's generator, so it is the code that ran.</li>
 <li><b>The runs:</b> three, in Node {{node}} on a laptop (13th Gen Intel Core i7-1370P), with <code>hazeljs</code> 0.0.4 installed from npm into an empty folder (library version "{{hazeljs}}", built from hazelgrove/hazel at 1ba138ef28). Times are <code>performance.now()</code> around each call; a call's figures are the median and 90th percentile of 2,000 calls in a run. The page shows the median of the three runs' medians. Each run's output is in <code>043/data/runs/</code>.</li>
+<li><b>The live example</b> is <code>043/live.js</code>: this page loads <code>hazeljs</code> 0.0.4 from jsDelivr, and frames Hazel's editor from <code>build.hazel.org/embed-editable</code>, a branch build of Hazel whose embed mode takes edits (12 commits on #2719's branch, no PR yet). Checked in a browser on 2026-11-06, served from a local port (the editor's frame takes messages only from this site and from local ports): both editors start and show the modules in Hazel's tiles; a click on a transition fires it; a type error typed into a module is listed by module, marked in the tiles, and the page's JS answers meanwhile; an edit typed in the tiles comes back to the page and is built again (about 180 ms in the browser); 100 steps took about 375 ms, close to Node's. Not checked: undo with Ctrl+Z in the tiles, which the test browser did not deliver to the frame. The times in the tables are Node's, not the page's.</li>
 <li><b>The data:</b> the runs as JSON in <code>043/data/runs/run1.json</code> to <code>run3.json</code>, their printed output beside them, and <code>043/data/meta.json</code>; the page is made by <code>043/gen043.py</code> from <code>043/body.html</code>.</li>
 </ul>
 </main>
+<script src="live.js?v=5"></script>
 </body>
 </html>

@@ -16,6 +16,15 @@ s35 = open(os.path.join(ROOT, "035", "index.html")).read()
 CSS = s35[s35.index("<style>") + 7: s35.index("</style>")]
 RUNS = [json.load(open(os.path.join(HERE, "data", "runs", f"run{i}.json"))) for i in (1, 2, 3)]
 SRC = open(os.path.join(HERE, "example", "petri.mjs")).read()
+# the example's net, as petri.mjs's NET has it (places by name; arcs by place index, weight 1)
+NET = {"places": ["idle1", "busy1", "idle2", "busy2", "lock"], "marking": [1, 0, 1, 0, 1]}
+_a = lambda p: {"place": NET["places"].index(p), "weight": 1}
+NET["transitions"] = [
+    {"name": "enter1", "inputs": [_a("idle1"), _a("lock")], "outputs": [_a("busy1")]},
+    {"name": "leave1", "inputs": [_a("busy1")], "outputs": [_a("idle1"), _a("lock")]},
+    {"name": "enter2", "inputs": [_a("idle2"), _a("lock")], "outputs": [_a("busy2")]},
+    {"name": "leave2", "inputs": [_a("busy2")], "outputs": [_a("idle2"), _a("lock")]}]
+assert all(f'name: "{t["name"]}"' in SRC for t in NET["transitions"]) and '[1, 0, 1, 0, 1]' in SRC
 esc = lambda s: html.escape(s, quote=False)
 
 
@@ -38,10 +47,15 @@ def js_block(start, end):
 def fig_net():
     W, H = 700, 330
     o = []
-    place = lambda x, y, name, tok: (f'<circle cx="{x}" cy="{y}" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>{name}: {tok} token{"s" if tok != 1 else ""}</title></circle>'
-                                     + (f'<circle cx="{x}" cy="{y}" r="6" fill="var(--ink)"/>' if tok else "")
+    # (ids for live.js, which keeps the tokens and the transitions that can fire up to date: places and transitions numbered
+    # as in petri.mjs's NET)
+    PI = {p: i for i, p in enumerate(NET["places"])}
+    TI = {t["name"]: i for i, t in enumerate(NET["transitions"])}
+    place = lambda x, y, name, tok: (f'<circle cx="{x}" cy="{y}" r="24" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.8"><title>{name}</title></circle>'
+                                     + f'<circle id="live-tok-{PI[name]}" cx="{x}" cy="{y}" r="6" fill="var(--ink)"{"" if tok == 1 else " style=\"display:none\""}/>'
+                                     + f'<text id="live-cnt-{PI[name]}" x="{x}" y="{y + 5}" font-size="15" text-anchor="middle" fill="var(--ink)" font-weight="700" style="display:none"></text>'
                                      + text(x, y + 42, name, 12.5, "middle", "var(--ink)", 700))
-    trans = lambda x, y, name, side: (f'<rect x="{x - 6}" y="{y - 24}" width="12" height="48" rx="2" fill="var(--accent)"><title>transition {name}</title></rect>'
+    trans = lambda x, y, name, side: (f'<rect id="live-tr-{TI[name]}" class="live-tr" x="{x - 6}" y="{y - 24}" width="12" height="48" rx="2" fill="var(--accent)"><title>transition {name}</title></rect>'
                                       + text(x + (16 if side == "r" else -16), y + 4, name, 12, "start" if side == "r" else "end", "var(--accent)", 700))
 
     def curve(x1, y1, cx1, cy1, cx2, cy2, x2, y2, col="var(--muted)"):
@@ -135,7 +149,24 @@ V = {"updated": subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True,
      "PREAMBLE": esc(between("PREAMBLE")), "COMMON": esc(between("COMMON")), "RULES": esc(between("RULES")),
      "JS_PERFORM": esc(js_block("function perform", "// ---- 5.")), "JS_BUILD": esc(js_block("function build", "const out =")),
      "JS_FALLBACK": esc(js_block("function jsHandler", "// ---- 6."))}
+def live_editor(mod, intro):
+    return (f'<div class="live-ed" id="live-ed-{mod}" data-mode="tiles"><div class="live-ed-head"><b>{mod}</b> <span class="muted">{intro}</span>'
+            f' <button type="button" class="live-toggle">edit as text</button> <span class="live-why"></span></div>'
+            f'<div class="live-frame"><p class="muted live-wait">⏳ Hazel\'s editor for {mod}…</p></div>'
+            f'<textarea id="live-text-{mod}" spellcheck="false" aria-label="The module {mod}, as text"></textarea></div>')
+
+
+def live_data():
+    tail = re.search(r'tail: "([^"]*)"', SRC).group(1)
+    d = {"preamble": between("PREAMBLE"), "tail": tail,
+         "modules": [{"name": "Common", "text": between("COMMON")}, {"name": "Rules", "text": between("RULES")}],
+         "places": NET["places"], "transitions": NET["transitions"], "marking": NET["marking"]}
+    return '<script type="application/json" id="live-data">' + json.dumps(d, ensure_ascii=False).replace("</", "<\\/") + "</script>"
+
+
 FIGS = {"FIG_PATTERN": figs042.fig_js_app(), "FIG_NET": fig_net(), "FIG_COST": fig_cost(),
+        "LIVE_COMMON": live_editor("Common", "helpers the rules use"), "LIVE_RULES": live_editor("Rules", "the handler, on_event"),
+        "LIVE_DATA": live_data(),
         "TABLE_BY_HAND": table_by_hand(), "TABLE_COST": table_cost()}
 BODY = open(os.path.join(HERE, "body.html")).read()
 BODY = re.sub(r"\{\{(\w+)\}\}", lambda m: FIGS.get(m.group(1)) or V[m.group(1)], BODY)
@@ -149,6 +180,35 @@ HEAD = f"""<!doctype html>
              overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }}
   pre.code code {{ background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }}
   ol.steps > li {{ margin: 10px 0; }}
+  /* the live example (live.js) */
+  /* (within the page's column: the nav beside it makes any width from the window wrong) two columns when the column is wide */
+  .live {{ container-type: inline-size; }}
+  .live-grid {{ display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }}
+  @container (min-width: 880px) {{ .live-grid {{ grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); }} .live-left {{ position: sticky; top: 8px; }} }}
+  .live-left, .live-right {{ min-width: 0; }}
+  .live-panel {{ background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }}
+  .live-controls {{ display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }}
+  .live-controls button, .live-toggle {{ font: inherit; font-size: 0.9em; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--ink); cursor: pointer; }}
+  .live-controls button:hover, .live-toggle:hover {{ border-color: var(--accent); }}
+  .live-controls button:disabled {{ opacity: 0.5; cursor: default; }}
+  .live:not(.on) .live-controls, .live:not(.on) .live-ed, .live:not(.on) #live-log {{ display: none; }}
+  .live:not(.on) .live-nojs {{ display: block; }} .live-nojs {{ display: none; }}
+  #live-net .live-tr {{ cursor: pointer; }} #live-net .live-tr.off {{ fill: var(--muted); opacity: 0.45; }}
+  #live-net .live-tr:focus {{ outline: none; stroke: var(--ink); stroke-width: 2; }}
+  .live-marking {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; color: var(--muted); }}
+  .live-status {{ border-left: 4px solid var(--line); padding: 6px 10px; margin: 8px 0; border-radius: 6px; background: var(--bg); font-size: 0.92em; }}
+  .live-status.ok {{ border-left-color: var(--good); }} .live-status.no {{ border-left-color: var(--warn); }}
+  .live-status ul {{ margin: 4px 0 0; padding-left: 1.2em; }}
+  .live-ed {{ margin: 0 0 14px; }}
+  .live-ed-head {{ margin: 0 0 4px; font-size: 0.92em; }} .live-ed-head .muted, .muted {{ color: var(--muted); }}
+  .live-why {{ color: var(--warn); font-size: 0.9em; }}
+  .live-frame iframe {{ width: 100%; height: 120px; border: 1px solid var(--line); border-radius: 8px; display: block; background: var(--paper); }}
+  .live-ed textarea {{ width: 100%; min-height: 18em; font: 0.84em/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: none; }}
+  .live-ed[data-mode="text"] textarea {{ display: block; }} .live-ed[data-mode="text"] .live-frame {{ display: none; }}
+  #live-log {{ font-size: 0.86em; margin-top: 8px; }} #live-log td {{ padding: 4px 6px; }} #live-log code.cmd {{ font-size: 0.85em; }}
+  #live-log .warn {{ color: var(--warn); }}
 </style>
 </head>
 """
