@@ -192,6 +192,12 @@ HEAD = f"""<!doctype html>
   @container (min-width: 880px) {{ .live-grid {{ grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); }} .live-left {{ position: sticky; top: 8px; }} }}
   .live-left, .live-right {{ min-width: 0; }}
   .live-panel {{ background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }}
+  /* ⛶ the example full screen (live.js): the browser's, or, without one, the window */
+  .live:fullscreen, .live.live-max {{ background: var(--bg); color: var(--ink); padding: 16px; overflow: auto; box-sizing: border-box; }}
+  .live.live-max {{ position: fixed; inset: 0; z-index: 10000; }}
+  html.live-max-on, html.live-max-on body {{ overflow: hidden; }}
+  html.live-max-on #cnav, html.live-max-on #cnav-grip, html.live-max-on #cnav-hide {{ display: none; }}  /* (the site's nav column, stacked over everything: hidden while the example fills the window) */
+  .live:fullscreen .script-log .log-list, .live.live-max .script-log .log-list {{ max-height: 45vh; }}
   .live-controls {{ display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }}
   .live-controls button, .live-toggle {{ font: inherit; font-size: 0.9em; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px;
     background: var(--bg); color: var(--ink); cursor: pointer; }}
@@ -219,6 +225,9 @@ HEAD = f"""<!doctype html>
   .script-log .log-head button {{ margin-left: auto; font: inherit; font-size: 0.85em; padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }}
   .script-log .log-list {{ display: flex; flex-direction: column; gap: 2px; max-height: 70vh; overflow: auto; }}
   .script-log .log-entry > summary {{ cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 1px 0; }}
+  /* (Matthew, 2026-11-06: the event log "has ellipses that never expand") an entry opened shows its whole line, wrapped */
+  .script-log .log-entry[open] > summary {{ white-space: normal; overflow: visible; }}
+  .script-log .log-entry[open] > summary .log-chip {{ margin: 2px 0; }}
   .script-log .log-entry > summary code {{ background: none; padding: 0; }}
   .script-log .log-n, .script-log .log-at, .script-log .log-ms, .script-log .log-diff {{ color: var(--muted); font-variant-numeric: tabular-nums; }}
   .script-log .log-eng {{ padding: 0 5px; border-radius: 4px; font-size: 0.85em; background: color-mix(in srgb, currentColor 12%, transparent); }}

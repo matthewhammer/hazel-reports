@@ -251,6 +251,27 @@
     $("#live-reset").addEventListener("click", () => { S.marking = D.marking.slice(); drawAll(); });
     $("#live-log-clear").addEventListener("click", () => { S.log = []; opened.clear(); drawLog(); });
     $("#live-rules").addEventListener("click", () => { if (L) L.reset(PROGRAM); buildSoon(0); });
+    // ⛶ full screen (Matthew, 2026-11-06: "We need some FS support here, even in blog/report form?"), as the game's ⛶: the
+    // whole example, the net, its log and the editors, on the screen, in two columns when it is wide enough. The browser's own
+    // full screen where it has one for an element; where it has none (iPhone Safari), the example made to fill the window,
+    // Escape or the button to leave.
+    const fsBtn = el("button", { type: "button", id: "live-fs", title: "the example, full screen", text: "⛶ full screen" });
+    $(".live-controls").append(fsBtn);
+    const isFs = () => document.fullscreenElement === root || root.classList.contains("live-max");
+    const fsLabel = () => { fsBtn.textContent = isFs() ? "✕ leave full screen" : "⛶ full screen"; };
+    const maxOn = on => { root.classList.toggle("live-max", on); document.documentElement.classList.toggle("live-max-on", on); fsLabel(); };
+    fsBtn.addEventListener("click", () => {
+      if (document.fullscreenElement === root) { document.exitFullscreen(); return; }
+      if (root.classList.contains("live-max")) { maxOn(false); return; }
+      if (!root.requestFullscreen) { maxOn(true); return; }
+      // (a request some embedded browsers leave unanswered: the window filled if it has not settled in 0.8 s, and that
+      // undone if the browser's own full screen comes after all)
+      let settled = false;
+      root.requestFullscreen().then(() => { settled = true; maxOn(false); }, () => { settled = true; maxOn(true); });
+      setTimeout(() => { if (!settled && document.fullscreenElement !== root) maxOn(true); }, 800);
+    });
+    document.addEventListener("fullscreenchange", fsLabel);
+    addEventListener("keydown", e => { if (e.key === "Escape" && root.classList.contains("live-max")) maxOn(false); });
     root.classList.add("on");
     drawAll();
     // Hazel's library only once the section is near the screen, about 650 kB (the editors start on their own: hazel-listings.js)

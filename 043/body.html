@@ -7,10 +7,11 @@
 <ol class="outline">
 <li><a href="#pattern">The pattern</a>: what a JS app hands to Hazel, what it gets back, and why write a handler in Hazel at all.</li>
 <li><a href="#mudu">How Messed Up Dress Up does it</a>: the game's pieces, from its Hazel types to acting out a rule's commands, each linked to its code.</li>
-<li><a href="#steps">Doing the same in another app</a>: the six steps as we took them for a Petri net app of our own, what tripped us, and where other kinds of Petri nets fit.</li>
+<li><a href="#steps">Doing the same in another app</a>: the six steps as we took them for a Petri net app of our own, and where other kinds of Petri nets fit.</li>
 <li><a href="#example">A worked example: a Petri net</a>: the net running on this page with its rules in Hazel's editor (<a href="#try">try it</a>), and what the same rules did in Node (<a href="#node">the runs</a>).</li>
 <li><a href="#cost">What it costs</a>: a call into Hazel, a build and a rebuild, against the same handler in JS.</li>
-<li><a href="#limits">Limits today</a>, <a href="#next">what next</a>, and <a href="#method">how this was put together</a>.</li>
+<li><a href="#limits">Limits today</a>, and <a href="#tripped">what tripped us</a>: three things building a second app turned up, a bug in <code>hazeljs</code> among them.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
 <h2 id="pattern">The pattern</h2>
@@ -45,7 +46,7 @@
 
 <h2 id="steps">Doing the same in another app: our Petri net example</h2>
 <p><b>Six steps:</b> declare the vocabulary as Hazel types; let users write modules against it; build the program with <code>Hazel.runProgram</code>; call the Hazel function only while the build is <code>ok</code>, and your own JS handler otherwise; carry out its commands; and show its errors by module.</p>
-<p>To see what a second app takes, we did it ourselves, as another user of <code>hazeljs</code> would: we took the pattern out of the game and built a small app around a Petri net, in a repository of its own, <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> (version 0.0.1). Its rules and its net are files (<code>rules/*.hz</code>, <code>net.json</code>), read both by its page and by a Node script, so the same rules run in both. This is what we did, in the order we did it, and what tripped us; the code is cut from the files that ran. The <a href="#example">next section</a> runs the result on this page.</p>
+<p>To see what a second app takes, we did it ourselves, as another user of <code>hazeljs</code> would: we took the pattern out of the game and built a small app around a Petri net, in a repository of its own, <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> (version 0.0.1). Its rules and its net are files (<code>rules/*.hz</code>, <code>net.json</code>), read both by its page and by a Node script, so the same rules run in both. This is what we did, in the order we did it; the code is cut from the files that ran. The <a href="#example">next section</a> runs the result on this page.</p>
 <ol class="steps">
 <li><p><b>We installed <code>hazeljs</code>.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; in the page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. We pinned the version: the package is a prototype, and its API may change in any release.</p></li>
 <li><p><b>We wrote the vocabulary first,</b> as Hazel types in the program's preamble (<code>rules/preamble.hz</code>), which every module sees: what a rule is told (<code>Net</code>), what can happen (<code>Event</code>), and what a rule may answer (<code>Cmd</code>). The answer is a chain of commands, each with the rest after it, ending in <code>Done</code>, so the page can walk it in order, log it, and refuse a command it does not know.</p>
@@ -59,12 +60,7 @@
 <li><p><b>We acted out the commands,</b> and showed the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function. The page keeps control: it refuses a command that would take a place below zero, and one it does not know.</p>
 <pre class="code jx"><code>{{JS_PERFORM}}</code></pre></li>
 </ol>
-<p><b>What tripped us.</b> Three things, none of them in the game's way of doing it, which is why a second app was worth building:</p>
-<ul>
-<li><b>Key order, a bug in <code>hazeljs</code> 0.0.4.</b> We first passed the net's view as <code>{transitions, marking, draw}</code>, and every answer came back <code>{hazel: "..."}</code>. When a JS object's keys come in another order than its Hazel type's fields, and a field is a list, the value gets stuck at the type's annotation. So we build the view in <code>Net</code>'s own order, <code>{marking, transitions, draw}</code>, until the library converts by label.</li>
-<li><b>Hazel's editor frames are particular about where they run:</b> they take messages only from a few sites (<code>localhost</code> and this one), so the app has to be served from one of them, and a frame off the screen does not draw, so it reports its height as 0 until it is scrolled to.</li>
-<li><b>No randomness or clock in Hazel:</b> the page passes a random draw in with the view, as the game passes its draws, which also makes every call repeatable.</li>
-</ul>
+<p>Three things tripped us along the way, none of them in the game's way of doing it; they are in <a href="#tripped">What tripped us</a>, after the limits.</p>
 <p><b>For your own kind of Petri net.</b> Most of what makes one group's nets differ from another's goes in three places: the vocabulary, the helpers, and the net's file. <b>Coloured nets</b> (tokens that carry data, which some groups call <i>types</i>): a place's tokens become a list of Hazel values of that place's type, and a transition's guard and output become Hazel functions, so Hazel's type checker checks the colours as they are written. <b>Weights, inhibitor arcs, priorities, timing:</b> a field in <code>net.json</code>, a case in <code>Common</code>, a word in the vocabulary. And <b>which enabled transition fires</b> is the rule's choice (<code>Step</code>), so a scheduling policy is a few lines of Hazel, swapped without touching the app. The repository's <a href="https://github.com/matthewhammer/hazeljs-petri-example/blob/main/PLAN.md">plan</a> has what comes next for it, more nets among them, and a site of its own.</p>
 
 <h2 id="example">A worked example: a Petri net</h2>
@@ -130,9 +126,17 @@
 <ul>
 <li><b>A prototype.</b> <code>hazeljs</code> is at 0.0.x, built from a draft library on two of Hazel's pull requests, #2711 and #2719, not from Hazel's main branch. The plan is for it to track that branch; a pull request to Hazel's README says so (#2812).</li>
 <li><b>No editor in the package.</b> It analyzes and runs text. Hazel's own tile editor in a frame, as the game and this page use it, comes from a branch build of Hazel, and takes messages only from a few sites. Planned: the editor in the package.</li>
-<li><b>Key order matters, by mistake.</b> An object whose keys are in another order than its type's fields gets stuck when a field is a list (<a href="#steps">what tripped us</a>). To be fixed in the library.</li>
+<li><b>Key order matters, by mistake.</b> An object whose keys are in another order than its type's fields gets stuck when a field is a list (<a href="#tripped">what tripped us</a>). To be fixed in the library.</li>
 <li><b>Messages written for Hazel's developers,</b> which an app will want to rewrite, as the game does.</li>
 <li><b>No undo, and no history,</b> in the library: the app keeps its own. Planned: undo in the editor.</li>
+</ul>
+
+<h2 id="tripped">What tripped us</h2>
+<p>Building the second app turned up three things the game's way of doing it never met, which is why a second app was worth building:</p>
+<ul>
+<li><b>Key order, a bug in <code>hazeljs</code> 0.0.4.</b> We first passed the net's view as <code>{transitions, marking, draw}</code>, and every answer came back <code>{hazel: "..."}</code>. When a JS object's keys come in another order than its Hazel type's fields, and a field is a list, the value gets stuck at the type's annotation. So we build the view in <code>Net</code>'s own order, <code>{marking, transitions, draw}</code>, until the library converts by label.</li>
+<li><b>Hazel's editor frames are particular about where they run:</b> they take messages only from a few sites (<code>localhost</code> and this one), so the app has to be served from one of them, and a frame off the screen does not draw, so it reports its height as 0 until it is scrolled to.</li>
+<li><b>No randomness or clock in Hazel:</b> the page passes a random draw in with the view, as the game passes its draws, which also makes every call repeatable.</li>
 </ul>
 
 <h2 id="next">What next</h2>
@@ -154,6 +158,6 @@
 </ul>
 </main>
 <script src="hazel-listings.js?v=4"></script>
-<script src="live.js?v=9"></script>
+<script src="live.js?v=11"></script>
 </body>
 </html>

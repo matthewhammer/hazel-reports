@@ -148,6 +148,12 @@ h3.grp { margin-top: 1.2em; }
   @container (min-width: 880px) { .live-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); } .live-left { position: sticky; top: 8px; } }
   .live-left, .live-right { min-width: 0; }
   .live-panel { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  /* ⛶ the example full screen (live.js): the browser's, or, without one, the window */
+  .live:fullscreen, .live.live-max { background: var(--bg); color: var(--ink); padding: 16px; overflow: auto; box-sizing: border-box; }
+  .live.live-max { position: fixed; inset: 0; z-index: 10000; }
+  html.live-max-on, html.live-max-on body { overflow: hidden; }
+  html.live-max-on #cnav, html.live-max-on #cnav-grip, html.live-max-on #cnav-hide { display: none; }  /* (the site's nav column, stacked over everything: hidden while the example fills the window) */
+  .live:fullscreen .script-log .log-list, .live.live-max .script-log .log-list { max-height: 45vh; }
   .live-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
   .live-controls button, .live-toggle { font: inherit; font-size: 0.9em; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px;
     background: var(--bg); color: var(--ink); cursor: pointer; }
@@ -175,6 +181,9 @@ h3.grp { margin-top: 1.2em; }
   .script-log .log-head button { margin-left: auto; font: inherit; font-size: 0.85em; padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }
   .script-log .log-list { display: flex; flex-direction: column; gap: 2px; max-height: 70vh; overflow: auto; }
   .script-log .log-entry > summary { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 1px 0; }
+  /* (Matthew, 2026-11-06: the event log "has ellipses that never expand") an entry opened shows its whole line, wrapped */
+  .script-log .log-entry[open] > summary { white-space: normal; overflow: visible; }
+  .script-log .log-entry[open] > summary .log-chip { margin: 2px 0; }
   .script-log .log-entry > summary code { background: none; padding: 0; }
   .script-log .log-n, .script-log .log-at, .script-log .log-ms, .script-log .log-diff { color: var(--muted); font-variant-numeric: tabular-nums; }
   .script-log .log-eng { padding: 0 5px; border-radius: 4px; font-size: 0.85em; background: color-mix(in srgb, currentColor 12%, transparent); }
@@ -218,7 +227,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 12:14 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 12:49 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -311,10 +320,11 @@ document.addEventListener("DOMContentLoaded", () => {
 <ol class="outline">
 <li><a href="#pattern">The pattern</a>: what a JS app hands to Hazel, what it gets back, and why write a handler in Hazel at all.</li>
 <li><a href="#mudu">How Messed Up Dress Up does it</a>: the game's pieces, from its Hazel types to acting out a rule's commands, each linked to its code.</li>
-<li><a href="#steps">Doing the same in another app</a>: the six steps as we took them for a Petri net app of our own, what tripped us, and where other kinds of Petri nets fit.</li>
+<li><a href="#steps">Doing the same in another app</a>: the six steps as we took them for a Petri net app of our own, and where other kinds of Petri nets fit.</li>
 <li><a href="#example">A worked example: a Petri net</a>: the net running on this page with its rules in Hazel's editor (<a href="#try">try it</a>), and what the same rules did in Node (<a href="#node">the runs</a>).</li>
 <li><a href="#cost">What it costs</a>: a call into Hazel, a build and a rebuild, against the same handler in JS.</li>
-<li><a href="#limits">Limits today</a>, <a href="#next">what next</a>, and <a href="#method">how this was put together</a>.</li>
+<li><a href="#limits">Limits today</a>, and <a href="#tripped">what tripped us</a>: three things building a second app turned up, a bug in <code>hazeljs</code> among them.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
 <h2 id="pattern">The pattern<a class="anchor" href="#pattern" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pattern" title="copy this section's address">copy link</button></h2>
@@ -349,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h2 id="steps">Doing the same in another app: our Petri net example<a class="anchor" href="#steps" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="steps" title="copy this section's address">copy link</button></h2>
 <p><b>Six steps:</b> declare the vocabulary as Hazel types; let users write modules against it; build the program with <code>Hazel.runProgram</code>; call the Hazel function only while the build is <code>ok</code>, and your own JS handler otherwise; carry out its commands; and show its errors by module.</p>
-<p>To see what a second app takes, we did it ourselves, as another user of <code>hazeljs</code> would: we took the pattern out of the game and built a small app around a Petri net, in a repository of its own, <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> (version 0.0.1). Its rules and its net are files (<code>rules/*.hz</code>, <code>net.json</code>), read both by its page and by a Node script, so the same rules run in both. This is what we did, in the order we did it, and what tripped us; the code is cut from the files that ran. The <a href="#example">next section</a> runs the result on this page.</p>
+<p>To see what a second app takes, we did it ourselves, as another user of <code>hazeljs</code> would: we took the pattern out of the game and built a small app around a Petri net, in a repository of its own, <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> (version 0.0.1). Its rules and its net are files (<code>rules/*.hz</code>, <code>net.json</code>), read both by its page and by a Node script, so the same rules run in both. This is what we did, in the order we did it; the code is cut from the files that ran. The <a href="#example">next section</a> runs the result on this page.</p>
 <ol class="steps">
 <li><p><b>We installed <code>hazeljs</code>.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; in the page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. We pinned the version: the package is a prototype, and its API may change in any release.</p></li>
 <li><p><b>We wrote the vocabulary first,</b> as Hazel types in the program's preamble (<code>rules/preamble.hz</code>), which every module sees: what a rule is told (<code>Net</code>), what can happen (<code>Event</code>), and what a rule may answer (<code>Cmd</code>). The answer is a chain of commands, each with the rest after it, ending in <code>Done</code>, so the page can walk it in order, log it, and refuse a command it does not know.</p>
@@ -390,12 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
   <span class="jk">return</span> <span class="jv">m</span><span class="jo">;</span>
 <span class="jo">}</span></code></pre></li>
 </ol>
-<p><b>What tripped us.</b> Three things, none of them in the game's way of doing it, which is why a second app was worth building:</p>
-<ul>
-<li><b>Key order, a bug in <code>hazeljs</code> 0.0.4.</b> We first passed the net's view as <code>{transitions, marking, draw}</code>, and every answer came back <code>{hazel: "..."}</code>. When a JS object's keys come in another order than its Hazel type's fields, and a field is a list, the value gets stuck at the type's annotation. So we build the view in <code>Net</code>'s own order, <code>{marking, transitions, draw}</code>, until the library converts by label.</li>
-<li><b>Hazel's editor frames are particular about where they run:</b> they take messages only from a few sites (<code>localhost</code> and this one), so the app has to be served from one of them, and a frame off the screen does not draw, so it reports its height as 0 until it is scrolled to.</li>
-<li><b>No randomness or clock in Hazel:</b> the page passes a random draw in with the view, as the game passes its draws, which also makes every call repeatable.</li>
-</ul>
+<p>Three things tripped us along the way, none of them in the game's way of doing it; they are in <a href="#tripped">What tripped us</a>, after the limits.</p>
 <p><b>For your own kind of Petri net.</b> Most of what makes one group's nets differ from another's goes in three places: the vocabulary, the helpers, and the net's file. <b>Coloured nets</b> (tokens that carry data, which some groups call <i>types</i>): a place's tokens become a list of Hazel values of that place's type, and a transition's guard and output become Hazel functions, so Hazel's type checker checks the colours as they are written. <b>Weights, inhibitor arcs, priorities, timing:</b> a field in <code>net.json</code>, a case in <code>Common</code>, a word in the vocabulary. And <b>which enabled transition fires</b> is the rule's choice (<code>Step</code>), so a scheduling policy is a few lines of Hazel, swapped without touching the app. The repository's <a href="https://github.com/matthewhammer/hazeljs-petri-example/blob/main/PLAN.md">plan</a> has what comes next for it, more nets among them, and a site of its own.</p>
 
 <h2 id="example">A worked example: a Petri net<a class="anchor" href="#example" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="example" title="copy this section's address">copy link</button></h2>
@@ -536,9 +541,17 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
 <ul>
 <li><b>A prototype.</b> <code>hazeljs</code> is at 0.0.x, built from a draft library on two of Hazel's pull requests, <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, not from Hazel's main branch. The plan is for it to track that branch; a pull request to Hazel's README says so (<a href="https://github.com/hazelgrove/hazel/pull/2812">#2812</a>).</li>
 <li><b>No editor in the package.</b> It analyzes and runs text. Hazel's own tile editor in a frame, as the game and this page use it, comes from a branch build of Hazel, and takes messages only from a few sites. Planned: the editor in the package.</li>
-<li><b>Key order matters, by mistake.</b> An object whose keys are in another order than its type's fields gets stuck when a field is a list (<a href="#steps">what tripped us</a>). To be fixed in the library.</li>
+<li><b>Key order matters, by mistake.</b> An object whose keys are in another order than its type's fields gets stuck when a field is a list (<a href="#tripped">what tripped us</a>). To be fixed in the library.</li>
 <li><b>Messages written for Hazel's developers,</b> which an app will want to rewrite, as the game does.</li>
 <li><b>No undo, and no history,</b> in the library: the app keeps its own. Planned: undo in the editor.</li>
+</ul>
+
+<h2 id="tripped">What tripped us<a class="anchor" href="#tripped" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="tripped" title="copy this section's address">copy link</button></h2>
+<p>Building the second app turned up three things the game's way of doing it never met, which is why a second app was worth building:</p>
+<ul>
+<li><b>Key order, a bug in <code>hazeljs</code> 0.0.4.</b> We first passed the net's view as <code>{transitions, marking, draw}</code>, and every answer came back <code>{hazel: "..."}</code>. When a JS object's keys come in another order than its Hazel type's fields, and a field is a list, the value gets stuck at the type's annotation. So we build the view in <code>Net</code>'s own order, <code>{marking, transitions, draw}</code>, until the library converts by label.</li>
+<li><b>Hazel's editor frames are particular about where they run:</b> they take messages only from a few sites (<code>localhost</code> and this one), so the app has to be served from one of them, and a frame off the screen does not draw, so it reports its height as 0 until it is scrolled to.</li>
+<li><b>No randomness or clock in Hazel:</b> the page passes a random draw in with the view, as the game passes its draws, which also makes every call repeatable.</li>
 </ul>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
@@ -563,7 +576,7 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
 </ul>
 </main>
 <script src="hazel-listings.js?v=4"></script>
-<script src="live.js?v=9"></script>
+<script src="live.js?v=11"></script>
 <!-- theme: begin -->
 <style>
   .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
