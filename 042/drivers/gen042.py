@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+"""^report(42)'s page, the agenda for Wednesday 2026-11-11 (copied from ^report(37)'s gen037.py, 2026-11-06), with its sections (Matthew,
+2026-11-02, "let's create sections for report agenda items"): reads 042/data/agenda.json and writes
+042/index.html. Kept as a work in progress until the meeting: edit the JSON (an item, its status and as_of, the updated line), run this from the
+repository's root, then the series tools (report_refs, link_prs, add_theme).
+  python3 042/drivers/gen042.py"""
+import json, html, os, re
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import figs042  # each item's figures (Matthew, 2026-11-05: graphics for each item without having to click)
+
+A = json.load(open("042/data/agenda.json"))
+# the items are numbered through the sections, in order
+A["items"] = [it for sec in A["sections"] for it in sec["items"]]
+# the agenda is public (Matthew, 2026-10-19): a report it cites that is not published yet is a chip without a link,
+# never a link that fails; it links once that report is published
+PUBLISHED = os.path.expanduser("~/matthewhammer.github.io/hazel/reports")
+
+
+def unlink_unpublished(s):
+    return re.sub(r'<a href="\.\./(\d{3})/">(<code class="ref">.*?</code>)</a>',
+                  lambda m: m.group(0) if os.path.isdir(os.path.join(PUBLISHED, m.group(1)))
+                  else f'<a class="unpub" title="not published yet">{m.group(2)}</a>', s)
+# (an <a> with no href, not a <span>: tools/report_refs.py links a chip that is in no link, and leaves this one)
+esc = html.escape
+TONES = {"good", "warn", "accent", "accent2", "muted"}
+
+
+URL = "https://matthewhammer.org/hazel/reports/042/"
+
+
+def copy_text(n, it):
+    """What an item's "copy item" chip copies (^ticket(475)): enough to name the item exactly when pasted to Claude
+    with a request ("let's move this up", "let's work on this now"). The id, not only the number: numbers change as
+    items are reordered, ids do not."""
+    title = " ".join(html.unescape(re.sub(r"<[^>]+>", "", it["title"])).split())
+    return f'^report({A["report"]}), the agenda, item {n} ("{it["id"]}"): "{title}". {URL}#{it["id"]}'
+
+
+def outline_section(o):
+    """(2026-10-21, Matthew: the outline for the meeting as a subsection of these notes) its points, each with sub-points"""
+    if not o: return ""
+    pts = "".join("  <li>" + p["text"] + ("<ul>" + "".join(f"<li>{q}</li>" for q in p.get("sub", [])) + "</ul>" if p.get("sub") else "") + "</li>" + chr(10) for p in o["points"])
+    return f'<h2 id="outline">{o["title"]}</h2>' + chr(10) + f'<p>{o["intro"]}</p>' + chr(10) + "<ul>" + chr(10) + pts + "</ul>" + chr(10) + chr(10)
+
+def chips(s):
+    """^report(N) and ^ticket(N) in a caption, written as the series' chips (tools/report_refs.py links them)"""
+    return re.sub(r"\^(report|ticket)\((\d+)\)", lambda m: f'<code class="ref"><b>^{m.group(1)}(</b>{m.group(2)}<b>)</b></code>', s)
+
+
+def figrow(it):
+    figs = figs042.FIGS.get(it["id"], [])
+    if not figs: return ""
+    return ('<div class="figrow">' + "".join(
+        f'<figure class="f{" wide" if wide else ""}">{h}<figcaption>{chips(c)}</figcaption></figure>' for h, c, wide in figs) + "</div>")
+
+
+def decided(it):
+    # what the meeting settled, from Matthew's notes after it (agenda.json "decided")
+    return (f'<p class="decided"><b>Decided at the meeting ({esc(A["meeting"][:10])}):</b> {it["decided"]}</p>\n'
+            if it.get("decided") else "")
+
+
+def item(n, it):
+    assert it["tone"] in TONES, it["tone"]
+    ticket = (f' · <code class="ref"><b>^ticket(</b>{it["ticket"]}<b>)</b></code>'
+              if it.get("ticket") else "")
+    prs = ""
+    if it.get("prs"):
+        prs = ("<details><summary>The " + str(len(it["prs"])) + " PRs</summary><ul class=\"prs\">"
+               + "".join(f"<li>#{p}</li>" for p in sorted(it["prs"])) + "</ul></details>")
+    return f"""<section class="item {it["tone"]}" id="{it["id"]}">
+<h3><span class="n">{n}.</span> {it["title"]} <span class="chip {it["tone"]}">{esc(it["status"])}</span> <a class="item-link" href="#{it["id"]}" title="A link to this item">#{n}</a> <button type="button" class="copy-item" data-copy="{esc(copy_text(n, it))}" title="Copies this item's name and link, to paste to Claude with a request about it">copy item</button></h3>
+<p class="meta">Asked by {esc(it["asked"])}{ticket} · as of {esc(it["as_of"])}</p>
+{figrow(it)}
+{it["body"]}
+{prs}
+<p class="ask"><b>For the meeting:</b> {it["meeting"]}</p>
+{decided(it)}</section>"""
+
+
+def numbered():
+    n = 0
+    for sec in A["sections"]:
+        yield sec, None, None
+        for it in sec["items"]:
+            n += 1
+            yield sec, n, it
+
+
+rows = "\n".join(
+    (f'  <tr class="sec"><td></td><td colspan="2"><a href="#{sec["id"]}"><b>{sec["title"]}</b></a></td></tr>' if it is None else
+     f'  <tr><td class="n">{n}</td><td><a href="#{it["id"]}">{it["title"]}</a></td>'
+     f'<td><span class="chip {it["tone"]}">{esc(it["status"])}</span></td></tr>')
+    for sec, n, it in numbered())
+def next_steps(sec):
+    """(Matthew, 2026-11-05: "let's also state the 'next steps' for each section") after the section's items"""
+    if not sec.get("next"): return ""
+    return ('<div class="next"><p><b>Next steps for this section</b></p><ol>'
+            + "".join(f"<li>{x}</li>" for x in sec["next"]) + "</ol></div>")
+
+
+parts, n = [], 0
+for sec in A["sections"]:
+    parts.append(f'<h2 id="{sec["id"]}">{sec["title"]}</h2>\n<p>{sec["intro"]}</p>')
+    for it in sec["items"]:
+        n += 1
+        parts.append(item(n, it))
+    parts.append(next_steps(sec))
+items = "\n\n".join(p for p in parts if p)
+# what the meeting decided, from Matthew's notes after it (agenda.json "decided", 2026-11-05)
+decided_html = ("" if not A.get("decided") else
+    '<h2 id="decided">Decided at the meeting</h2>\n<div class="next"><p><b>From Matthew\'s notes after the meeting, ' + esc(A["meeting"][:10]) + '.</b></p><ol>\n'
+    + "".join(f"  <li>{chips(s)}</li>\n" for s in A["decided"]) + "</ol></div>\n\n")
+outline_html = outline_section(A.get("outline"))
+data_js = json.dumps(A, ensure_ascii=False).replace("</", "<\\/")
+
+page = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{esc(A["page_title"])}</title>
+<style>
+  :root {{
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490;
+  }}
+  @media (prefers-color-scheme: dark) {{
+    :root:not([data-theme="light"]) {{
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9;
+    }}
+  }}
+  :root[data-theme="dark"] {{ --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; }}
+  * {{ box-sizing: border-box; }}
+  body {{ margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }}
+  main {{ max-width: 980px; margin: 0 auto; padding: 32px 16px 80px; }}
+  h1 {{ font-size: 2em; line-height: 1.2; margin: 0 0 6px; }}
+  h2 {{ font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }}
+  h3 {{ font-size: 1.1em; margin: 0 0 4px; }}
+  p, li {{ max-width: 72ch; }}
+  .sub {{ color: var(--muted); margin: 0 0 24px; }}
+  .series {{ color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }}
+  .wip {{ display: inline-block; font-size: 0.8em; font-weight: 600; letter-spacing: 0.02em; color: var(--warn);
+          border: 1px solid var(--warn); border-radius: 999px; padding: 0 8px; margin-left: 4px; }}
+  .headline {{ background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }}
+  .headline ol > li {{ margin: 8px 0; }}
+  a {{ color: var(--link); text-decoration: underline; text-underline-offset: 2px; }}
+  a code {{ color: var(--link); }}
+  a.unpub, a.unpub code {{ color: inherit; text-decoration: none; cursor: default; }}
+  code {{ font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }}
+  table {{ border-collapse: collapse; width: 100%; font-size: 0.95em; }}
+  th, td {{ text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }}
+  th {{ color: var(--muted); font-weight: 600; }}
+  td.n {{ font-variant-numeric: tabular-nums; color: var(--muted); }}
+  tr.sec td {{ padding-top: 14px; border-bottom: 2px solid var(--line); }} tr.sec a {{ color: inherit; text-decoration: none; }}
+  .scroll {{ overflow-x: auto; }}
+  .chip {{ display: inline-block; font-size: 0.78em; font-weight: 600; white-space: nowrap; vertical-align: 2px;
+           border-radius: 999px; padding: 1px 9px; border: 1px solid currentColor; }}
+  .chip.good {{ color: var(--good); }} .chip.warn {{ color: var(--warn); }} .chip.accent {{ color: var(--accent); }}
+  .chip.accent2 {{ color: var(--accent2); }} .chip.muted {{ color: var(--muted); }}
+  .item {{ background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--line);
+           border-radius: 8px; padding: 12px 16px; margin: 16px 0; }}
+  .item.good {{ border-left-color: var(--good); }} .item.warn {{ border-left-color: var(--warn); }}
+  .item.accent {{ border-left-color: var(--accent); }} .item.accent2 {{ border-left-color: var(--accent2); }}
+  .item h3 .n {{ color: var(--muted); }}
+  .meta {{ color: var(--muted); font-size: 0.9em; margin: 0 0 8px; }}
+  .ask {{ border-top: 1px dashed var(--line); padding-top: 8px; margin-bottom: 2px; }}
+  .decided {{ border-left: 4px solid var(--good); background: var(--paper); padding: 6px 12px; border-radius: 6px; margin: 8px 0 4px; }}
+  details {{ margin: 6px 0 10px; }} summary {{ cursor: pointer; color: var(--muted); }}
+  ul.prs {{ columns: 2 22em; margin: 6px 0; }}
+  h3 a.item-link {{ color: var(--muted, #666); text-decoration: none; font-size: 0.7em; font-weight: normal; margin-left: 4px; }}
+  h3 a.item-link:hover {{ text-decoration: underline; }}
+  h3 button.copy-item {{ font: inherit; font-size: 0.65em; font-weight: normal; padding: 0 6px; margin-left: 2px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 2px; }}
+  h3 button.copy-item:hover {{ color: inherit; }}
+  h3 button.copy-item.done {{ color: var(--good, #15803d); border-color: var(--good, #15803d); }}
+  .figrow {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 18px; margin: 10px 0 14px; }}
+  .figrow figure {{ margin: 0; min-width: 0; }} .figrow figure.wide {{ grid-column: 1 / -1; }} .figrow figure:only-child:not(.wide) {{ max-width: 480px; }}
+  .figrow figure.wide {{ overflow-x: auto; }} .figrow figure.wide svg {{ min-width: 760px; }}
+  .figrow figcaption {{ color: var(--muted); font-size: 0.86em; line-height: 1.4; margin-top: 6px; max-width: none; }}
+  .next {{ background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--accent2); border-radius: 8px; padding: 8px 16px 6px; margin: 16px 0 8px; }}
+  .next p {{ margin: 4px 0; }} .next ol {{ margin: 4px 0 6px; padding-left: 1.4em; }} .next li {{ margin: 4px 0; max-width: none; }}
+  section.item:target {{ outline: 2px solid color-mix(in srgb, var(--good, #15803d) 40%, transparent); border-radius: 6px; }}
+</style>
+</head>
+<body>
+<main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>{A["report"]}<b>)</b></code> · agenda <span class="wip">work in progress</span> · started {A["started"]}, updated {esc(A["updated"])}</p>
+<h1>{A["title"]}</h1>
+<p class="sub">{A["sub"]}</p>
+
+{outline_html}<h2 id="items">The items, by section</h2>
+<div class="scroll"><table>
+  <tr><th></th><th>Item</th><th>Status</th></tr>
+{rows}
+</table></div>
+
+<!-- (2026-11-04, Matthew: "put the 'in short' section after the outline", the items table, "and make it shorter, in general, as a rule": one sentence a section) -->
+<div class="headline">
+<p><b>In short.</b> As of {esc(A["updated"])}.</p>
+<ol>
+{"".join(f"  <li>{s}</li>" + chr(10) for s in A["short"])}</ol>
+</div>
+
+{decided_html}{items}
+
+<h2 id="if-time">If there is time</h2>
+<ul>
+{"".join(f"  <li>{s}</li>" + chr(10) for s in A["if_time"])}</ul>
+
+<h2 id="method">How this agenda is kept</h2>
+<ul>
+{"".join(f"  <li>{s}</li>" + chr(10) for s in A["method"])}  <li><b>The data:</b> in this page's <code>&lt;script type="application/json" id="report-data"&gt;</code> element and in <code>042/data/agenda.json</code>; the page is made by <code>042/drivers/gen042.py</code>.</li>
+</ul>
+</main>
+<script type="application/json" id="report-data">{data_js}</script>
+<script>
+/* each item's "copy item" chip: its name and link, to paste to Claude */
+document.querySelectorAll("button.copy-item").forEach(btn => btn.addEventListener("click", async () => {{
+  const text = btn.dataset.copy;
+  try {{ await navigator.clipboard.writeText(text); }}
+  catch (_) {{ const t = document.createElement("textarea"); t.value = text; document.body.append(t); t.select(); document.execCommand("copy"); t.remove(); }}
+  btn.textContent = "copied"; btn.classList.add("done");
+  setTimeout(() => {{ btn.textContent = "copy item"; btn.classList.remove("done"); }}, 1500);
+}}));
+if (location.hash) {{ const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }}
+</script>
+</body>
+</html>
+"""
+open("042/index.html", "w").write(unlink_unpublished(page))
+
+# the series card's thumbnail: the meeting's date, and one bar per item in its status colour (then
+# tools/theme_variants.py 042/img/thumb.svg makes its light and dark copies)
+LIGHT = {"good": "#15803d", "warn": "#b45309", "accent": "#6d28d9", "accent2": "#0e7490", "muted": "#5b6470", "ink": "#1f2328"}
+DARK = {"good": "#4ade80", "warn": "#fbbf24", "accent": "#c4b5fd", "accent2": "#67e8f9", "muted": "#a2a9b3", "ink": "#e8e6e3"}
+rule = lambda pal: "".join(f".{k}{{fill:{v}}}" for k, v in pal.items())
+month, day = {"10": "OCT", "11": "NOV", "12": "DEC"}.get(A["meeting"][5:7], A["meeting"][5:7]), str(int(A["meeting"][8:]))
+step = min(21, 150 // max(1, len(A["items"])))
+bars = "".join(
+    f'<circle cx="140" cy="{24 + i * step + 6}" r="5" class="{it["tone"]}"/>'
+    f'<rect x="152" y="{24 + i * step}" width="{min(150, 60 + 2 * len(re.sub("<[^>]+>|&[a-z]+;", "", it["title"])))}" height="12" rx="6" class="{it["tone"]}"/>'
+    for i, it in enumerate(A["items"]))
+os.makedirs("042/img", exist_ok=True)
+open("042/img/thumb.svg", "w").write(
+    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">\n'
+    f'<style>{rule(LIGHT)}.box{{fill:none;stroke:#5b6470;stroke-width:2}}.m{{font:700 14px system-ui,sans-serif;letter-spacing:2px}}.d{{font:700 44px system-ui,sans-serif}}.mt{{fill:#ffffff}}'
+    f'@media (prefers-color-scheme: dark) {{{rule(DARK)}.box{{fill:none;stroke:#a2a9b3;stroke-width:2}}.mt{{fill:#15171a}}}}</style>\n'
+    f'<rect x="20" y="40" width="96" height="100" rx="10" class="box"/><rect x="20" y="40" width="96" height="26" rx="10" class="accent"/>'
+    f'<rect x="20" y="56" width="96" height="10" class="accent"/>'
+    f'<text x="68" y="58" text-anchor="middle" class="m mt">{month}</text>'
+    f'<text x="68" y="122" text-anchor="middle" class="d ink">{day}</text>\n{bars}\n</svg>\n')
+print("wrote 042/index.html:", len(A["items"]), "items, updated", A["updated"])
