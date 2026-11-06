@@ -159,7 +159,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>44<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 13:42 MST · <span class="wip">work in progress</span> · after <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>44<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 15:52 MST · <span class="wip">work in progress</span> · after <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -246,14 +246,14 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- listen: end -->
 <h1>Hazel Listings in an Article</h1>
-<p class="sub">How can a blog post, an article or a report show its Hazel code in Hazel's own editor, rather than as plain text, with go to definition working from one listing to another? <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a> does it for every Hazel listing on its page, with a small script, <code>hazel-listings.js</code>. This report says how to do the same on another page, what the script does, and what limits it today. Matthew asked for it on 2026-11-06: "can we also write about how to do this, generally, so a blog post or 'article' like this could have listings where goto def works?" As of 2026-11-06.</p>
+<p class="sub">How can a blog post, an article or a report show its Hazel code in Hazel's own editor, rather than as plain text, with go to definition working from one listing to another? <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a> does it for every Hazel listing on its page, with a small script, <code>hazel-listings.js</code>. This report says how to do the same on another page, what the script does, and what limits it today. It is the second of two reports on using <code>hazeljs</code> from JavaScript: <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a> uses it in a whole app whose rules are Hazel, a Petri net simulator (live at <a href="https://matthewhammer.org/hazeljs-petri-example/">matthewhammer.org/hazeljs-petri-example</a>); this one, in an article. Matthew asked for it on 2026-11-06: "can we also write about how to do this, generally, so a blog post or 'article' like this could have listings where goto def works?" As of 2026-11-06.</p>
 
 <h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
 <ol class="outline">
 <li><a href="#try">Try it</a>: three listings of one small program, in Hazel's editor, with go to definition from one to another.</li>
 <li><a href="#how">How to do it on your page</a>: the markup, the one script, the styling, and the calls a page can listen to.</li>
 <li><a href="#what">What the script does</a>: the messages it trades with Hazel's frame, how it finds a definition, and what we learned making it.</li>
-<li><a href="#limits">Limits today</a>: a branch build, a short list of sites, and go to definition only from editable listings.</li>
+<li><a href="#limits">Limits today</a>: a branch build, a short list of sites, go to definition only from editable listings, and lines that do not break again to fit a narrow box.</li>
 <li><a href="#host">Your own site</a>: hosting Hazel's editor beside your article, so the frame takes your page's messages.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
@@ -301,7 +301,7 @@ let total = fun ss : [Shape] ->
 &lt;pre class="hazel" data-program="shapes" data-module="Geometry"&gt;let area = fun s : Shape -&gt; ...&lt;/pre&gt;
 &lt;pre class="hazel" data-program="shapes" data-module="Scene"&gt;... Geometry.area(s) ...&lt;/pre&gt;</code></pre>
 <p><code>data-program</code> groups listings into one program (a page may have several). A listing without <code>data-module</code> is the program's preamble: its types, which every module sees. A listing with <code>data-module="Name"</code> is that module's body, its members with no <code>in</code>; later modules see it as <code>Name.member</code>. <code>data-editable="false"</code> makes one read-only.</p></li>
-<li><p><b>Load the script at the end of the body,</b> after the listings: <code>&lt;script src="hazel-listings.js"&gt;&lt;/script&gt;</code> (<a href="../043/hazel-listings.js">the script</a>, one file, no dependencies). It frames Hazel's editor from <code>build.hazel.org</code>; to frame your own copy, name it on the tag: <code>&lt;script src="hazel-listings.js" data-frame="/hazel/index.html#embed"&gt;</code> (<a href="#host">your own site</a>).</p></li>
+<li><p><b>Load the script at the end of the body,</b> after the listings, from npm: <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.5/hazel-listings.js"&gt;&lt;/script&gt;</code>. It is in the <code>hazeljs</code> package since 0.0.5 (2026-11-06), and brings default styles of its own, with no weight, so a page needs no stylesheet for it. Or serve a copy beside the page (<a href="../043/hazel-listings.js">the script</a>, one file, no dependencies). It frames Hazel's editor from <code>build.hazel.org</code>; to frame your own copy, name it on the tag: <code>&lt;script src="hazel-listings.js" data-frame="/hazel/index.html#embed"&gt;</code> (<a href="#host">your own site</a>).</p></li>
 <li><p><b>Style the holder,</b> if you like: each listing is wrapped in a <code>div.hazel-listing</code> whose <code>data-state</code> is <code>waiting</code>, <code>loading</code>, <code>tiles</code> or <code>text</code> (the editor did not start). Show the <code>pre</code> until <code>loading</code>, and hide it after. Under each listing, a <code>ul.hazel-listing-status</code> lists what Hazel says of it (its errors, holes and unfinished brackets), hidden when there is nothing to say.</p></li>
 <li><p><b>Optionally, listen.</b> <code>HazelListings.onChange(program, spec =&gt; ...)</code> is told after each edit, with the program as <code>Hazel.runProgram</code> takes it, so a page can run it with <code>hazeljs</code>, as <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a> does. <code>HazelListings.goto(program, name)</code> goes to a definition from the page's own links, and <code>HazelListings.reset(program)</code> puts back the text the page was written with.</p></li>
 </ol>
@@ -335,6 +335,7 @@ let total = fun ss : [Shape] ->
 <li><b>It takes messages only from a few sites:</b> <code>https://matthewhammer.org</code> and <code>localhost</code> (and its own), a list built into the frame (<code>site_origins</code> in <code>src/web/embed/EmbedProtocol.re</code>). Another site's article can host its own copy of the editor (<a href="#host">next section</a>), or ask for its origin to be added to the list.</li>
 <li><b>Go to definition starts only in an editable listing.</b> The read-only view has no Ctrl+click or F12, so a read-only listing can be gone to, but not gone from. That is why the script's listings are editable by default.</li>
 <li><b>Each listing loads Hazel's app</b> in its frame, so a page with many listings takes a while to start them all.</li>
+<li><b>A listing keeps the line breaks it was written with.</b> In a box narrower than its longest lines, they are cut off, and the listing scrolls sideways. Messed Up Dress Up breaks its listings' lines again to fit whenever a box's width changes; the script should too (<a href="https://github.com/hazelgrove/hazeljs/issues/1">hazelgrove/hazeljs#1</a>).</li>
 </ul>
 
 <h2 id="host">Your own site: hosting Hazel's editor<a class="anchor" href="#host" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="host" title="copy this section's address">copy link</button></h2>
@@ -349,7 +350,7 @@ let total = fun ss : [Shape] ->
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol>
-<li>Ship the editor and this script with <code>hazeljs</code>, so a page loads both from npm at one version: <code>Hazel.listings()</code>, say.</li>
+<li>Ship the editor with <code>hazeljs</code> too (the script is in the package since 0.0.5), so a page loads both from npm at one version: <code>Hazel.listings()</code>, say.</li>
 <li>Decide the frame's origin policy, so any site's article can use it.</li>
 <li>Go to definition from read-only listings: Ctrl+click and F12 in Hazel's read-only view too.</li>
 <li>A plugin for a static site generator (Markdown's <code>```hazel</code> blocks becoming these listings), so a blog post needs no HTML.</li>
@@ -519,7 +520,7 @@ let total = fun ss : [Shape] ->
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T20:33:06Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
+  const CACHED = {"hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-06T21:51:58Z", "base": "js-library"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T20:33:06Z", "base": "js-library-embed"}, "hazelgrove/hazeljs#1": {"author": "matthewhammer", "comments": 0, "created": "2026-11-06T22:28:22Z", "kind": "issues", "state": "open", "title": "hazel-listings.js: break long lines to fit each listing, again whenever its width changes (as Messed Up Dress Up does)", "updated": "2026-11-06T22:28:22Z"}}, BUILT = "2026-11-06";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
