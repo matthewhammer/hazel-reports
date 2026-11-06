@@ -218,6 +218,9 @@ HEAD = f"""<!doctype html>
   .hazel-listing iframe {{ border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }}
   .hazel-listing[data-state="loading"] pre, .hazel-listing[data-state="tiles"] pre {{ display: none; }}
   .hazel-listing pre.hazel {{ margin: 0; }}
+  /* what Hazel says of the program, under the listing it is in (hazel-listings.js) */
+  .hazel-listing-status {{ list-style: none; margin: 6px 0 0; padding: 6px 10px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 8%, transparent); border-radius: 0 6px 6px 0; color: var(--ink); font-size: 0.9em; }}
+  .hazel-listing-status li {{ margin: 2px 0; }}
   /* 🪵 the event log, as Messed Up Dress Up's (its style.css, ticket 592): a line an event, opened for the answer acted out */
   .script-log {{ margin-top: 10px; font-size: 0.92em; }}
   .script-log .log-head {{ display: flex; align-items: baseline; gap: 8px; margin: 4px 0; }}

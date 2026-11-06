@@ -13,14 +13,19 @@
 // that frame to reveal it, then scrolls to its caret. An edit in a listing reaches the other listings of its program, and
 // HazelListings.onChange(program, fn) tells the page.
 //
-// Limits, today: the frame comes from a branch build of Hazel (embed-editable) and takes messages only from the sites in its
-// allowlist (matthewhammer.org, localhost), so another site needs its origin added there (^ticket(701)); a go to definition
+// Limits, today: the frame comes from a branch build of Hazel (embed-editable) and takes messages only from its own origin and
+// the sites in its list (matthewhammer.org, localhost), so another site hosts its own copy (data-frame, above) or asks to be
+// added to the list; a go to definition
 // starts only in an editable cell, so listings are editable (data-editable="false" makes one read-only, a place to reveal
 // into, not to start from); undo is the page's (^ticket(702)).
 (() => {
   "use strict";
-  const FRAME = "https://build.hazel.org/embed-editable/index.html#embed";
-  const ORIGIN = "https://build.hazel.org";
+  // Where Hazel's editor comes from: build.hazel.org's embed-editable build by default, or the page's own copy, named on
+  // the script tag (<script src="hazel-listings.js" data-frame="/hazel/index.html#embed">). The frame takes messages from its
+  // own origin, so a page served beside its own copy of the editor needs no site list (^report(44), "Your own site").
+  const ME = document.currentScript;
+  const FRAME = new URL((ME && ME.dataset.frame) || "https://build.hazel.org/embed-editable/index.html#embed", location.href).href;
+  const ORIGIN = new URL(FRAME).origin;
   const WAIT_MS = 45000;
   const programs = new Map();      // name -> {name, preamble: listing|null, modules: [listing], tail, listeners: []}
   const listings = [];             // in document order
@@ -142,9 +147,38 @@
       to.push(L.text); L.text = from.pop();
       L.sent = null; send(L); sendAll(P, L);
       changed(P);
+    } else if (m.type === "status") {
+      // what Hazel says of the program, under the listing: its errors, holes and unfinished brackets
+      L.status = m;
+      showStatus(L);
     } else if (m.type === "crash" && !L.ready) {
       fail(L, "Hazel's editor stopped");
     }
+  }
+  // (Matthew, 2026-11-06, of an error he typed into a listing: "can't see the error") Hazel's editor marks where an error
+  // is, but its message is in the app's own bar, which the frame does not have; the frame posts each program's errors to the
+  // page ({type: "status"}), and here they are, under the listing they are in: a module's under its module, the preamble's
+  // (module null) under the preamble. Type errors said as a person reads them, as Messed Up Dress Up says them.
+  function errorText(message) {
+    const m = String(message).match(/^Error in term:\s*\n\s*([\s\S]*?)\nNature of error: Expecting type ([\s\S]*?) but got inconsistent type ([\s\S]*)$/);
+    if (!m) return String(message).replace(/\s+/g, " ").replace(/^Error in term: /, "");
+    const ty = t => { t = t.trim().replace(/\s+/g, " "); return /,/.test(t) && !/^\(.*\)$/.test(t) ? `(${t})` : t; };
+    const a = t => (/^[AEIOU]/.test(ty(t)) ? "an " : "a ") + ty(t);
+    const term = m[1].trim().replace(/\s+/g, " ");
+    return `${term.length > 60 ? term.slice(0, 57) + "…" : term}: ${a(m[2])} is wanted here, but this is ${a(m[3])}`;
+  }
+  function showStatus(L) {
+    const st = L.status || {};
+    const mine = e => L.module ? e.module === L.module : (e.module === null || e.module === undefined);
+    const lines = (st.errors || []).filter(mine).map(e => "⚠️ " + errorText(e.message));
+    if (L.module) {
+      const h = (st.holes || {})[L.module] || 0, u = (st.incomplete || {})[L.module] || 0;
+      if (h) lines.push(`${h} hole${h > 1 ? "s" : ""} to fill`);
+      if (u) lines.push(`${u} bracket${u > 1 ? "s or keywords" : " or keyword"} without ${u > 1 ? "their partners" : "its partner"}`);
+    }
+    if (!L.statusEl) { L.statusEl = document.createElement("ul"); L.statusEl.className = "hazel-listing-status"; L.holder.append(L.statusEl); }
+    L.statusEl.replaceChildren(...lines.map(t => { const li = document.createElement("li"); li.textContent = t; return li; }));
+    L.statusEl.hidden = !lines.length;
   }
   function changed(P) { for (const fn of P.listeners) try { fn(specOf(P)); } catch (e) { console.error(e); } }
 
