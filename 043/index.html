@@ -137,6 +137,9 @@ h3.grp { margin-top: 1.2em; }
              overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }
   pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
   ol.steps > li { margin: 10px 0; }
+  /* the game's pieces: names whole, one to a line, the code column as wide as its longest name */
+  table.pieces td:first-child { width: 8.5em; } table.pieces td:last-child { white-space: nowrap; }
+  table.pieces td:last-child code { overflow-wrap: normal; }
   /* the live example (live.js) */
   /* (within the page's column: the nav beside it makes any width from the window wrong) two columns when the column is wide */
   .live { container-type: inline-size; }
@@ -149,7 +152,7 @@ h3.grp { margin-top: 1.2em; }
     background: var(--bg); color: var(--ink); cursor: pointer; }
   .live-controls button:hover, .live-toggle:hover { border-color: var(--accent); }
   .live-controls button:disabled { opacity: 0.5; cursor: default; }
-  .live:not(.on) .live-controls, .live:not(.on) .live-ed, .live:not(.on) #live-log { display: none; }
+  .live:not(.on) .live-controls, .live:not(.on) #live-log { display: none; }
   .live:not(.on) .live-nojs { display: block; } .live-nojs { display: none; }
   #live-net .live-tr { cursor: pointer; } #live-net .live-tr.off { fill: var(--muted); opacity: 0.45; }
   #live-net .live-tr:focus { outline: none; stroke: var(--ink); stroke-width: 2; }
@@ -159,13 +162,40 @@ h3.grp { margin-top: 1.2em; }
   .live-status ul { margin: 4px 0 0; padding-left: 1.2em; }
   .live-ed { margin: 0 0 14px; }
   .live-ed-head { margin: 0 0 4px; font-size: 0.92em; } .live-ed-head .muted, .muted { color: var(--muted); }
-  .live-why { color: var(--warn); font-size: 0.9em; }
-  .live-frame iframe { width: 100%; height: 120px; border: 1px solid var(--line); border-radius: 8px; display: block; background: var(--paper); }
-  .live-ed textarea { width: 100%; min-height: 18em; font: 0.84em/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink);
-    background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: none; }
-  .live-ed[data-mode="text"] textarea { display: block; } .live-ed[data-mode="text"] .live-frame { display: none; }
-  #live-log { font-size: 0.86em; margin-top: 8px; } #live-log td { padding: 4px 6px; } #live-log code.cmd { font-size: 0.85em; }
-  #live-log .warn { color: var(--warn); }
+  /* Hazel listings (hazel-listings.js): the text until Hazel's editor says ready, then the editor */
+  .hazel-listing { position: relative; margin: 10px 0; }
+  .hazel-listing iframe { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+  .hazel-listing[data-state="loading"] pre, .hazel-listing[data-state="tiles"] pre { display: none; }
+  .hazel-listing pre.hazel { margin: 0; }
+  /* 🪵 the event log, as Messed Up Dress Up's (its style.css, ticket 592): a line an event, opened for the answer acted out */
+  .script-log { margin-top: 10px; font-size: 0.92em; }
+  .script-log .log-head { display: flex; align-items: baseline; gap: 8px; margin: 4px 0; }
+  .script-log .log-count { color: var(--muted); font-size: 0.9em; }
+  .script-log .log-head button { margin-left: auto; font: inherit; font-size: 0.85em; padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }
+  .script-log .log-list { display: flex; flex-direction: column; gap: 2px; max-height: 70vh; overflow: auto; }
+  .script-log .log-entry > summary { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 1px 0; }
+  .script-log .log-entry > summary code { background: none; padding: 0; }
+  .script-log .log-n, .script-log .log-at, .script-log .log-ms, .script-log .log-diff { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .script-log .log-eng { padding: 0 5px; border-radius: 4px; font-size: 0.85em; background: color-mix(in srgb, currentColor 12%, transparent); }
+  .script-log .log-hazel { color: var(--accent); } .script-log .log-js { color: var(--warn); } .script-log .log-mixed { color: var(--muted); }
+  .script-log .log-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 12px; align-items: baseline; margin: 4px 0 4px 14px; }
+  .script-log .log-grid > .log-effect { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 3px 12px; align-items: baseline; margin: 2px 0; }
+  .script-log .log-effect { background: color-mix(in srgb, #f59e0b 14%, transparent); border: 1px solid color-mix(in srgb, #f59e0b 45%, transparent); border-radius: 8px; padding: 4px 10px 6px; }
+  .script-log .log-k { color: var(--muted); font-size: 0.85em; white-space: nowrap; text-align: right; }
+  .script-log .log-v { min-width: 0; }
+  .script-log .log-json { overflow-x: auto; font-size: 0.85em; margin: 0; display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .script-log .log-chips { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 3px 0 2px; }
+  .script-log .log-chip { display: inline-block; padding: 3px 9px; border-radius: 12px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); white-space: nowrap; font-size: 0.92em; line-height: 1.45; }
+  .script-log .log-chip:has(> .log-field) { padding-left: 4px; }
+  .script-log summary .log-chip { font-size: 0.85em; padding: 1px 7px; } .script-log summary .log-chip:has(> .log-field) { padding-left: 2px; }
+  .script-log .log-field { display: inline-block; padding: 0 6px; line-height: 1.3; margin-right: 1px; border-radius: 8px; background: color-mix(in srgb, #14b8a6 26%, transparent); border: 1px solid color-mix(in srgb, #14b8a6 60%, transparent); }
+  .script-log .log-eq { margin: 0 0.35em; opacity: 0.8; }
+  .script-log .log-goto { font: inherit; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .script-log .log-quiet { color: var(--muted); border-style: dashed; }
+  .script-log .log-bad { color: var(--bad); } .script-log .log-chip.log-bad { border-color: var(--bad); }
+  .script-log .log-globals { margin: 0 0 6px 14px; } .script-log .log-globals > summary { cursor: pointer; color: var(--muted); font-size: 0.9em; }
+  .script-log .log-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .script-log .hint { color: var(--muted); font-size: 0.9em; }
 </style>
 <style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
@@ -178,7 +208,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 10:04 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 11:26 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -271,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <p><b>Short answers.</b> As of 2026-11-06, with <code>hazeljs</code> 0.0.4 from npm.</p>
 <ol class="ans">
 <li><p><b>The pattern: your app keeps its state and its screen, and Hazel only decides.</b> On an event, the app calls a Hazel function with a typed view of its state and the event. It then carries out the command the function returns, which is plain data (<a href="#pattern">Figure 1</a>).</p></li>
-<li><p><b>Six steps.</b> Declare the vocabulary as Hazel types. Let users write modules against it. Build the program with <code>Hazel.runProgram</code>. Call the function only when the build is <code>ok</code>, and your own JS handler otherwise. Carry out its commands. Show its errors by module (<a href="#steps">the steps</a>).</p></li>
+<li><p><b>Six steps, as we took them for a second app,</b> a Petri net simulator in a repository of its own (<a href="https://github.com/matthewhammer/hazeljs-petri-example">hazeljs-petri-example</a>). Declare the vocabulary as Hazel types. Let users write modules against it. Build the program with <code>Hazel.runProgram</code>. Call the function only when the build is <code>ok</code>, and your own JS handler otherwise. Carry out its commands. Show its errors by module (<a href="#steps">the steps</a>).</p></li>
 <li><p><b>It carries over to a new domain on the first try.</b> A Petri net's firing rule is about 30 lines of Hazel in two modules, and it ran as written. In 2,000 random steps, the two processes were never both inside the shared section. <b>Try it on this page:</b> the net runs here, its rules are in Hazel's own editor, and <code>hazeljs</code> from npm builds every edit (<a href="#try">the example, live</a>).</p></li>
 <li><p><b>A call costs about 3.3 ms, against 0.7 µs for the same handler in JS.</b> That is fast enough for each click, but not yet for a simulator's inner loop. Building the program takes 338 to 366 ms, and rebuilding after an edit 138 to 154 ms (Node, three runs; <a href="#cost">Figure 4</a>).</p></li>
 </ol>
@@ -293,39 +323,39 @@ document.addEventListener("DOMContentLoaded", () => {
 <figure class="fig"><img src="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/pictures/04-max-trap-room.webp" alt="The game's Scripting panel at full size: the game's view at the top left, and the trap room's rule in Hazel, a case on the event: a red lever pulled flips the pits wired to it, a blue lever pulled moves the boulders." style="width:100%;height:auto;border-radius:8px;border:1px solid var(--line)">
 <figcaption>Figure 2. The trap room's rule in the game's Scripting panel, in Hazel's own editor, beside the game. From the game's <a href="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/">Game Scripts Guide</a>.</figcaption></figure>
 <p>All of it is in one file of the game, <code>js/25-scripting.js</code> (read at the game's 0.0.491). The pieces, in the order an event meets them:</p>
-<div class="scroll"><table>
+<div class="scroll"><table class="pieces">
 <tr><th>Piece</th><th>What it does</th><th>In the game's code</th></tr>
 <tr><td>The vocabulary</td><td>Hazel types, declared before every module: <code>Cmd</code> (what a rule may do, each command with the rest after it, ending in <code>Done</code>), <code>Event</code>, <code>Globals</code>, and sums for the game's own words (a lever's side <code>L</code> or <code>R</code>, a wiring, a direction, a kind of room).</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L101"><code>SCRIPT_PREAMBLE</code></a></td></tr>
-<tr><td>The modules</td><td>📚 <code>Common</code>, then one per room; each is the text in one of the panel's editors. The tail of the program gives each room's <code>on_event</code>, held to the type a rule has.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L345"><code>scriptTail</code>, <code>scriptSpec</code></a></td></tr>
+<tr><td>The modules</td><td>📚 <code>Common</code>, then one per room; each is the text in one of the panel's editors. The tail of the program gives each room's <code>on_event</code>, held to the type a rule has.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L345"><code>scriptTail</code><br><code>scriptSpec</code></a></td></tr>
 <tr><td>Loading Hazel</td><td>The library, from <code>hazeljs</code> on a CDN, loaded with a script tag the first time a script runs or the tab opens.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L401"><code>hazelLoad</code></a></td></tr>
 <tr><td>Building</td><td><code>Hazel.runProgram</code> on the modules' texts, once per change of text (the texts are the cache key). It keeps the errors, holes and unfinished brackets, module by module, and each room's handler.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L417"><code>scriptCompile</code></a></td></tr>
 <tr><td>Calling</td><td>Only when the program is ready: otherwise the game's own JS handler answers the event, and Hazel's answer, run as far as its errors allow, goes in the event log beside it.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L774"><code>scriptEventRun</code></a></td></tr>
 <tr><td>The boundary</td><td>The game's own state has text where the rules have sums (a lever's name <code>"L"</code>); a wrapper turns text into constructors on the way in, and back on the way out.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L75"><code>scriptTyped</code></a></td></tr>
-<tr><td>Acting</td><td>Walks the command chain, each command by the room's own method; <code>Say</code> and <code>Wait</code> are the game's everywhere; a command the room does not know ends the walk, and is said.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L604"><code>scriptRun</code></a>, <a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L640"><code>SCRIPT_ACTS</code></a></td></tr>
+<tr><td>Acting</td><td>Walks the command chain, each command by the room's own method; <code>Say</code> and <code>Wait</code> are the game's everywhere; a command the room does not know ends the walk, and is said.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L604"><code>scriptRun</code></a><br><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L640"><code>SCRIPT_ACTS</code></a></td></tr>
 <tr><td>Errors, said plainly</td><td>Hazel's messages are written for Hazel's developers; the game rewrites a type error as "this is wanted here, but this is that", by the game's own type names.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L373"><code>scriptErrorText</code></a></td></tr>
 </table></div>
 <p>The editor in the game is Hazel's own: its app, in a frame, showing each module in Hazel's tiles with its error marks, and posting each edit back to the game. That part is not in <code>hazeljs</code>; it comes from a branch build of Hazel (<a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a> has where each piece stands). Plain text boxes work too, and are where the game started.</p>
 
-<h2 id="steps">Doing the same in your app<a class="anchor" href="#steps" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="steps" title="copy this section's address">copy link</button></h2>
-<p>Each step below shows the worked example's code (<a href="#example">next section</a>), cut from the file that ran.</p>
+<h2 id="steps">Doing the same in another app: our Petri net example<a class="anchor" href="#steps" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="steps" title="copy this section's address">copy link</button></h2>
+<p>To see what a second app takes, we did it ourselves, as another user of <code>hazeljs</code> would: we took the pattern out of the game and built a small app around a Petri net, in a repository of its own, <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> (version 0.0.1). Its rules and its net are files (<code>rules/*.hz</code>, <code>net.json</code>), read both by its page and by a Node script, so the same rules run in both. This is what we did, in the order we did it, and what tripped us; the code is cut from the files that ran. The <a href="#example">next section</a> runs the result on this page.</p>
 <ol class="steps">
-<li><p><b>Install.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; or, in a page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. Pin the version: the package is a prototype, and its API may change in any release.</p></li>
-<li><p><b>Declare the vocabulary as Hazel types,</b> in the program's preamble, which every module sees: what a rule is told, what can happen, and what a rule may answer. Make the answer a chain of commands, each with the rest after it, ending in <code>Done</code>: the app can walk it in order, log it, and refuse a command it does not know.</p>
-<pre class="code"><code>type Arc = (place = Int, weight = Int) in
+<li><p><b>We installed <code>hazeljs</code>.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; in the page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. We pinned the version: the package is a prototype, and its API may change in any release.</p></li>
+<li><p><b>We wrote the vocabulary first,</b> as Hazel types in the program's preamble (<code>rules/preamble.hz</code>), which every module sees: what a rule is told (<code>Net</code>), what can happen (<code>Event</code>), and what a rule may answer (<code>Cmd</code>). The answer is a chain of commands, each with the rest after it, ending in <code>Done</code>, so the page can walk it in order, log it, and refuse a command it does not know.</p>
+<pre class="code hazel" data-program="steps">type Arc = (place = Int, weight = Int) in
 type Transition = (name = String, inputs = [Arc], outputs = [Arc]) in
 type Net = (marking = [Int], transitions = [Transition], draw = Float) in
 type Event = + Fire(Int) + Step in
-type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in</code></pre>
-<p>Declare the sums here, not inside a module: a type's constructors are in scope only where the type is.</p></li>
-<li><p><b>Let your users write modules against it,</b> each a text: helpers in one, the handler in another. A module's text is its members, with no <code>in</code>; one module sees the ones before it, by name (<code>Common.fire</code>).</p></li>
-<li><p><b>Build the program with <code>Hazel.runProgram</code>,</b> once per change of text. The tail is what the program gives you: here, the handler, held to its type.</p>
+type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in</pre>
+<p>Sum types go here, not inside a module: a type's constructors are in scope only where the type is. This is also where another group's nets would differ first: tokens that carry data, weights, a guard, a clock.</p></li>
+<li><p><b>We split the rules into modules,</b> as the game does: helpers in <code>Common</code>, the handler in <code>Rules</code>, each a text (and a file). A module's text is its members, with no <code>in</code>; one module sees the ones before it, by name (<code>Common.fire</code>).</p></li>
+<li><p><b>We built the program with <code>Hazel.runProgram</code>,</b> once per change of text. The tail is what the program gives back: here, the handler, held to its type.</p>
 <pre class="code"><code>function build(rules) {
   const r = Hazel.runProgram(spec(rules));
   return { ok: r.ok, errors: r.errors.map(e =&gt; `${e.module ?? "the program"}: ${e.message.replace(/\s+/g, " ")}`),
            holes: r.holes, incomplete: r.incomplete, ms: r.ms, handler: r.ok ? r.value : null };
 }
 const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
-<li><p><b>Call the handler only when the build is <code>ok</code>,</b> and keep your own JS handler for the rest of the time, while a rule has errors, holes or unfinished brackets. Hazel still runs a program around its errors, so you can log what it would have said, but where an error stopped it, the value is a printout (<code>{hazel: "..."}</code>), not something to act on.</p>
+<li><p><b>We kept our own JS handler,</b> and call Hazel's only while the build is <code>ok</code>; ours answers while a rule has errors, holes or unfinished brackets. Hazel still runs a program around its errors, so the page can log what Hazel would have said, but where an error stopped it, the value is a printout (<code>{hazel: "..."}</code>), not something to act on.</p>
 <pre class="code"><code>function jsHandler(net, ev) {
   const t = net.transitions[ev.tag === "Fire" ? ev.value : 0];
   const ok = t &amp;&amp; t.inputs.every(a =&gt; net.marking[a.place] &gt;= a.weight);
@@ -336,7 +366,7 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
   return { tag: "Say", value: ["(js) " + t.name, k] };
 }
 const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
-<li><p><b>Carry out the commands,</b> and show the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function.</p>
+<li><p><b>We acted out the commands,</b> and showed the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function. The page keeps control: it refuses a command that would take a place below zero, and one it does not know.</p>
 <pre class="code"><code>function perform(cmd, marking, log) {
   const m = marking.slice();
   for (let c = cmd; c &amp;&amp; c.tag !== "Done"; ) {
@@ -349,7 +379,13 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
   return m;
 }</code></pre></li>
 </ol>
-<p>Two more things the game learned. <b>Hazel has no clock and no randomness:</b> pass them in as part of the view (the game's <code>draws</code>, the example's <code>draw</code>), which also makes every call repeatable. And <b>keep the boundary in one place:</b> if your app's own state uses strings where the rules use sums, convert both ways in one wrapper, as the game's <code>scriptTyped</code> does.</p>
+<p><b>What tripped us.</b> Three things, none of them in the game's way of doing it, which is why a second app was worth building:</p>
+<ul>
+<li><b>Key order, a bug in <code>hazeljs</code> 0.0.4.</b> We first passed the net's view as <code>{transitions, marking, draw}</code>, and every answer came back <code>{hazel: "..."}</code>. When a JS object's keys come in another order than its Hazel type's fields, and a field is a list, the value gets stuck at the type's annotation. So we build the view in <code>Net</code>'s own order, <code>{marking, transitions, draw}</code>, until the library converts by label.</li>
+<li><b>Hazel's editor frames are particular about where they run:</b> they take messages only from a few sites (<code>localhost</code> and this one), so the app has to be served from one of them, and a frame off the screen does not draw, so it reports its height as 0 until it is scrolled to.</li>
+<li><b>No randomness or clock in Hazel:</b> the page passes a random draw in with the view, as the game passes its draws, which also makes every call repeatable.</li>
+</ul>
+<p><b>For your own kind of Petri net.</b> Most of what makes one group's nets differ from another's goes in three places: the vocabulary, the helpers, and the net's file. <b>Coloured nets</b> (tokens that carry data, which some groups call <i>types</i>): a place's tokens become a list of Hazel values of that place's type, and a transition's guard and output become Hazel functions, so Hazel's type checker checks the colours as they are written. <b>Weights, inhibitor arcs, priorities, timing:</b> a field in <code>net.json</code>, a case in <code>Common</code>, a word in the vocabulary. And <b>which enabled transition fires</b> is the rule's choice (<code>Step</code>), so a scheduling policy is a few lines of Hazel, swapped without touching the app. The repository's <a href="https://github.com/matthewhammer/hazeljs-petri-example/blob/main/PLAN.md">plan</a> has what comes next for it, more nets among them, and a site of its own.</p>
 
 <h2 id="example">A worked example: a Petri net<a class="anchor" href="#example" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="example" title="copy this section's address">copy link</button></h2>
 <p>The net is the classic small one for mutual exclusion: two processes, each idle or busy, and one lock. To become busy, a process takes the lock; to become idle again, it gives the lock back (Figure 3). The JavaScript app keeps the marking (the tokens in each place), and draws it. The rule decides what an event does: <code>Fire(i)</code> fires transition <i>i</i> if it can, and <code>Step</code> fires one of those that can, chosen by a random draw the app passes in.</p>
@@ -367,30 +403,16 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 <div class="live-status wait" id="live-status"></div>
 <p class="live-nojs muted">With JavaScript on, this net runs, and the rules below are Hazel editors.</p>
 </div>
-<div class="scroll"><table id="live-log"><thead><tr><th>#</th><th>Event</th><th>Answered by</th><th>Said</th><th>The command</th><th>ms</th></tr></thead><tbody></tbody></table></div>
+<div class="live-log script-log" id="live-log"><div class="log-head"><b>🪵 event log</b> <span class="log-count"></span> <button type="button" id="live-log-clear">🧹 clear</button></div><div class="log-list"></div></div>
 </div>
 <div class="live-right">
-<p class="muted" style="margin-top:0">The vocabulary is the app's, and fixed: the preamble every module sees.</p>
-<pre class="code"><code>type Arc = (place = Int, weight = Int) in
+<p class="muted" style="margin-top:0">The vocabulary, the preamble every module sees. Each listing here is Hazel's editor: Ctrl+click a name (or F12 on it) to go to its definition, in whichever listing has it. The editors start with the text that ran in Node, and Reset the rules goes back to it.</p>
+<pre class="code hazel" data-program="petri">type Arc = (place = Int, weight = Int) in
 type Transition = (name = String, inputs = [Arc], outputs = [Arc]) in
 type Net = (marking = [Int], transitions = [Transition], draw = Float) in
 type Event = + Fire(Int) + Step in
-type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in</code></pre>
-<div class="live-ed" id="live-ed-Common" data-mode="tiles"><div class="live-ed-head"><b>Common</b> <span class="muted">helpers the rules use</span> <button type="button" class="live-toggle">edit as text</button> <span class="live-why"></span></div><div class="live-frame"><p class="muted live-wait">⏳ Hazel's editor for Common…</p></div><textarea id="live-text-Common" spellcheck="false" aria-label="The module Common, as text"></textarea></div>
-<div class="live-ed" id="live-ed-Rules" data-mode="tiles"><div class="live-ed-head"><b>Rules</b> <span class="muted">the handler, on_event</span> <button type="button" class="live-toggle">edit as text</button> <span class="live-why"></span></div><div class="live-frame"><p class="muted live-wait">⏳ Hazel's editor for Rules…</p></div><textarea id="live-text-Rules" spellcheck="false" aria-label="The module Rules, as text"></textarea></div>
-</div>
-</div>
-</div>
-<p><b>Things to try.</b></p>
-<ul>
-<li>In <code>Rules</code>, change <code>fire_at(n, i)</code> to <code>fire_at(n, "one")</code>. The status lists the type error by module, and the log shows the page's JS answering until you change it back.</li>
-<li>Replace the <code>Step</code> case's answer with <code>?</code>, a hole: no error, but not ready, and the status says so.</li>
-<li>Make <code>Step</code> always fire the first transition that can: <code>let j = 0 in</code>. Step ×100, and process 2 never runs: the rule decides who goes, not the app.</li>
-<li>In <code>Common</code>'s <code>fire</code>, leave out <code>takes(t.inputs, ...)</code>, so firing only puts tokens: the lock multiplies, and both processes can be busy at once. A rule can be well typed and still wrong; the types only fix the vocabulary.</li>
-</ul>
-<details><summary>The two modules as text, as they ran in Node</summary>
-<p><code>Common</code>:</p>
-<pre class="code"><code># the i-th of a list of Ints, 0 past its end #
+type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in</pre>
+<div class="live-ed" id="live-ed-Common"><div class="live-ed-head"><b>Common</b> <span class="muted">helpers the rules use</span></div><pre class="code hazel" data-program="petri" data-module="Common"># the i-th of a list of Ints, 0 past its end #
 let nth = fun (xs, i) : ([Int], Int) -&gt;
   case xs
   | [] =&gt; 0
@@ -431,9 +453,8 @@ let puts = fun (arcs, k) : ([Arc], Cmd) -&gt;
   | a :: rest =&gt; Put(a.place, a.weight, puts(rest, k))
   end;
 let fire = fun t : Transition -&gt;
-  Say(t.name, takes(t.inputs, puts(t.outputs, Done)))</code></pre>
-<p><code>Rules</code>, with the handler:</p>
-<pre class="code"><code># Fire(i): fire transition i, if it can. #
+  Say(t.name, takes(t.inputs, puts(t.outputs, Done)))</pre></div>
+<div class="live-ed" id="live-ed-Rules"><div class="live-ed-head"><b>Rules</b> <span class="muted">the handler, on_event</span></div><pre class="code hazel" data-program="petri" data-module="Rules"># Fire(i): fire transition i, if it can. #
 # Step: fire one of those that can, chosen by the app's draw. #
 let fire_at = fun (n, i) : (Net, Int) -&gt;
   case Common.pick(n.transitions, i)
@@ -452,8 +473,17 @@ let on_event = fun (n, e) : (Net, Event) -&gt;
     else
       let j = int_of_float(n.draw *. float_of_int(k)) in
       fire_at(n, Common.nth(r, j))
-  end</code></pre>
-</details>
+  end</pre></div>
+</div>
+</div>
+</div>
+<p><b>Things to try.</b></p>
+<ul>
+<li>In <code>Rules</code>, change <code>fire_at(n, i)</code> to <code>fire_at(n, "one")</code>. The status lists the type error by module, and the log shows the page's JS answering until you change it back.</li>
+<li>Replace the <code>Step</code> case's answer with <code>?</code>, a hole: no error, but not ready, and the status says so.</li>
+<li>Make <code>Step</code> always fire the first transition that can: <code>let j = 0 in</code>. Step ×100, and process 2 never runs: the rule decides who goes, not the app.</li>
+<li>In <code>Common</code>'s <code>fire</code>, leave out <code>takes(t.inputs, ...)</code>, so firing only puts tokens: the lock multiplies, and both processes can be busy at once. A rule can be well typed and still wrong; the types only fix the vocabulary.</li>
+</ul>
 <script type="application/json" id="live-data">{"preamble": "type Arc = (place = Int, weight = Int) in\ntype Transition = (name = String, inputs = [Arc], outputs = [Arc]) in\ntype Net = (marking = [Int], transitions = [Transition], draw = Float) in\ntype Event = + Fire(Int) + Step in\ntype Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in", "tail": "(Rules.on_event : (Net, Event) -> Cmd)", "modules": [{"name": "Common", "text": "# the i-th of a list of Ints, 0 past its end #\nlet nth = fun (xs, i) : ([Int], Int) ->\n  case xs\n  | [] => 0\n  | x :: rest => if i == 0 then x else nth(rest, i - 1)\n  end;\nlet len = fun xs : [Int] ->\n  case xs | [] => 0 | _ :: rest => 1 + len(rest) end;\n# the i-th transition, if there is one #\nlet pick = fun (ts, i) : ([Transition], Int) ->\n  case ts\n  | [] => None\n  | t :: rest => if i == 0 then Some(t) else pick(rest, i - 1)\n  end;\n# every input place holds at least its arc's weight #\nlet has = fun (m, arcs) : ([Int], [Arc]) ->\n  case arcs\n  | [] => true\n  | a :: rest => nth(m, a.place) >= a.weight && has(m, rest)\n  end;\nlet enabled = fun (m, t) : ([Int], Transition) -> has(m, t.inputs);\n# the indices of the transitions that can fire #\nlet ready = fun (m, ts, i) : ([Int], [Transition], Int) ->\n  case ts\n  | [] => []\n  | t :: rest =>\n    if enabled(m, t) then i :: ready(m, rest, i + 1)\n    else ready(m, rest, i + 1)\n  end;\n# firing: take each input's tokens, then put each output's #\nlet takes = fun (arcs, k) : ([Arc], Cmd) ->\n  case arcs\n  | [] => k\n  | a :: rest => Take(a.place, a.weight, takes(rest, k))\n  end;\nlet puts = fun (arcs, k) : ([Arc], Cmd) ->\n  case arcs\n  | [] => k\n  | a :: rest => Put(a.place, a.weight, puts(rest, k))\n  end;\nlet fire = fun t : Transition ->\n  Say(t.name, takes(t.inputs, puts(t.outputs, Done)))"}, {"name": "Rules", "text": "# Fire(i): fire transition i, if it can. #\n# Step: fire one of those that can, chosen by the app's draw. #\nlet fire_at = fun (n, i) : (Net, Int) ->\n  case Common.pick(n.transitions, i)\n  | None => Say(\"there is no transition \" ++ string_of_int(i), Done)\n  | Some(t) =>\n    if Common.enabled(n.marking, t) then Common.fire(t)\n    else Say(t.name ++ \" cannot fire now\", Done)\n  end;\nlet on_event = fun (n, e) : (Net, Event) ->\n  case e\n  | Fire(i) => fire_at(n, i)\n  | Step =>\n    let r = Common.ready(n.marking, n.transitions, 0) in\n    let k = Common.len(r) in\n    if k == 0 then Say(\"deadlock: nothing can fire\", Done)\n    else\n      let j = int_of_float(n.draw *. float_of_int(k)) in\n      fire_at(n, Common.nth(r, j))\n  end"}], "places": ["idle1", "busy1", "idle2", "busy2", "lock"], "transitions": [{"name": "enter1", "inputs": [{"place": 0, "weight": 1}, {"place": 4, "weight": 1}], "outputs": [{"place": 1, "weight": 1}]}, {"name": "leave1", "inputs": [{"place": 1, "weight": 1}], "outputs": [{"place": 0, "weight": 1}, {"place": 4, "weight": 1}]}, {"name": "enter2", "inputs": [{"place": 2, "weight": 1}, {"place": 4, "weight": 1}], "outputs": [{"place": 3, "weight": 1}]}, {"name": "leave2", "inputs": [{"place": 3, "weight": 1}], "outputs": [{"place": 2, "weight": 1}, {"place": 4, "weight": 1}]}], "marking": [1, 0, 1, 0, 1]}</script>
 
 <h3 id="node">What the Node runs showed<a class="anchor" href="#node" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="node" title="copy this section's address">copy link</button></h3>
@@ -492,9 +522,10 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
 <h2 id="limits">Limits today<a class="anchor" href="#limits" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="limits" title="copy this section's address">copy link</button></h2>
 <ul>
 <li><b>A prototype.</b> <code>hazeljs</code> is at 0.0.x, built from a draft library on two of Hazel's pull requests, <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a> and <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, not from Hazel's main branch. The plan is for it to track that branch; a pull request to Hazel's README says so (<a href="https://github.com/hazelgrove/hazel/pull/2812">#2812</a>).</li>
-<li><b>No editor in the package.</b> It analyzes and runs text. Hazel's own tile editor in a frame, as the game uses it, comes from a branch build of Hazel.</li>
+<li><b>No editor in the package.</b> It analyzes and runs text. Hazel's own tile editor in a frame, as the game and this page use it, comes from a branch build of Hazel, and takes messages only from a few sites. Planned: the editor in the package.</li>
+<li><b>Key order matters, by mistake.</b> An object whose keys are in another order than its type's fields gets stuck when a field is a list (<a href="#steps">what tripped us</a>). To be fixed in the library.</li>
 <li><b>Messages written for Hazel's developers,</b> which an app will want to rewrite, as the game does.</li>
-<li><b>No undo, and no history,</b> in the library: the app keeps its own.</li>
+<li><b>No undo, and no history,</b> in the library: the app keeps its own. Planned: undo in the editor.</li>
 </ul>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
@@ -511,13 +542,15 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
 <li><b>The example</b> is one file, <code>043/example/petri.mjs</code>: the preamble, the two modules, the app's JS (its own handler, the command walk) and every measurement in this report. The code shown above is cut from it by the page's generator, so it is the code that ran.</li>
 <li><b>The runs:</b> three, in Node v22.23.2 on a laptop (13th Gen Intel Core i7-1370P), with <code>hazeljs</code> 0.0.4 installed from npm into an empty folder (library version "0.1 (draft, js-library)", built from hazelgrove/hazel at 1ba138ef28). Times are <code>performance.now()</code> around each call; a call's figures are the median and 90th percentile of 2,000 calls in a run. The page shows the median of the three runs' medians. Each run's output is in <code>043/data/runs/</code>.</li>
 <li><b>The live example</b> is <code>043/live.js</code>: this page loads <code>hazeljs</code> 0.0.4 from jsDelivr, and frames Hazel's editor from <code>build.hazel.org/embed-editable</code>, a branch build of Hazel whose embed mode takes edits (12 commits on <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>'s branch, no PR yet). Checked in a browser on 2026-11-06, served from a local port (the editor's frame takes messages only from this site and from local ports): both editors start and show the modules in Hazel's tiles; a click on a transition fires it; a type error typed into a module is listed by module, marked in the tiles, and the page's JS answers meanwhile; an edit typed in the tiles comes back to the page and is built again (about 180 ms in the browser); 100 steps took about 375 ms, close to Node's. Not checked: undo with Ctrl+Z in the tiles, which the test browser did not deliver to the frame. The times in the tables are Node's, not the page's.</li>
+<li><b>The example app</b> is <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> at 0.0.1 (46eb8ada01): the same rules and net as files, the same two page scripts, and a Node script that is this report's <code>043/example/petri.mjs</code> reading those files.</li>
 <li><b>The data:</b> the runs as JSON in <code>043/data/runs/run1.json</code> to <code>run3.json</code>, their printed output beside them, and <code>043/data/meta.json</code>; the page is made by <code>043/gen043.py</code> from <code>043/body.html</code>.</li>
   <!-- data-line: begin -->
   <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/043/data"><code>043/data/</code></a>.</li>
   <!-- data-line: end -->
 </ul>
 </main>
-<script src="live.js?v=5"></script>
+<script src="hazel-listings.js?v=4"></script>
+<script src="live.js?v=9"></script>
 <!-- theme: begin -->
 <style>
   .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
@@ -848,7 +881,7 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
     [
      "The modules",
      "📚 Common, then one per room; each is the text in one of the panel's editors. The tail of the program gives each room's on_event, held to the type a rule has.",
-     "scriptTail, scriptSpec"
+     "scriptTailscriptSpec"
     ],
     [
      "Loading Hazel",
@@ -873,7 +906,7 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
     [
      "Acting",
      "Walks the command chain, each command by the room's own method; Say and Wait are the game's everywhere; a command the room does not know ends the walk, and is said.",
-     "scriptRun, SCRIPT_ACTS"
+     "scriptRunSCRIPT_ACTS"
     ],
     [
      "Errors, said plainly",
@@ -881,19 +914,6 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
      "scriptErrorText"
     ]
    ]
-  },
-  {
-   "section": "Try it: this page is the app",
-   "section_id": "try",
-   "columns": [
-    "#",
-    "Event",
-    "Answered by",
-    "Said",
-    "The command",
-    "ms"
-   ],
-   "rows": []
   },
   {
    "section": "What the Node runs showed",

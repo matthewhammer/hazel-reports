@@ -7,7 +7,7 @@
 <p><b>Short answers.</b> As of 2026-11-06, with <code>hazeljs</code> 0.0.4 from npm.</p>
 <ol class="ans">
 <li><p><b>The pattern: your app keeps its state and its screen, and Hazel only decides.</b> On an event, the app calls a Hazel function with a typed view of its state and the event. It then carries out the command the function returns, which is plain data (<a href="#pattern">Figure 1</a>).</p></li>
-<li><p><b>Six steps.</b> Declare the vocabulary as Hazel types. Let users write modules against it. Build the program with <code>Hazel.runProgram</code>. Call the function only when the build is <code>ok</code>, and your own JS handler otherwise. Carry out its commands. Show its errors by module (<a href="#steps">the steps</a>).</p></li>
+<li><p><b>Six steps, as we took them for a second app,</b> a Petri net simulator in a repository of its own (<a href="https://github.com/matthewhammer/hazeljs-petri-example">hazeljs-petri-example</a>). Declare the vocabulary as Hazel types. Let users write modules against it. Build the program with <code>Hazel.runProgram</code>. Call the function only when the build is <code>ok</code>, and your own JS handler otherwise. Carry out its commands. Show its errors by module (<a href="#steps">the steps</a>).</p></li>
 <li><p><b>It carries over to a new domain on the first try.</b> A Petri net's firing rule is about 30 lines of Hazel in two modules, and it ran as written. In 2,000 random steps, the two processes were never both inside the shared section. <b>Try it on this page:</b> the net runs here, its rules are in Hazel's own editor, and <code>hazeljs</code> from npm builds every edit (<a href="#try">the example, live</a>).</p></li>
 <li><p><b>A call costs about {{call_med}} ms, against {{js_us}} µs for the same handler in JS.</b> That is fast enough for each click, but not yet for a simulator's inner loop. Building the program takes {{build_lo}} to {{build_hi}} ms, and rebuilding after an edit {{rebuild_lo}} to {{rebuild_hi}} ms (Node, three runs; <a href="#cost">Figure 4</a>).</p></li>
 </ol>
@@ -29,36 +29,42 @@
 <figure class="fig"><img src="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/pictures/04-max-trap-room.webp" alt="The game's Scripting panel at full size: the game's view at the top left, and the trap room's rule in Hazel, a case on the event: a red lever pulled flips the pits wired to it, a blue lever pulled moves the boulders." style="width:100%;height:auto;border-radius:8px;border:1px solid var(--line)">
 <figcaption>Figure 2. The trap room's rule in the game's Scripting panel, in Hazel's own editor, beside the game. From the game's <a href="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/">Game Scripts Guide</a>.</figcaption></figure>
 <p>All of it is in one file of the game, <code>js/25-scripting.js</code> (read at the game's 0.0.491). The pieces, in the order an event meets them:</p>
-<div class="scroll"><table>
+<div class="scroll"><table class="pieces">
 <tr><th>Piece</th><th>What it does</th><th>In the game's code</th></tr>
 <tr><td>The vocabulary</td><td>Hazel types, declared before every module: <code>Cmd</code> (what a rule may do, each command with the rest after it, ending in <code>Done</code>), <code>Event</code>, <code>Globals</code>, and sums for the game's own words (a lever's side <code>L</code> or <code>R</code>, a wiring, a direction, a kind of room).</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L101"><code>SCRIPT_PREAMBLE</code></a></td></tr>
-<tr><td>The modules</td><td>📚 <code>Common</code>, then one per room; each is the text in one of the panel's editors. The tail of the program gives each room's <code>on_event</code>, held to the type a rule has.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L345"><code>scriptTail</code>, <code>scriptSpec</code></a></td></tr>
+<tr><td>The modules</td><td>📚 <code>Common</code>, then one per room; each is the text in one of the panel's editors. The tail of the program gives each room's <code>on_event</code>, held to the type a rule has.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L345"><code>scriptTail</code><br><code>scriptSpec</code></a></td></tr>
 <tr><td>Loading Hazel</td><td>The library, from <code>hazeljs</code> on a CDN, loaded with a script tag the first time a script runs or the tab opens.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L401"><code>hazelLoad</code></a></td></tr>
 <tr><td>Building</td><td><code>Hazel.runProgram</code> on the modules' texts, once per change of text (the texts are the cache key). It keeps the errors, holes and unfinished brackets, module by module, and each room's handler.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L417"><code>scriptCompile</code></a></td></tr>
 <tr><td>Calling</td><td>Only when the program is ready: otherwise the game's own JS handler answers the event, and Hazel's answer, run as far as its errors allow, goes in the event log beside it.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L774"><code>scriptEventRun</code></a></td></tr>
 <tr><td>The boundary</td><td>The game's own state has text where the rules have sums (a lever's name <code>"L"</code>); a wrapper turns text into constructors on the way in, and back on the way out.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L75"><code>scriptTyped</code></a></td></tr>
-<tr><td>Acting</td><td>Walks the command chain, each command by the room's own method; <code>Say</code> and <code>Wait</code> are the game's everywhere; a command the room does not know ends the walk, and is said.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L604"><code>scriptRun</code></a>, <a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L640"><code>SCRIPT_ACTS</code></a></td></tr>
+<tr><td>Acting</td><td>Walks the command chain, each command by the room's own method; <code>Say</code> and <code>Wait</code> are the game's everywhere; a command the room does not know ends the walk, and is said.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L604"><code>scriptRun</code></a><br><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L640"><code>SCRIPT_ACTS</code></a></td></tr>
 <tr><td>Errors, said plainly</td><td>Hazel's messages are written for Hazel's developers; the game rewrites a type error as "this is wanted here, but this is that", by the game's own type names.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L373"><code>scriptErrorText</code></a></td></tr>
 </table></div>
 <p>The editor in the game is Hazel's own: its app, in a frame, showing each module in Hazel's tiles with its error marks, and posting each edit back to the game. That part is not in <code>hazeljs</code>; it comes from a branch build of Hazel (^report(39) has where each piece stands). Plain text boxes work too, and are where the game started.</p>
 
-<h2 id="steps">Doing the same in your app</h2>
-<p>Each step below shows the worked example's code (<a href="#example">next section</a>), cut from the file that ran.</p>
+<h2 id="steps">Doing the same in another app: our Petri net example</h2>
+<p>To see what a second app takes, we did it ourselves, as another user of <code>hazeljs</code> would: we took the pattern out of the game and built a small app around a Petri net, in a repository of its own, <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> (version 0.0.1). Its rules and its net are files (<code>rules/*.hz</code>, <code>net.json</code>), read both by its page and by a Node script, so the same rules run in both. This is what we did, in the order we did it, and what tripped us; the code is cut from the files that ran. The <a href="#example">next section</a> runs the result on this page.</p>
 <ol class="steps">
-<li><p><b>Install.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; or, in a page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. Pin the version: the package is a prototype, and its API may change in any release.</p></li>
-<li><p><b>Declare the vocabulary as Hazel types,</b> in the program's preamble, which every module sees: what a rule is told, what can happen, and what a rule may answer. Make the answer a chain of commands, each with the rest after it, ending in <code>Done</code>: the app can walk it in order, log it, and refuse a command it does not know.</p>
-<pre class="code"><code>{{PREAMBLE}}</code></pre>
-<p>Declare the sums here, not inside a module: a type's constructors are in scope only where the type is.</p></li>
-<li><p><b>Let your users write modules against it,</b> each a text: helpers in one, the handler in another. A module's text is its members, with no <code>in</code>; one module sees the ones before it, by name (<code>Common.fire</code>).</p></li>
-<li><p><b>Build the program with <code>Hazel.runProgram</code>,</b> once per change of text. The tail is what the program gives you: here, the handler, held to its type.</p>
+<li><p><b>We installed <code>hazeljs</code>.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; in the page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. We pinned the version: the package is a prototype, and its API may change in any release.</p></li>
+<li><p><b>We wrote the vocabulary first,</b> as Hazel types in the program's preamble (<code>rules/preamble.hz</code>), which every module sees: what a rule is told (<code>Net</code>), what can happen (<code>Event</code>), and what a rule may answer (<code>Cmd</code>). The answer is a chain of commands, each with the rest after it, ending in <code>Done</code>, so the page can walk it in order, log it, and refuse a command it does not know.</p>
+<pre class="code hazel" data-program="steps">{{PREAMBLE}}</pre>
+<p>Sum types go here, not inside a module: a type's constructors are in scope only where the type is. This is also where another group's nets would differ first: tokens that carry data, weights, a guard, a clock.</p></li>
+<li><p><b>We split the rules into modules,</b> as the game does: helpers in <code>Common</code>, the handler in <code>Rules</code>, each a text (and a file). A module's text is its members, with no <code>in</code>; one module sees the ones before it, by name (<code>Common.fire</code>).</p></li>
+<li><p><b>We built the program with <code>Hazel.runProgram</code>,</b> once per change of text. The tail is what the program gives back: here, the handler, held to its type.</p>
 <pre class="code"><code>{{JS_BUILD}}</code></pre></li>
-<li><p><b>Call the handler only when the build is <code>ok</code>,</b> and keep your own JS handler for the rest of the time, while a rule has errors, holes or unfinished brackets. Hazel still runs a program around its errors, so you can log what it would have said, but where an error stopped it, the value is a printout (<code>{hazel: "..."}</code>), not something to act on.</p>
+<li><p><b>We kept our own JS handler,</b> and call Hazel's only while the build is <code>ok</code>; ours answers while a rule has errors, holes or unfinished brackets. Hazel still runs a program around its errors, so the page can log what Hazel would have said, but where an error stopped it, the value is a printout (<code>{hazel: "..."}</code>), not something to act on.</p>
 <pre class="code"><code>{{JS_FALLBACK}}
 const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
-<li><p><b>Carry out the commands,</b> and show the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function.</p>
+<li><p><b>We acted out the commands,</b> and showed the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function. The page keeps control: it refuses a command that would take a place below zero, and one it does not know.</p>
 <pre class="code"><code>{{JS_PERFORM}}</code></pre></li>
 </ol>
-<p>Two more things the game learned. <b>Hazel has no clock and no randomness:</b> pass them in as part of the view (the game's <code>draws</code>, the example's <code>draw</code>), which also makes every call repeatable. And <b>keep the boundary in one place:</b> if your app's own state uses strings where the rules use sums, convert both ways in one wrapper, as the game's <code>scriptTyped</code> does.</p>
+<p><b>What tripped us.</b> Three things, none of them in the game's way of doing it, which is why a second app was worth building:</p>
+<ul>
+<li><b>Key order, a bug in <code>hazeljs</code> 0.0.4.</b> We first passed the net's view as <code>{transitions, marking, draw}</code>, and every answer came back <code>{hazel: "..."}</code>. When a JS object's keys come in another order than its Hazel type's fields, and a field is a list, the value gets stuck at the type's annotation. So we build the view in <code>Net</code>'s own order, <code>{marking, transitions, draw}</code>, until the library converts by label.</li>
+<li><b>Hazel's editor frames are particular about where they run:</b> they take messages only from a few sites (<code>localhost</code> and this one), so the app has to be served from one of them, and a frame off the screen does not draw, so it reports its height as 0 until it is scrolled to.</li>
+<li><b>No randomness or clock in Hazel:</b> the page passes a random draw in with the view, as the game passes its draws, which also makes every call repeatable.</li>
+</ul>
+<p><b>For your own kind of Petri net.</b> Most of what makes one group's nets differ from another's goes in three places: the vocabulary, the helpers, and the net's file. <b>Coloured nets</b> (tokens that carry data, which some groups call <i>types</i>): a place's tokens become a list of Hazel values of that place's type, and a transition's guard and output become Hazel functions, so Hazel's type checker checks the colours as they are written. <b>Weights, inhibitor arcs, priorities, timing:</b> a field in <code>net.json</code>, a case in <code>Common</code>, a word in the vocabulary. And <b>which enabled transition fires</b> is the rule's choice (<code>Step</code>), so a scheduling policy is a few lines of Hazel, swapped without touching the app. The repository's <a href="https://github.com/matthewhammer/hazeljs-petri-example/blob/main/PLAN.md">plan</a> has what comes next for it, more nets among them, and a site of its own.</p>
 
 <h2 id="example">A worked example: a Petri net</h2>
 <p>The net is the classic small one for mutual exclusion: two processes, each idle or busy, and one lock. To become busy, a process takes the lock; to become idle again, it gives the lock back (Figure 3). The JavaScript app keeps the marking (the tokens in each place), and draws it. The rule decides what an event does: <code>Fire(i)</code> fires transition <i>i</i> if it can, and <code>Step</code> fires one of those that can, chosen by a random draw the app passes in.</p>
@@ -76,11 +82,11 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 <div class="live-status wait" id="live-status"></div>
 <p class="live-nojs muted">With JavaScript on, this net runs, and the rules below are Hazel editors.</p>
 </div>
-<div class="scroll"><table id="live-log"><thead><tr><th>#</th><th>Event</th><th>Answered by</th><th>Said</th><th>The command</th><th>ms</th></tr></thead><tbody></tbody></table></div>
+<div class="live-log script-log" id="live-log"><div class="log-head"><b>🪵 event log</b> <span class="log-count"></span> <button type="button" id="live-log-clear">🧹 clear</button></div><div class="log-list"></div></div>
 </div>
 <div class="live-right">
-<p class="muted" style="margin-top:0">The vocabulary is the app's, and fixed: the preamble every module sees.</p>
-<pre class="code"><code>{{PREAMBLE}}</code></pre>
+<p class="muted" style="margin-top:0">The vocabulary, the preamble every module sees. Each listing here is Hazel's editor: Ctrl+click a name (or F12 on it) to go to its definition, in whichever listing has it. The editors start with the text that ran in Node, and Reset the rules goes back to it.</p>
+<pre class="code hazel" data-program="petri">{{PREAMBLE}}</pre>
 {{LIVE_COMMON}}
 {{LIVE_RULES}}
 </div>
@@ -93,12 +99,6 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 <li>Make <code>Step</code> always fire the first transition that can: <code>let j = 0 in</code>. Step ×100, and process 2 never runs: the rule decides who goes, not the app.</li>
 <li>In <code>Common</code>'s <code>fire</code>, leave out <code>takes(t.inputs, ...)</code>, so firing only puts tokens: the lock multiplies, and both processes can be busy at once. A rule can be well typed and still wrong; the types only fix the vocabulary.</li>
 </ul>
-<details><summary>The two modules as text, as they ran in Node</summary>
-<p><code>Common</code>:</p>
-<pre class="code"><code>{{COMMON}}</code></pre>
-<p><code>Rules</code>, with the handler:</p>
-<pre class="code"><code>{{RULES}}</code></pre>
-</details>
 {{LIVE_DATA}}
 
 <h3 id="node">What the Node runs showed</h3>
@@ -126,9 +126,10 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 <h2 id="limits">Limits today</h2>
 <ul>
 <li><b>A prototype.</b> <code>hazeljs</code> is at 0.0.x, built from a draft library on two of Hazel's pull requests, #2711 and #2719, not from Hazel's main branch. The plan is for it to track that branch; a pull request to Hazel's README says so (#2812).</li>
-<li><b>No editor in the package.</b> It analyzes and runs text. Hazel's own tile editor in a frame, as the game uses it, comes from a branch build of Hazel.</li>
+<li><b>No editor in the package.</b> It analyzes and runs text. Hazel's own tile editor in a frame, as the game and this page use it, comes from a branch build of Hazel, and takes messages only from a few sites. Planned: the editor in the package.</li>
+<li><b>Key order matters, by mistake.</b> An object whose keys are in another order than its type's fields gets stuck when a field is a list (<a href="#steps">what tripped us</a>). To be fixed in the library.</li>
 <li><b>Messages written for Hazel's developers,</b> which an app will want to rewrite, as the game does.</li>
-<li><b>No undo, and no history,</b> in the library: the app keeps its own.</li>
+<li><b>No undo, and no history,</b> in the library: the app keeps its own. Planned: undo in the editor.</li>
 </ul>
 
 <h2 id="next">What next</h2>
@@ -145,9 +146,11 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 <li><b>The example</b> is one file, <code>043/example/petri.mjs</code>: the preamble, the two modules, the app's JS (its own handler, the command walk) and every measurement in this report. The code shown above is cut from it by the page's generator, so it is the code that ran.</li>
 <li><b>The runs:</b> three, in Node {{node}} on a laptop (13th Gen Intel Core i7-1370P), with <code>hazeljs</code> 0.0.4 installed from npm into an empty folder (library version "{{hazeljs}}", built from hazelgrove/hazel at 1ba138ef28). Times are <code>performance.now()</code> around each call; a call's figures are the median and 90th percentile of 2,000 calls in a run. The page shows the median of the three runs' medians. Each run's output is in <code>043/data/runs/</code>.</li>
 <li><b>The live example</b> is <code>043/live.js</code>: this page loads <code>hazeljs</code> 0.0.4 from jsDelivr, and frames Hazel's editor from <code>build.hazel.org/embed-editable</code>, a branch build of Hazel whose embed mode takes edits (12 commits on #2719's branch, no PR yet). Checked in a browser on 2026-11-06, served from a local port (the editor's frame takes messages only from this site and from local ports): both editors start and show the modules in Hazel's tiles; a click on a transition fires it; a type error typed into a module is listed by module, marked in the tiles, and the page's JS answers meanwhile; an edit typed in the tiles comes back to the page and is built again (about 180 ms in the browser); 100 steps took about 375 ms, close to Node's. Not checked: undo with Ctrl+Z in the tiles, which the test browser did not deliver to the frame. The times in the tables are Node's, not the page's.</li>
+<li><b>The example app</b> is <a href="https://github.com/matthewhammer/hazeljs-petri-example">matthewhammer/hazeljs-petri-example</a> at 0.0.1 (46eb8ada01): the same rules and net as files, the same two page scripts, and a Node script that is this report's <code>043/example/petri.mjs</code> reading those files.</li>
 <li><b>The data:</b> the runs as JSON in <code>043/data/runs/run1.json</code> to <code>run3.json</code>, their printed output beside them, and <code>043/data/meta.json</code>; the page is made by <code>043/gen043.py</code> from <code>043/body.html</code>.</li>
 </ul>
 </main>
-<script src="live.js?v=5"></script>
+<script src="hazel-listings.js?v=4"></script>
+<script src="live.js?v=9"></script>
 </body>
 </html>

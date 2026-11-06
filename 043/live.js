@@ -1,4 +1,4 @@
-// ^report(43)'s worked example, live on the page (Matthew, 2026-11-06: "can we use the npm package itself on this page, and have
+// ^report(43)'s worked example, live on the page (its Hazel listings are hazel-listings.js's; Matthew, 2026-11-06: "can we use the npm package itself on this page, and have
 // real hazel editors, not just listings of hazel?"). The same pattern as Messed Up Dress Up's scripts (its js/25-scripting.js):
 //   - the page keeps the Petri net's marking and draws it (#live-net, drawn first by gen043.py, then kept up to date here);
 //   - its two modules of rules are edited in Hazel's own editor: Hazel's app in a frame, one per module, from Hazel's
@@ -8,8 +8,6 @@
 (() => {
   "use strict";
   const LIB = "https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js";
-  const FRAME = "https://build.hazel.org/embed-editable/index.html#embed";
-  const ORIGIN = "https://build.hazel.org";
   const root = document.getElementById("live");
   const dataEl = document.getElementById("live-data");
   if (!root || !dataEl) return;
@@ -22,17 +20,12 @@
     return e;
   };
 
-  // ---- the state the page keeps
-  const S = {
-    texts: Object.fromEntries(D.modules.map(m => [m.name, m.text])),
-    undo: Object.fromEntries(D.modules.map(m => [m.name, []])),
-    redo: Object.fromEntries(D.modules.map(m => [m.name, []])),
-    marking: D.marking.slice(),
-    built: null,        // {key, ok, errors, holes, incomplete, ms, handler}
-    log: [],
-    n: 0,
-  };
-  const spec = () => ({ preamble: D.preamble, modules: D.modules.map(m => ({ name: m.name, text: S.texts[m.name] })), tail: D.tail });
+  // ---- the state the page keeps (the rules' texts are the listings', hazel-listings.js)
+  const L = window.HazelListings;
+  const PROGRAM = "petri";
+  const S = { marking: D.marking.slice(), built: null, log: [], n: 0 };
+  if (L) L.tail(PROGRAM, D.tail);
+  const spec = () => L ? L.spec(PROGRAM, D.tail) : { preamble: D.preamble, modules: D.modules, tail: D.tail };
 
   // ---- the page's own JS handler: what answers while the Hazel rules are not ready (as petri.mjs's jsHandler)
   function jsHandler(net, ev) {
@@ -78,9 +71,11 @@
     : Array.isArray(v) ? "[" + v.map(hz).join(", ") + "]" : v.tag ? v.tag + (v.value === undefined ? "" : "(" + (Array.isArray(v.value) ? v.value.map(hz).join(", ") : hz(v.value)) + ")")
     : typeof v.hazel === "string" ? "‹not a value›" : "(" + Object.entries(v).map(([k, x]) => `${k} = ${hz(x)}`).join(", ") + ")";
 
-  // ---- events
+  // ---- events, each kept for the 🪵 event log (as Messed Up Dress Up's: the engine that answered, the answer, what it did)
+  const LOG_KEEP = 50;
   function event(ev, quiet) {
-    const view = { marking: S.marking.slice(), transitions: D.transitions, draw: Math.random() };
+    const before = S.marking.slice();
+    const view = { marking: before.slice(), transitions: D.transitions, draw: Math.random() };
     const hazel = !!(S.built && S.built.ok && S.built.handler);
     let cmd, threw = "";
     const t0 = performance.now();
@@ -88,19 +83,23 @@
     catch (e) { threw = String(e && e.message || e); cmd = jsHandler(view, ev); }
     const ms = performance.now() - t0;
     const r = perform(cmd);
-    const entry = { n: ++S.n, ev, by: hazel && !threw ? "Hazel" : "the page's JS", said: r.said.join("; "), note: threw ? "Hazel threw: " + threw : r.note, cmd, ms };
-    if (!quiet) { S.log.unshift(entry); S.log.length = Math.min(S.log.length, 12); }
+    const entry = { n: ++S.n, at: new Date(), ev, eng: hazel && !threw ? "hazel" : "js", said: r.said, note: threw ? "Hazel threw: " + threw : r.note,
+                    cmd, ms, before, after: S.marking.slice() };
+    if (!quiet) keep(entry);
     return entry;
   }
   function runMany(n) {
-    const counts = {}, t0 = performance.now();
-    let by = new Set(), last = null;
-    for (let i = 0; i < n; i++) { last = event({ tag: "Step" }, true); by.add(last.by); counts[last.said || last.note || "?"] = (counts[last.said || last.note || "?"] || 0) + 1; }
-    const ms = performance.now() - t0;
-    S.log.unshift({ n: ++S.n, ev: { tag: "Step", value: undefined, times: n }, by: [...by].join(", "),
-      said: Object.entries(counts).map(([k, v]) => `${k} ×${v}`).join(", "), note: "", cmd: null, ms });
-    S.log.length = Math.min(S.log.length, 12);
+    const before = S.marking.slice(), counts = {}, engs = new Set(), t0 = performance.now();
+    let notes = 0;
+    for (let i = 0; i < n; i++) {
+      const e = event({ tag: "Step" }, true);
+      engs.add(e.eng); if (e.note) notes++;
+      const k = e.said[0] || e.note || "?"; counts[k] = (counts[k] || 0) + 1;
+    }
+    keep({ n: ++S.n, at: new Date(), ev: { tag: "Step" }, times: n, eng: engs.size === 1 ? [...engs][0] : "mixed", counts, notes,
+           ms: performance.now() - t0, before, after: S.marking.slice() });
   }
+  function keep(entry) { S.log.unshift(entry); if (S.log.length > LOG_KEEP) S.log.length = LOG_KEEP; }
 
   // ---- drawing: the net's tokens and which transitions can fire, the status, the log
   function drawNet() {
@@ -140,16 +139,75 @@
     if (b.threw) ul.append(el("li", { text: "hazeljs: " + b.threw }));
     st.append(ul);
   }
-  function drawLog() {
-    const tb = $("#live-log tbody");
-    tb.replaceChildren();
-    for (const e of S.log) {
-      const ev = e.ev.times ? `Step ×${e.ev.times}` : e.ev.tag + (e.ev.value === undefined ? "" : `(${e.ev.value})`);
-      const tr = el("tr", {}, [el("td", { class: "n", text: String(e.n) }), el("td", {}, [el("code", { text: ev })]), el("td", { text: e.by }),
-        el("td", {}, [e.said || "", e.note ? el("span", { class: "warn", text: (e.said ? " · " : "") + e.note }) : ""]),
-        el("td", {}, e.cmd ? [el("code", { class: "cmd", text: hz(e.cmd) })] : []), el("td", { class: "n", text: e.ms < 1 ? e.ms.toFixed(2) : e.ms.toFixed(1) })]);
-      tb.append(tr);
+  // the 🪵 event log, drawn as Messed Up Dress Up's: one line an event (its number, time, engine, call, time taken, and what changed),
+  // opened for the event and the answer, the answer acted out, the time, and the marking before and after in full
+  const opened = new Set();
+  const span = (cls, kids) => el("span", { class: cls }, [].concat(kids));
+  const clock = d => d.toTimeString().slice(0, 8) + "." + String(d.getMilliseconds()).padStart(3, "0");
+  const fmtMs = ms => ms < 1 ? ms.toFixed(2) + " ms" : ms < 100 ? ms.toFixed(1) + " ms" : Math.round(ms) + " ms";
+  const evText = e => e.times ? `Step ×${e.times}` : e.ev.tag + (e.ev.value === undefined ? "" : `(${hz(e.ev.value)})`);
+  // a place that changed, as a chip: its name (a field chip, as the game's globals' fields) and its tokens before and after
+  function changes(e) {
+    const ch = D.places.map((p, i) => [p, e.before[i], e.after[i]]).filter(([, b, a]) => b !== a);
+    if (!ch.length) return [span("log-chip log-quiet", "no change")];
+    return ch.map(([p, b, a]) => span("log-chip", [span("log-field", p), span("log-eq", "="), `${b} ⟶ ${a}`]));
+  }
+  // the answer's commands, each as a chip, the places by name
+  function commands(cmd) {
+    const out = [];
+    for (let c = cmd, k = 0; c && c.tag !== "Done" && k < 60; k++) {
+      const v = Array.isArray(c.value) ? c.value : [c.value];
+      if ((c.tag === "Take" || c.tag === "Put") && v.length === 3) { out.push(span("log-chip", [span("log-field", D.places[v[0]] ?? String(v[0])), ` ${c.tag === "Take" ? "−" : "+"}${v[1]}`])); c = v[2]; }
+      else if (c.tag === "Say" && v.length === 2) { out.push(span("log-chip", `Say(${JSON.stringify(String(v[0]))})`)); c = v[1]; }
+      else { out.push(span("log-chip log-bad", hz(c))); break; }
     }
+    return out.length ? out : [span("log-chip log-quiet", "Done")];
+  }
+  const row = (k, v) => [span("log-k", k), el("div", { class: "log-v" }, [].concat(v))];
+  function body(e) {
+    const grid = el("div", { class: "log-grid" });
+    if (e.times) {
+      grid.append(...row("fired", el("div", { class: "log-chips" }, Object.entries(e.counts).map(([k, v]) => span("log-chip", `${k} ×${v}`)))));
+      if (e.notes) grid.append(...row("", el("div", { class: "log-bad" }, `${e.notes} of the ${e.times} answers refused by the page`)));
+    } else {
+      grid.append(...row("event", el("code", { class: "log-json", text: hz(e.ev) })));
+      grid.append(...row("answer", el("code", { class: "log-json", text: hz(e.cmd) })));
+      const fx = el("div", { class: "log-effect" }, [
+        ...row("the answer, acted out", el("div", { class: "log-chips" }, commands(e.cmd))),
+        ...row("the marking", el("div", { class: "log-chips" }, changes(e))),
+        ...(e.note ? row("", el("div", { class: "log-bad", text: "⚠️ " + e.note })) : [])]);
+      grid.append(fx);
+    }
+    grid.append(...row("time", span("log-diff", e.times ? `${fmtMs(e.ms)} for ${e.times} steps, ${fmtMs(e.ms / e.times)} each` : `rule ${fmtMs(e.ms)}`)));
+    const side = (title, m) => el("div", {}, [el("div", { class: "log-k", style: "text-align:left", text: title }),
+      el("pre", { class: "log-json", text: D.places.map((p, i) => `${p.padEnd(6)} ${m[i]}`).join("\n") })]);
+    const whole = el("details", { class: "log-globals" }, [el("summary", { text: "the marking before and after, in full" }),
+      el("div", { class: "log-sides" }, [side("before", e.before), side("after", e.after)])]);
+    return [grid, whole];
+  }
+  // (as the game's log: the handler's name goes to its definition, in its listing)
+  function goLink(name) {
+    const b = el("button", { type: "button", class: "log-goto", title: `go to ${name}'s definition`, text: name });
+    b.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); if (L) L.goto(PROGRAM, name); });
+    return b;
+  }
+  function drawLog() {
+    const list = $("#live-log .log-list"), count = $("#live-log .log-count");
+    count.textContent = S.log.length ? `${S.n} event${S.n === 1 ? "" : "s"}${S.n > LOG_KEEP ? ` (the most recent ${LOG_KEEP})` : ""}` : "";
+    if (!S.log.length) { list.replaceChildren(el("div", { class: "hint", text: "no events yet: click a transition, or Step; every event the page hands to a rule is kept here, whichever answers it (Hazel or the page's JS)" })); return; }
+    list.replaceChildren(...S.log.map(e => {
+      const eng = e.eng === "hazel" ? "Hazel" : e.eng === "js" ? "JS" : "both";
+      const head = el("summary", {}, [span("log-n", "#" + e.n), " ", span("log-at", clock(e.at)), " ",
+        span(`log-eng log-${e.eng}`, eng), " ",
+        e.times ? el("code", { text: evText(e) }) : el("code", {}, [goLink("Rules.on_event"), `(${evText(e)})`]), " ", span("log-ms", fmtMs(e.ms)), " ",
+        ...(e.note ? [span("log-chip log-bad", "refused")]
+          : e.times ? Object.entries(e.counts).map(([k, v]) => span("log-chip", `${k} ×${v}`))
+          : e.before.some((b, i) => b !== e.after[i]) ? changes(e) : [span("log-chip log-quiet", e.said[0] || "no change")])]);
+      const det = el("details", { class: "log-entry" }, [head]);
+      det.addEventListener("toggle", () => { if (det.open) { opened.add(e.n); if (det.children.length === 1) det.append(...body(e)); } else opened.delete(e.n); });
+      if (opened.has(e.n)) { det.append(...body(e)); det.open = true; }   // (an entry opened stays open as new ones come in)
+      return det;
+    }));
   }
   const drawAll = () => { drawNet(); drawStatus(); drawLog(); };
 
@@ -177,99 +235,9 @@
     document.head.append(s);
   }
 
-  // ---- the editors: Hazel's tiles in a frame per module, with a text box behind each (shown when asked, or when the frame fails)
-  const pageDark = () => { const t = document.documentElement.getAttribute("data-theme"); return t === "dark" || (t !== "light" && !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)); };
-  const editors = D.modules.map(m => ({ mod: m.name, frame: null, ready: false, sent: null, mode: "tiles", timer: 0 }));
-  const post = (E, msg) => E.frame && E.frame.contentWindow && E.frame.contentWindow.postMessage(msg, ORIGIN);
-  function sendProgram(E, force) {
-    if (!E.ready || E.mode !== "tiles") return;
-    const key = JSON.stringify(spec());
-    if (key === E.sent && !force) return;
-    E.sent = key;
-    post(E, { type: "set", ...spec() });
-  }
-  function changed(mod, text, from) {
-    if (S.texts[mod] === text) return;
-    S.undo[mod].push(S.texts[mod]); S.redo[mod] = [];
-    if (S.undo[mod].length > 200) S.undo[mod].shift();
-    S.texts[mod] = text;
-    afterChange(mod, from);
-  }
-  function afterChange(mod, from) {
-    const E = editors.find(x => x.mod === mod);
-    const box = root.querySelector(`#live-text-${mod}`);
-    if (box && from !== box) box.value = S.texts[mod];
-    for (const X of editors) {
-      if (X === E && from === "frame") X.sent = JSON.stringify(spec());   // (this frame has it already: not posted back, its caret stays)
-      else sendProgram(X);
-    }
-    buildSoon();
-  }
-  function history(mod, redo) {
-    const from = redo ? S.redo[mod] : S.undo[mod], to = redo ? S.undo[mod] : S.redo[mod];
-    if (!from.length) return;
-    to.push(S.texts[mod]); S.texts[mod] = from.pop();
-    const E = editors.find(x => x.mod === mod);
-    if (E) E.sent = null;
-    afterChange(mod, null);
-  }
-  function setMode(E, mode, why) {
-    E.mode = mode;
-    const wrap = root.querySelector(`#live-ed-${E.mod}`);
-    wrap.dataset.mode = mode;
-    wrap.querySelector(".live-why").textContent = why || "";
-    wrap.querySelector(".live-toggle").textContent = mode === "tiles" ? "edit as text" : "edit in Hazel's tiles";
-    if (mode === "tiles") { if (!E.frame) mount(E); else { E.sent = null; sendProgram(E); } }
-  }
-  function mount(E) {
-    if (E.frame) return;
-    const holder = root.querySelector(`#live-ed-${E.mod} .live-frame`);
-    E.frame = el("iframe", { src: FRAME, title: `Hazel's editor: the module ${E.mod}`, loading: "eager" });
-    holder.replaceChildren(E.frame);
-    // a frame that never says ready (blocked, offline, too slow) gives way to the text box
-    E.timer = setTimeout(() => { if (!E.ready) setMode(E, "text", "Hazel's editor did not start, so here is the text."); }, 45000);
-  }
-  function onMessage(e) {
-    if (e.origin !== ORIGIN) return;
-    const E = editors.find(x => x.frame && x.frame.contentWindow === e.source);
-    if (!E) return;
-    const m = e.data || {};
-    if (m.type === "ready") {
-      E.ready = true; E.sent = null; clearTimeout(E.timer);
-      root.querySelector(`#live-ed-${E.mod}`).dataset.ready = "1";
-      const dark = pageDark();
-      post(E, { type: "theme", dark, contrast: dark });
-      post(E, { type: "editable", on: true });
-      post(E, { type: "font", size: 13 });   // (the page's own code size, so a module fits its column)
-      post(E, { type: "focus", module: E.mod });
-      sendProgram(E, true);
-      // the next frame once this one is up, so two copies of Hazel do not start at once
-      const next = editors.find(x => !x.frame && x.mode === "tiles");
-      if (next) mount(next);
-    } else if (m.type === "size") {
-      E.frame.style.height = Math.max(40, Math.ceil(+m.height || 0)) + "px";   // (no cap: the frame does not scroll itself, so a cap would hide the end of a module)
-    } else if (m.type === "edit") {
-      changed(E.mod, String(m.text || ""), "frame");
-    } else if (m.type === "history") {
-      history(E.mod, !!m.redo);
-    } else if (m.type === "crash" && !E.ready) {
-      setMode(E, "text", "Hazel's editor stopped (" + String(m.message || "").slice(0, 80) + "), so here is the text.");
-    }
-  }
-
   // ---- the page's parts, wired
   function wire() {
-    window.addEventListener("message", onMessage);
-    for (const E of editors) {
-      const wrap = root.querySelector(`#live-ed-${E.mod}`);
-      const box = wrap.querySelector("textarea");
-      box.value = S.texts[E.mod];
-      box.addEventListener("input", () => changed(E.mod, box.value, box));
-      wrap.querySelector(".live-toggle").addEventListener("click", () => setMode(E, E.mode === "tiles" ? "text" : "tiles"));
-    }
-    const again = () => { for (const E of editors) if (E.ready) { const dark = pageDark(); post(E, { type: "theme", dark, contrast: dark }); } };
-    new MutationObserver(again).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", again);
+    if (L) L.onChange(PROGRAM, () => buildSoon());
     D.transitions.forEach((t, i) => {
       const r = root.querySelector(`#live-tr-${i}`);
       if (!r) return;
@@ -281,19 +249,16 @@
     $("#live-step").addEventListener("click", () => { event({ tag: "Step" }); drawAll(); });
     $("#live-run").addEventListener("click", () => { runMany(100); drawAll(); });
     $("#live-reset").addEventListener("click", () => { S.marking = D.marking.slice(); drawAll(); });
-    $("#live-rules").addEventListener("click", () => {
-      for (const m of D.modules) if (S.texts[m.name] !== m.text) { S.undo[m.name].push(S.texts[m.name]); S.texts[m.name] = m.text; afterChange(m.name, null); }
-      for (const E of editors) { E.sent = null; sendProgram(E); }
-    });
+    $("#live-log-clear").addEventListener("click", () => { S.log = []; opened.clear(); drawLog(); });
+    $("#live-rules").addEventListener("click", () => { if (L) L.reset(PROGRAM); buildSoon(0); });
     root.classList.add("on");
     drawAll();
-    // Hazel (the library, then the editors) only once the section is near the screen: about 650 kB, then Hazel's app per frame
-    const start = () => { loadLib(); if (!editors.some(x => x.frame)) mount(editors[0]); };
+    // Hazel's library only once the section is near the screen, about 650 kB (the editors start on their own: hazel-listings.js)
     // (looked for on load, on scroll and every second, not by an IntersectionObserver: in a page in the background those never
     // called back, and Messed Up Dress Up's panel found the same)
     let started = false;
     const near = () => { const r = root.getBoundingClientRect(); return r.top < innerHeight + 600 && r.bottom > -600; };
-    const check = () => { if (!started && near()) { started = true; removeEventListener("scroll", check); clearInterval(poll); start(); } };
+    const check = () => { if (!started && near()) { started = true; removeEventListener("scroll", check); clearInterval(poll); loadLib(); } };
     addEventListener("scroll", check, { passive: true });
     const poll = setInterval(check, 1000);
     check();

@@ -150,10 +150,9 @@ V = {"updated": subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True,
      "JS_PERFORM": esc(js_block("function perform", "// ---- 5.")), "JS_BUILD": esc(js_block("function build", "const out =")),
      "JS_FALLBACK": esc(js_block("function jsHandler", "// ---- 6."))}
 def live_editor(mod, intro):
-    return (f'<div class="live-ed" id="live-ed-{mod}" data-mode="tiles"><div class="live-ed-head"><b>{mod}</b> <span class="muted">{intro}</span>'
-            f' <button type="button" class="live-toggle">edit as text</button> <span class="live-why"></span></div>'
-            f'<div class="live-frame"><p class="muted live-wait">⏳ Hazel\'s editor for {mod}…</p></div>'
-            f'<textarea id="live-text-{mod}" spellcheck="false" aria-label="The module {mod}, as text"></textarea></div>')
+    # (a listing hazel-listings.js makes into Hazel's editor; plain text until then, and for a page without JavaScript)
+    return (f'<div class="live-ed" id="live-ed-{mod}"><div class="live-ed-head"><b>{mod}</b> <span class="muted">{intro}</span></div>'
+            f'<pre class="code hazel" data-program="petri" data-module="{mod}">{esc(between(mod.upper()))}</pre></div>')
 
 
 def live_data():
@@ -180,6 +179,9 @@ HEAD = f"""<!doctype html>
              overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }}
   pre.code code {{ background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }}
   ol.steps > li {{ margin: 10px 0; }}
+  /* the game's pieces: names whole, one to a line, the code column as wide as its longest name */
+  table.pieces td:first-child {{ width: 8.5em; }} table.pieces td:last-child {{ white-space: nowrap; }}
+  table.pieces td:last-child code {{ overflow-wrap: normal; }}
   /* the live example (live.js) */
   /* (within the page's column: the nav beside it makes any width from the window wrong) two columns when the column is wide */
   .live {{ container-type: inline-size; }}
@@ -192,7 +194,7 @@ HEAD = f"""<!doctype html>
     background: var(--bg); color: var(--ink); cursor: pointer; }}
   .live-controls button:hover, .live-toggle:hover {{ border-color: var(--accent); }}
   .live-controls button:disabled {{ opacity: 0.5; cursor: default; }}
-  .live:not(.on) .live-controls, .live:not(.on) .live-ed, .live:not(.on) #live-log {{ display: none; }}
+  .live:not(.on) .live-controls, .live:not(.on) #live-log {{ display: none; }}
   .live:not(.on) .live-nojs {{ display: block; }} .live-nojs {{ display: none; }}
   #live-net .live-tr {{ cursor: pointer; }} #live-net .live-tr.off {{ fill: var(--muted); opacity: 0.45; }}
   #live-net .live-tr:focus {{ outline: none; stroke: var(--ink); stroke-width: 2; }}
@@ -202,13 +204,40 @@ HEAD = f"""<!doctype html>
   .live-status ul {{ margin: 4px 0 0; padding-left: 1.2em; }}
   .live-ed {{ margin: 0 0 14px; }}
   .live-ed-head {{ margin: 0 0 4px; font-size: 0.92em; }} .live-ed-head .muted, .muted {{ color: var(--muted); }}
-  .live-why {{ color: var(--warn); font-size: 0.9em; }}
-  .live-frame iframe {{ width: 100%; height: 120px; border: 1px solid var(--line); border-radius: 8px; display: block; background: var(--paper); }}
-  .live-ed textarea {{ width: 100%; min-height: 18em; font: 0.84em/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink);
-    background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: none; }}
-  .live-ed[data-mode="text"] textarea {{ display: block; }} .live-ed[data-mode="text"] .live-frame {{ display: none; }}
-  #live-log {{ font-size: 0.86em; margin-top: 8px; }} #live-log td {{ padding: 4px 6px; }} #live-log code.cmd {{ font-size: 0.85em; }}
-  #live-log .warn {{ color: var(--warn); }}
+  /* Hazel listings (hazel-listings.js): the text until Hazel's editor says ready, then the editor */
+  .hazel-listing {{ position: relative; margin: 10px 0; }}
+  .hazel-listing iframe {{ border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }}
+  .hazel-listing[data-state="loading"] pre, .hazel-listing[data-state="tiles"] pre {{ display: none; }}
+  .hazel-listing pre.hazel {{ margin: 0; }}
+  /* 🪵 the event log, as Messed Up Dress Up's (its style.css, ticket 592): a line an event, opened for the answer acted out */
+  .script-log {{ margin-top: 10px; font-size: 0.92em; }}
+  .script-log .log-head {{ display: flex; align-items: baseline; gap: 8px; margin: 4px 0; }}
+  .script-log .log-count {{ color: var(--muted); font-size: 0.9em; }}
+  .script-log .log-head button {{ margin-left: auto; font: inherit; font-size: 0.85em; padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }}
+  .script-log .log-list {{ display: flex; flex-direction: column; gap: 2px; max-height: 70vh; overflow: auto; }}
+  .script-log .log-entry > summary {{ cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 1px 0; }}
+  .script-log .log-entry > summary code {{ background: none; padding: 0; }}
+  .script-log .log-n, .script-log .log-at, .script-log .log-ms, .script-log .log-diff {{ color: var(--muted); font-variant-numeric: tabular-nums; }}
+  .script-log .log-eng {{ padding: 0 5px; border-radius: 4px; font-size: 0.85em; background: color-mix(in srgb, currentColor 12%, transparent); }}
+  .script-log .log-hazel {{ color: var(--accent); }} .script-log .log-js {{ color: var(--warn); }} .script-log .log-mixed {{ color: var(--muted); }}
+  .script-log .log-grid {{ display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 12px; align-items: baseline; margin: 4px 0 4px 14px; }}
+  .script-log .log-grid > .log-effect {{ grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 3px 12px; align-items: baseline; margin: 2px 0; }}
+  .script-log .log-effect {{ background: color-mix(in srgb, #f59e0b 14%, transparent); border: 1px solid color-mix(in srgb, #f59e0b 45%, transparent); border-radius: 8px; padding: 4px 10px 6px; }}
+  .script-log .log-k {{ color: var(--muted); font-size: 0.85em; white-space: nowrap; text-align: right; }}
+  .script-log .log-v {{ min-width: 0; }}
+  .script-log .log-json {{ overflow-x: auto; font-size: 0.85em; margin: 0; display: block; white-space: pre-wrap; overflow-wrap: anywhere; }}
+  .script-log .log-chips {{ display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 3px 0 2px; }}
+  .script-log .log-chip {{ display: inline-block; padding: 3px 9px; border-radius: 12px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); white-space: nowrap; font-size: 0.92em; line-height: 1.45; }}
+  .script-log .log-chip:has(> .log-field) {{ padding-left: 4px; }}
+  .script-log summary .log-chip {{ font-size: 0.85em; padding: 1px 7px; }} .script-log summary .log-chip:has(> .log-field) {{ padding-left: 2px; }}
+  .script-log .log-field {{ display: inline-block; padding: 0 6px; line-height: 1.3; margin-right: 1px; border-radius: 8px; background: color-mix(in srgb, #14b8a6 26%, transparent); border: 1px solid color-mix(in srgb, #14b8a6 60%, transparent); }}
+  .script-log .log-eq {{ margin: 0 0.35em; opacity: 0.8; }}
+  .script-log .log-goto {{ font: inherit; padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }}
+  .script-log .log-quiet {{ color: var(--muted); border-style: dashed; }}
+  .script-log .log-bad {{ color: var(--bad); }} .script-log .log-chip.log-bad {{ border-color: var(--bad); }}
+  .script-log .log-globals {{ margin: 0 0 6px 14px; }} .script-log .log-globals > summary {{ cursor: pointer; color: var(--muted); font-size: 0.9em; }}
+  .script-log .log-sides {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }}
+  .script-log .hint {{ color: var(--muted); font-size: 0.9em; }}
 </style>
 </head>
 """
