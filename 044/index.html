@@ -138,6 +138,7 @@ h3.grp { margin-top: 1.2em; }
   pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
   ol.steps > li { margin: 10px 0; } .muted { color: var(--muted); }
   ol.outline > li { margin: 4px 0; }
+  table.gotos td:first-child { white-space: nowrap; }
   /* Hazel listings (hazel-listings.js): the text until Hazel's editor starts, then the editor */
   .hazel-listing { position: relative; margin: 10px 0; }
   .hazel-listing iframe { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
@@ -158,7 +159,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>44<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 12:58 MST · <span class="wip">work in progress</span> · after <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>44<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 13:42 MST · <span class="wip">work in progress</span> · after <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -258,8 +259,8 @@ document.addEventListener("DOMContentLoaded", () => {
 </ol>
 
 <h2 id="try">Try it<a class="anchor" href="#try" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="try" title="copy this section's address">copy link</button></h2>
-<p>Three listings of one small program: a type in the preamble, and two modules. Ctrl+click <code>Geometry.area</code> in the third listing, or F12 on it, and the page goes to its definition in the second; do the same on <code>Shape</code> or on <code>Circle</code>, and it goes to the first. The listings can be edited too: a change in one is checked against the others, so a type error in <code>Scene</code> can come from a change in <code>Geometry</code>. Without JavaScript, or until Hazel's editor starts, each is its plain text.</p>
-<p><b>Where an error shows.</b> Make one to see: in <code>Geometry</code>, add <code>let scale : Float = "two";</code> above <code>area</code>. Hazel's editor outlines the error where it is, and its message appears under the listing it is in, with a ⚠️: <i>"two": a Float is wanted here, but this is a String</i>. (In Hazel's own app the message is in a bar at the bottom, which the editor in a frame does not have, so the page shows it instead.) Holes, and brackets or keywords without their partners, are counted there too. A module's members end with <code>;</code>, not <code>in</code>: a member written <code>let p = 1 in</code> makes the next member its body, and the editor outlines both.</p>
+<p>Three listings of one small program: a type in the preamble, and two modules, each in Hazel's own editor. <b>Go to definition works from any name to where it is defined, in whichever listing that is.</b> Try it: Ctrl+click a name (⌘-click on a Mac), or put the caret on it and press F12, or right-click it and choose <i>Goto definition</i>. The first click into a listing only gives it the keyboard; click again to place the caret. The listings can be edited too: a change in one is checked against the others, so a type error in <code>Scene</code> can come from a change in <code>Geometry</code>. Without JavaScript, or until Hazel's editor starts, each is its plain text.</p>
+<p><b>Where an error shows.</b> Make one to see: in <code>Geometry</code>, add <code>let scale : Float = "two";</code> above <code>area</code>. Hazel's editor outlines the error where it is, and its message appears under the listing it is in, with a ⚠️: <i>"two": a Float is wanted here, but this is a String</i>. (In Hazel's own app the message is in a bar at the bottom, which the editor in a frame does not have, so the page shows it instead.) Holes, and brackets or keywords without their partners, are counted there too. A module's members end with <code>;</code>, not <code>in</code>: a member written <code>let p = 1 in</code> makes the next member its body, and the editor outlines both. A <code>¤</code> marks a gap: two pieces side by side with nothing joining them, as in <code>0. 1</code>. Hazel calls that a broken expression, and the message under the listing says what to do: join the pieces, with an operator or a comma, or delete one.</p>
 <pre class="code hazel" data-program="shapes">type Shape = + Circle(Float) + Rect(Float, Float) in</pre>
 <p class="muted">The module <code>Geometry</code>:</p>
 <pre class="code hazel" data-program="shapes" data-module="Geometry"># the area of one shape #
@@ -276,6 +277,20 @@ let total = fun ss : [Shape] ->
   | [] => 0.
   | s :: rest => Geometry.area(s) +. total(rest)
   end</pre>
+<p><b>Every name to try, and where it goes.</b> Each was checked on 2026-11-06, with F12 and with the menu.</p>
+<div class="scroll"><table class="gotos">
+<tr><th>In</th><th>Go to definition on</th><th>Goes to</th></tr>
+<tr><td><code>Scene</code></td><td><code>area</code> in <code>Geometry.area(s)</code></td><td><code>let area</code> in <code>Geometry</code>, the next listing up</td></tr>
+<tr><td><code>Scene</code></td><td><code>Geometry</code> in <code>Geometry.area(s)</code></td><td>the <code>Geometry</code> listing</td></tr>
+<tr><td><code>Scene</code></td><td><code>Shape</code> in <code>ss : [Shape]</code></td><td><code>type Shape</code> in the preamble</td></tr>
+<tr><td><code>Scene</code></td><td><code>Circle</code> and <code>Rect</code> in <code>shapes</code></td><td><code>type Shape</code> in the preamble, where they are its constructors</td></tr>
+<tr><td><code>Scene</code></td><td><code>total</code> in <code>total(rest)</code></td><td><code>let total</code>, in <code>Scene</code> itself</td></tr>
+<tr><td><code>Scene</code></td><td><code>ss</code>, <code>s</code>, <code>rest</code></td><td>where each is bound, in <code>Scene</code>: the parameter <code>ss</code>, the pattern <code>s :: rest</code></td></tr>
+<tr><td><code>Geometry</code></td><td><code>Shape</code> in <code>s : Shape</code></td><td><code>type Shape</code> in the preamble</td></tr>
+<tr><td><code>Geometry</code></td><td><code>Circle</code> in <code>Circle(r)</code>, <code>Rect</code> in <code>Rect(w, h)</code></td><td><code>type Shape</code> in the preamble</td></tr>
+<tr><td><code>Geometry</code></td><td><code>s</code> in <code>case s</code>; <code>r</code>, <code>w</code>, <code>h</code> after <code>=&gt;</code></td><td>where each is bound, in <code>Geometry</code>: the parameter <code>s</code>, the patterns <code>Circle(r)</code> and <code>Rect(w, h)</code></td></tr>
+</table></div>
+<p>The preamble's names are all definitions; <code>Float</code> is Hazel's own, with no definition on the page to go to. A name defined in two modules would go to the first module's, since the page looks a member up by its name alone.</p>
 <p>The same program, run by <code>hazeljs</code> in Node with the tail <code>Scene.total(Scene.shapes)</code>, gives 9.14159. <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>'s example goes further: its listings are the rules of a running app, built again by <code>hazeljs</code> after each edit.</p>
 
 <h2 id="how">How to do it on your page<a class="anchor" href="#how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="how" title="copy this section's address">copy link</button></h2>
@@ -345,6 +360,7 @@ let total = fun ss : [Shape] ->
 <li><b>The script</b> is <code>043/hazel-listings.js</code> in this series' repository, written for <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a> on 2026-11-06 after the game's own frames (<code>js/25-scripting.js</code> in matthewhammer/kids-choice-games: its frame per box, its go to definition, its caret scrolling). This page loads that same file.</li>
 <li><b>The frame's protocol</b> was read from <code>src/web/embed/</code> on Hazel's <code>embed-editable</code> branch (8e0dcac982): <code>EmbedProtocol.re</code> (the messages, the origins), <code>EmbedModel.re</code> (reveal, goto, and the read-only cell dropping edits).</li>
 <li><b>Checked</b> in a browser on 2026-11-06, from a local port: the listings start one at a time and take their code's height once drawn; a go to definition across listings selects the definition and the page scrolls to it. Not checked: Ctrl+Z, which the test browser did not deliver to a frame. The demo program was run in Node with <code>hazeljs</code> 0.0.4: 9.14159.</li>
+<li><b>Go to definition,</b> checked on 2026-11-06 on a self-hosted copy of <a href="https://github.com/hazelgrove/hazel/pull/2814">#2814</a> at 9d4667762e: F12 on every name in the table above, and the menu's Goto definition on <code>Geometry.area</code> and <code>Shape</code>, each landing where the table says. Before that commit, the menu offered Goto definition only for a name defined in its own listing, and F12 on a member sent the page <code>"."</code> instead of its name.</li>
 <li><b>Hosting a copy,</b> checked on 2026-11-06: <code>embed-editable</code> at 5c7581a847 built locally (<code>dune build src/web/www --profile release</code>), copied beside two test pages served from <code>http://own.localhost:8150</code>; the page with the copy got <code>size</code> and <code>status</code> back from every frame, and showed an error under its listing; the page framing <code>build.hazel.org</code> got neither.</li>
 <li><b>The page</b> is made by <code>044/gen044.py</code> from <code>044/body.html</code>.</li>
   <!-- data-line: begin -->
@@ -352,7 +368,7 @@ let total = fun ss : [Shape] ->
   <!-- data-line: end -->
 </ul>
 </main>
-<script src="../043/hazel-listings.js?v=5"></script>
+<script src="../043/hazel-listings.js?v=8"></script>
 <!-- theme: begin -->
 <style>
   .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
@@ -503,7 +519,7 @@ let total = fun ss : [Shape] ->
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T19:01:13Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
+  const CACHED = {"hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T20:33:06Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -658,6 +674,62 @@ let total = fun ss : [Shape] ->
  ],
  "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
  "tables": [
+  {
+   "section": "Try it",
+   "section_id": "try",
+   "columns": [
+    "In",
+    "Go to definition on",
+    "Goes to"
+   ],
+   "rows": [
+    [
+     "Scene",
+     "area in Geometry.area(s)",
+     "let area in Geometry, the next listing up"
+    ],
+    [
+     "Scene",
+     "Geometry in Geometry.area(s)",
+     "the Geometry listing"
+    ],
+    [
+     "Scene",
+     "Shape in ss : [Shape]",
+     "type Shape in the preamble"
+    ],
+    [
+     "Scene",
+     "Circle and Rect in shapes",
+     "type Shape in the preamble, where they are its constructors"
+    ],
+    [
+     "Scene",
+     "total in total(rest)",
+     "let total, in Scene itself"
+    ],
+    [
+     "Scene",
+     "ss, s, rest",
+     "where each is bound, in Scene: the parameter ss, the pattern s :: rest"
+    ],
+    [
+     "Geometry",
+     "Shape in s : Shape",
+     "type Shape in the preamble"
+    ],
+    [
+     "Geometry",
+     "Circle in Circle(r), Rect in Rect(w, h)",
+     "type Shape in the preamble"
+    ],
+    [
+     "Geometry",
+     "s in case s; r, w, h after =>",
+     "where each is bound, in Geometry: the parameter s, the patterns Circle(r) and Rect(w, h)"
+    ]
+   ]
+  },
   {
    "section": "What the script does",
    "section_id": "what",

@@ -91,6 +91,9 @@
       return M ? [M, parts[parts.length - 1]] : null;
     }
     const word = s => new RegExp("(^|\\n)\\s*(let|type)\\s+" + name.replace(/[^\w]/g, "") + "\\b").test(s);
+    // a module's own name: its listing
+    const mod = P.modules.find(L => L.module === name);
+    if (mod) return [mod, null];
     if (P.preamble) {
       if (word(P.preamble.text)) return [P.preamble, name];
       // a constructor: its type's definition
@@ -101,6 +104,7 @@
     return M ? [M, name] : null;
   }
   function reveal(L, name) {
+    if (name === null) { L.holder.scrollIntoView({ block: "start", behavior: "smooth" }); return; }   // (a module itself: its listing)
     if (!L.ready) { L.reveal = name; if (!L.frame) { const i = queue.indexOf(L); if (i >= 0) queue.splice(i, 1); queue.unshift(L); pump(); } return; }
     L.holder.scrollIntoView({ block: "nearest" });
     post(L, { type: "reveal", name });
@@ -134,7 +138,11 @@
       const d = definer(P, String(m.name || ""));
       if (d) reveal(d[0], d[1]);
     } else if (m.type === "edit") {
-      const text = L.module ? String(m.text || "") : String(m.text || "").replace(/\s+$/, "");
+      // (Matthew, 2026-11-06: "introduced error, fixed it, and the other panels did not refresh") A preamble's frame holds
+      // the preamble alone, ending in `in` with nothing after it: an empty hole, which the frame writes as `?`. Taken as it
+      // was, any edit to the preamble left `in?` before the modules, the whole program broken, and every listing showing it
+      // however the edit was undone. The preamble is its text without that hole.
+      const text = L.module ? String(m.text || "") : String(m.text || "").replace(/\s+$/, "").replace(/\bin\s*\?$/, "in");
       if (text === L.text) return;
       L.undo.push(L.text); L.redo = [];
       L.text = text;
@@ -148,9 +156,15 @@
       L.sent = null; send(L); sendAll(P, L);
       changed(P);
     } else if (m.type === "status") {
-      // what Hazel says of the program, under the listing: its errors, holes and unfinished brackets
-      L.status = m;
-      showStatus(L);
+      // what Hazel says of the program, under each listing: its errors, holes and unfinished brackets. The newest report
+      // of the whole program, from whichever frame sent it: a frame that was just edited reports again only when the page
+      // sends it the program, which it does not do for its own edit, so the others' reports are the fresh ones (Matthew,
+      // 2026-11-06: an error typed into Scene was reported by Geometry's frame and shown nowhere). A preamble's frame holds
+      // the preamble alone, so its report is used only when the program has no modules.
+      if (L.module || !P.modules.length) {
+        P.status = m;
+        for (const X of [P.preamble, ...P.modules]) if (X) showStatus(X);
+      }
     } else if (m.type === "crash" && !L.ready) {
       fail(L, "Hazel's editor stopped");
     }
@@ -160,15 +174,20 @@
   // page ({type: "status"}), and here they are, under the listing they are in: a module's under its module, the preamble's
   // (module null) under the preamble. Type errors said as a person reads them, as Messed Up Dress Up says them.
   function errorText(message) {
+    const nums = t => t.replace(/\b(\d+)\.(\d*?)0+\b/g, "$1.$2");   // (Hazel prints 0. as 0.000000)
+    const short = t => { t = nums(t.trim().replace(/\s+/g, " ")); return t.length > 60 ? t.slice(0, 57) + "…" : t; };
+    // (Matthew, 2026-11-06, of `total¤(¤shapes)`: "why all of the holes?") Two pieces side by side with nothing joining
+    // them: the editor marks the gap with ¤ (grout), and Hazel calls the whole a broken expression
+    const b = String(message).match(/^Error in term:\s*\n\s*([\s\S]*?)\nNature of error: Broken expression\s*$/);
+    if (b) return `${short(b[1])}: pieces side by side with nothing joining them (the ¤ marks the gap). Join them, with an operator or a comma, or delete one`;
     const m = String(message).match(/^Error in term:\s*\n\s*([\s\S]*?)\nNature of error: Expecting type ([\s\S]*?) but got inconsistent type ([\s\S]*)$/);
-    if (!m) return String(message).replace(/\s+/g, " ").replace(/^Error in term: /, "");
+    if (!m) return nums(String(message).replace(/\s+/g, " ").replace(/^Error in term: /, ""));
     const ty = t => { t = t.trim().replace(/\s+/g, " "); return /,/.test(t) && !/^\(.*\)$/.test(t) ? `(${t})` : t; };
     const a = t => (/^[AEIOU]/.test(ty(t)) ? "an " : "a ") + ty(t);
-    const term = m[1].trim().replace(/\s+/g, " ");
-    return `${term.length > 60 ? term.slice(0, 57) + "…" : term}: ${a(m[2])} is wanted here, but this is ${a(m[3])}`;
+    return `${short(m[1])}: ${a(m[2])} is wanted here, but this is ${a(m[3])}`;
   }
   function showStatus(L) {
-    const st = L.status || {};
+    const st = programs.get(L.program).status || {};
     const mine = e => L.module ? e.module === L.module : (e.module === null || e.module === undefined);
     const lines = (st.errors || []).filter(mine).map(e => "⚠️ " + errorText(e.message));
     if (L.module) {
@@ -202,6 +221,18 @@
       queue.push(L);
     }
     if (!listings.length) return;
+    // (a page needs no stylesheet of its own for the listings: these defaults, the text hidden once the editor shows, have no
+    // weight, by :where(), so any rule of the page's wins; for hazeljs's copy, loaded from npm, Matthew 2026-11-06: "it would
+    // be best to have that public package reflect what we do, overall, including documentation")
+    if (!document.getElementById("hazel-listings-defaults")) {
+      const st = document.createElement("style");
+      st.id = "hazel-listings-defaults";
+      st.textContent = ':where(.hazel-listing[data-state="loading"], .hazel-listing[data-state="tiles"]) > :where(pre.hazel) { display: none; }\n'
+        + ":where(.hazel-listing-frame) { border: 0; }\n"
+        + ":where(.hazel-listing-status) { margin: 4px 0 0; padding-left: 1.2em; color: #b45309; }\n"
+        + ":where(.hazel-listing-status[hidden]) { display: none; }\n";
+      document.head.prepend(st);
+    }
     window.addEventListener("message", onMessage);
     const again = () => { const dark = pageDark(); for (const L of listings) if (L.ready) post(L, { type: "theme", dark, contrast: dark }); };
     new MutationObserver(again).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

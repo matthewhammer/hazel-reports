@@ -154,6 +154,18 @@ h3.grp { margin-top: 1.2em; }
   html.live-max-on, html.live-max-on body { overflow: hidden; }
   html.live-max-on #cnav, html.live-max-on #cnav-grip, html.live-max-on #cnav-hide { display: none; }  /* (the site's nav column, stacked over everything: hidden while the example fills the window) */
   .live:fullscreen .script-log .log-list, .live.live-max .script-log .log-list { max-height: 45vh; }
+  /* (Matthew, 2026-11-06: "when we do FS here ... we need to have LHS vs RHS slider") full screen, two columns: the divider
+     between the net and the rules, as the game's (live.js): dragged, the arrow keys on it, a double-click for the first split */
+  .live-divider { display: none; }
+  @container (min-width: 880px) {
+    .live:fullscreen .live-grid, .live.live-max .live-grid { grid-template-columns: minmax(0, var(--split, 4fr)) 14px minmax(0, 6fr); column-gap: 6px; }
+    .live:fullscreen .live-divider, .live.live-max .live-divider { display: flex; position: sticky; top: 8px; height: calc(100vh - 48px); height: calc(100dvh - 48px);
+      cursor: col-resize; touch-action: none; align-items: center; justify-content: center; border-radius: 7px; outline: none; }
+  }
+  .live-divider::before { content: ""; width: 5px; height: 56px; border-radius: 3px; background: var(--line); }
+  .live-divider:hover::before, .live-divider:focus-visible::before, .live-divider.drag::before { background: var(--accent); height: 96px; }
+  html.dragging-split, html.dragging-split * { cursor: col-resize !important; user-select: none; -webkit-user-select: none; }
+  html.dragging-split iframe { pointer-events: none; }  /* (a frame under the pointer would take its moves) */
   .live-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
   .live-controls button, .live-toggle { font: inherit; font-size: 0.9em; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px;
     background: var(--bg); color: var(--ink); cursor: pointer; }
@@ -230,7 +242,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 12:58 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 13:42 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -412,7 +424,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h3 id="try">Try it: this page is the app<a class="anchor" href="#try" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="try" title="copy this section's address">copy link</button></h3>
 <p>Below, this page plays the app. It loads <code>hazeljs</code> 0.0.4 from npm (through the jsDelivr CDN), keeps the net's marking, and draws it. The two modules of rules are in Hazel's own editor, one per module: Hazel's app in a frame, in the editable embed mode that Messed Up Dress Up uses. Every edit comes back to the page, which builds the program again with <code>Hazel.runProgram</code>. While the build is <code>ok</code>, Hazel's <code>on_event</code> answers each event. While it is not, the page's own JS handler answers, the status says why, and the log says who answered. Click a transition to fire it, or step at random.</p>
-<p><b>Where an error shows.</b> An error in a rule is outlined in Hazel's editor where it is, and its message appears under the listing it is in, with a ⚠️, and in the status beside the net, by module. (In Hazel's own app the message is in a bar at the bottom, which the editor in a frame does not have.) The first thing to try below makes one.</p>
+<p><b>Where an error shows.</b> An error in a rule is outlined in Hazel's editor where it is, and its message appears under the listing it is in, with a ⚠️, and in the status beside the net, by module. (In Hazel's own app the message is in a bar at the bottom, which the editor in a frame does not have.) The first thing to try below makes one. A <code>¤</code> in the editor marks a gap, two pieces side by side with nothing joining them (<code>0. 1</code>, say): join them with an operator or a comma, or delete one.</p>
 <div class="live" id="live">
 <div class="live-grid">
 <div class="live-left">
@@ -579,8 +591,8 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
   <!-- data-line: end -->
 </ul>
 </main>
-<script src="hazel-listings.js?v=5"></script>
-<script src="live.js?v=11"></script>
+<script src="hazel-listings.js?v=8"></script>
+<script src="live.js?v=13"></script>
 <!-- theme: begin -->
 <style>
   .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
@@ -731,7 +743,7 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2812": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T16:21:54Z", "kind": "pull", "state": "open", "title": "README: link the experimental hazeljs npm package", "updated": "2026-11-06T16:38:21Z", "base": "dev"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T19:01:13Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
+  const CACHED = {"hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2812": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T16:21:54Z", "kind": "pull", "state": "open", "title": "README: link the experimental hazeljs npm package", "updated": "2026-11-06T16:38:21Z", "base": "dev"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T20:33:06Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */

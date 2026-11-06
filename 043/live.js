@@ -255,11 +255,61 @@
     // whole example, the net, its log and the editors, on the screen, in two columns when it is wide enough. The browser's own
     // full screen where it has one for an element; where it has none (iPhone Safari), the example made to fill the window,
     // Escape or the button to leave.
+    // The divider between the net and the rules, in full screen when it is wide enough for two columns (Matthew, 2026-11-06:
+    // "when we do FS here ... we need to have LHS vs RHS slider"), as the game's (its js/21-size-and-divider.js): dragged, or
+    // the arrow keys on it; a double-click, the first split again. Its place is kept, as a share of the width, for next time.
+    const grid = $(".live-grid");
+    const divider = el("div", { class: "live-divider", role: "separator", "aria-orientation": "vertical", tabindex: "0",
+      "aria-valuemin": "0", "aria-valuemax": "100", "aria-label": "Between the net and the rules",
+      title: "Drag to give the net or the rules more room (double-click: as it was)" });
+    grid.insertBefore(divider, $(".live-right"));
+    // (the first column's share, whichever column a page puts first: the example app puts the rules there, as code is put
+    // on the left in Messed Up Dress Up; per page, as this report and the app share a site)
+    const SPLIT_KEY = "live-split-first:" + location.pathname;
+    const setSplit = (px, keep) => {
+      const w = grid.clientWidth;
+      if (px == null) {
+        let f = NaN; try { f = parseFloat(localStorage.getItem(SPLIT_KEY)); } catch (_) {}
+        if (!(f > 0 && f < 1)) { grid.style.removeProperty("--split"); divider.removeAttribute("aria-valuenow"); return; }
+        px = f * w;
+      }
+      px = Math.min(Math.max(280, w - 26 - 360), Math.max(280, px));   // (each column at least as wide as its controls)
+      grid.style.setProperty("--split", Math.round(px) + "px");
+      divider.setAttribute("aria-valuenow", String(Math.round(100 * px / w)));
+      if (keep) try { localStorage.setItem(SPLIT_KEY, String(px / w)); } catch (_) {}
+    };
+    let drag = null;
+    divider.addEventListener("pointerdown", e => {
+      if (e.button !== 0) return;
+      drag = { id: e.pointerId }; divider.setPointerCapture(e.pointerId);
+      divider.classList.add("drag"); document.documentElement.classList.add("dragging-split"); e.preventDefault();
+    });
+    divider.addEventListener("pointermove", e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag.px = e.clientX - grid.getBoundingClientRect().left - 13;   // (the divider's middle: a 6 px gap and half its 14 px)
+      setSplit(drag.px);
+    });
+    const endDrag = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (drag.px != null) setSplit(drag.px, true);
+      drag = null; divider.classList.remove("drag"); document.documentElement.classList.remove("dragging-split");
+    };
+    divider.addEventListener("pointerup", endDrag);
+    divider.addEventListener("pointercancel", endDrag);
+    divider.addEventListener("dblclick", () => { try { localStorage.removeItem(SPLIT_KEY); } catch (_) {} setSplit(); });
+    divider.addEventListener("keydown", e => {
+      const d = { ArrowLeft: -40, ArrowRight: 40 }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      setSplit(divider.getBoundingClientRect().left - grid.getBoundingClientRect().left - 6 + d, true);   // (the first column, by the divider)
+    });
     const fsBtn = el("button", { type: "button", id: "live-fs", title: "the example, full screen", text: "⛶ full screen" });
     $(".live-controls").append(fsBtn);
     const isFs = () => document.fullscreenElement === root || root.classList.contains("live-max");
     const fsLabel = () => { fsBtn.textContent = isFs() ? "✕ leave full screen" : "⛶ full screen"; };
-    const maxOn = on => { root.classList.toggle("live-max", on); document.documentElement.classList.toggle("live-max-on", on); fsLabel(); };
+    // (the kept split, at the full screen's width; after a timer, not an animation frame: a page in the background has none)
+    const splitSoon = () => { if (isFs()) setTimeout(() => setSplit(), 0); };
+    const maxOn = on => { root.classList.toggle("live-max", on); document.documentElement.classList.toggle("live-max-on", on); fsLabel(); splitSoon(); };
     fsBtn.addEventListener("click", () => {
       if (document.fullscreenElement === root) { document.exitFullscreen(); return; }
       if (root.classList.contains("live-max")) { maxOn(false); return; }
@@ -270,7 +320,8 @@
       root.requestFullscreen().then(() => { settled = true; maxOn(false); }, () => { settled = true; maxOn(true); });
       setTimeout(() => { if (!settled && document.fullscreenElement !== root) maxOn(true); }, 800);
     });
-    document.addEventListener("fullscreenchange", fsLabel);
+    document.addEventListener("fullscreenchange", () => { fsLabel(); splitSoon(); });
+    addEventListener("resize", splitSoon);
     addEventListener("keydown", e => { if (e.key === "Escape" && root.classList.contains("live-max")) maxOn(false); });
     root.classList.add("on");
     drawAll();

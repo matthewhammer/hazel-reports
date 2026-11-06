@@ -198,6 +198,18 @@ HEAD = f"""<!doctype html>
   html.live-max-on, html.live-max-on body {{ overflow: hidden; }}
   html.live-max-on #cnav, html.live-max-on #cnav-grip, html.live-max-on #cnav-hide {{ display: none; }}  /* (the site's nav column, stacked over everything: hidden while the example fills the window) */
   .live:fullscreen .script-log .log-list, .live.live-max .script-log .log-list {{ max-height: 45vh; }}
+  /* (Matthew, 2026-11-06: "when we do FS here ... we need to have LHS vs RHS slider") full screen, two columns: the divider
+     between the net and the rules, as the game's (live.js): dragged, the arrow keys on it, a double-click for the first split */
+  .live-divider {{ display: none; }}
+  @container (min-width: 880px) {{
+    .live:fullscreen .live-grid, .live.live-max .live-grid {{ grid-template-columns: minmax(0, var(--split, 4fr)) 14px minmax(0, 6fr); column-gap: 6px; }}
+    .live:fullscreen .live-divider, .live.live-max .live-divider {{ display: flex; position: sticky; top: 8px; height: calc(100vh - 48px); height: calc(100dvh - 48px);
+      cursor: col-resize; touch-action: none; align-items: center; justify-content: center; border-radius: 7px; outline: none; }}
+  }}
+  .live-divider::before {{ content: ""; width: 5px; height: 56px; border-radius: 3px; background: var(--line); }}
+  .live-divider:hover::before, .live-divider:focus-visible::before, .live-divider.drag::before {{ background: var(--accent); height: 96px; }}
+  html.dragging-split, html.dragging-split * {{ cursor: col-resize !important; user-select: none; -webkit-user-select: none; }}
+  html.dragging-split iframe {{ pointer-events: none; }}  /* (a frame under the pointer would take its moves) */
   .live-controls {{ display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }}
   .live-controls button, .live-toggle {{ font: inherit; font-size: 0.9em; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px;
     background: var(--bg); color: var(--ink); cursor: pointer; }}
