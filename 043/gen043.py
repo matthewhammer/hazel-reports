@@ -9,6 +9,8 @@ import html, json, math, os, re, statistics, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, "042", "drivers"))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+from codehl import hazel_hl, js_hl, HL_CSS  # noqa: E402  (Matthew, 2026-11-04: "high contrast / dark theme Hazel for the code"; 2026-11-06: every listing highlighted)
 import figs042  # noqa: E402  (its fig_js_app, the pattern, drawn for ^report(42)'s item 5)
 from figs037 import svg, text, arrow  # noqa: E402
 
@@ -146,13 +148,13 @@ V = {"updated": subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True,
      "fired": ", ".join(f"{k} {v}" for k, v in fired.items()), "both_busy": str(RUNS[0]["steps"]["both_busy"]),
      "err1": esc(RUNS[0]["with_error"]["errors"][0]), "err2": esc(RUNS[0]["with_error"]["errors"][1]),
      "hazeljs": RUNS[0]["hazeljs"], "node": RUNS[0]["node"],
-     "PREAMBLE": esc(between("PREAMBLE")), "COMMON": esc(between("COMMON")), "RULES": esc(between("RULES")),
-     "JS_PERFORM": esc(js_block("function perform", "// ---- 5.")), "JS_BUILD": esc(js_block("function build", "const out =")),
-     "JS_FALLBACK": esc(js_block("function jsHandler", "// ---- 6."))}
+     "PREAMBLE": hazel_hl(between("PREAMBLE")), "COMMON": hazel_hl(between("COMMON")), "RULES": hazel_hl(between("RULES")),
+     "JS_PERFORM": js_hl(js_block("function perform", "// ---- 5.")), "JS_BUILD": js_hl(js_block("function build", "const handlerOf")),
+     "JS_FALLBACK": js_hl(js_block("function jsHandler", "// ---- 6.") + "\nconst handlerOf = b => b.ok ? b.handler : jsHandler;")}
 def live_editor(mod, intro):
     # (a listing hazel-listings.js makes into Hazel's editor; plain text until then, and for a page without JavaScript)
     return (f'<div class="live-ed" id="live-ed-{mod}"><div class="live-ed-head"><b>{mod}</b> <span class="muted">{intro}</span></div>'
-            f'<pre class="code hazel" data-program="petri" data-module="{mod}">{esc(between(mod.upper()))}</pre></div>')
+            f'<pre class="code hazel hz" data-program="petri" data-module="{mod}">{hazel_hl(between(mod.upper()))}</pre></div>')
 
 
 def live_data():
@@ -238,6 +240,7 @@ HEAD = f"""<!doctype html>
   .script-log .log-globals {{ margin: 0 0 6px 14px; }} .script-log .log-globals > summary {{ cursor: pointer; color: var(--muted); font-size: 0.9em; }}
   .script-log .log-sides {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }}
   .script-log .hint {{ color: var(--muted); font-size: 0.9em; }}
+""" + HL_CSS + """
 </style>
 </head>
 """

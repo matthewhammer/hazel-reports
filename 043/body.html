@@ -47,16 +47,15 @@
 <ol class="steps">
 <li><p><b>We installed <code>hazeljs</code>.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; in the page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. We pinned the version: the package is a prototype, and its API may change in any release.</p></li>
 <li><p><b>We wrote the vocabulary first,</b> as Hazel types in the program's preamble (<code>rules/preamble.hz</code>), which every module sees: what a rule is told (<code>Net</code>), what can happen (<code>Event</code>), and what a rule may answer (<code>Cmd</code>). The answer is a chain of commands, each with the rest after it, ending in <code>Done</code>, so the page can walk it in order, log it, and refuse a command it does not know.</p>
-<pre class="code hazel" data-program="steps">{{PREAMBLE}}</pre>
+<pre class="code hazel hz" data-program="steps">{{PREAMBLE}}</pre>
 <p>Sum types go here, not inside a module: a type's constructors are in scope only where the type is. This is also where another group's nets would differ first: tokens that carry data, weights, a guard, a clock.</p></li>
 <li><p><b>We split the rules into modules,</b> as the game does: helpers in <code>Common</code>, the handler in <code>Rules</code>, each a text (and a file). A module's text is its members, with no <code>in</code>; one module sees the ones before it, by name (<code>Common.fire</code>).</p></li>
 <li><p><b>We built the program with <code>Hazel.runProgram</code>,</b> once per change of text. The tail is what the program gives back: here, the handler, held to its type.</p>
-<pre class="code"><code>{{JS_BUILD}}</code></pre></li>
+<pre class="code jx"><code>{{JS_BUILD}}</code></pre></li>
 <li><p><b>We kept our own JS handler,</b> and call Hazel's only while the build is <code>ok</code>; ours answers while a rule has errors, holes or unfinished brackets. Hazel still runs a program around its errors, so the page can log what Hazel would have said, but where an error stopped it, the value is a printout (<code>{hazel: "..."}</code>), not something to act on.</p>
-<pre class="code"><code>{{JS_FALLBACK}}
-const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
+<pre class="code jx"><code>{{JS_FALLBACK}}</code></pre></li>
 <li><p><b>We acted out the commands,</b> and showed the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function. The page keeps control: it refuses a command that would take a place below zero, and one it does not know.</p>
-<pre class="code"><code>{{JS_PERFORM}}</code></pre></li>
+<pre class="code jx"><code>{{JS_PERFORM}}</code></pre></li>
 </ol>
 <p><b>What tripped us.</b> Three things, none of them in the game's way of doing it, which is why a second app was worth building:</p>
 <ul>
@@ -86,7 +85,7 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 </div>
 <div class="live-right">
 <p class="muted" style="margin-top:0">The vocabulary, the preamble every module sees. Each listing here is Hazel's editor: Ctrl+click a name (or F12 on it) to go to its definition, in whichever listing has it. The editors start with the text that ran in Node, and Reset the rules goes back to it.</p>
-<pre class="code hazel" data-program="petri">{{PREAMBLE}}</pre>
+<pre class="code hazel hz" data-program="petri">{{PREAMBLE}}</pre>
 {{LIVE_COMMON}}
 {{LIVE_RULES}}
 </div>

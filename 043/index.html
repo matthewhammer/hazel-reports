@@ -196,6 +196,15 @@ h3.grp { margin-top: 1.2em; }
   .script-log .log-globals { margin: 0 0 6px 14px; } .script-log .log-globals > summary { cursor: pointer; color: var(--muted); font-size: 0.9em; }
   .script-log .log-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .script-log .hint { color: var(--muted); font-size: 0.9em; }
+
+pre.hz, pre.fu, pre.jx { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; line-height: 1.5; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+pre.jx .jk { color: #ff79c6; font-weight: 700; } pre.jx .jC { color: #8be9fd; } pre.jx .jv { color: #f8f8f2; } pre.jx .js { color: #f1fa8c; }
+pre.jx .jn { color: #bd93f9; } pre.jx .jc { color: #87ff87; font-style: italic; } pre.jx .jo { color: #ffd75f; }
+
 </style>
 <style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
@@ -208,7 +217,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 11:38 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>43<b>)</b></code> · Hazel as a JS library · started 2026-11-06, updated 2026-11-06 12:07 MST · <span class="wip">work in progress</span> · after <a href="../039/"><code class="ref"><b>^report(</b>39<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -341,43 +350,42 @@ document.addEventListener("DOMContentLoaded", () => {
 <ol class="steps">
 <li><p><b>We installed <code>hazeljs</code>.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; in the page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. We pinned the version: the package is a prototype, and its API may change in any release.</p></li>
 <li><p><b>We wrote the vocabulary first,</b> as Hazel types in the program's preamble (<code>rules/preamble.hz</code>), which every module sees: what a rule is told (<code>Net</code>), what can happen (<code>Event</code>), and what a rule may answer (<code>Cmd</code>). The answer is a chain of commands, each with the rest after it, ending in <code>Done</code>, so the page can walk it in order, log it, and refuse a command it does not know.</p>
-<pre class="code hazel" data-program="steps">type Arc = (place = Int, weight = Int) in
-type Transition = (name = String, inputs = [Arc], outputs = [Arc]) in
-type Net = (marking = [Int], transitions = [Transition], draw = Float) in
-type Event = + Fire(Int) + Step in
-type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in</pre>
+<pre class="code hazel hz" data-program="steps"><span class="hk">type</span> <span class="hC">Arc</span> <span class="ho">=</span> <span class="ho">(</span><span class="hv">place</span> <span class="ho">=</span> <span class="hC">Int</span><span class="ho">,</span> <span class="hv">weight</span> <span class="ho">=</span> <span class="hC">Int</span><span class="ho">)</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Transition</span> <span class="ho">=</span> <span class="ho">(</span><span class="hv">name</span> <span class="ho">=</span> <span class="hC">String</span><span class="ho">,</span> <span class="hv">inputs</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Arc</span><span class="ho">]</span><span class="ho">,</span> <span class="hv">outputs</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Arc</span><span class="ho">]</span><span class="ho">)</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Net</span> <span class="ho">=</span> <span class="ho">(</span><span class="hv">marking</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Int</span><span class="ho">]</span><span class="ho">,</span> <span class="hv">transitions</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Transition</span><span class="ho">]</span><span class="ho">,</span> <span class="hv">draw</span> <span class="ho">=</span> <span class="hC">Float</span><span class="ho">)</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Event</span> <span class="ho">=</span> <span class="ho">+</span> <span class="hC">Fire</span><span class="ho">(</span><span class="hC">Int</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Step</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Cmd</span> <span class="ho">=</span> <span class="ho">+</span> <span class="hC">Done</span> <span class="ho">+</span> <span class="hC">Take</span><span class="ho">(</span><span class="hC">Int</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Put</span><span class="ho">(</span><span class="hC">Int</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Say</span><span class="ho">(</span><span class="hC">String</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="hk">in</span></pre>
 <p>Sum types go here, not inside a module: a type's constructors are in scope only where the type is. This is also where another group's nets would differ first: tokens that carry data, weights, a guard, a clock.</p></li>
 <li><p><b>We split the rules into modules,</b> as the game does: helpers in <code>Common</code>, the handler in <code>Rules</code>, each a text (and a file). A module's text is its members, with no <code>in</code>; one module sees the ones before it, by name (<code>Common.fire</code>).</p></li>
 <li><p><b>We built the program with <code>Hazel.runProgram</code>,</b> once per change of text. The tail is what the program gives back: here, the handler, held to its type.</p>
-<pre class="code"><code>function build(rules) {
-  const r = Hazel.runProgram(spec(rules));
-  return { ok: r.ok, errors: r.errors.map(e =&gt; `${e.module ?? "the program"}: ${e.message.replace(/\s+/g, " ")}`),
-           holes: r.holes, incomplete: r.incomplete, ms: r.ms, handler: r.ok ? r.value : null };
-}
-const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
+<pre class="code jx"><code><span class="jk">function</span> <span class="jv">build</span><span class="jo">(</span><span class="jv">rules</span><span class="jo">)</span> <span class="jo">{</span>
+  <span class="jk">const</span> <span class="jv">r</span> <span class="jo">=</span> <span class="jC">Hazel</span><span class="jo">.</span><span class="jv">runProgram</span><span class="jo">(</span><span class="jv">spec</span><span class="jo">(</span><span class="jv">rules</span><span class="jo">)</span><span class="jo">)</span><span class="jo">;</span>
+  <span class="jk">return</span> <span class="jo">{</span> <span class="jv">ok</span><span class="jo">:</span> <span class="jv">r</span><span class="jo">.</span><span class="jv">ok</span><span class="jo">,</span> <span class="jv">errors</span><span class="jo">:</span> <span class="jv">r</span><span class="jo">.</span><span class="jv">errors</span><span class="jo">.</span><span class="jv">map</span><span class="jo">(</span><span class="jv">e</span> <span class="jo">=&gt;</span> <span class="js">`${e.module ?? &quot;the program&quot;}: ${e.message.replace(/\s+/g, &quot; &quot;)}`</span><span class="jo">)</span><span class="jo">,</span>
+           <span class="jv">holes</span><span class="jo">:</span> <span class="jv">r</span><span class="jo">.</span><span class="jv">holes</span><span class="jo">,</span> <span class="jv">incomplete</span><span class="jo">:</span> <span class="jv">r</span><span class="jo">.</span><span class="jv">incomplete</span><span class="jo">,</span> <span class="jv">ms</span><span class="jo">:</span> <span class="jv">r</span><span class="jo">.</span><span class="jv">ms</span><span class="jo">,</span> <span class="jv">handler</span><span class="jo">:</span> <span class="jv">r</span><span class="jo">.</span><span class="jv">ok</span> <span class="jo">?</span> <span class="jv">r</span><span class="jo">.</span><span class="jv">value</span> <span class="jo">:</span> <span class="jk">null</span> <span class="jo">}</span><span class="jo">;</span>
+<span class="jo">}</span></code></pre></li>
 <li><p><b>We kept our own JS handler,</b> and call Hazel's only while the build is <code>ok</code>; ours answers while a rule has errors, holes or unfinished brackets. Hazel still runs a program around its errors, so the page can log what Hazel would have said, but where an error stopped it, the value is a printout (<code>{hazel: "..."}</code>), not something to act on.</p>
-<pre class="code"><code>function jsHandler(net, ev) {
-  const t = net.transitions[ev.tag === "Fire" ? ev.value : 0];
-  const ok = t &amp;&amp; t.inputs.every(a =&gt; net.marking[a.place] &gt;= a.weight);
-  if (!ok) return { tag: "Say", value: ["(js) cannot fire", { tag: "Done" }] };
-  let k = { tag: "Done" };
-  for (const a of [...t.outputs].reverse()) k = { tag: "Put", value: [a.place, a.weight, k] };
-  for (const a of [...t.inputs].reverse()) k = { tag: "Take", value: [a.place, a.weight, k] };
-  return { tag: "Say", value: ["(js) " + t.name, k] };
-}
-const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
+<pre class="code jx"><code><span class="jk">function</span> <span class="jv">jsHandler</span><span class="jo">(</span><span class="jv">net</span><span class="jo">,</span> <span class="jv">ev</span><span class="jo">)</span> <span class="jo">{</span>
+  <span class="jk">const</span> <span class="jv">t</span> <span class="jo">=</span> <span class="jv">net</span><span class="jo">.</span><span class="jv">transitions</span><span class="jo">[</span><span class="jv">ev</span><span class="jo">.</span><span class="jv">tag</span> <span class="jo">===</span> <span class="js">&quot;Fire&quot;</span> <span class="jo">?</span> <span class="jv">ev</span><span class="jo">.</span><span class="jv">value</span> <span class="jo">:</span> <span class="jn">0</span><span class="jo">]</span><span class="jo">;</span>
+  <span class="jk">const</span> <span class="jv">ok</span> <span class="jo">=</span> <span class="jv">t</span> <span class="jo">&amp;&amp;</span> <span class="jv">t</span><span class="jo">.</span><span class="jv">inputs</span><span class="jo">.</span><span class="jv">every</span><span class="jo">(</span><span class="jv">a</span> <span class="jo">=&gt;</span> <span class="jv">net</span><span class="jo">.</span><span class="jv">marking</span><span class="jo">[</span><span class="jv">a</span><span class="jo">.</span><span class="jv">place</span><span class="jo">]</span> <span class="jo">&gt;</span><span class="jo">=</span> <span class="jv">a</span><span class="jo">.</span><span class="jv">weight</span><span class="jo">)</span><span class="jo">;</span>
+  <span class="jk">if</span> <span class="jo">(</span><span class="jo">!</span><span class="jv">ok</span><span class="jo">)</span> <span class="jk">return</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;Say&quot;</span><span class="jo">,</span> <span class="jv">value</span><span class="jo">:</span> <span class="jo">[</span><span class="js">&quot;(js) cannot fire&quot;</span><span class="jo">,</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;Done&quot;</span> <span class="jo">}</span><span class="jo">]</span> <span class="jo">}</span><span class="jo">;</span>
+  <span class="jk">let</span> <span class="jv">k</span> <span class="jo">=</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;Done&quot;</span> <span class="jo">}</span><span class="jo">;</span>
+  <span class="jk">for</span> <span class="jo">(</span><span class="jk">const</span> <span class="jv">a</span> <span class="jk">of</span> <span class="jo">[</span><span class="jo">.</span><span class="jo">.</span><span class="jo">.</span><span class="jv">t</span><span class="jo">.</span><span class="jv">outputs</span><span class="jo">]</span><span class="jo">.</span><span class="jv">reverse</span><span class="jo">(</span><span class="jo">)</span><span class="jo">)</span> <span class="jv">k</span> <span class="jo">=</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;Put&quot;</span><span class="jo">,</span> <span class="jv">value</span><span class="jo">:</span> <span class="jo">[</span><span class="jv">a</span><span class="jo">.</span><span class="jv">place</span><span class="jo">,</span> <span class="jv">a</span><span class="jo">.</span><span class="jv">weight</span><span class="jo">,</span> <span class="jv">k</span><span class="jo">]</span> <span class="jo">}</span><span class="jo">;</span>
+  <span class="jk">for</span> <span class="jo">(</span><span class="jk">const</span> <span class="jv">a</span> <span class="jk">of</span> <span class="jo">[</span><span class="jo">.</span><span class="jo">.</span><span class="jo">.</span><span class="jv">t</span><span class="jo">.</span><span class="jv">inputs</span><span class="jo">]</span><span class="jo">.</span><span class="jv">reverse</span><span class="jo">(</span><span class="jo">)</span><span class="jo">)</span> <span class="jv">k</span> <span class="jo">=</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;Take&quot;</span><span class="jo">,</span> <span class="jv">value</span><span class="jo">:</span> <span class="jo">[</span><span class="jv">a</span><span class="jo">.</span><span class="jv">place</span><span class="jo">,</span> <span class="jv">a</span><span class="jo">.</span><span class="jv">weight</span><span class="jo">,</span> <span class="jv">k</span><span class="jo">]</span> <span class="jo">}</span><span class="jo">;</span>
+  <span class="jk">return</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;Say&quot;</span><span class="jo">,</span> <span class="jv">value</span><span class="jo">:</span> <span class="jo">[</span><span class="js">&quot;(js) &quot;</span> <span class="jo">+</span> <span class="jv">t</span><span class="jo">.</span><span class="jv">name</span><span class="jo">,</span> <span class="jv">k</span><span class="jo">]</span> <span class="jo">}</span><span class="jo">;</span>
+<span class="jo">}</span>
+<span class="jk">const</span> <span class="jv">handlerOf</span> <span class="jo">=</span> <span class="jv">b</span> <span class="jo">=&gt;</span> <span class="jv">b</span><span class="jo">.</span><span class="jv">ok</span> <span class="jo">?</span> <span class="jv">b</span><span class="jo">.</span><span class="jv">handler</span> <span class="jo">:</span> <span class="jv">jsHandler</span><span class="jo">;</span></code></pre></li>
 <li><p><b>We acted out the commands,</b> and showed the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function. The page keeps control: it refuses a command that would take a place below zero, and one it does not know.</p>
-<pre class="code"><code>function perform(cmd, marking, log) {
-  const m = marking.slice();
-  for (let c = cmd; c &amp;&amp; c.tag !== "Done"; ) {
-    const [a, b, rest] = Array.isArray(c.value) ? c.value : [c.value];
-    if (c.tag === "Take") { m[a] -= b; c = rest; }
-    else if (c.tag === "Put") { m[a] += b; c = rest; }
-    else if (c.tag === "Say") { log.push(a); c = b; }
-    else throw new Error("a command this app does not know: " + c.tag);
-  }
-  return m;
-}</code></pre></li>
+<pre class="code jx"><code><span class="jk">function</span> <span class="jv">perform</span><span class="jo">(</span><span class="jv">cmd</span><span class="jo">,</span> <span class="jv">marking</span><span class="jo">,</span> <span class="jv">log</span><span class="jo">)</span> <span class="jo">{</span>
+  <span class="jk">const</span> <span class="jv">m</span> <span class="jo">=</span> <span class="jv">marking</span><span class="jo">.</span><span class="jv">slice</span><span class="jo">(</span><span class="jo">)</span><span class="jo">;</span>
+  <span class="jk">for</span> <span class="jo">(</span><span class="jk">let</span> <span class="jv">c</span> <span class="jo">=</span> <span class="jv">cmd</span><span class="jo">;</span> <span class="jv">c</span> <span class="jo">&amp;&amp;</span> <span class="jv">c</span><span class="jo">.</span><span class="jv">tag</span> <span class="jo">!==</span> <span class="js">&quot;Done&quot;</span><span class="jo">;</span> <span class="jo">)</span> <span class="jo">{</span>
+    <span class="jk">const</span> <span class="jo">[</span><span class="jv">a</span><span class="jo">,</span> <span class="jv">b</span><span class="jo">,</span> <span class="jv">rest</span><span class="jo">]</span> <span class="jo">=</span> <span class="jC">Array</span><span class="jo">.</span><span class="jv">isArray</span><span class="jo">(</span><span class="jv">c</span><span class="jo">.</span><span class="jv">value</span><span class="jo">)</span> <span class="jo">?</span> <span class="jv">c</span><span class="jo">.</span><span class="jv">value</span> <span class="jo">:</span> <span class="jo">[</span><span class="jv">c</span><span class="jo">.</span><span class="jv">value</span><span class="jo">]</span><span class="jo">;</span>
+    <span class="jk">if</span> <span class="jo">(</span><span class="jv">c</span><span class="jo">.</span><span class="jv">tag</span> <span class="jo">===</span> <span class="js">&quot;Take&quot;</span><span class="jo">)</span> <span class="jo">{</span> <span class="jv">m</span><span class="jo">[</span><span class="jv">a</span><span class="jo">]</span> <span class="jo">-</span><span class="jo">=</span> <span class="jv">b</span><span class="jo">;</span> <span class="jv">c</span> <span class="jo">=</span> <span class="jv">rest</span><span class="jo">;</span> <span class="jo">}</span>
+    <span class="jk">else</span> <span class="jk">if</span> <span class="jo">(</span><span class="jv">c</span><span class="jo">.</span><span class="jv">tag</span> <span class="jo">===</span> <span class="js">&quot;Put&quot;</span><span class="jo">)</span> <span class="jo">{</span> <span class="jv">m</span><span class="jo">[</span><span class="jv">a</span><span class="jo">]</span> <span class="jo">+</span><span class="jo">=</span> <span class="jv">b</span><span class="jo">;</span> <span class="jv">c</span> <span class="jo">=</span> <span class="jv">rest</span><span class="jo">;</span> <span class="jo">}</span>
+    <span class="jk">else</span> <span class="jk">if</span> <span class="jo">(</span><span class="jv">c</span><span class="jo">.</span><span class="jv">tag</span> <span class="jo">===</span> <span class="js">&quot;Say&quot;</span><span class="jo">)</span> <span class="jo">{</span> <span class="jv">log</span><span class="jo">.</span><span class="jv">push</span><span class="jo">(</span><span class="jv">a</span><span class="jo">)</span><span class="jo">;</span> <span class="jv">c</span> <span class="jo">=</span> <span class="jv">b</span><span class="jo">;</span> <span class="jo">}</span>
+    <span class="jk">else</span> <span class="jk">throw</span> <span class="jk">new</span> <span class="jC">Error</span><span class="jo">(</span><span class="js">&quot;a command this app does not know: &quot;</span> <span class="jo">+</span> <span class="jv">c</span><span class="jo">.</span><span class="jv">tag</span><span class="jo">)</span><span class="jo">;</span>
+  <span class="jo">}</span>
+  <span class="jk">return</span> <span class="jv">m</span><span class="jo">;</span>
+<span class="jo">}</span></code></pre></li>
 </ol>
 <p><b>What tripped us.</b> Three things, none of them in the game's way of doing it, which is why a second app was worth building:</p>
 <ul>
@@ -407,73 +415,73 @@ const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
 </div>
 <div class="live-right">
 <p class="muted" style="margin-top:0">The vocabulary, the preamble every module sees. Each listing here is Hazel's editor: Ctrl+click a name (or F12 on it) to go to its definition, in whichever listing has it. The editors start with the text that ran in Node, and Reset the rules goes back to it.</p>
-<pre class="code hazel" data-program="petri">type Arc = (place = Int, weight = Int) in
-type Transition = (name = String, inputs = [Arc], outputs = [Arc]) in
-type Net = (marking = [Int], transitions = [Transition], draw = Float) in
-type Event = + Fire(Int) + Step in
-type Cmd = + Done + Take(Int, Int, Cmd) + Put(Int, Int, Cmd) + Say(String, Cmd) in</pre>
-<div class="live-ed" id="live-ed-Common"><div class="live-ed-head"><b>Common</b> <span class="muted">helpers the rules use</span></div><pre class="code hazel" data-program="petri" data-module="Common"># the i-th of a list of Ints, 0 past its end #
-let nth = fun (xs, i) : ([Int], Int) -&gt;
-  case xs
-  | [] =&gt; 0
-  | x :: rest =&gt; if i == 0 then x else nth(rest, i - 1)
-  end;
-let len = fun xs : [Int] -&gt;
-  case xs | [] =&gt; 0 | _ :: rest =&gt; 1 + len(rest) end;
-# the i-th transition, if there is one #
-let pick = fun (ts, i) : ([Transition], Int) -&gt;
-  case ts
-  | [] =&gt; None
-  | t :: rest =&gt; if i == 0 then Some(t) else pick(rest, i - 1)
-  end;
-# every input place holds at least its arc's weight #
-let has = fun (m, arcs) : ([Int], [Arc]) -&gt;
-  case arcs
-  | [] =&gt; true
-  | a :: rest =&gt; nth(m, a.place) &gt;= a.weight &amp;&amp; has(m, rest)
-  end;
-let enabled = fun (m, t) : ([Int], Transition) -&gt; has(m, t.inputs);
-# the indices of the transitions that can fire #
-let ready = fun (m, ts, i) : ([Int], [Transition], Int) -&gt;
-  case ts
-  | [] =&gt; []
-  | t :: rest =&gt;
-    if enabled(m, t) then i :: ready(m, rest, i + 1)
-    else ready(m, rest, i + 1)
-  end;
-# firing: take each input's tokens, then put each output's #
-let takes = fun (arcs, k) : ([Arc], Cmd) -&gt;
-  case arcs
-  | [] =&gt; k
-  | a :: rest =&gt; Take(a.place, a.weight, takes(rest, k))
-  end;
-let puts = fun (arcs, k) : ([Arc], Cmd) -&gt;
-  case arcs
-  | [] =&gt; k
-  | a :: rest =&gt; Put(a.place, a.weight, puts(rest, k))
-  end;
-let fire = fun t : Transition -&gt;
-  Say(t.name, takes(t.inputs, puts(t.outputs, Done)))</pre></div>
-<div class="live-ed" id="live-ed-Rules"><div class="live-ed-head"><b>Rules</b> <span class="muted">the handler, on_event</span></div><pre class="code hazel" data-program="petri" data-module="Rules"># Fire(i): fire transition i, if it can. #
-# Step: fire one of those that can, chosen by the app's draw. #
-let fire_at = fun (n, i) : (Net, Int) -&gt;
-  case Common.pick(n.transitions, i)
-  | None =&gt; Say("there is no transition " ++ string_of_int(i), Done)
-  | Some(t) =&gt;
-    if Common.enabled(n.marking, t) then Common.fire(t)
-    else Say(t.name ++ " cannot fire now", Done)
-  end;
-let on_event = fun (n, e) : (Net, Event) -&gt;
-  case e
-  | Fire(i) =&gt; fire_at(n, i)
-  | Step =&gt;
-    let r = Common.ready(n.marking, n.transitions, 0) in
-    let k = Common.len(r) in
-    if k == 0 then Say("deadlock: nothing can fire", Done)
-    else
-      let j = int_of_float(n.draw *. float_of_int(k)) in
-      fire_at(n, Common.nth(r, j))
-  end</pre></div>
+<pre class="code hazel hz" data-program="petri"><span class="hk">type</span> <span class="hC">Arc</span> <span class="ho">=</span> <span class="ho">(</span><span class="hv">place</span> <span class="ho">=</span> <span class="hC">Int</span><span class="ho">,</span> <span class="hv">weight</span> <span class="ho">=</span> <span class="hC">Int</span><span class="ho">)</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Transition</span> <span class="ho">=</span> <span class="ho">(</span><span class="hv">name</span> <span class="ho">=</span> <span class="hC">String</span><span class="ho">,</span> <span class="hv">inputs</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Arc</span><span class="ho">]</span><span class="ho">,</span> <span class="hv">outputs</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Arc</span><span class="ho">]</span><span class="ho">)</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Net</span> <span class="ho">=</span> <span class="ho">(</span><span class="hv">marking</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Int</span><span class="ho">]</span><span class="ho">,</span> <span class="hv">transitions</span> <span class="ho">=</span> <span class="ho">[</span><span class="hC">Transition</span><span class="ho">]</span><span class="ho">,</span> <span class="hv">draw</span> <span class="ho">=</span> <span class="hC">Float</span><span class="ho">)</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Event</span> <span class="ho">=</span> <span class="ho">+</span> <span class="hC">Fire</span><span class="ho">(</span><span class="hC">Int</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Step</span> <span class="hk">in</span>
+<span class="hk">type</span> <span class="hC">Cmd</span> <span class="ho">=</span> <span class="ho">+</span> <span class="hC">Done</span> <span class="ho">+</span> <span class="hC">Take</span><span class="ho">(</span><span class="hC">Int</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Put</span><span class="ho">(</span><span class="hC">Int</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="ho">+</span> <span class="hC">Say</span><span class="ho">(</span><span class="hC">String</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="hk">in</span></pre>
+<div class="live-ed" id="live-ed-Common"><div class="live-ed-head"><b>Common</b> <span class="muted">helpers the rules use</span></div><pre class="code hazel hz" data-program="petri" data-module="Common"><span class="hc"># the i-th of a list of Ints, 0 past its end #</span>
+<span class="hk">let</span> <span class="hv">nth</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">xs</span><span class="ho">,</span> <span class="hv">i</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="ho">[</span><span class="hC">Int</span><span class="ho">]</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">xs</span>
+  <span class="ho">|</span> <span class="ho">[</span><span class="ho">]</span> <span class="ho">=&gt;</span> <span class="hn">0</span>
+  <span class="ho">|</span> <span class="hv">x</span> <span class="ho">::</span> <span class="hv">rest</span> <span class="ho">=&gt;</span> <span class="hk">if</span> <span class="hv">i</span> <span class="ho">=</span><span class="ho">=</span> <span class="hn">0</span> <span class="hk">then</span> <span class="hv">x</span> <span class="hk">else</span> <span class="hv">nth</span><span class="ho">(</span><span class="hv">rest</span><span class="ho">,</span> <span class="hv">i</span> <span class="ho">-</span> <span class="hn">1</span><span class="ho">)</span>
+  <span class="hk">end</span>;
+<span class="hk">let</span> <span class="hv">len</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="hv">xs</span> <span class="ho">:</span> <span class="ho">[</span><span class="hC">Int</span><span class="ho">]</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">xs</span> <span class="ho">|</span> <span class="ho">[</span><span class="ho">]</span> <span class="ho">=&gt;</span> <span class="hn">0</span> <span class="ho">|</span> <span class="hv">_</span> <span class="ho">::</span> <span class="hv">rest</span> <span class="ho">=&gt;</span> <span class="hn">1</span> <span class="ho">+</span> <span class="hv">len</span><span class="ho">(</span><span class="hv">rest</span><span class="ho">)</span> <span class="hk">end</span>;
+<span class="hc"># the i-th transition, if there is one #</span>
+<span class="hk">let</span> <span class="hv">pick</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">ts</span><span class="ho">,</span> <span class="hv">i</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="ho">[</span><span class="hC">Transition</span><span class="ho">]</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">ts</span>
+  <span class="ho">|</span> <span class="ho">[</span><span class="ho">]</span> <span class="ho">=&gt;</span> <span class="hC">None</span>
+  <span class="ho">|</span> <span class="hv">t</span> <span class="ho">::</span> <span class="hv">rest</span> <span class="ho">=&gt;</span> <span class="hk">if</span> <span class="hv">i</span> <span class="ho">=</span><span class="ho">=</span> <span class="hn">0</span> <span class="hk">then</span> <span class="hC">Some</span><span class="ho">(</span><span class="hv">t</span><span class="ho">)</span> <span class="hk">else</span> <span class="hv">pick</span><span class="ho">(</span><span class="hv">rest</span><span class="ho">,</span> <span class="hv">i</span> <span class="ho">-</span> <span class="hn">1</span><span class="ho">)</span>
+  <span class="hk">end</span>;
+<span class="hc"># every input place holds at least its arc&#x27;s weight #</span>
+<span class="hk">let</span> <span class="hv">has</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">arcs</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="ho">[</span><span class="hC">Int</span><span class="ho">]</span><span class="ho">,</span> <span class="ho">[</span><span class="hC">Arc</span><span class="ho">]</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">arcs</span>
+  <span class="ho">|</span> <span class="ho">[</span><span class="ho">]</span> <span class="ho">=&gt;</span> <span class="hk">true</span>
+  <span class="ho">|</span> <span class="hv">a</span> <span class="ho">::</span> <span class="hv">rest</span> <span class="ho">=&gt;</span> <span class="hv">nth</span><span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">a</span><span class="ho">.</span><span class="hv">place</span><span class="ho">)</span> <span class="ho">&gt;</span><span class="ho">=</span> <span class="hv">a</span><span class="ho">.</span><span class="hv">weight</span> &amp;&amp; <span class="hv">has</span><span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">rest</span><span class="ho">)</span>
+  <span class="hk">end</span>;
+<span class="hk">let</span> <span class="hv">enabled</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">t</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="ho">[</span><span class="hC">Int</span><span class="ho">]</span><span class="ho">,</span> <span class="hC">Transition</span><span class="ho">)</span> <span class="ho">-&gt;</span> <span class="hv">has</span><span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">t</span><span class="ho">.</span><span class="hv">inputs</span><span class="ho">)</span>;
+<span class="hc"># the indices of the transitions that can fire #</span>
+<span class="hk">let</span> <span class="hv">ready</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">ts</span><span class="ho">,</span> <span class="hv">i</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="ho">[</span><span class="hC">Int</span><span class="ho">]</span><span class="ho">,</span> <span class="ho">[</span><span class="hC">Transition</span><span class="ho">]</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">ts</span>
+  <span class="ho">|</span> <span class="ho">[</span><span class="ho">]</span> <span class="ho">=&gt;</span> <span class="ho">[</span><span class="ho">]</span>
+  <span class="ho">|</span> <span class="hv">t</span> <span class="ho">::</span> <span class="hv">rest</span> <span class="ho">=&gt;</span>
+    <span class="hk">if</span> <span class="hv">enabled</span><span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">t</span><span class="ho">)</span> <span class="hk">then</span> <span class="hv">i</span> <span class="ho">::</span> <span class="hv">ready</span><span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">rest</span><span class="ho">,</span> <span class="hv">i</span> <span class="ho">+</span> <span class="hn">1</span><span class="ho">)</span>
+    <span class="hk">else</span> <span class="hv">ready</span><span class="ho">(</span><span class="hv">m</span><span class="ho">,</span> <span class="hv">rest</span><span class="ho">,</span> <span class="hv">i</span> <span class="ho">+</span> <span class="hn">1</span><span class="ho">)</span>
+  <span class="hk">end</span>;
+<span class="hc"># firing: take each input&#x27;s tokens, then put each output&#x27;s #</span>
+<span class="hk">let</span> <span class="hv">takes</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">arcs</span><span class="ho">,</span> <span class="hv">k</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="ho">[</span><span class="hC">Arc</span><span class="ho">]</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">arcs</span>
+  <span class="ho">|</span> <span class="ho">[</span><span class="ho">]</span> <span class="ho">=&gt;</span> <span class="hv">k</span>
+  <span class="ho">|</span> <span class="hv">a</span> <span class="ho">::</span> <span class="hv">rest</span> <span class="ho">=&gt;</span> <span class="hC">Take</span><span class="ho">(</span><span class="hv">a</span><span class="ho">.</span><span class="hv">place</span><span class="ho">,</span> <span class="hv">a</span><span class="ho">.</span><span class="hv">weight</span><span class="ho">,</span> <span class="hv">takes</span><span class="ho">(</span><span class="hv">rest</span><span class="ho">,</span> <span class="hv">k</span><span class="ho">)</span><span class="ho">)</span>
+  <span class="hk">end</span>;
+<span class="hk">let</span> <span class="hv">puts</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">arcs</span><span class="ho">,</span> <span class="hv">k</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="ho">[</span><span class="hC">Arc</span><span class="ho">]</span><span class="ho">,</span> <span class="hC">Cmd</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">arcs</span>
+  <span class="ho">|</span> <span class="ho">[</span><span class="ho">]</span> <span class="ho">=&gt;</span> <span class="hv">k</span>
+  <span class="ho">|</span> <span class="hv">a</span> <span class="ho">::</span> <span class="hv">rest</span> <span class="ho">=&gt;</span> <span class="hC">Put</span><span class="ho">(</span><span class="hv">a</span><span class="ho">.</span><span class="hv">place</span><span class="ho">,</span> <span class="hv">a</span><span class="ho">.</span><span class="hv">weight</span><span class="ho">,</span> <span class="hv">puts</span><span class="ho">(</span><span class="hv">rest</span><span class="ho">,</span> <span class="hv">k</span><span class="ho">)</span><span class="ho">)</span>
+  <span class="hk">end</span>;
+<span class="hk">let</span> <span class="hv">fire</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="hv">t</span> <span class="ho">:</span> <span class="hC">Transition</span> <span class="ho">-&gt;</span>
+  <span class="hC">Say</span><span class="ho">(</span><span class="hv">t</span><span class="ho">.</span><span class="hv">name</span><span class="ho">,</span> <span class="hv">takes</span><span class="ho">(</span><span class="hv">t</span><span class="ho">.</span><span class="hv">inputs</span><span class="ho">,</span> <span class="hv">puts</span><span class="ho">(</span><span class="hv">t</span><span class="ho">.</span><span class="hv">outputs</span><span class="ho">,</span> <span class="hC">Done</span><span class="ho">)</span><span class="ho">)</span><span class="ho">)</span></pre></div>
+<div class="live-ed" id="live-ed-Rules"><div class="live-ed-head"><b>Rules</b> <span class="muted">the handler, on_event</span></div><pre class="code hazel hz" data-program="petri" data-module="Rules"><span class="hc"># Fire(i): fire transition i, if it can. #</span>
+<span class="hc"># Step: fire one of those that can, chosen by the app&#x27;s draw. #</span>
+<span class="hk">let</span> <span class="hv">fire_at</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">n</span><span class="ho">,</span> <span class="hv">i</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="hC">Net</span><span class="ho">,</span> <span class="hC">Int</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hC">Common</span><span class="ho">.</span><span class="hv">pick</span><span class="ho">(</span><span class="hv">n</span><span class="ho">.</span><span class="hv">transitions</span><span class="ho">,</span> <span class="hv">i</span><span class="ho">)</span>
+  <span class="ho">|</span> <span class="hC">None</span> <span class="ho">=&gt;</span> <span class="hC">Say</span><span class="ho">(</span><span class="hs">&quot;there is no transition &quot;</span> <span class="ho">+</span><span class="ho">+</span> <span class="hv">string_of_int</span><span class="ho">(</span><span class="hv">i</span><span class="ho">)</span><span class="ho">,</span> <span class="hC">Done</span><span class="ho">)</span>
+  <span class="ho">|</span> <span class="hC">Some</span><span class="ho">(</span><span class="hv">t</span><span class="ho">)</span> <span class="ho">=&gt;</span>
+    <span class="hk">if</span> <span class="hC">Common</span><span class="ho">.</span><span class="hv">enabled</span><span class="ho">(</span><span class="hv">n</span><span class="ho">.</span><span class="hv">marking</span><span class="ho">,</span> <span class="hv">t</span><span class="ho">)</span> <span class="hk">then</span> <span class="hC">Common</span><span class="ho">.</span><span class="hv">fire</span><span class="ho">(</span><span class="hv">t</span><span class="ho">)</span>
+    <span class="hk">else</span> <span class="hC">Say</span><span class="ho">(</span><span class="hv">t</span><span class="ho">.</span><span class="hv">name</span> <span class="ho">+</span><span class="ho">+</span> <span class="hs">&quot; cannot fire now&quot;</span><span class="ho">,</span> <span class="hC">Done</span><span class="ho">)</span>
+  <span class="hk">end</span>;
+<span class="hk">let</span> <span class="hv">on_event</span> <span class="ho">=</span> <span class="hk">fun</span> <span class="ho">(</span><span class="hv">n</span><span class="ho">,</span> <span class="hv">e</span><span class="ho">)</span> <span class="ho">:</span> <span class="ho">(</span><span class="hC">Net</span><span class="ho">,</span> <span class="hC">Event</span><span class="ho">)</span> <span class="ho">-&gt;</span>
+  <span class="hk">case</span> <span class="hv">e</span>
+  <span class="ho">|</span> <span class="hC">Fire</span><span class="ho">(</span><span class="hv">i</span><span class="ho">)</span> <span class="ho">=&gt;</span> <span class="hv">fire_at</span><span class="ho">(</span><span class="hv">n</span><span class="ho">,</span> <span class="hv">i</span><span class="ho">)</span>
+  <span class="ho">|</span> <span class="hC">Step</span> <span class="ho">=&gt;</span>
+    <span class="hk">let</span> <span class="hv">r</span> <span class="ho">=</span> <span class="hC">Common</span><span class="ho">.</span><span class="hv">ready</span><span class="ho">(</span><span class="hv">n</span><span class="ho">.</span><span class="hv">marking</span><span class="ho">,</span> <span class="hv">n</span><span class="ho">.</span><span class="hv">transitions</span><span class="ho">,</span> <span class="hn">0</span><span class="ho">)</span> <span class="hk">in</span>
+    <span class="hk">let</span> <span class="hv">k</span> <span class="ho">=</span> <span class="hC">Common</span><span class="ho">.</span><span class="hv">len</span><span class="ho">(</span><span class="hv">r</span><span class="ho">)</span> <span class="hk">in</span>
+    <span class="hk">if</span> <span class="hv">k</span> <span class="ho">=</span><span class="ho">=</span> <span class="hn">0</span> <span class="hk">then</span> <span class="hC">Say</span><span class="ho">(</span><span class="hs">&quot;deadlock: nothing can fire&quot;</span><span class="ho">,</span> <span class="hC">Done</span><span class="ho">)</span>
+    <span class="hk">else</span>
+      <span class="hk">let</span> <span class="hv">j</span> <span class="ho">=</span> <span class="hv">int_of_float</span><span class="ho">(</span><span class="hv">n</span><span class="ho">.</span><span class="hv">draw</span> <span class="ho">*</span><span class="ho">.</span> <span class="hv">float_of_int</span><span class="ho">(</span><span class="hv">k</span><span class="ho">)</span><span class="ho">)</span> <span class="hk">in</span>
+      <span class="hv">fire_at</span><span class="ho">(</span><span class="hv">n</span><span class="ho">,</span> <span class="hC">Common</span><span class="ho">.</span><span class="hv">nth</span><span class="ho">(</span><span class="hv">r</span><span class="ho">,</span> <span class="hv">j</span><span class="ho">)</span><span class="ho">)</span>
+  <span class="hk">end</span></pre></div>
 </div>
 </div>
 </div>
@@ -701,7 +709,7 @@ Rules: Error in term: n, "one" Nature of error: Expecting type Net, Int but got 
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2812": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T16:21:54Z", "kind": "pull", "state": "open", "title": "README: link the experimental hazeljs npm package", "updated": "2026-11-06T16:38:21Z", "base": "dev"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 0, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T18:38:17Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
+  const CACHED = {"hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-03T21:12:28Z", "base": "js-library"}, "hazelgrove/hazel#2812": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T16:21:54Z", "kind": "pull", "state": "open", "title": "README: link the experimental hazeljs npm package", "updated": "2026-11-06T16:38:21Z", "base": "dev"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T19:01:13Z", "base": "js-library-embed"}}, BUILT = "2026-11-06";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
