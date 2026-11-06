@@ -181,6 +181,7 @@ HEAD = f"""<!doctype html>
              overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }}
   pre.code code {{ background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }}
   ol.steps > li {{ margin: 10px 0; }}
+  ol.outline > li {{ margin: 4px 0; }}
   /* the game's pieces: names whole, one to a line, the code column as wide as its longest name */
   table.pieces td:first-child {{ width: 8.5em; }} table.pieces td:last-child {{ white-space: nowrap; }}
   table.pieces td:last-child code {{ overflow-wrap: normal; }}
