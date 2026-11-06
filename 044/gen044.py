@@ -12,6 +12,7 @@ EXTRA = """
              overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }
   pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
   ol.steps > li { margin: 10px 0; } .muted { color: var(--muted); }
+  ol.outline > li { margin: 4px 0; }
   /* Hazel listings (hazel-listings.js): the text until Hazel's editor starts, then the editor */
   .hazel-listing { position: relative; margin: 10px 0; }
   .hazel-listing iframe { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }

@@ -1,16 +1,15 @@
 <body><main>
 <p class="series"><a href="../">Hazel reports</a> · report 044 · Hazel as a JS library · started 2026-11-06, updated {{updated}} MST · <span class="wip">work in progress</span> · after report 043</p>
 <h1>Hazel Listings in an Article</h1>
-<p class="sub">How can a blog post, an article or a report show its Hazel code in Hazel's own editor, rather than as plain text, with go to definition working from one listing to another? ^report(43) does it for every Hazel listing on its page, with a small script, <code>hazel-listings.js</code>. This report says how to do the same on another page, what the script does, and what limits it today. Matthew asked for it on 2026-11-06: "can we also write about how to do this, generally, so a blog post or 'article' like this could have listings where goto def works?"</p>
+<p class="sub">How can a blog post, an article or a report show its Hazel code in Hazel's own editor, rather than as plain text, with go to definition working from one listing to another? ^report(43) does it for every Hazel listing on its page, with a small script, <code>hazel-listings.js</code>. This report says how to do the same on another page, what the script does, and what limits it today. Matthew asked for it on 2026-11-06: "can we also write about how to do this, generally, so a blog post or 'article' like this could have listings where goto def works?" As of 2026-11-06.</p>
 
-<div class="headline">
-<p><b>Short answers.</b> As of 2026-11-06.</p>
-<ol class="ans">
-<li><p><b>Write each listing as plain text in a <code>&lt;pre class="hazel"&gt;</code>, and load one script.</b> Listings that share a <code>data-program</code> are one program: the preamble, then a module per listing. The script turns each into Hazel's editor, in place (<a href="#how">how</a>).</p></li>
-<li><p><b>Go to definition crosses listings.</b> Ctrl+click a name, or F12 on it: a frame that cannot find the definition in its own listing asks the page, and the page asks the listing that has it to show it (<a href="#try">try it</a>).</p></li>
-<li><p><b>Three limits today.</b> The editor is a branch build of Hazel. It takes messages only from a few sites (this one and <code>localhost</code>), so another site must be added to its list. And go to definition starts only in an editable listing (<a href="#limits">limits</a>).</p></li>
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#try">Try it</a>: three listings of one small program, in Hazel's editor, with go to definition from one to another.</li>
+<li><a href="#how">How to do it on your page</a>: the markup, the one script, the styling, and the calls a page can listen to.</li>
+<li><a href="#what">What the script does</a>: the messages it trades with Hazel's frame, how it finds a definition, and what we learned making it.</li>
+<li><a href="#limits">Limits today</a>, <a href="#next">what next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
-</div>
 
 <h2 id="try">Try it</h2>
 <p>Three listings of one small program: a type in the preamble, and two modules. Ctrl+click <code>Geometry.area</code> in the third listing, or F12 on it, and the page goes to its definition in the second; do the same on <code>Shape</code> or on <code>Circle</code>, and it goes to the first. The listings can be edited too: a change in one is checked against the others, so a type error in <code>Scene</code> can come from a change in <code>Geometry</code>. Without JavaScript, or until Hazel's editor starts, each is its plain text.</p>
@@ -33,6 +32,7 @@ let total = fun ss : [Shape] ->
 <p>The same program, run by <code>hazeljs</code> in Node with the tail <code>Scene.total(Scene.shapes)</code>, gives 9.14159. ^report(43)'s example goes further: its listings are the rules of a running app, built again by <code>hazeljs</code> after each edit.</p>
 
 <h2 id="how">How to do it on your page</h2>
+<p><b>Write each listing as plain text in a <code>&lt;pre class="hazel"&gt;</code>, and load one script.</b> Listings that share a <code>data-program</code> are one program: the preamble, then a module per listing. The script turns each into Hazel's editor, in place.</p>
 <ol class="steps">
 <li><p><b>Write the listings as text,</b> each in a <code>&lt;pre class="hazel"&gt;</code>. A page without JavaScript reads them as they are.</p>
 <pre class="code"><code>&lt;pre class="hazel" data-program="shapes"&gt;type Shape = + Circle(Float) + Rect(Float, Float) in&lt;/pre&gt;
@@ -45,6 +45,7 @@ let total = fun ss : [Shape] ->
 </ol>
 
 <h2 id="what">What the script does</h2>
+<p><b>Go to definition crosses listings.</b> A frame that cannot find a definition in its own listing asks the page, and the page asks the listing that has it to show it.</p>
 <p>Each listing becomes a frame of Hazel's own app in its embed mode, the one Messed Up Dress Up uses for its scripts: Hazel's tile editor, its types and error marks, with none of the app's own start-up. The page talks to each frame by <code>postMessage</code>. Every frame gets the whole program, so a module's types and errors are the program's, but shows only its own listing.</p>
 <div class="scroll"><table>
 <tr><th>When</th><th>Page to frame</th><th>Frame to page</th></tr>
@@ -66,6 +67,7 @@ let total = fun ss : [Shape] ->
 </ul>
 
 <h2 id="limits">Limits today</h2>
+<p><b>Three limits today:</b> the editor is a branch build of Hazel; it takes messages only from a few sites (this one and <code>localhost</code>), so another site must be added to its list; and go to definition starts only in an editable listing.</p>
 <ul>
 <li><b>The editor is a branch build</b> of Hazel, <code>build.hazel.org/embed-editable</code> (#2814, a draft stacked on #2719), not part of <code>hazeljs</code>; a page has to find it. Planned: the editor in the package.</li>
 <li><b>It takes messages only from a few sites:</b> <code>https://matthewhammer.org</code> and <code>localhost</code> (and its own), a list built into the frame (<code>site_origins</code> in <code>src/web/embed/EmbedProtocol.re</code>). Another site's article needs its origin added there, until the policy changes: a frame that only shows a program and posts back its own text might well take any site.</li>
