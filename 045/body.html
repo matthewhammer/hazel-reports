@@ -1,0 +1,84 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 045 · hazel-jit · started 2026-11-06, updated {{updated}} MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (report 042, <a href="../042/#hazel-jit">item 2</a>)</p>
+<h1>hazel-jit: Livelit Views Compiled to JavaScript</h1>
+<p class="sub">How much faster can a livelit's view run as JavaScript compiled from its Hazel, instead of on Hazel's interpreter? Decided at the meeting with Cyrus on 2026-11-05, as the best case first: JS's numbers allowed to differ from Hazel's for now (^ticket(694)). This report follows the work as it goes, for the next meeting on Wednesday 2026-11-11 at 10:00 Mountain, where it is item 2 of the agenda, report 042.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#speed">How much faster</a>: a render of the Polygons slide's view, on the interpreter and compiled.</li>
+<li><a href="#boundary">Where the time goes now</a>: carrying the model into JS and the answer back, which is most of the compiled path.</li>
+<li><a href="#how">How it works</a>: the compiler, how Hazel's values look in JS, and the trip in and out.</li>
+<li><a href="#app">In the app</a>: where the compiled view runs, the setting, and what happens when it cannot.</li>
+<li><a href="#right">Does it give the same answers</a>: the tests, and checking that they can fail.</li>
+<li><a href="#limits">What it does not do yet</a>.</li>
+<li><a href="#meeting">For Wednesday's meeting</a>: the agenda's questions about this work.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="speed">How much faster</h2>
+<p><b>A render of the Polygons slide's view takes {{n:poly_interp}} ms on the interpreter and {{n:poly_through}} ms compiled, about {{n:poly_x}} times faster</b>, counting the trip into JS and back. The compiled code itself takes {{n:poly_call}} ms of that, about {{n:poly_call_x}} times faster than the interpreter. Smaller programs gain more, since there is no trip to take: the Petri net rule of report 043, answering four events, {{n:petri_interp}} ms against {{n:petri_jit}} ms ({{n:petri_x}} times), and a recursive sum of 1,000 numbers, {{n:sum_interp}} ms against {{n:sum_jit}} ms ({{n:sum_x}} times).</p>
+{{fig_speed}}
+<p>These are Node's numbers, from a development build, on one laptop, medians of {{n:n}} runs in one test session; the runs vary (the Petri net rule's interpreter time ran from 4.8 to 9.2 ms over the day's test sessions), so read the ratios to within a factor of two. The interpreter's numbers do not include the call memo the app gives a view (report 001's <a href="../001/#call-memo">CallMemo</a>), which saves calls repeated between renders; compiling the definition took {{n:poly_compile}} ms, once. Browser numbers, and a release build, come next.</p>
+<table class="vals">
+<tr><th>Program</th><th>Interpreter, ms</th><th>Compiled, ms</th><th>Faster</th></tr>
+<tr><td>A Polygons render, with the trip in and out</td><td>{{n:poly_interp}}</td><td>{{n:poly_through}}</td><td>{{n:poly_x}}×</td></tr>
+<tr><td>A Polygons render, the compiled call alone</td><td>{{n:poly_interp}}</td><td>{{n:poly_call}}</td><td>{{n:poly_call_x}}×</td></tr>
+<tr><td>The Polygons view's whole program (its definitions and the view applied)</td><td>{{n:pview_interp}}</td><td>{{n:pview_jit}}</td><td>{{n:pview_x}}×</td></tr>
+<tr><td>The Petri net rule, four events</td><td>{{n:petri_interp}}</td><td>{{n:petri_jit}}</td><td>{{n:petri_x}}×</td></tr>
+<tr><td>A recursive sum of 1,000</td><td>{{n:sum_interp}}</td><td>{{n:sum_jit}}</td><td>{{n:sum_x}}×</td></tr>
+</table>
+
+<h2 id="boundary">Where the time goes now</h2>
+<p><b>Carrying values across is {{n:poly_cross_share}}% of a compiled render: {{n:poly_cross}} ms of {{n:poly_through}}.</b> The compiled view needs its model as JS values, so the model is converted on the way in; and the app draws a Hazel value, so the view's whole answer, its command and every node of its Html tree, is made again as a Hazel term on the way out. The way out is the bigger part: the Html tree has many nodes, each a new term. The two halves are not yet timed apart.</p>
+{{fig_boundary}}
+<p>Three ways to make it cheaper, not tried yet: keep the answer in JS until it is drawn, so the part of the app that turns it into the page's elements reads JS values directly; convert lazily, only the parts that are read; or keep what did not change since the last render, as the call memo does for the interpreter.</p>
+
+<h2 id="how">How it works</h2>
+<p><b>hazel-jit turns an elaborated Hazel term into the source text of a JS function, once, and the browser's own JavaScript engine runs it.</b> <code>HazelJit.compile_full</code>, in <code>src/language/dynamics/HazelJit.re</code>, walks the term Hazel's elaborator makes (the same term the interpreter runs) and writes JS, which is made into a function with <code>new Function</code>.</p>
+{{fig_how}}
+<p><b>Hazel's values in JS.</b> Numbers are JS numbers (so Int overflow and rounding are JS's: the best case first); a list is cons cells (<code>{h, t}</code>, with <code>null</code> for the empty list), so <code>::</code> takes constant time; a tuple is a JS array, each labeled component also a property by its label, so <code>p.x</code> is a property read; a constructor is <code>{c: "Name", v: payload}</code>; a function is a JS function of one argument; a module is a labeled value of its members, in order. A <code>let</code> or a <code>case</code> binds JS variables declared at the top of the enclosing function, each with a name of its own, so the code is expressions all the way down and no closure is made for a <code>let</code>. Types, ascriptions and parentheses are erased. Builtins written in OCaml have JS versions by name; builtins written in Hazel are compiled once, before the program's code.</p>
+<p><b>What it does not compile</b>, it says why, and that code runs on the interpreter: holes, tests, quotations and splices, projectors, partial application. A member of a module that does not compile (a livelit's <code>expand</code>, say) becomes a stub that says why if it is called, so the rest of the module still compiles.</p>
+<p><b>The trip in and out</b> (<code>HazelJitValue.re</code>). Into JS is direct: each Hazel value as above. Back is harder, in two ways. <i>A JS number does not say whether it was an Int or a Float.</i> So the compiler records each constructor's type as the elaborator gave it, and the type aliases the term defines, and the way back reads a number by the type expected where it sits: a constructor's argument at its argument's type, through aliases. A whole number with no type to go by comes back an Int. <i>A function in the answer</i>, an event handler like <code>Attr.on_input(fun v -> SetName(v))</code>, has to come back as a Hazel function the interpreter can apply when the event comes. So every compiled function carries the index of the Hazel function it was compiled from and the values it captured, and comes back as that Hazel function closed over those values (the compiler notes, for each function, which outer variables its body uses).</p>
+
+<h2 id="app">In the app</h2>
+<p><b>Livelits' views run compiled in the app, behind a setting that is on by default, and the interpreter runs any view hazel-jit cannot.</b> <code>LivelitProj.eval_view</code> compiles each livelit definition once (kept by its term), calls its compiled <code>view</code> on the model, and hands the command it returns to the code that runs view commands and draws their Html, as before. When the compiled view answers, the definition is not evaluated by the interpreter at all on that render.</p>
+<ul>
+<li><b>The setting</b> is <i>Compiled views</i>, in the settings menu, on by default; off, every view runs on the interpreter as before.</li>
+<li><b>When it cannot</b> (a form it does not compile, a recursive function in the answer, an error while running), the view runs on the interpreter, the browser's console says why, once for each reason, and that definition is not tried again.</li>
+<li><b>Not checked in a browser yet.</b> The tests run the same code in Node; trying it on the slides is the next step.</li>
+</ul>
+
+<h2 id="right">Does it give the same answers</h2>
+<p><b>Yes, on every program tested, and the tests catch a broken compiler.</b> <code>test/Test_HazelJit.re</code> has 37 tests, all passing at 7a7151443c: 24 small programs whose compiled results agree with the interpreter's (arithmetic, floats, recursion, tuples and labels, lists, constructors, options, strings, equality, closures, nested patterns, modules, builtins, and the Petri net rule); the Polygons slide's view, its whole Html tree equal to the interpreter's; values carried back as the interpreter's own (whole floats staying floats, a type alias, labels with no type, the Petri net's commands); a view and an event handler through the trip in and out, the handler then applied by the interpreter; and the Polygons view through it. Breaking the compiler on purpose fails them: compiling Int's <code>+</code> as <code>-</code> failed 5 of 18 programs; reading numbers without their types failed 3 tests; dropping the values a function captures failed the handler test.</p>
+
+<h2 id="limits">What it does not do yet</h2>
+<ul>
+<li><b>Numbers are JS's.</b> Int overflow, division and rounding may differ from Hazel's: allowed for the best case, to be decided before anything ships.</li>
+<li><b>The call memo, probes and the step budget</b> do not apply inside a compiled view: no reuse of repeated calls between renders, no probe's samples from inside the view, and a deep recursion is JS's stack, not Hazel's step limit (a stack overflow falls back to the interpreter).</li>
+<li><b>A recursive function in a view's answer</b> is refused (a Hazel closure cannot hold a cycle as a plain value), and so is a JS builtin passed as a handler.</li>
+<li><b>Values made again on the way back</b> get new ids; whether anything in the app depends on a model's ids surviving the trip has not been checked.</li>
+<li><b>One slide measured.</b> Full Body, the Witch, Hands and the Scenes slide's woods, the slides with the most polygons, come next.</li>
+</ul>
+
+<h2 id="meeting">For Wednesday's meeting</h2>
+<p><b>This is item 2 of the agenda for Wednesday 2026-11-11 at 10:00 Mountain</b> (<a href="../042/#hazel-jit">report 042, item 2</a>), which asks: is the best-case framing right, numbers allowed to differ? Is compiling the view alone the right first cut? What would make a convincing comparison: which slides, and against what (the interpreter with its call memo, or Messed Up Dress Up's hand-written JS)? Item 3 asks how BuckleScript, ReScript and Melange bear on it (^ticket(698)).</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Make the way back cheaper: time the trip in and the trip out apart, then keep the answer in JS until it is drawn, or keep what did not change.</li>
+<li>Try it in the app on the polygon slides, with the setting on and off, and check the drawings are the same.</li>
+<li>Time it in browsers on GitHub's machines, from a release build, on Polygons, Polygon Viewer, Full Body, the Witch, Hands and the woods.</li>
+<li>Compare the compiled Petri net rule with the hand-written one of report 043, the code side by side and the time per call (^ticket(699)).</li>
+<li>Put a short note beside this one on how BuckleScript, ReScript and Melange compile the same small program (^ticket(698)).</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>The code</b> is on <code>trial/694-view-jit</code> in hazelgrove/hazel, a branch off #2635 at ab7273c984: slice 1, the compiler and its agreement tests (8c5cd80a29, 14b006d008); slice 2, modules and the Polygons view (79fe5bbebf); slice 3, the trip in and out and <code>eval_view</code> (7a7151443c). All are Claude's, on Matthew's word, 2026-11-06.</li>
+<li><b>The timings</b> are <code>Test_HazelJit</code>'s slow tests, run in Node 22.23.2 (<code>node --stack-size=30000</code>) from a development build of 7a7151443c on a Framework 13 laptop (Intel Core i7-1370P), at 16:08 MST on 2026-11-06: each program 30 times on the interpreter and 30 times compiled, after compiling once, timed with <code>performance.now</code>; the median is the upper middle of the 30 sorted runs, as the tests print it. The interpreter's time for a render is the evaluated view applied to the evaluated model, without the app's call memo. The tests printed each run's reading for this report with a small change to <code>test/Test_HazelJit.re</code>.</li>
+<li><b>The Polygons view</b> is the livelit of <code>hazel-programs/docs/livelits/playground/polygons.hz</code>, applied to the model the slide's own <code>shirt</code> gives it, cut from the slide's text by the test.</li>
+<li><b>The page</b> is made by <code>045/gen045.py</code> from <code>045/body.html</code> and <code>045/data/timings.json</code>; its figures are drawn from those numbers.</li>
+</ul>
+</main>
+</body>
+</html>
