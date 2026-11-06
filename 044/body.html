@@ -1,0 +1,94 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 044 · Hazel as a JS library · started 2026-11-06, updated {{updated}} MST · <span class="wip">work in progress</span> · after report 043</p>
+<h1>Hazel Listings in an Article</h1>
+<p class="sub">How can a blog post, an article or a report show its Hazel code in Hazel's own editor, rather than as plain text, with go to definition working from one listing to another? ^report(43) does it for every Hazel listing on its page, with a small script, <code>hazel-listings.js</code>. This report says how to do the same on another page, what the script does, and what limits it today. Matthew asked for it on 2026-11-06: "can we also write about how to do this, generally, so a blog post or 'article' like this could have listings where goto def works?"</p>
+
+<div class="headline">
+<p><b>Short answers.</b> As of 2026-11-06.</p>
+<ol class="ans">
+<li><p><b>Write each listing as plain text in a <code>&lt;pre class="hazel"&gt;</code>, and load one script.</b> Listings that share a <code>data-program</code> are one program: the preamble, then a module per listing. The script turns each into Hazel's editor, in place (<a href="#how">how</a>).</p></li>
+<li><p><b>Go to definition crosses listings.</b> Ctrl+click a name, or F12 on it: a frame that cannot find the definition in its own listing asks the page, and the page asks the listing that has it to show it (<a href="#try">try it</a>).</p></li>
+<li><p><b>Three limits today.</b> The editor is a branch build of Hazel. It takes messages only from a few sites (this one and <code>localhost</code>), so another site must be added to its list. And go to definition starts only in an editable listing (<a href="#limits">limits</a>).</p></li>
+</ol>
+</div>
+
+<h2 id="try">Try it</h2>
+<p>Three listings of one small program: a type in the preamble, and two modules. Ctrl+click <code>Geometry.area</code> in the third listing, or F12 on it, and the page goes to its definition in the second; do the same on <code>Shape</code> or on <code>Circle</code>, and it goes to the first. The listings can be edited too: a change in one is checked against the others, so a type error in <code>Scene</code> can come from a change in <code>Geometry</code>. Without JavaScript, or until Hazel's editor starts, each is its plain text.</p>
+<pre class="code hazel" data-program="shapes">type Shape = + Circle(Float) + Rect(Float, Float) in</pre>
+<p class="muted">The module <code>Geometry</code>:</p>
+<pre class="code hazel" data-program="shapes" data-module="Geometry"># the area of one shape #
+let area = fun s : Shape ->
+  case s
+  | Circle(r) => 3.14159 *. r *. r
+  | Rect(w, h) => w *. h
+  end</pre>
+<p class="muted">The module <code>Scene</code>, which uses it:</p>
+<pre class="code hazel" data-program="shapes" data-module="Scene">let shapes = [Circle(1.), Rect(2., 3.)];
+# the area of every shape in a list, added up #
+let total = fun ss : [Shape] ->
+  case ss
+  | [] => 0.
+  | s :: rest => Geometry.area(s) +. total(rest)
+  end</pre>
+<p>The same program, run by <code>hazeljs</code> in Node with the tail <code>Scene.total(Scene.shapes)</code>, gives 9.14159. ^report(43)'s example goes further: its listings are the rules of a running app, built again by <code>hazeljs</code> after each edit.</p>
+
+<h2 id="how">How to do it on your page</h2>
+<ol class="steps">
+<li><p><b>Write the listings as text,</b> each in a <code>&lt;pre class="hazel"&gt;</code>. A page without JavaScript reads them as they are.</p>
+<pre class="code"><code>&lt;pre class="hazel" data-program="shapes"&gt;type Shape = + Circle(Float) + Rect(Float, Float) in&lt;/pre&gt;
+&lt;pre class="hazel" data-program="shapes" data-module="Geometry"&gt;let area = fun s : Shape -&gt; ...&lt;/pre&gt;
+&lt;pre class="hazel" data-program="shapes" data-module="Scene"&gt;... Geometry.area(s) ...&lt;/pre&gt;</code></pre>
+<p><code>data-program</code> groups listings into one program (a page may have several). A listing without <code>data-module</code> is the program's preamble: its types, which every module sees. A listing with <code>data-module="Name"</code> is that module's body, its members with no <code>in</code>; later modules see it as <code>Name.member</code>. <code>data-editable="false"</code> makes one read-only.</p></li>
+<li><p><b>Load the script at the end of the body,</b> after the listings: <code>&lt;script src="hazel-listings.js"&gt;&lt;/script&gt;</code> (<a href="../043/hazel-listings.js">the script</a>, one file, no dependencies).</p></li>
+<li><p><b>Style the holder,</b> if you like: each listing is wrapped in a <code>div.hazel-listing</code> whose <code>data-state</code> is <code>waiting</code>, <code>loading</code>, <code>tiles</code> or <code>text</code> (the editor did not start). Show the <code>pre</code> until <code>loading</code>, and hide it after.</p></li>
+<li><p><b>Optionally, listen.</b> <code>HazelListings.onChange(program, spec =&gt; ...)</code> is told after each edit, with the program as <code>Hazel.runProgram</code> takes it, so a page can run it with <code>hazeljs</code>, as ^report(43) does. <code>HazelListings.goto(program, name)</code> goes to a definition from the page's own links, and <code>HazelListings.reset(program)</code> puts back the text the page was written with.</p></li>
+</ol>
+
+<h2 id="what">What the script does</h2>
+<p>Each listing becomes a frame of Hazel's own app in its embed mode, the one Messed Up Dress Up uses for its scripts: Hazel's tile editor, its types and error marks, with none of the app's own start-up. The page talks to each frame by <code>postMessage</code>. Every frame gets the whole program, so a module's types and errors are the program's, but shows only its own listing.</p>
+<div class="scroll"><table>
+<tr><th>When</th><th>Page to frame</th><th>Frame to page</th></tr>
+<tr><td>The frame has started</td><td></td><td><code>{type: "ready", protocol, build}</code></td></tr>
+<tr><td>Its settings</td><td><code>theme</code> (dark, contrast), <code>editable</code>, <code>font</code> (the listing's own size), <code>focus</code> (the module it shows)</td><td></td></tr>
+<tr><td>The program</td><td><code>{type: "set", preamble, modules, tail}</code>: a module's listing gets the whole program; the preamble's listing, the preamble alone</td><td><code>size</code> (its code's height, for the page to size the frame), <code>status</code> (errors, holes)</td></tr>
+<tr><td>An edit in a listing</td><td>the new program to every other listing of it</td><td><code>{type: "edit", text}</code>: the module's new text</td></tr>
+<tr><td>Go to definition, found in the listing</td><td></td><td><code>{type: "caret", top}</code>: where the caret went, for the page to scroll there</td></tr>
+<tr><td>Go to definition, found elsewhere</td><td><code>{type: "reveal", name}</code> to the listing that defines the name</td><td><code>{type: "goto", name}</code>: the name under the caret, such as <code>Geometry.area</code>, then <code>caret</code> from the listing that shows it</td></tr>
+<tr><td>Ctrl+Z, Ctrl+Shift+Z</td><td>the listing's earlier or later text, as <code>set</code></td><td><code>{type: "history", redo}</code>: the page keeps each listing's history</td></tr>
+</table></div>
+<p>The page finds a name's definition by its form: a dotted <code>Module.name</code> is that module's member; otherwise a type of the preamble, a constructor of one of its types (shown at its type), or a module's <code>let</code>.</p>
+<p><b>What we learned on the way,</b> each a fix in the script:</p>
+<ul>
+<li><b>Browsers do not draw another site's frame that is off the screen, or invisible.</b> Such a frame reports its code's height as 0, and a frame kept invisible while it starts never measures its code. So the frame starts visible, in the listing's place, as tall as its text, and a height of 0 is ignored until it is drawn.</li>
+<li><b>One frame at a time.</b> Each is a whole Hazel app; the next starts when the last says ready, in the page's order.</li>
+<li><b>No height cap:</b> the frame does not scroll itself, so a cap hides the end of a long listing.</li>
+<li><b>Started by polling, not an <code>IntersectionObserver</code>,</b> whose callbacks never came in a page in the background.</li>
+</ul>
+
+<h2 id="limits">Limits today</h2>
+<ul>
+<li><b>The editor is a branch build</b> of Hazel, <code>build.hazel.org/embed-editable</code> (on #2719's branch, no PR yet), not part of <code>hazeljs</code>; a page has to find it. Planned: the editor in the package.</li>
+<li><b>It takes messages only from a few sites:</b> <code>https://matthewhammer.org</code> and <code>localhost</code> (and its own), a list built into the frame (<code>site_origins</code> in <code>src/web/embed/EmbedProtocol.re</code>). Another site's article needs its origin added there, until the policy changes: a frame that only shows a program and posts back its own text might well take any site.</li>
+<li><b>Go to definition starts only in an editable listing.</b> The read-only view has no Ctrl+click or F12, so a read-only listing can be gone to, but not gone from. That is why the script's listings are editable by default.</li>
+<li><b>Each listing loads Hazel's app</b> in its frame, so a page with many listings takes a while to start them all.</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Ship the editor and this script with <code>hazeljs</code>, so a page loads both from npm at one version: <code>Hazel.listings()</code>, say.</li>
+<li>Decide the frame's origin policy, so any site's article can use it.</li>
+<li>Go to definition from read-only listings: Ctrl+click and F12 in Hazel's read-only view too.</li>
+<li>A plugin for a static site generator (Markdown's <code>```hazel</code> blocks becoming these listings), so a blog post needs no HTML.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>The script</b> is <code>043/hazel-listings.js</code> in this series' repository, written for ^report(43) on 2026-11-06 after the game's own frames (<code>js/25-scripting.js</code> in matthewhammer/kids-choice-games: its frame per box, its go to definition, its caret scrolling). This page loads that same file.</li>
+<li><b>The frame's protocol</b> was read from <code>src/web/embed/</code> on Hazel's <code>embed-editable</code> branch (8e0dcac982): <code>EmbedProtocol.re</code> (the messages, the origins), <code>EmbedModel.re</code> (reveal, goto, and the read-only cell dropping edits).</li>
+<li><b>Checked</b> in a browser on 2026-11-06, from a local port: the listings start one at a time and take their code's height once drawn; a go to definition across listings selects the definition and the page scrolls to it. Not checked: Ctrl+Z, which the test browser did not deliver to a frame. The demo program was run in Node with <code>hazeljs</code> 0.0.4: 9.14159.</li>
+<li><b>The page</b> is made by <code>044/gen044.py</code> from <code>044/body.html</code>.</li>
+</ul>
+</main>
+<script src="../043/hazel-listings.js?v=4"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+[
+ {
+  "section": "What the script does",
+  "section_id": "what",
+  "columns": [
+   "When",
+   "Page to frame",
+   "Frame to page"
+  ],
+  "rows": [
+   [
+    "The frame has started",
+    "",
+    "{type: \"ready\", protocol, build}"
+   ],
+   [
+    "Its settings",
+    "theme (dark, contrast), editable, font (the listing's own size), focus (the module it shows)",
+    ""
+   ],
+   [
+    "The program",
+    "{type: \"set\", preamble, modules, tail}: a module's listing gets the whole program; the preamble's listing, the preamble alone",
+    "size (its code's height, for the page to size the frame), status (errors, holes)"
+   ],
+   [
+    "An edit in a listing",
+    "the new program to every other listing of it",
+    "{type: \"edit\", text}: the module's new text"
+   ],
+   [
+    "Go to definition, found in the listing",
+    "",
+    "{type: \"caret\", top}: where the caret went, for the page to scroll there"
+   ],
+   [
+    "Go to definition, found elsewhere",
+    "{type: \"reveal\", name} to the listing that defines the name",
+    "{type: \"goto\", name}: the name under the caret, such as Geometry.area, then caret from the listing that shows it"
+   ],
+   [
+    "Ctrl+Z, Ctrl+Shift+Z",
+    "the listing's earlier or later text, as set",
+    "{type: \"history\", redo}: the page keeps each listing's history"
+   ]
+  ]
+ }
+]
