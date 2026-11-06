@@ -50,7 +50,7 @@ def fig_net():
         return (f'<path d="M{x1} {y1} C {cx1} {cy1}, {cx2} {cy2}, {x2} {y2}" fill="none" stroke="{col}" stroke-width="1.8"/>'
                 f'<path d="{hx}" fill="none" stroke="{col}" stroke-width="1.8" stroke-linejoin="round"/>')
     # process 1 (left), the lock (middle), process 2 (right, mirrored)
-    for (px, enter_x, leave_x, n, side_e, side_l) in ((150, 238, 62, 1, "r", "l"), (550, 462, 638, 2, "l", "r")):
+    for (px, enter_x, leave_x, n, side_e, side_l) in ((150, 238, 62, 1, "l", "l"), (550, 462, 638, 2, "r", "r")):
         o.append(curve(px + (18 if n == 1 else -18), 66, enter_x, 80, enter_x, 100, enter_x, 124))        # idle -> enter
         o.append(curve(enter_x, 176, enter_x, 200, enter_x, 220, px + (18 if n == 1 else -18), 236))     # enter -> busy
         o.append(curve(px - (18 if n == 1 else -18), 236, leave_x, 220, leave_x, 200, leave_x, 176))     # busy -> leave
