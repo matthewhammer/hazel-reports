@@ -1,0 +1,36 @@
+{
+ "title": "Scripting a JavaScript App in Hazel",
+ "date": "2026-11-06",
+ "kind": "guide",
+ "status": "work in progress",
+ "question": "How does Messed Up Dress Up use hazeljs for its scripts, and how could another JavaScript developer do the same in their own program? Matthew, 2026-11-06, for the meeting with Cyrus on 2026-11-11 (^report(42), item 5; ^ticket(697)). First readers in mind: a group in Cambridge, known to Cyrus, who simulate Petri nets with JavaScript tools of their own.",
+ "measurements": "A worked example, 043/example/petri.mjs: a Petri net (two processes sharing one lock) whose firing rule is a Hazel program of two modules, built with Hazel.runProgram and called once per event. Run three times in Node v22.23.2 on a laptop (13th Gen Intel Core i7-1370P), hazeljs 0.0.4 installed from npm. Each run: the first build, four events by hand, 2,000 random steps (a fixed stream of draws), the same 2,000 calls to the app's own JS handler, a build with a type error, a build with a hole, two rebuilds, and the 2,000 steps again with the program's tail unannotated. Times are performance.now() around each call; medians and 90th percentiles over 2,000 calls, per run. The game's code was read at kids-choice-games 15181ee0 (Messed Up Dress Up 0.0.491).",
+ "builds": [
+  {
+   "what": "hazeljs 0.0.4 (npm)",
+   "branch": "built from hazelgrove/hazel#2719's branch js-library-embed",
+   "commit": "1ba138ef28"
+  },
+  {
+   "what": "Messed Up Dress Up 0.0.491 (read, not run)",
+   "branch": "matthewhammer/kids-choice-games main",
+   "commit": "15181ee0"
+  }
+ ],
+ "measures": {
+  "built.ms": "Hazel.runProgram's own ms for the first build of the program (analysis, then evaluation to the handler), milliseconds",
+  "steps.call_ms": "one call of the Hazel handler with a Step event: the arguments converted in, the rule evaluated, the command converted out; milliseconds over 2,000 calls",
+  "js_call_ms": "one call of the app's own JS handler (a Fire event), milliseconds over 2,000 calls",
+  "rebuild_ms": "Hazel.runProgram again after a change to one module's text, and again unchanged, measured around the call, milliseconds, one each",
+  "unannotated_tail_call_ms": "steps.call_ms with the program's tail Rules.on_event instead of (Rules.on_event : (Net, Event) -> Cmd)"
+ },
+ "files": [
+  "runs/run1.json",
+  "runs/run2.json",
+  "runs/run3.json",
+  "runs/out1.txt",
+  "runs/out2.txt",
+  "runs/out3.txt",
+  "../example/petri.mjs"
+ ]
+}

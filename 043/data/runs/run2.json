@@ -1,0 +1,244 @@
+{
+ "hazeljs": "0.1 (draft, js-library)",
+ "build": "1ba138ef28e9efd7931ef1c2060582d7b03827c5",
+ "node": "v22.23.2",
+ "runs": {},
+ "built": {
+  "ok": true,
+  "errors": [],
+  "holes": {
+   "Common": 0,
+   "Rules": 0
+  },
+  "ms": 336.7
+ },
+ "by_hand": [
+  {
+   "event": {
+    "tag": "Fire",
+    "value": 0
+   },
+   "said": "enter1",
+   "marking": [
+    0,
+    1,
+    1,
+    0,
+    0
+   ],
+   "cmd": {
+    "tag": "Say",
+    "value": [
+     "enter1",
+     {
+      "tag": "Take",
+      "value": [
+       0,
+       1,
+       {
+        "tag": "Take",
+        "value": [
+         4,
+         1,
+         {
+          "tag": "Put",
+          "value": [
+           1,
+           1,
+           {
+            "tag": "Done"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "event": {
+    "tag": "Fire",
+    "value": 2
+   },
+   "said": "enter2 cannot fire now",
+   "marking": [
+    0,
+    1,
+    1,
+    0,
+    0
+   ],
+   "cmd": {
+    "tag": "Say",
+    "value": [
+     "enter2 cannot fire now",
+     {
+      "tag": "Done"
+     }
+    ]
+   }
+  },
+  {
+   "event": {
+    "tag": "Fire",
+    "value": 1
+   },
+   "said": "leave1",
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ],
+   "cmd": {
+    "tag": "Say",
+    "value": [
+     "leave1",
+     {
+      "tag": "Take",
+      "value": [
+       1,
+       1,
+       {
+        "tag": "Put",
+        "value": [
+         0,
+         1,
+         {
+          "tag": "Put",
+          "value": [
+           4,
+           1,
+           {
+            "tag": "Done"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "event": {
+    "tag": "Fire",
+    "value": 2
+   },
+   "said": "enter2",
+   "marking": [
+    1,
+    0,
+    0,
+    1,
+    0
+   ],
+   "cmd": {
+    "tag": "Say",
+    "value": [
+     "enter2",
+     {
+      "tag": "Take",
+      "value": [
+       2,
+       1,
+       {
+        "tag": "Take",
+        "value": [
+         4,
+         1,
+         {
+          "tag": "Put",
+          "value": [
+           3,
+           1,
+           {
+            "tag": "Done"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "steps": {
+  "n": 2000,
+  "fired": {
+   "enter1": 485,
+   "leave1": 485,
+   "enter2": 515,
+   "leave2": 515
+  },
+  "both_busy": 0,
+  "final": [
+   1,
+   0,
+   1,
+   0,
+   1
+  ],
+  "call_ms": {
+   "min": 2.403,
+   "median": 3.251,
+   "p90": 3.966,
+   "max": 8.323
+  }
+ },
+ "js_call_ms": {
+  "median": 0.0007,
+  "p90": 0.0009
+ },
+ "with_error": {
+  "ok": false,
+  "errors": [
+   "Rules: Error in term: \"one\" Nature of error: Expecting type Int but got inconsistent type String",
+   "Rules: Error in term: n, \"one\" Nature of error: Expecting type Net, Int but got inconsistent type Net, String"
+  ],
+  "holes": {
+   "Common": 0,
+   "Rules": 0
+  },
+  "incomplete": {
+   "Common": 0,
+   "Rules": 0
+  },
+  "answered_by": "the app's JS",
+  "answer": "(js) enter1"
+ },
+ "unfinished": {
+  "ok": false,
+  "errors": [],
+  "holes": {
+   "Common": 0,
+   "Rules": 1
+  },
+  "incomplete": {
+   "Common": 0,
+   "Rules": 0
+  }
+ },
+ "rebuild_ms": {
+  "one_module_changed": 159,
+  "unchanged": 158.7
+ },
+ "unannotated_tail_call_ms": {
+  "ok": true,
+  "median": 3.676,
+  "p90": 5.6,
+  "final": [
+   1,
+   0,
+   1,
+   0,
+   1
+  ]
+ }
+}

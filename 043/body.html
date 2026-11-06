@@ -1,0 +1,118 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 043 · Hazel as a JS library · started 2026-11-06, updated {{updated}} MST · <span class="wip">work in progress</span> · after report 039</p>
+<h1>Scripting a JavaScript App in Hazel</h1>
+<p class="sub">Messed Up Dress Up, a game for kids written in plain JavaScript, lets its players rewrite some of the game's rules in Hazel while they play. It does that through <a href="https://www.npmjs.com/package/hazeljs"><code>hazeljs</code></a>, Hazel packaged as a JavaScript library. This report explains how the game does it, and how a JavaScript developer could do the same in their own program: the pattern, the steps, a worked example in another domain, run in Node, and what it costs today. Matthew asked for it on 2026-11-06, for his meeting with Cyrus on 2026-11-11 (^report(42), the agenda, <a href="../042/#js-dev-report">item 5</a>). The first readers in mind are a group in Cambridge who simulate Petri nets with JavaScript tools of their own, so the example is a Petri net.</p>
+
+<div class="headline">
+<p><b>Short answers.</b> As of 2026-11-06, with <code>hazeljs</code> 0.0.4 from npm.</p>
+<ol class="ans">
+<li><p><b>The pattern: your app keeps its state and its screen, and Hazel only decides.</b> On an event, the app calls a Hazel function with a typed view of its state and the event. It then carries out the command the function returns, which is plain data (<a href="#pattern">Figure 1</a>).</p></li>
+<li><p><b>Six steps.</b> Declare the vocabulary as Hazel types. Let users write modules against it. Build the program with <code>Hazel.runProgram</code>. Call the function only when the build is <code>ok</code>, and your own JS handler otherwise. Carry out its commands. Show its errors by module (<a href="#steps">the steps</a>).</p></li>
+<li><p><b>It carries over to a new domain on the first try.</b> A Petri net's firing rule is about 30 lines of Hazel in two modules, and it ran as written. In 2,000 random steps, the two processes were never both inside the shared section (<a href="#example">the example</a>).</p></li>
+<li><p><b>A call costs about {{call_med}} ms, against {{js_us}} µs for the same handler in JS.</b> That is fast enough for each click, but not yet for a simulator's inner loop. Building the program takes {{build_lo}} to {{build_hi}} ms, and rebuilding after an edit {{rebuild_lo}} to {{rebuild_hi}} ms (Node, three runs; <a href="#cost">Figure 4</a>).</p></li>
+</ol>
+</div>
+
+<h2 id="pattern">The pattern</h2>
+<p>Many JavaScript programs are organized around events: a click, a key, a timer, a message. In this pattern, some of those events are handed to a function written in Hazel. The JS side builds two values: one describing what happened (the event), and one describing what the handler may see (a view of the app's state). It calls the Hazel function with both, and gets back a value describing what to do (a command). Hazel never touches the page or the app's objects; its answer is data, and the app acts it out. We call a program built this way a <b>Hazlet</b>; Messed Up Dress Up is the first one (^report(39)).</p>
+<figure class="fig" id="fig1"><div class="figscroll">{{FIG_PATTERN}}</div>
+<figcaption>Figure 1. The pattern. The app hands Hazel a typed view of its state and an event, and acts out the command that comes back. While the Hazel program has errors or is unfinished, the app's own JS handler answers instead, so the app keeps working while its rules are being edited.</figcaption></figure>
+<p>Why write a handler in Hazel at all? Three reasons, each of which the game uses:</p>
+<ul>
+<li><b>Types for the vocabulary.</b> The app declares what a rule is told and what it may answer, as Hazel types. A rule that answers with the wrong thing is a type error before it ever runs, and the error names the module it is in.</li>
+<li><b>Feedback in the middle of an edit.</b> Hazel analyzes and runs programs that are not finished: a hole (<code>?</code>) is a part not yet written, and Hazel counts holes and unfinished brackets per module rather than failing. An editor can show the person writing a rule exactly what is wrong, and where, at every keystroke.</li>
+<li><b>Rules that people other than the app's developers can change,</b> without access to the app's code: in the game, kids rewire the castle's traps.</li>
+</ul>
+
+<h2 id="mudu">How Messed Up Dress Up does it</h2>
+<p>In the game's 📜 Scripting tab, the game's logic for five rooms is a Hazel program made of modules: 📚 <code>Common</code>, helpers every room can use, then one module per room. A red lever pulled in the castle's trap room is the event <code>Pull(L)</code>. The game builds the room's view of its state, a <code>Globals</code> record (the levers, how the pits are wired, the game's random draws, and more), and calls <code>TrapRoom.on_event</code>. The rule answers a <code>Cmd</code>, a chain of commands such as <code>Flip(L, SetPit(0, true, Done))</code>: flip the lever, then open pit 0. The game carries out each command the way its own code would, with its animation.</p>
+<figure class="fig"><img src="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/pictures/04-max-trap-room.webp" alt="The game's Scripting panel at full size: the game's view at the top left, and the trap room's rule in Hazel, a case on the event: a red lever pulled flips the pits wired to it, a blue lever pulled moves the boulders." style="width:100%;height:auto;border-radius:8px;border:1px solid var(--line)">
+<figcaption>Figure 2. The trap room's rule in the game's Scripting panel, in Hazel's own editor, beside the game. From the game's <a href="https://matthewhammer.org/kids-choice-games/dress-up/reports/017/">Game Scripts Guide</a>.</figcaption></figure>
+<p>All of it is in one file of the game, <code>js/25-scripting.js</code> (read at the game's 0.0.491). The pieces, in the order an event meets them:</p>
+<div class="scroll"><table>
+<tr><th>Piece</th><th>What it does</th><th>In the game's code</th></tr>
+<tr><td>The vocabulary</td><td>Hazel types, declared before every module: <code>Cmd</code> (what a rule may do, each command with the rest after it, ending in <code>Done</code>), <code>Event</code>, <code>Globals</code>, and sums for the game's own words (a lever's side <code>L</code> or <code>R</code>, a wiring, a direction, a kind of room).</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L101"><code>SCRIPT_PREAMBLE</code></a></td></tr>
+<tr><td>The modules</td><td>📚 <code>Common</code>, then one per room; each is the text in one of the panel's editors. The tail of the program gives each room's <code>on_event</code>, held to the type a rule has.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L345"><code>scriptTail</code>, <code>scriptSpec</code></a></td></tr>
+<tr><td>Loading Hazel</td><td>The library, from <code>hazeljs</code> on a CDN, loaded with a script tag the first time a script runs or the tab opens.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L401"><code>hazelLoad</code></a></td></tr>
+<tr><td>Building</td><td><code>Hazel.runProgram</code> on the modules' texts, once per change of text (the texts are the cache key). It keeps the errors, holes and unfinished brackets, module by module, and each room's handler.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L417"><code>scriptCompile</code></a></td></tr>
+<tr><td>Calling</td><td>Only when the program is ready: otherwise the game's own JS handler answers the event, and Hazel's answer, run as far as its errors allow, goes in the event log beside it.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L774"><code>scriptEventRun</code></a></td></tr>
+<tr><td>The boundary</td><td>The game's own state has text where the rules have sums (a lever's name <code>"L"</code>); a wrapper turns text into constructors on the way in, and back on the way out.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L75"><code>scriptTyped</code></a></td></tr>
+<tr><td>Acting</td><td>Walks the command chain, each command by the room's own method; <code>Say</code> and <code>Wait</code> are the game's everywhere; a command the room does not know ends the walk, and is said.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L604"><code>scriptRun</code></a>, <a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L640"><code>SCRIPT_ACTS</code></a></td></tr>
+<tr><td>Errors, said plainly</td><td>Hazel's messages are written for Hazel's developers; the game rewrites a type error as "this is wanted here, but this is that", by the game's own type names.</td><td><a href="https://github.com/matthewhammer/kids-choice-games/blob/15181ee0/dress-up/js/25-scripting.js#L373"><code>scriptErrorText</code></a></td></tr>
+</table></div>
+<p>The editor in the game is Hazel's own: its app, in a frame, showing each module in Hazel's tiles with its error marks, and posting each edit back to the game. That part is not in <code>hazeljs</code>; it comes from a branch build of Hazel (^report(39) has where each piece stands). Plain text boxes work too, and are where the game started.</p>
+
+<h2 id="steps">Doing the same in your app</h2>
+<p>Each step below shows the worked example's code (<a href="#example">next section</a>), cut from the file that ran.</p>
+<ol class="steps">
+<li><p><b>Install.</b> <code>npm install hazeljs</code>, then <code>import Hazel from "hazeljs"</code> in Node; or, in a page, <code>&lt;script src="https://cdn.jsdelivr.net/npm/hazeljs@0.0.4/hazel-lib.js"&gt;</code>, which defines <code>window.Hazel</code>. Pin the version: the package is a prototype, and its API may change in any release.</p></li>
+<li><p><b>Declare the vocabulary as Hazel types,</b> in the program's preamble, which every module sees: what a rule is told, what can happen, and what a rule may answer. Make the answer a chain of commands, each with the rest after it, ending in <code>Done</code>: the app can walk it in order, log it, and refuse a command it does not know.</p>
+<pre class="code"><code>{{PREAMBLE}}</code></pre>
+<p>Declare the sums here, not inside a module: a type's constructors are in scope only where the type is.</p></li>
+<li><p><b>Let your users write modules against it,</b> each a text: helpers in one, the handler in another. A module's text is its members, with no <code>in</code>; one module sees the ones before it, by name (<code>Common.fire</code>).</p></li>
+<li><p><b>Build the program with <code>Hazel.runProgram</code>,</b> once per change of text. The tail is what the program gives you: here, the handler, held to its type.</p>
+<pre class="code"><code>{{JS_BUILD}}</code></pre></li>
+<li><p><b>Call the handler only when the build is <code>ok</code>,</b> and keep your own JS handler for the rest of the time, while a rule has errors, holes or unfinished brackets. Hazel still runs a program around its errors, so you can log what it would have said, but where an error stopped it, the value is a printout (<code>{hazel: "..."}</code>), not something to act on.</p>
+<pre class="code"><code>{{JS_FALLBACK}}
+const handlerOf = b =&gt; b.ok ? b.handler : jsHandler;</code></pre></li>
+<li><p><b>Carry out the commands,</b> and show the errors by module. Values cross the boundary as plain JS: a labeled tuple is an object, a list an array, a constructor <code>{tag, value}</code>, a function a JS function.</p>
+<pre class="code"><code>{{JS_PERFORM}}</code></pre></li>
+</ol>
+<p>Two more things the game learned. <b>Hazel has no clock and no randomness:</b> pass them in as part of the view (the game's <code>draws</code>, the example's <code>draw</code>), which also makes every call repeatable. And <b>keep the boundary in one place:</b> if your app's own state uses strings where the rules use sums, convert both ways in one wrapper, as the game's <code>scriptTyped</code> does.</p>
+
+<h2 id="example">A worked example: a Petri net</h2>
+<p>The net is the classic small one for mutual exclusion: two processes, each idle or busy, and one lock. To become busy, a process takes the lock; to become idle again, it gives the lock back (Figure 3). The JavaScript app keeps the marking (the tokens in each place), and draws it. The rule decides what an event does: <code>Fire(i)</code> fires transition <i>i</i> if it can, and <code>Step</code> fires one of those that can, chosen by a random draw the app passes in.</p>
+<figure class="fig" id="fig-net"><div class="figscroll">{{FIG_NET}}</div>
+<figcaption>Figure 3. The example's net. Circles are places, with their starting tokens; bars are transitions. <code>enter1</code> takes a token from <code>idle1</code> and one from <code>lock</code>, and puts one in <code>busy1</code>; <code>leave1</code> does the reverse. Process 2 is the mirror image.</figcaption></figure>
+<p>The rules, as a user would write them in the app's two editors. <code>Common</code>:</p>
+<pre class="code"><code>{{COMMON}}</code></pre>
+<p>And <code>Rules</code>, with the handler:</p>
+<pre class="code"><code>{{RULES}}</code></pre>
+<p><b>Four events by hand</b> (the app's log, then the marking it keeps): the second shows the lock doing its job.</p>
+{{TABLE_BY_HAND}}
+<p><b>2,000 random steps</b>, from a fixed stream of draws: fired {{fired}}; the two processes were both busy in {{both_busy}} of the 2,000 markings, and the net ended where it began. The same counts in all three runs.</p>
+<p><b>A mistake in a rule.</b> Change <code>fire_at(n, i)</code> to <code>fire_at(n, "one")</code>, and the build is not <code>ok</code>; Hazel reports, before anything runs, by module:</p>
+<pre class="code"><code>{{err1}}
+{{err2}}</code></pre>
+<p>One mistake gives two messages here, the argument and the pair around it; an app may want to show the first. Meanwhile the app's own JS handler answered <code>Fire(0)</code>, so the simulation kept going.</p>
+<p><b>A rule still being written.</b> Replace the <code>Step</code> case's answer with a hole, <code>?</code>: no error, but <code>holes: {Rules: 1}</code>, and <code>ok</code> is false. That is the state of a rule in the middle of an edit, and the app can say exactly that, rather than "syntax error".</p>
+
+<h2 id="cost">What it costs</h2>
+<figure class="fig" id="fig-cost"><div class="figscroll">{{FIG_COST}}</div>
+<figcaption>Figure 4. The example's costs in Node, medians of three runs (the dashed line is one frame of an animation at 60 frames a second). A call to the Hazel rule is a few milliseconds, thousands of times the same handler written in JS; building the program is a few hundred.</figcaption></figure>
+{{TABLE_COST}}
+<ul>
+<li><b>A call is {{call_lo}} to {{call_hi}} ms</b> (medians per run): the view and the event converted into Hazel values, the rule evaluated by Hazel's interpreter, the command converted back. That fits well inside a click or a key, and inside one frame of an animation; the game measured about the same, 3.5 ms of a 13.7 ms lever pull (^report(39)). It does not fit a simulator's inner loop that fires millions of transitions: 2,000 steps took about 7 s of Hazel here.</li>
+<li><b>The annotation in the tail is not the cost.</b> ^report(25) found that a call into Hazel re-checked a function's type annotation on every call, which #2681 removes (not in 0.0.4). Building with the tail unannotated changed nothing measurable here (the table's fourth column). Where a call's time goes in this example is not measured yet; ^report(25)'s other finding, a floor for crossing the boundary that grows with the argument, is the likely part, since every call here passes the whole net.</li>
+<li><b>Building takes {{build_lo}} to {{build_hi}} ms, and rebuilding after an edit {{rebuild_lo}} to {{rebuild_hi}} ms,</b> about the same whether a module changed or not. Fine for a build after a pause in typing; too slow for every keystroke on the main thread, which is why the game rebuilds only once typing has paused for 600 ms.</li>
+<li><b>The package is 2.8 MB unpacked, about 650 kB compressed:</b> one file, Hazel itself compiled to JS.</li>
+</ul>
+<p>Making the calls themselves faster is the subject of an experiment on the same agenda: compiling Hazel functions to JavaScript (^report(42), <a href="../042/#hazel-jit">item 2</a>).</p>
+
+<h2 id="limits">Limits today</h2>
+<ul>
+<li><b>A prototype.</b> <code>hazeljs</code> is at 0.0.x, built from a draft library on two of Hazel's pull requests, #2711 and #2719, not from Hazel's main branch. The plan is for it to track that branch; a pull request to Hazel's README says so (#2812).</li>
+<li><b>No editor in the package.</b> It analyzes and runs text. Hazel's own tile editor in a frame, as the game uses it, comes from a branch build of Hazel.</li>
+<li><b>Messages written for Hazel's developers,</b> which an app will want to rewrite, as the game does.</li>
+<li><b>No undo, and no history,</b> in the library: the app keeps its own.</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Ask the group in Cambridge, through Cyrus, what their tools would want a Hazel rule to decide, and what their nets look like (sizes, colours, timing), before building more of the example.</li>
+<li>Measure where a call's 3 ms goes in this example: the boundary's conversions against the rule's own evaluation, and how both grow with the net's size.</li>
+<li>Put the example in a web page: the net drawn, the two modules in editors, the errors under each, and the app's JS answering while a rule is unfinished.</li>
+<li>Try the example's rule with hazel-jit, the compiler of Hazel to JavaScript being designed for livelits' views (^report(42), item 2), as a second measure of the best case.</li>
+<li>A small helper in <code>hazeljs</code> for the pattern itself: give it the preamble, the modules and the handler's type, and get back a handler that falls back to yours while the rules are not ready.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>The game</b> was read, not run: <code>js/25-scripting.js</code> in matthewhammer/kids-choice-games at 15181ee0 (Messed Up Dress Up 0.0.491). The links in <a href="#mudu">the table</a> go to that commit's lines.</li>
+<li><b>The example</b> is one file, <code>043/example/petri.mjs</code>: the preamble, the two modules, the app's JS (its own handler, the command walk) and every measurement in this report. The code shown above is cut from it by the page's generator, so it is the code that ran.</li>
+<li><b>The runs:</b> three, in Node {{node}} on a laptop (13th Gen Intel Core i7-1370P), with <code>hazeljs</code> 0.0.4 installed from npm into an empty folder (library version "{{hazeljs}}", built from hazelgrove/hazel at 1ba138ef28). Times are <code>performance.now()</code> around each call; a call's figures are the median and 90th percentile of 2,000 calls in a run. The page shows the median of the three runs' medians. Each run's output is in <code>043/data/runs/</code>.</li>
+<li><b>The data:</b> the runs as JSON in <code>043/data/runs/run1.json</code> to <code>run3.json</code>, their printed output beside them, and <code>043/data/meta.json</code>; the page is made by <code>043/gen043.py</code> from <code>043/body.html</code>.</li>
+</ul>
+</main>
+</body>
+</html>

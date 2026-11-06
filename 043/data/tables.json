@@ -1,0 +1,122 @@
+[
+ {
+  "section": "How Messed Up Dress Up does it",
+  "section_id": "mudu",
+  "columns": [
+   "Piece",
+   "What it does",
+   "In the game's code"
+  ],
+  "rows": [
+   [
+    "The vocabulary",
+    "Hazel types, declared before every module: Cmd (what a rule may do, each command with the rest after it, ending in Done), Event, Globals, and sums for the game's own words (a lever's side L or R, a wiring, a direction, a kind of room).",
+    "SCRIPT_PREAMBLE"
+   ],
+   [
+    "The modules",
+    "📚 Common, then one per room; each is the text in one of the panel's editors. The tail of the program gives each room's on_event, held to the type a rule has.",
+    "scriptTail, scriptSpec"
+   ],
+   [
+    "Loading Hazel",
+    "The library, from hazeljs on a CDN, loaded with a script tag the first time a script runs or the tab opens.",
+    "hazelLoad"
+   ],
+   [
+    "Building",
+    "Hazel.runProgram on the modules' texts, once per change of text (the texts are the cache key). It keeps the errors, holes and unfinished brackets, module by module, and each room's handler.",
+    "scriptCompile"
+   ],
+   [
+    "Calling",
+    "Only when the program is ready: otherwise the game's own JS handler answers the event, and Hazel's answer, run as far as its errors allow, goes in the event log beside it.",
+    "scriptEventRun"
+   ],
+   [
+    "The boundary",
+    "The game's own state has text where the rules have sums (a lever's name \"L\"); a wrapper turns text into constructors on the way in, and back on the way out.",
+    "scriptTyped"
+   ],
+   [
+    "Acting",
+    "Walks the command chain, each command by the room's own method; Say and Wait are the game's everywhere; a command the room does not know ends the walk, and is said.",
+    "scriptRun, SCRIPT_ACTS"
+   ],
+   [
+    "Errors, said plainly",
+    "Hazel's messages are written for Hazel's developers; the game rewrites a type error as \"this is wanted here, but this is that\", by the game's own type names.",
+    "scriptErrorText"
+   ]
+  ]
+ },
+ {
+  "section": "A worked example: a Petri net",
+  "section_id": "example",
+  "columns": [
+   "Event",
+   "The rule's answer, as the app logs it",
+   "Marking after (idle1, busy1, idle2, busy2, lock)"
+  ],
+  "rows": [
+   [
+    "Fire(0)",
+    "enter1",
+    "[0, 1, 1, 0, 0]"
+   ],
+   [
+    "Fire(2)",
+    "enter2 cannot fire now",
+    "[0, 1, 1, 0, 0]"
+   ],
+   [
+    "Fire(1)",
+    "leave1",
+    "[1, 0, 1, 0, 1]"
+   ],
+   [
+    "Fire(2)",
+    "enter2",
+    "[1, 0, 0, 1, 0]"
+   ]
+  ]
+ },
+ {
+  "section": "What it costs",
+  "section_id": "cost",
+  "columns": [
+   "Run",
+   "First build",
+   "Hazel call, median (p90)",
+   "Same, tail unannotated",
+   "JS handler call, median",
+   "Rebuild: one module changed / unchanged"
+  ],
+  "rows": [
+   [
+    "1",
+    "356 ms",
+    "3.50 ms (4.46)",
+    "3.15 ms (3.70)",
+    "0.7 µs",
+    "160 / 140 ms"
+   ],
+   [
+    "2",
+    "337 ms",
+    "3.25 ms (3.97)",
+    "3.68 ms (5.60)",
+    "0.7 µs",
+    "159 / 159 ms"
+   ],
+   [
+    "3",
+    "438 ms",
+    "3.70 ms (5.26)",
+    "3.32 ms (4.18)",
+    "0.7 µs",
+    "160 / 171 ms"
+   ]
+  ]
+ }
+]
