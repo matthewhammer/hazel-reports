@@ -85,6 +85,30 @@ for n, r in DIFF.items():
     dp = med(r["diff_ms"]) + med(r["patch_ms"])
     NUMS.update({f"d{n}_whole": ms(med(r["whole_ms"])), f"d{n}_diff": ms(med(r["diff_ms"])), f"d{n}_patch": ms(med(r["patch_ms"])),
                  f"d{n}_dp": ms(dp), f"d{n}_x": f"{med(r['whole_ms']) / dp:,.0f}", f"d{n}_shared": f"{int(r['shared_elements'][0]):,}"})
+# (^ticket(715)) the Polygons livelit's update, per action: as the app ran it, the update alone, compiled with the diff
+ACTIONS = ["Next", "Prev", "NewPolygon", "NewPath", "Toggle", "Remove", "SetName", "SetFill", "SetWidth", "Down", "MoveTo, held", "Up, held"]
+UPD = {a: runs["the Polygons update, " + a] for a in ACTIONS}
+umed = lambda key: [med(UPD[a][key]) for a in ACTIONS]
+NUMS.update({
+    "upd_def_lo": ms(min(umed("interpreter_with_definition_ms"))), "upd_def_hi": ms(max(umed("interpreter_with_definition_ms"))),
+    "upd_alone_lo": ms(min(umed("interpreter_update_ms"))), "upd_alone_hi": ms(max(umed("interpreter_update_ms"))),
+    "upd_jit_lo": ms(min(umed("compiled_diff_ms"))), "upd_jit_hi": ms(max(umed("compiled_diff_ms"))),
+    "upd_move_def": ms(med(UPD["MoveTo, held"]["interpreter_with_definition_ms"])),
+    "upd_move_jit": ms(med(UPD["MoveTo, held"]["compiled_diff_ms"])),
+    "upd_move_x": f"{med(UPD['MoveTo, held']['interpreter_with_definition_ms']) / med(UPD['MoveTo, held']['compiled_diff_ms']):,.0f}",
+    "upd_alone_x_lo": f"{min(a / b for a, b in zip(umed('interpreter_update_ms'), umed('compiled_diff_ms'))):.0f}",
+    "upd_alone_x_hi": f"{max(a / b for a, b in zip(umed('interpreter_update_ms'), umed('compiled_diff_ms'))):.0f}",
+    "upd_n": str(len(UPD["Next"]["compiled_diff_ms"])),
+})
+def table_update():
+    rows = "".join(f"<tr><td><code>{html_esc(a.split(',')[0])}</code>{' (holding a point)' if 'held' in a else ''}</td><td>{ms(med(UPD[a]['interpreter_with_definition_ms']))}</td>"
+                   f"<td>{ms(med(UPD[a]['interpreter_update_ms']))}</td><td>{ms(med(UPD[a]['compiled_diff_ms']))}</td>"
+                   f"<td>{int(UPD[a]['shapes_kept'][0])} of {int(UPD[a]['shapes'][0])}</td></tr>" for a in ACTIONS)
+    return ('<table class="vals"><tr><th>Action</th><th>As the app ran it (the definition, then the update), ms</th><th>The update alone, ms</th>'
+            '<th>Compiled, the model back as a diff, ms</th><th>Shapes kept</th></tr>' + rows + "</table>")
+def html_esc(x):
+    import html
+    return html.escape(x)
 CENSUS = poly.get("census", {})
 for side in ("model", "answer"):
     for k, v in CENSUS.get(side, {}).items():
@@ -298,6 +322,7 @@ updated = subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True, text=
 body = open(os.path.join(HERE, "body.html")).read()
 body = body.replace("{{updated}}", updated).replace("{{fig_speed}}", fig_speed()).replace("{{fig_boundary}}", fig_boundary())
 body = body.replace("{{fig_how}}", fig_how()).replace("{{fig_routes}}", fig_routes()).replace("{{fig_diff}}", fig_diff())
+body = body.replace("{{table_update}}", table_update())
 for k, v in NUMS.items():
     body = body.replace("{{n:" + k + "}}", v)
 assert "{{" not in body, body[body.index("{{"):body.index("{{") + 40]
