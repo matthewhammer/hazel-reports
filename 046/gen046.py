@@ -55,10 +55,9 @@ def hazeljit_rules():
 
 
 def jsoo_excerpt():
-    p = "/tmp/claude-1000/-home-matthew-hazel/cd3317bd-52fb-4bc4-88e3-8887bfffd4ee/scratchpad/jsoo698/petri-g.js"
-    lines = open(p).read().split("\n")
-    k = next(i for i, l in enumerate(lines) if "cannot fire now" in l)
-    return "\n".join(lines[k - 38: k + 6])
+    """js_of_ocaml's --pretty output around fire_at's answers: the committed copy, data/jsoo-excerpt.js (cut on 11-07 from
+    the scratchpad's jsoo698/petri-g.js, which a crash wiped that afternoon)"""
+    return D("jsoo-excerpt.js").rstrip("\n")
 
 
 def between(src, start, stop=None):
@@ -78,8 +77,6 @@ CODE = {
     "hand": ("js", js_function(D("bench.mjs"), "jsHandler")),
 }
 os.makedirs(os.path.join(HERE, "data"), exist_ok=True)
-with open(os.path.join(HERE, "data", "jsoo-excerpt.js"), "w") as f:
-    f.write(CODE["jsoo"][1] + "\n")
 
 
 HL = {"hazel": (hazel_hl, "hz"), "ocaml": (ml_hl, "hz"), "rescript": (res_hl, "hz"), "js": (js_hl, "jx")}

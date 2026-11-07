@@ -125,6 +125,9 @@ def fig_witch_frame():
 
 # (Matthew, 2026-11-07: "Yes, in Firefox") the slide's views timed again in the page, in Firefox on GitHub's machines
 FF = json.loads(DW("firefox.json"))
+# (the same check before cb560ebb86: the picture's definition given up by a refusal before the program's run)
+FFB = json.loads(DW("firefox-before.json"))
+FFB_PIC = next(v for k, v in FFB["views"].items() if k.startswith("Drawing.picture") and "before the run" not in k)
 FFV = {k: v for k, v in FF["views"].items() if "before the run" not in k}
 FF_PIC = next(v for k, v in FFV.items() if k.startswith("Drawing.picture"))
 FF_POLY = [v for k, v in FFV.items() if k.startswith("Drawing.polygons")]
@@ -133,8 +136,13 @@ _pi = sorted(v["interpreted"]["median"] for v in FF_POLY)
 _px = sorted(v["interpreted"]["median"] / v["compiled"]["median"] for v in FF_POLY)
 WNUMS.update({
     "ff_pic": f"{FF_PIC['interpreted']['median']:.0f}", "ff_pic_fps": fps(FF_PIC["interpreted"]["median"]),
-    "ff_pic_app": f"{FF_PIC['compiled']['median']:.0f}", "ff_pic_app_fps": fps(FF_PIC["compiled"]["median"]),
+    "ff_pic_app": f"{FF_PIC['compiled']['median']:.1f}", "ff_pic_app_fps": fps(FF_PIC["compiled"]["median"]),
+    "ff_pic_view": f"{FF_PIC['view_only']['median']:.1f}", "ff_pic_view_fps": fps(FF_PIC["view_only"]["median"]),
+    "ff_pic_x": f"{FF_PIC['interpreted']['median'] / FF_PIC['compiled']['median']:.0f}",
     "ff_pic_late": f"{FF_PIC['interpreted']['median'] / FRAME_60:.0f}",
+    "ff_pic_left": f"{FRAME_60 - FF_PIC['compiled']['median']:.0f}",
+    "ffb_pic": f"{FFB_PIC['compiled']['median']:.0f}", "ffb_pic_fps": fps(FFB_PIC["compiled"]["median"]),
+    "ffb_run": str(FFB["run"]), "ffb_sha": FFB["sha"],
     "ff_poly_lo": f"{_pc[0]:.2f}", "ff_poly_hi": f"{_pc[-1]:.2f}", "ff_poly_fps_lo": fps(_pc[-1]), "ff_poly_fps_hi": fps(_pc[0]),
     "ff_polyi_lo": f"{_pi[0]:.0f}", "ff_polyi_hi": f"{_pi[-1]:.0f}", "ff_polyi_fps_lo": fps(_pi[-1]), "ff_polyi_fps_hi": fps(_pi[0]),
     "ff_polyx_lo": f"{_px[0]:.0f}", "ff_polyx_hi": f"{_px[-1]:.0f}", "ff_run": str(FF["run"]), "ff_sha": FF["sha"],
@@ -144,7 +152,9 @@ WNUMS.update({
 def fig_witch_firefox():
     """the Witch slide's views in Firefox, in the app, against a 60 fps frame: the picture on the interpreter (its
     compiled path refused), and the slide's four polygon editors both ways"""
-    rows = [("Drawing.picture", "interpreter (not compiled)", FF_PIC["compiled"]["median"], "var(--warn, #b45309)")]
+    rows = [("Drawing.picture", "before the fix: interpreter", FFB_PIC["compiled"]["median"], "var(--muted)"),
+            ("Drawing.picture", "interpreter", FF_PIC["interpreted"]["median"], "var(--warn, #b45309)"),
+            ("", "compiled", FF_PIC["compiled"]["median"], "var(--accent2)")]
     for i, v in enumerate(sorted(FF_POLY, key=lambda v: v["interpreted"]["median"])):
         rows.append((f"Drawing.polygons {i + 1}", "interpreter", v["interpreted"]["median"], "var(--warn, #b45309)"))
         rows.append(("", "compiled", v["compiled"]["median"], "var(--accent2)"))
@@ -173,7 +183,8 @@ def fig_witch_firefox():
     h = bottom + 24
     alt = "In Firefox, against 16.7 ms: " + "; ".join(f"{n or 'the same'}, {s}, {ms(v)} ms" for n, s, v, _ in rows)
     return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{alt}" style="width:100%;height:auto;display:block">'
-            + "".join(out) + f"</svg><figcaption>Firefox on GitHub's machines, a release build ({FF['sha']}, run {FF['run']}): each view "
+            + "".join(out) + f"</svg><figcaption>Firefox on GitHub's machines, a release build ({FF['sha']}, run {FF['run']}; the first bar from "
+            f"{FFB['sha']}, run {FFB['run']}, before the fix): each view "
             "run again on its last model, bypassing the app's memo, 15 samples, each a loop of calls at least 25 ms long. The frames a "
             "second are each time alone, as if updating the state were free.</figcaption></figure></div>")
 
