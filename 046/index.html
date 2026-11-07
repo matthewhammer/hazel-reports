@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BuckleScript, ReScript and Melange, beside hazel-jit</title>
+<meta name="description" content="One small program, report 043's Petri net rule, compiled to JavaScript by ReScript, Melange, js_of_ocaml and hazel-jit: what each makes, how fast it runs, and what that suggests for hazel-jit.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals td:first-child { white-space: nowrap; }
+  pre.code { background: color-mix(in srgb, var(--line) 35%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+             overflow-x: auto; font-size: 0.8em; line-height: 1.45; max-width: 100%; }
+  pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
+  .pair { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .pair h4 { margin: 10px 0 2px; font-size: 0.95em; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>46<b>)</b></code> · hazel-jit · 2026-11-07, updated 2026-11-07 10:45 MST · <span class="wip">work in progress</span> · beside <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> (<a href="../045/#next">its next step 7</a>)</p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>BuckleScript, ReScript and Melange, beside hazel-jit</h1>
+<p class="sub">Cyrus named BuckleScript and ReScript at the meeting of 2026-11-05 as technologies to know about, and perhaps to compare with, if not to use (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-698"><code class="ref"><b>^ticket(</b>698<b>)</b></code></a>). This note compiles one small program, <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>'s Petri net rule, with each of them and with hazel-jit, and puts what they make side by side: the JavaScript, how values look in it, and how fast it runs.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#what">What each is</a>: ReScript is BuckleScript renamed and grown into its own language; Melange is the fork that kept OCaml; js_of_ocaml, which builds Hazel, works another way.</li>
+<li><a href="#speed">How fast</a>: on the rule, Melange and ReScript beat JS written by hand; hazel-jit is about 2.9 times ReScript, and 225 times faster than the interpreter.</li>
+<li><a href="#code">The same rule, compiled</a>: side by side.</li>
+<li><a href="#values">How each lays out values</a>: lists, records, constructors, options, arguments.</li>
+<li><a href="#suggests">What it suggests for hazel-jit</a>: five changes to its output, in the order they would help.</li>
+<li><a href="#use">Could any of them be used</a>: not as hazel-jit's back end; their layouts and optimizations, yes.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was made</a>.</li>
+</ol>
+
+<h2 id="what">What each is<a class="anchor" href="#what" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="what" title="copy this section's address">copy link</button></h2>
+<p><b>Three compilers from one family, and one from another.</b></p>
+<ul>
+<li><b>BuckleScript</b> (2016, Bloomberg) compiled OCaml, and later Reason, to readable JavaScript: OCaml's front end and type checker, then its own back end from OCaml's typed intermediate language, one JS module per OCaml module.</li>
+<li><b>ReScript</b> is BuckleScript renamed (2020) and grown into a language of its own, with a syntax for JavaScript developers, its own standard library, and, since version 11, functions uncurried by default. Version 12.3.1 here.</li>
+<li><b>Melange</b> is the fork of BuckleScript's compiler that kept OCaml (and Reason) and joined OCaml's own tools: dune and opam. Its output is close to ReScript's, as the listings below show. Version 5.0.0 here, with OCaml 5.3.</li>
+<li><b>js_of_ocaml</b>, which builds Hazel itself, is the other family: it compiles OCaml's <i>bytecode</i>, a whole program, to JavaScript, with OCaml's runtime in JS around it. Values keep OCaml's memory layout (every block an array, its tag first), and it optimizes the whole program at once. Version 5.9.1 here.</li>
+<li><b>hazel-jit</b> (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>) compiles Hazel's elaborated terms to JS source, in the browser, while the program runs, with a runtime of about 2.5 KB.</li>
+</ul>
+
+<h2 id="speed">How fast<a class="anchor" href="#speed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="speed" title="copy this section's address">copy link</button></h2>
+<p><b>On <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>'s rule, Melange's and ReScript's JavaScript beat the JS a person wrote: 0.46 and 0.55 µs a call against 0.90. hazel-jit's takes 1.59 µs, about 2.9 times ReScript's and 1.8 times the hand-written; Hazel's interpreter takes 358 µs.</b> Each answers the same 2,000 events (fire transition <i>i</i> mod 4, then the command performed on the marking), and all end on the same marking. js_of_ocaml's 0.71 µs is a best case: it compiled the timing loop and the rule as one program, and inlined the whole rule into the loop.</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 940 216" role="img" aria-label="Melange 0.46 µs a call; ReScript 0.55 µs a call; js_of_ocaml 0.71 µs a call; hand-written JS 0.90 µs a call; hazel-jit 1.59 µs a call; the interpreter 358 µs" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">One call of the Petri rule, µs: the median of 2,000 calls (the median of five runs), and the fastest</text><text x="160" y="49" font-size="12" text-anchor="end" fill="var(--ink)" font-weight="700">Melange</text><rect x="170" y="37" width="143.2" height="16" rx="3" fill="var(--accent)" opacity="0.85"/><line x1="276.9" y1="34" x2="276.9" y2="56" stroke="var(--ink)" stroke-width="1.6"/><text x="321.2" y="49" font-size="11.5" fill="var(--ink)" font-weight="700">0.46 µs (fastest 0.34)</text><text x="160" y="77" font-size="12" text-anchor="end" fill="var(--ink)" font-weight="700">ReScript</text><rect x="170" y="65" width="170.2" height="16" rx="3" fill="var(--accent)" opacity="0.85"/><line x1="289.0" y1="62" x2="289.0" y2="84" stroke="var(--ink)" stroke-width="1.6"/><text x="348.2" y="77" font-size="11.5" fill="var(--ink)" font-weight="700">0.55 µs (fastest 0.38)</text><text x="160" y="105" font-size="12" text-anchor="end" fill="var(--ink)" font-weight="700">js_of_ocaml</text><rect x="170" y="93" width="221.0" height="16" rx="3" fill="var(--accent2)" opacity="0.85"/><line x1="294.6" y1="90" x2="294.6" y2="112" stroke="var(--ink)" stroke-width="1.6"/><text x="399.0" y="105" font-size="11.5" fill="var(--ink)" font-weight="700">0.71 µs (fastest 0.40)</text><text x="160" y="133" font-size="12" text-anchor="end" fill="var(--ink)" font-weight="700">hand-written JS</text><rect x="170" y="121" width="277.8" height="16" rx="3" fill="var(--muted)" opacity="0.85"/><line x1="388.9" y1="118" x2="388.9" y2="140" stroke="var(--ink)" stroke-width="1.6"/><text x="455.8" y="133" font-size="11.5" fill="var(--ink)" font-weight="700">0.90 µs (fastest 0.71)</text><text x="160" y="161" font-size="12" text-anchor="end" fill="var(--ink)" font-weight="700">hazel-jit</text><rect x="170" y="149" width="492.6" height="16" rx="3" fill="var(--accent2)" opacity="0.85"/><line x1="375.5" y1="146" x2="375.5" y2="168" stroke="var(--ink)" stroke-width="1.6"/><text x="670.6" y="161" font-size="11.5" fill="var(--ink)" font-weight="700">1.59 µs (fastest 0.66)</text><text x="170.0" y="186" font-size="10.5" text-anchor="middle" fill="var(--muted)">0</text><text x="325.0" y="186" font-size="10.5" text-anchor="middle" fill="var(--muted)">0.5</text><text x="480.0" y="186" font-size="10.5" text-anchor="middle" fill="var(--muted)">1</text><text x="635.0" y="186" font-size="10.5" text-anchor="middle" fill="var(--muted)">1.5</text><text x="790.0" y="186" font-size="10.5" text-anchor="middle" fill="var(--muted)">2</text><text x="16" y="206" font-size="11.5" fill="var(--muted)">Hazel's interpreter, on the same rule: 358 µs a call, off this scale.</text></svg><figcaption>Node 22.23.2, one laptop; each bar the median of five runs' medians, each tick the fastest single call. js_of_ocaml's in a process of its own, the rest in one.</figcaption></figure></div>
+<table class="vals">
+<tr><th>Compiler</th><th>µs a call, median</th><th>the fastest call</th></tr>
+<tr><td>Melange 5.0.0</td><td>0.46</td><td>0.35</td></tr>
+<tr><td>ReScript 12.3.1</td><td>0.55</td><td>0.38</td></tr>
+<tr><td>js_of_ocaml 5.9.1 (the rule inlined into the loop)</td><td>0.71</td><td>0.40</td></tr>
+<tr><td>JS written by hand (the example's <code>jsHandler</code>)</td><td>0.90</td><td>0.71</td></tr>
+<tr><td>hazel-jit</td><td>1.59</td><td>0.66</td></tr>
+<tr><td>Hazel's interpreter (<code>Evaluator.evaluate_open</code>)</td><td>358</td><td></td></tr>
+</table>
+<p>The hand-written handler is not the fastest because it is written the way people write JS: it copies arrays to walk them backwards (<code>[...t.outputs].reverse()</code>) and calls a closure for each input (<code>every</code>). The compilers' code allocates only what the result holds.</p>
+
+<h2 id="code">The same rule, compiled<a class="anchor" href="#code" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="code" title="copy this section's address">copy link</button></h2>
+<p><b>Melange and ReScript make the JavaScript a careful person would write; hazel-jit's is a direct translation, and js_of_ocaml's is OCaml's memory layout in JS.</b> The rule's two functions, <code>fire_at</code> and <code>on_event</code>, as each compiler wrote them (the whole outputs are in this report's data):</p>
+<div class="pair">
+<h4>Hazel (the example's <code>rules/Rules.hz</code>)</h4>
+<pre class="code"><code># Fire(i): fire transition i, if it can. #
+# Step: fire one of those that can, chosen by the app&#x27;s draw. #
+let fire_at = fun (n, i) : (Net, Int) -&gt;
+  case Common.pick(n.transitions, i)
+  | None =&gt; Say(&quot;there is no transition &quot; ++ string_of_int(i), Done)
+  | Some(t) =&gt;
+    if Common.enabled(n.marking, t) then Common.fire(t)
+    else Say(t.name ++ &quot; cannot fire now&quot;, Done)
+  end;
+let on_event = fun (n, e) : (Net, Event) -&gt;
+  case e
+  | Fire(i) =&gt; fire_at(n, i)
+  | Step =&gt;
+    let r = Common.ready(n.marking, n.transitions, 0) in
+    let k = Common.len(r) in
+    if k == 0 then Say(&quot;deadlock: nothing can fire&quot;, Done)
+    else
+      let j = int_of_float(n.draw *. float_of_int(k)) in
+      fire_at(n, Common.nth(r, j))
+  end</code></pre>
+<h4>hazel-jit (formatted by esbuild; its runtime is <code>$R</code>)</h4>
+<pre class="code"><code>    return def$75 = $R.fn((a$76) =&gt; {
+      let n$77, i$78, m$79, t$80;
+      return n$77 = a$76[0], i$78 = a$76[1], m$79 = Common$73[&quot;pick&quot;]([n$77[&quot;transitions&quot;], i$78]), m$79.c === &quot;None&quot; ? { c: &quot;Say&quot;, v: [&quot;there is no transition &quot; + $R.b.string_of_int(i$78), { c: &quot;Done&quot; }] } : m$79.c === &quot;Some&quot; ? (t$80 = m$79.v, Common$73[&quot;enabled&quot;]([n$77[&quot;marking&quot;], t$80]) ? Common$73[&quot;fire&quot;](t$80) : { c: &quot;Say&quot;, v: [t$80[&quot;name&quot;] + &quot; cannot fire now&quot;, { c: &quot;Done&quot; }] }) : $R.nomatch(&quot;case&quot;);
+    }, 9, [Common$73]), fire_at$81 = def$75, def$82 = $R.fn((a$83) =&gt; {
+      let n$84, e$85, m$86, let$87, r$88, let$89, k$90, let$91, j$92, i$93;
+      return n$84 = a$83[0], e$85 = a$83[1], m$86 = e$85, m$86.c === &quot;Fire&quot; ? (i$93 = m$86.v, fire_at$81([n$84, i$93])) : m$86.c === &quot;Step&quot; ? (let$87 = Common$73[&quot;ready&quot;]([n$84[&quot;marking&quot;], n$84[&quot;transitions&quot;], 0]), r$88 = let$87, let$89 = Common$73[&quot;len&quot;](r$88), k$90 = let$89, $R.eq(k$90, 0) ? { c: &quot;Say&quot;, v: [&quot;deadlock: nothing can fire&quot;, { c: &quot;Done&quot; }] } : (let$91 = $R.b.int_of_float(n$84[&quot;draw&quot;] * $R.b.float_of_int(k$90)), j$92 = let$91, fire_at$81([n$84, Common$73[&quot;nth&quot;]([r$88, j$92])]))) : $R.nomatch(&quot;case&quot;);
+    }, 10, [Common$73, fire_at$81])</code></pre>
+<h4>ReScript 12.3.1</h4>
+<pre class="code"><code>function fire_at(n, i) {
+  let t = pick(n.transitions, i);
+  if (t !== undefined) {
+    if (has(n.marking, t.inputs)) {
+      return fire(t);
+    } else {
+      return {
+        TAG: &quot;Say&quot;,
+        _0: t.name + &quot; cannot fire now&quot;,
+        _1: &quot;Done&quot;
+      };
+    }
+  } else {
+    return {
+      TAG: &quot;Say&quot;,
+      _0: &quot;there is no transition &quot; + i.toString(),
+      _1: &quot;Done&quot;
+    };
+  }
+}
+
+function on_event(n, e) {
+  if (typeof e === &quot;object&quot;) {
+    return fire_at(n, e._0);
+  }
+  let r = ready(n.marking, n.transitions, 0);
+  let k = len(r);
+  if (k === 0) {
+    return {
+      TAG: &quot;Say&quot;,
+      _0: &quot;deadlock: nothing can fire&quot;,
+      _1: &quot;Done&quot;
+    };
+  }
+  let j = n.draw * k | 0;
+  return fire_at(n, nth(r, j));
+}</code></pre>
+<h4>Melange 5.0.0</h4>
+<pre class="code"><code>function fire_at(n, i) {
+  const t = pick(n.transitions, i);
+  if (t !== undefined) {
+    if (has(n.marking, t.inputs)) {
+      return fire(t);
+    } else {
+      return {
+        TAG: /* Say */ 2,
+        _0: t.name + &quot; cannot fire now&quot;,
+        _1: /* Done */ 0
+      };
+    }
+  } else {
+    return {
+      TAG: /* Say */ 2,
+      _0: &quot;there is no transition &quot; + String(i),
+      _1: /* Done */ 0
+    };
+  }
+}
+
+function on_event(n, e) {
+  if (!/* tag */ (typeof e === &quot;number&quot; || typeof e === &quot;string&quot;)) {
+    return fire_at(n, e._0);
+  }
+  const r = ready(n.marking, n.transitions, 0);
+  const k = len(r);
+  if (k === 0) {
+    return {
+      TAG: /* Say */ 2,
+      _0: &quot;deadlock: nothing can fire&quot;,
+      _1: /* Done */ 0
+    };
+  } else {
+    return fire_at(n, nth(r, n.draw * k | 0));
+  }
+}</code></pre>
+<h4>js_of_ocaml 5.9.1 (inlined into the loop; around <code>fire_at</code>'s answers)</h4>
+<pre class="code"><code>         rest$1 = arcs[2],
+         a$0 = arcs[1],
+         i$14 =  /*&lt;&lt;petri.ml:12:63&gt;&gt;*/ a$0[1];
+        c:
+        {
+         d:
+         {
+          var xs = xs$0, i$10 = i$14, _bN_ = a$0[2];
+          for(;;){
+            /*&lt;&lt;petri.ml:9:19&gt;&gt;*/ if(! xs) break;
+           var rest = xs[2], x$0 = xs[1];
+            /*&lt;&lt;petri.ml:9:56&gt;&gt;*/ if(0 === i$10) break d;
+           var i$11 =  /*&lt;&lt;petri.ml:9:77&gt;&gt;*/ i$10 - 1 | 0;
+           xs = rest;
+           i$10 = i$11;
+          }
+          var _bO_ =  /*&lt;&lt;petri.ml:9:39&gt;&gt;*/ 0;
+          break c;
+         }
+         var _bO_ =  /*&lt;&lt;petri.ml:9:70&gt;&gt;*/ x$0;
+        }
+        var _bP_ =  /*&lt;&lt;petri.ml:12:76&gt;&gt;*/ _bN_ &lt;= _bO_ ? 1 : 0;
+        if(! _bP_) break b;
+        arcs = rest$1;
+       }
+       var _bS_ =  /*&lt;&lt;petri.ml:12:43&gt;&gt;*/ 1;
+       break a;
+      }
+      var _bS_ =  /*&lt;&lt;petri.ml:13:18&gt;&gt;*/ _bP_;
+     }
+      /*&lt;&lt;petri.ml:22:36&gt;&gt;*/ if(_bS_)
+      var
+       _bQ_ =  /*&lt;&lt;petri.ml:18:41&gt;&gt;*/ puts(t$1[3], 0),
+       _bR_ =  /*&lt;&lt;petri.ml:18:26&gt;&gt;*/ takes(t$1[2], _bQ_),
+       cmd =  /*&lt;&lt;petri.ml:18:62&gt;&gt;*/ [2, t$1[1], _bR_];
+     else
+      var
+       s1 =  /*&lt;&lt;petri.ml:22:54&gt;&gt;*/ t$1[1],
+       cmd =  /*&lt;&lt;petri.ml:22:86&gt;&gt;*/ [2, s1 + &quot; cannot fire now&quot;, 0];
+    }
+    else
+     var
+      s2 =  /*&lt;&lt;stdlib.ml:266:2&gt;&gt;*/ &quot;&quot; + i$16,
+      cmd =  /*&lt;&lt;petri.ml:21:60&gt;&gt;*/ [2, &quot;there is no transition &quot; + s2, 0];</code></pre>
+<h4>By hand (the example's <code>jsHandler</code>)</h4>
+<pre class="code"><code>function jsHandler(net, ev) {
+  const t = net.transitions[ev.tag === &quot;Fire&quot; ? ev.value : 0];
+  const ok = t &amp;&amp; t.inputs.every(a =&gt; net.marking[a.place] &gt;= a.weight);
+  if (!ok) return { tag: &quot;Say&quot;, value: [&quot;(js) cannot fire&quot;, { tag: &quot;Done&quot; }] };
+  let k = { tag: &quot;Done&quot; };
+  for (const a of [...t.outputs].reverse()) k = { tag: &quot;Put&quot;, value: [a.place, a.weight, k] };
+  for (const a of [...t.inputs].reverse()) k = { tag: &quot;Take&quot;, value: [a.place, a.weight, k] };
+  return { tag: &quot;Say&quot;, value: [&quot;(js) &quot; + t.name, k] };
+}</code></pre>
+</div>
+
+<h2 id="values">How each lays out values<a class="anchor" href="#values" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="values" title="copy this section's address">copy link</button></h2>
+<p><b>They differ most in constructors and in how a function takes several arguments.</b></p>
+<table class="vals">
+<tr><th>Value</th><th>hazel-jit</th><th>ReScript</th><th>Melange</th><th>js_of_ocaml</th></tr>
+<tr><td>a list cell; the empty list</td><td><code>{h, t}</code>; <code>null</code></td><td><code>{hd, tl}</code>; <code>0</code></td><td><code>{hd, tl}</code>; <code>0</code></td><td><code>[0, hd, tl]</code>; <code>0</code></td></tr>
+<tr><td>a record, or labeled tuple</td><td>an array, each label also a property</td><td>an object by field name</td><td>an object by field name</td><td>an array, <code>[0, f1, f2, …]</code></td></tr>
+<tr><td><code>Take(a, b, k)</code></td><td><code>{c: "Take", v: [a, b, k]}</code></td><td><code>{TAG: "Take", _0, _1, _2}</code></td><td><code>{TAG: 0, _0, _1, _2}</code></td><td><code>[0, a, b, k]</code></td></tr>
+<tr><td><code>Done</code> (no argument)</td><td><code>{c: "Done"}</code></td><td><code>"Done"</code></td><td><code>0</code></td><td><code>0</code></td></tr>
+<tr><td><code>Some(t)</code>; <code>None</code></td><td><code>{c: "Some", v: t}</code>; <code>{c: "None"}</code></td><td><code>t</code>; <code>undefined</code></td><td><code>t</code>; <code>undefined</code></td><td><code>[0, t]</code>; <code>0</code></td></tr>
+<tr><td>a function of two</td><td>one argument, an array <code>[a, b]</code></td><td><code>f(a, b)</code></td><td><code>f(a, b)</code></td><td><code>f(a, b)</code></td></tr>
+<tr><td><code>i == 0</code> on Ints</td><td><code>$R.eq(i, 0)</code></td><td><code>i === 0</code></td><td><code>i === 0</code></td><td><code>0 === i</code></td></tr>
+<tr><td>a tail call</td><td>a call</td><td>a <code>while</code> loop</td><td>a <code>while</code> loop</td><td>a <code>for</code> loop</td></tr>
+</table>
+
+<h2 id="suggests">What it suggests for hazel-jit<a class="anchor" href="#suggests" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="suggests" title="copy this section's address">copy link</button></h2>
+<p><b>Five changes to what hazel-jit writes, each something these compilers already do, would close most of the gap to ReScript.</b> In the order they would likely help this rule:</p>
+<ol>
+<li><b>Pass a function's arguments as JS arguments.</b> A Hazel function of a tuple, <code>fun (n, i) -> …</code>, is a JS function of one array, so every call allocates an array and reads it back. Where the parameter is a tuple pattern, compile <code>(n, i) =&gt; …</code> and call it with <code>f(n, i)</code>, keeping the one-argument form for a function passed as a value.</li>
+<li><b>Compare Ints with <code>===</code>.</b> hazel-jit calls its generic structural equality for every <code>==</code>; the elaborated term knows when both sides are Ints (or Floats, Bools, Strings).</li>
+<li><b>Turn tail calls into loops</b>, as all three do for <code>nth</code>, <code>pick</code> and <code>has</code>: faster, and no stack to overflow on a long list.</li>
+<li><b>Unbox options, and make constructors flat.</b> <code>Some(t)</code> as <code>t</code> and <code>None</code> as <code>undefined</code> saves an allocation per option; <code>{TAG, _0, _1, _2}</code> saves the inner array of <code>{c, v: [a, b, k]}</code>.</li>
+<li><b>Lay out labeled tuples as objects only</b>, not as arrays with the labels as properties too: one shape per type, which JS engines optimize best.</li>
+</ol>
+<p>Each changes the layout that the trip in and out reads and writes (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>'s <code>to_js</code> and <code>of_js</code>), so each is a change to both sides, and to <code>HazelJitDOM</code>'s reading of a view's answer. The first three change only the code inside a compiled function, and are the place to start.</p>
+
+<h2 id="use">Could any of them be used<a class="anchor" href="#use" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="use" title="copy this section's address">copy link</button></h2>
+<p><b>Not as hazel-jit's back end; but what they do, yes.</b></p>
+<ul>
+<li><b>As a back end</b>, each would need Hazel translated into its source language (ReScript or OCaml) and then compiled, in the browser, as the program changes. Hazel's holes, its gradual types and its livelits have no counterpart in either, so the translation would refuse much of what hazel-jit compiles, or fall back as hazel-jit does now. And the toolchain is large: Melange's playground compiles in the browser, but only by loading the whole compiler, built to JavaScript, first.</li>
+<li><b>Their value layouts</b> are a good target for hazel-jit's next version, above, and would let Hazel values pass to ReScript or Melange code directly, if Hazel apps ever share values with code written in them.</li>
+<li><b>js_of_ocaml</b> is what Hazel itself is built with, and its whole-program optimization (inlining across functions, as it did here) is not something a compiler working one definition at a time, in the browser, can do the same way.</li>
+</ul>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>Try the first three changes in hazel-jit (arguments as JS arguments, <code>===</code> on Ints, tail calls as loops), and time the rule again.</li>
+<li>Then the layouts (flat constructors, unboxed options, objects for labeled tuples), with the trip in and out and <code>HazelJitDOM</code> changed to match.</li>
+</ol>
+
+<h2 id="method">How this was made<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>The program</b> is <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>'s Petri net rule as matthewhammer/hazeljs-petri-example has it at 4c85792 (its <code>rules</code>: the preamble, <code>Common</code>, <code>Rules</code> and <code>Main</code>), written again in ReScript (<code>data/Petri.res</code>) and OCaml (<code>data/petri.ml</code>), function for function, as the Hazel is written.</li>
+<li><b>The compilers</b>: ReScript 12.3.1 from npm; Melange 5.0.0 (with OCaml 5.3.0) in its playground at melange.re, its JS copied from there; js_of_ocaml 5.9.1 from the opam switch Hazel builds with (<code>ocamlc</code> to bytecode, then <code>js_of_ocaml --pretty</code>); hazel-jit at <code>28fc073ed5</code> on <code>trial/694-view-jit</code>, its compiled program run in plain Node with its runtime.</li>
+<li><b>The timings</b>: Node 22.23.2 on a Framework 13 laptop (Intel Core i7-1370P), 2026-11-07 at 10:43 MST. One script (<code>data/bench.mjs</code>) runs the hand-written handler, ReScript's, Melange's and hazel-jit's in one process, each on its own values, 2,000 events each; js_of_ocaml's program times itself the same way. Five runs of each; the table gives the median of the five runs' medians, and the fastest single call. The interpreter's number is from <code>Test_HazelJit</code> at <code>28fc073ed5</code>, a development build.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/046/data"><code>046/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main>
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 46,
+ "title": "BuckleScript, ReScript and Melange, beside hazel-jit",
+ "date": "2026-11-07",
+ "kind": "comparison, work in progress",
+ "status": "work in progress",
+ "question": "How do BuckleScript's heirs, ReScript and Melange, and js_of_ocaml compile one small program, report 043's Petri net rule, next to hazel-jit: the JavaScript, the layout of values, the time a call, and what that suggests for hazel-jit (^ticket(698), ^report(45)'s next step 7)?",
+ "measurements": "Node 22.23.2, a Framework 13 laptop (i7-1370P), 2026-11-07 10:43 MST: 2,000 events of the rule each, five runs each; ReScript 12.3.1 (npm), Melange 5.0.0 with OCaml 5.3.0 (its playground), js_of_ocaml 5.9.1 (opam), hazel-jit at 28fc073ed5. timings.json has every run's reading.",
+ "builds": [
+  {
+   "what": "hazel-jit",
+   "branch": "trial/694-view-jit",
+   "commit": "28fc073ed5"
+  }
+ ],
+ "files": [
+  "data/Petri.res",
+  "data/Petri.res.js",
+  "data/bench.mjs",
+  "data/hazeljit-petri.js",
+  "data/jsoo-excerpt.js",
+  "data/meta.json",
+  "data/petri-melange.js",
+  "data/petri-melange.ml",
+  "data/petri.ml",
+  "data/tables.json",
+  "data/timings.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "How fast",
+   "section_id": "speed",
+   "columns": [
+    "Compiler",
+    "µs a call, median",
+    "the fastest call"
+   ],
+   "rows": [
+    [
+     "Melange 5.0.0",
+     "0.46",
+     "0.35"
+    ],
+    [
+     "ReScript 12.3.1",
+     "0.55",
+     "0.38"
+    ],
+    [
+     "js_of_ocaml 5.9.1 (the rule inlined into the loop)",
+     "0.71",
+     "0.40"
+    ],
+    [
+     "JS written by hand (the example's jsHandler)",
+     "0.90",
+     "0.71"
+    ],
+    [
+     "hazel-jit",
+     "1.59",
+     "0.66"
+    ],
+    [
+     "Hazel's interpreter (Evaluator.evaluate_open)",
+     "358",
+     ""
+    ]
+   ]
+  },
+  {
+   "section": "How each lays out values",
+   "section_id": "values",
+   "columns": [
+    "Value",
+    "hazel-jit",
+    "ReScript",
+    "Melange",
+    "js_of_ocaml"
+   ],
+   "rows": [
+    [
+     "a list cell; the empty list",
+     "{h, t}; null",
+     "{hd, tl}; 0",
+     "{hd, tl}; 0",
+     "[0, hd, tl]; 0"
+    ],
+    [
+     "a record, or labeled tuple",
+     "an array, each label also a property",
+     "an object by field name",
+     "an object by field name",
+     "an array, [0, f1, f2, …]"
+    ],
+    [
+     "Take(a, b, k)",
+     "{c: \"Take\", v: [a, b, k]}",
+     "{TAG: \"Take\", _0, _1, _2}",
+     "{TAG: 0, _0, _1, _2}",
+     "[0, a, b, k]"
+    ],
+    [
+     "Done (no argument)",
+     "{c: \"Done\"}",
+     "\"Done\"",
+     "0",
+     "0"
+    ],
+    [
+     "Some(t); None",
+     "{c: \"Some\", v: t}; {c: \"None\"}",
+     "t; undefined",
+     "t; undefined",
+     "[0, t]; 0"
+    ],
+    [
+     "a function of two",
+     "one argument, an array [a, b]",
+     "f(a, b)",
+     "f(a, b)",
+     "f(a, b)"
+    ],
+    [
+     "i == 0 on Ints",
+     "$R.eq(i, 0)",
+     "i === 0",
+     "i === 0",
+     "0 === i"
+    ],
+    [
+     "a tail call",
+     "a call",
+     "a while loop",
+     "a while loop",
+     "a for loop"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/046/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>

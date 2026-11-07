@@ -8,6 +8,8 @@
 <li><a href="#speed">How much faster</a>: a render of the Polygons slide's view, on the interpreter and compiled, its first renders and once warm.</li>
 <li><a href="#boundary">Where the time goes now</a>: the trip back, the view's answer made again as Hazel terms, is most of a compiled render; the trip in is small.</li>
 <li><a href="#ideas">Three ideas for the way back</a> (Matthew, 2026-11-07): cheaper ids, a view's answer never made Hazel, and the way back as a diff; all three work, and not coming back at all helps most.</li>
+<li><a href="#browser">In a browser</a> (^ticket(716), ^ticket(717)): on the six polygon slides in Firefox, compiled views draw exactly what the interpreter draws, before and after the same clicks, and a click shows sooner on every slide; the rest of the page's work is now most of an event.</li>
+<li><a href="#hand">Beside JS written by hand</a> (^ticket(699)): on report 043's Petri rule, hazel-jit's code takes 1.59 µs a call, the hand-written 0.90, the interpreter 358; ReScript's and Melange's beat both, and ^report(46) says why.</li>
 <li><a href="#how">How it works</a>: the compiler, how Hazel's values look in JS, and the trip in and out.</li>
 <li><a href="#app">In the app</a>: since 11-07, a view drawn straight from its compiled JS, and an update compiled, its new model back as a diff; the setting, and what happens when it cannot.</li>
 <li><a href="#right">Does it give the same answers</a>: the tests, and checking that they can fail.</li>
@@ -74,6 +76,28 @@
 <p><b>Sublinear, not yet.</b> The diff and the patch both walk a list from its head to the change. Each step is cheap (a few nanoseconds to compare two objects in JS, a few tens to keep an element in OCaml), so one change of 10,000 points costs {{n:d10000_dp}} ms, but it grows with the change's position, not with the size of the change. Time in log n needs a long list to be a tree on both sides of the boundary: in the compiled code, instead of cons cells, and in Hazel's values, instead of a list literal's flat list. Adapton-style level trees, as in Fumola, give every list one shape however it was built, so a change touches one path. That is a change to how Hazel represents lists: ^ticket(710), for a talk first.</p>
 <p><b>Two costs found on the way back, and fixed.</b> A whole number came back through <code>Printf</code> and big-integer parsing, about 2 µs each; one that fits an <code>int</code> is now converted directly. And a tuple's labels were told from its indices by raising and catching an exception for each label. With both, a list of 1,000 labeled points carries back whole in 2.2 to 5.6 ms over today's runs, against 8.2 ms before.</p>
 
+<h2 id="browser">In a browser</h2>
+<p><b>On the six polygon slides in Firefox, from a release build, compiled views draw exactly what the interpreter draws, as loaded and after the same clicks, and every click's change shows sooner: 77 ms against 124 on Polygons, 319 against 368 on Full Body.</b> A step of a drag on Polygons shows in 36 ms against 62. The gain is smaller than the livelit's own (an event's update from about 80 ms to 0.05): what is left is the rest of the page's work after an event, the program's text changed and analysed again and the editor drawn, which is now most of it (^ticket(716), ^ticket(717)).</p>
+<table class="vals">
+<tr><th>Slide</th><th>Livelits</th><th>A click, compiled, ms</th><th>A click, on the interpreter, ms</th><th>Loaded fresh, compiled / on the interpreter, s</th></tr>
+<tr><td>Polygons</td><td>1</td><td>77</td><td>124</td><td>5.4 / 4.6</td></tr>
+<tr><td>Polygon Viewer</td><td>1</td><td>83</td><td>73</td><td>4.5 / 4.5</td></tr>
+<tr><td>Full Body</td><td>43</td><td>319</td><td>368</td><td>12.9 / 21.3</td></tr>
+<tr><td>the Witch</td><td>53</td><td>304</td><td>354</td><td>19.2 / 22.2</td></tr>
+<tr><td>Hands</td><td>17</td><td>168</td><td>213</td><td>14.9 / 14.5</td></tr>
+<tr><td>Scenes</td><td>10</td><td>122</td><td>147</td><td>13.6 / 14.8</td></tr>
+</table>
+<ul>
+<li><b>How.</b> <code>scripts/jit_slides.py</code>, on the livelit deck's own Firefox harness, in a workflow on GitHub's machines (<code>jit.yml</code>; the laptop has no browser to drive): each slide loaded fresh with Compiled views on (<code>?jit=on</code>, a link parameter added for this) and off; every livelit's drawing compared as data; then the first livelit's buttons clicked in turn, six clicks, each landing before the next, and on Polygons a drag; each event timed from its capture to the first change of the page under its livelit. The medians are of those clicks (one on Polygon Viewer, whose only button answered once). Firefox only; Chrome is not tried yet.</li>
+<li><b>What ran how</b>, as the page counted it with Compiled views on: on Full Body, 1,219 drawings from JS, 62 views and 6 updates compiled, 9 views on the interpreter; on the Witch, 1,613, 69 and 6, 9. The views left on the interpreter are those whose model, before the program's first run, still holds its splices' code, which the interpreter cannot draw either: it shows them waiting until the run.</li>
+<li><b>Found on the way, and fixed.</b> The first run found 20 renders of Polygons on the interpreter: a model read from the program's text writes <code>-1</code> as a minus before 1, which the trip in did not carry (567c8d9620). And the stored setting never reached the switch the views read at load, so Compiled views off did not survive a reload (433a216bd7). The first run's drawings also differed after the clicks, because the interpreter's widget, slower, showed a button half drawn and the next click found another one; each click now lands before the next.</li>
+</ul>
+
+<h2 id="hand">Beside JS written by hand</h2>
+<p><b>On report 043's Petri net rule, hazel-jit's code takes about 1.8 times as long a call as the JS the example's author wrote, and 225 times less than Hazel's interpreter.</b> The example's own rule files (its preamble, <code>Common</code>, <code>Rules</code> and <code>Main</code>), put together as hazeljs puts them, compile whole; the compiled <code>on_event</code> and the example's hand-written <code>jsHandler</code> answer the same 2,000 events and end on the same marking. In plain Node, the median call is 1.59 µs compiled and 0.90 µs by hand (the fastest calls 0.66 and 0.71 µs); the interpreter, as the app applies a handler (<code>Evaluator.evaluate_open</code>), 358 µs. Report 043 measured about 3.4 ms a call through hazeljs, which carries the values across as well (^ticket(699)).</p>
+<p><b>ReScript's and Melange's compilers do better than both</b>, 0.55 and 0.46 µs a call on the same rule written in their languages, and the reasons are in what they write: a function's arguments as JS arguments, not an array; <code>===</code> on Ints; loops for tail calls; options unboxed. ^report(46), beside this one, puts the five compilers' code side by side, with what it suggests for hazel-jit's next version (^ticket(698)).</p>
+<p class="note">On the way: applying the same handler with <code>Evaluator.evaluate</code>, which closes its answer, took 63 ms a call, 175 times <code>evaluate_open</code>: closing copies what the closure closes over into the answer. The app applies handlers open; a library that calls Hazel functions should too.</p>
+
 <h2 id="how">How it works</h2>
 <p><b>hazel-jit turns an elaborated Hazel term into the source text of a JS function, once, and the browser's own JavaScript engine runs it.</b> <code>HazelJit.compile_full</code>, in <code>src/language/dynamics/HazelJit.re</code>, walks the term Hazel's elaborator makes (the same term the interpreter runs) and writes JS, which is made into a function with <code>new Function</code>.</p>
 {{fig_how}}
@@ -87,7 +111,7 @@
 <ul>
 <li><b>The setting</b> is <i>Compiled views</i>, in the settings menu, on by default; off, every view runs on the interpreter as before.</li>
 <li><b>When it cannot</b> (a form it does not compile, a recursive function in the answer, an error while running), the view runs on the interpreter, the browser's console says why, once for each reason, and that definition is not tried again.</li>
-<li><b>Not checked in a browser yet.</b> The tests run the same code in Node; trying it on the slides is the next step.</li>
+<li><b>Checked in a browser</b> (^ticket(716)): Firefox, on the six polygon slides, <a href="#browser">the same drawings both ways</a>.</li>
 </ul>
 
 <h2 id="right">Does it give the same answers</h2>
@@ -99,7 +123,7 @@
 <li><b>The call memo, probes and the step budget</b> do not apply inside a compiled view: no reuse of repeated calls between renders, no probe's samples from inside the view, and a deep recursion is JS's stack, not Hazel's step limit (a stack overflow falls back to the interpreter).</li>
 <li><b>A recursive function in a view's answer</b> is refused (a Hazel closure cannot hold a cycle as a plain value), and so is a JS builtin passed as a handler.</li>
 <li><b>Values made again on the way back</b> get new ids; whether anything in the app depends on a model's ids surviving the trip has not been checked.</li>
-<li><b>The direct drawing and the compiled update are in the app, not yet tried in a browser.</b> The tests run them in Node, against the Hazel route and the interpreter; trying them on the slides is ^ticket(716).</li>
+<li><b>One browser.</b> Compiled views are tried in Firefox on GitHub's machines (<a href="#browser">in a browser</a>), not yet in Chrome or Safari, and not by hand on the laptop.</li>
 <li><b>One slide measured.</b> Full Body, the Witch, Hands and the Scenes slide's woods, the slides with the most polygons, come next.</li>
 </ul>
 
@@ -111,10 +135,10 @@
 <li>Draw a view's answer straight from its JS in the app: <code>eval_view</code> and the three places that draw a livelit's view, and the rest of HazelDOM's forms. <i>Done, 11-07 (^ticket(714), 889271cfbb): the two places that evaluate a view (the live samples are the interpreter's), and every form; tried in a browser in step 4.</i></li>
 <li>Carry a livelit update's model back as a diff against the model it was given. <i>Done, 11-07 (^ticket(715), 4c0ed173f1): the update compiled, its model back as a diff; an event's update {{n:upd_jit_lo}} to {{n:upd_jit_hi}} ms, against {{n:upd_def_lo}} to {{n:upd_def_hi}} ms.</i></li>
 <li>Talk through sublinear diffs, lists as trees on both sides (^ticket(710)).</li>
-<li>Try it in the app on the polygon slides, with the setting on and off, and check the drawings are the same.</li>
-<li>Time it in browsers on GitHub's machines, from a release build, on Polygons, Polygon Viewer, Full Body, the Witch, Hands and the woods.</li>
-<li>Compare the compiled Petri net rule with the hand-written one of report 043, the code side by side and the time per call (^ticket(699)).</li>
-<li>Put a short note beside this one on how BuckleScript, ReScript and Melange compile the same small program (^ticket(698)).</li>
+<li>Try it in the app on the polygon slides, with the setting on and off, and check the drawings are the same. <i>Done, 11-07 (^ticket(716)): <a href="#browser">in a browser</a>, the same drawings on all six slides, before and after the same clicks.</i></li>
+<li>Time it in browsers on GitHub's machines, from a release build, on Polygons, Polygon Viewer, Full Body, the Witch, Hands and the woods. <i>Done in Firefox, 11-07 (^ticket(717)): a click's change 77 against 124 ms on Polygons, 319 against 368 on Full Body; Chrome next.</i></li>
+<li>Compare the compiled Petri net rule with the hand-written one of report 043, the code side by side and the time per call (^ticket(699)). <i>Done, 11-07 (28fc073ed5): <a href="#hand">beside JS written by hand</a>, 1.59 µs a call against 0.90; the code side by side in ^report(46).</i></li>
+<li>Put a short note beside this one on how BuckleScript, ReScript and Melange compile the same small program (^ticket(698)). <i>Done, 11-07: ^report(46), the Petri rule compiled by ReScript, Melange, js_of_ocaml and hazel-jit, and five changes it suggests for hazel-jit.</i></li>
 </ol>
 
 <h2 id="method">How this was put together</h2>

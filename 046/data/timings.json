@@ -1,0 +1,190 @@
+{
+ "what": "Each run's reading, in microseconds a call: the median and the fastest of 2,000 calls (Fire(i mod 4), each performed on the marking), five runs of each",
+ "date": "2026-11-07 10:43 MST",
+ "node": "v22.23.2",
+ "machine": "a Framework 13 laptop, 13th Gen Intel Core i7-1370P, Linux",
+ "compilers": {
+  "ReScript": "12.3.1 (npm rescript, its bsc)",
+  "Melange": "5.0.0-53 with OCaml 5.3.0, its playground (melange.re/v5.0.0/playground), the JS copied from it",
+  "js_of_ocaml": "5.9.1 (opam, the 5.2.0 switch Hazel builds with), ocamlc bytecode then js_of_ocaml --pretty",
+  "hazel-jit": "trial/694-view-jit at 28fc073ed5 (HazelJit.compile_full), its compiled program run in plain Node with its runtime"
+ },
+ "bench_runs": [
+  {
+   "melange_us": 0.477,
+   "melange_min_us": 0.35,
+   "melange_same": true,
+   "hazeljit_us": 1.675,
+   "hazeljit_min_us": 1.154,
+   "hazeljit_same": true,
+   "js_us": 0.848,
+   "js_min_us": 0.706,
+   "rescript_us": 0.52,
+   "rescript_min_us": 0.386,
+   "same": true,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "melange_us": 0.462,
+   "melange_min_us": 0.345,
+   "melange_same": true,
+   "hazeljit_us": 1.589,
+   "hazeljit_min_us": 1.047,
+   "hazeljit_same": true,
+   "js_us": 1.03,
+   "js_min_us": 0.725,
+   "rescript_us": 0.62,
+   "rescript_min_us": 0.397,
+   "same": true,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "melange_us": 0.457,
+   "melange_min_us": 0.347,
+   "melange_same": true,
+   "hazeljit_us": 1.45,
+   "hazeljit_min_us": 0.974,
+   "hazeljit_same": true,
+   "js_us": 0.896,
+   "js_min_us": 0.708,
+   "rescript_us": 0.533,
+   "rescript_min_us": 0.384,
+   "same": true,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "melange_us": 0.476,
+   "melange_min_us": 0.348,
+   "melange_same": true,
+   "hazeljit_us": 1.597,
+   "hazeljit_min_us": 1.113,
+   "hazeljit_same": true,
+   "js_us": 0.844,
+   "js_min_us": 0.713,
+   "rescript_us": 0.55,
+   "rescript_min_us": 0.406,
+   "same": true,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "melange_us": 0.458,
+   "melange_min_us": 0.345,
+   "melange_same": true,
+   "hazeljit_us": 1.587,
+   "hazeljit_min_us": 0.663,
+   "hazeljit_same": true,
+   "js_us": 0.953,
+   "js_min_us": 0.739,
+   "rescript_us": 0.549,
+   "rescript_min_us": 0.414,
+   "same": true,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  }
+ ],
+ "jsoo_runs": [
+  {
+   "jsoo_us": 0.613,
+   "jsoo_min_us": 0.417,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "jsoo_us": 0.831,
+   "jsoo_min_us": 0.541,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "jsoo_us": 0.768,
+   "jsoo_min_us": 0.464,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "jsoo_us": 0.608,
+   "jsoo_min_us": 0.408,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "jsoo_us": 0.713,
+   "jsoo_min_us": 0.402,
+   "marking": [
+    1,
+    0,
+    1,
+    0,
+    1
+   ]
+  }
+ ],
+ "interpreter": {
+  "us": 358.2,
+  "how": "Evaluator.evaluate_open on the rule's on_event closure applied to the net and Fire(i mod 4), 200 calls, Node, a development build of trial/694-view-jit at 28fc073ed5 (Test_HazelJit, test 49)"
+ },
+ "medians_us": {
+  "Melange": 0.462,
+  "ReScript": 0.549,
+  "js_of_ocaml": 0.713,
+  "hand-written JS": 0.896,
+  "hazel-jit": 1.589,
+  "the interpreter": 358.2
+ },
+ "fastest_us": {
+  "Melange": 0.345,
+  "ReScript": 0.384,
+  "js_of_ocaml": 0.402,
+  "hand-written JS": 0.706,
+  "hazel-jit": 0.663
+ }
+}

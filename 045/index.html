@@ -150,7 +150,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>45<b>)</b></code> · hazel-jit · started 2026-11-06, updated 2026-11-07 10:16 MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>, <a href="../042/#hazel-jit">item 2</a>)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>45<b>)</b></code> · hazel-jit · started 2026-11-06, updated 2026-11-07 10:54 MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>, <a href="../042/#hazel-jit">item 2</a>)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -244,6 +244,8 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#speed">How much faster</a>: a render of the Polygons slide's view, on the interpreter and compiled, its first renders and once warm.</li>
 <li><a href="#boundary">Where the time goes now</a>: the trip back, the view's answer made again as Hazel terms, is most of a compiled render; the trip in is small.</li>
 <li><a href="#ideas">Three ideas for the way back</a> (Matthew, 2026-11-07): cheaper ids, a view's answer never made Hazel, and the way back as a diff; all three work, and not coming back at all helps most.</li>
+<li><a href="#browser">In a browser</a> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-716"><code class="ref"><b>^ticket(</b>716<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-717"><code class="ref"><b>^ticket(</b>717<b>)</b></code></a>): on the six polygon slides in Firefox, compiled views draw exactly what the interpreter draws, before and after the same clicks, and a click shows sooner on every slide; the rest of the page's work is now most of an event.</li>
+<li><a href="#hand">Beside JS written by hand</a> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-699"><code class="ref"><b>^ticket(</b>699<b>)</b></code></a>): on <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>'s Petri rule, hazel-jit's code takes 1.59 µs a call, the hand-written 0.90, the interpreter 358; ReScript's and Melange's beat both, and <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> says why.</li>
 <li><a href="#how">How it works</a>: the compiler, how Hazel's values look in JS, and the trip in and out.</li>
 <li><a href="#app">In the app</a>: since 11-07, a view drawn straight from its compiled JS, and an update compiled, its new model back as a diff; the setting, and what happens when it cannot.</li>
 <li><a href="#right">Does it give the same answers</a>: the tests, and checking that they can fail.</li>
@@ -310,6 +312,28 @@ document.addEventListener("DOMContentLoaded", () => {
 <p><b>Sublinear, not yet.</b> The diff and the patch both walk a list from its head to the change. Each step is cheap (a few nanoseconds to compare two objects in JS, a few tens to keep an element in OCaml), so one change of 10,000 points costs 0.11 ms, but it grows with the change's position, not with the size of the change. Time in log n needs a long list to be a tree on both sides of the boundary: in the compiled code, instead of cons cells, and in Hazel's values, instead of a list literal's flat list. Adapton-style level trees, as in Fumola, give every list one shape however it was built, so a change touches one path. That is a change to how Hazel represents lists: <a href="https://matthewhammer.org/hazel/dashboard/#ticket-710"><code class="ref"><b>^ticket(</b>710<b>)</b></code></a>, for a talk first.</p>
 <p><b>Two costs found on the way back, and fixed.</b> A whole number came back through <code>Printf</code> and big-integer parsing, about 2 µs each; one that fits an <code>int</code> is now converted directly. And a tuple's labels were told from its indices by raising and catching an exception for each label. With both, a list of 1,000 labeled points carries back whole in 2.2 to 5.6 ms over today's runs, against 8.2 ms before.</p>
 
+<h2 id="browser">In a browser<a class="anchor" href="#browser" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="browser" title="copy this section's address">copy link</button></h2>
+<p><b>On the six polygon slides in Firefox, from a release build, compiled views draw exactly what the interpreter draws, as loaded and after the same clicks, and every click's change shows sooner: 77 ms against 124 on Polygons, 319 against 368 on Full Body.</b> A step of a drag on Polygons shows in 36 ms against 62. The gain is smaller than the livelit's own (an event's update from about 80 ms to 0.05): what is left is the rest of the page's work after an event, the program's text changed and analysed again and the editor drawn, which is now most of it (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-716"><code class="ref"><b>^ticket(</b>716<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-717"><code class="ref"><b>^ticket(</b>717<b>)</b></code></a>).</p>
+<table class="vals">
+<tr><th>Slide</th><th>Livelits</th><th>A click, compiled, ms</th><th>A click, on the interpreter, ms</th><th>Loaded fresh, compiled / on the interpreter, s</th></tr>
+<tr><td>Polygons</td><td>1</td><td>77</td><td>124</td><td>5.4 / 4.6</td></tr>
+<tr><td>Polygon Viewer</td><td>1</td><td>83</td><td>73</td><td>4.5 / 4.5</td></tr>
+<tr><td>Full Body</td><td>43</td><td>319</td><td>368</td><td>12.9 / 21.3</td></tr>
+<tr><td>the Witch</td><td>53</td><td>304</td><td>354</td><td>19.2 / 22.2</td></tr>
+<tr><td>Hands</td><td>17</td><td>168</td><td>213</td><td>14.9 / 14.5</td></tr>
+<tr><td>Scenes</td><td>10</td><td>122</td><td>147</td><td>13.6 / 14.8</td></tr>
+</table>
+<ul>
+<li><b>How.</b> <code>scripts/jit_slides.py</code>, on the livelit deck's own Firefox harness, in a workflow on GitHub's machines (<code>jit.yml</code>; the laptop has no browser to drive): each slide loaded fresh with Compiled views on (<code>?jit=on</code>, a link parameter added for this) and off; every livelit's drawing compared as data; then the first livelit's buttons clicked in turn, six clicks, each landing before the next, and on Polygons a drag; each event timed from its capture to the first change of the page under its livelit. The medians are of those clicks (one on Polygon Viewer, whose only button answered once). Firefox only; Chrome is not tried yet.</li>
+<li><b>What ran how</b>, as the page counted it with Compiled views on: on Full Body, 1,219 drawings from JS, 62 views and 6 updates compiled, 9 views on the interpreter; on the Witch, 1,613, 69 and 6, 9. The views left on the interpreter are those whose model, before the program's first run, still holds its splices' code, which the interpreter cannot draw either: it shows them waiting until the run.</li>
+<li><b>Found on the way, and fixed.</b> The first run found 20 renders of Polygons on the interpreter: a model read from the program's text writes <code>-1</code> as a minus before 1, which the trip in did not carry (567c8d9620). And the stored setting never reached the switch the views read at load, so Compiled views off did not survive a reload (433a216bd7). The first run's drawings also differed after the clicks, because the interpreter's widget, slower, showed a button half drawn and the next click found another one; each click now lands before the next.</li>
+</ul>
+
+<h2 id="hand">Beside JS written by hand<a class="anchor" href="#hand" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="hand" title="copy this section's address">copy link</button></h2>
+<p><b>On <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>'s Petri net rule, hazel-jit's code takes about 1.8 times as long a call as the JS the example's author wrote, and 225 times less than Hazel's interpreter.</b> The example's own rule files (its preamble, <code>Common</code>, <code>Rules</code> and <code>Main</code>), put together as hazeljs puts them, compile whole; the compiled <code>on_event</code> and the example's hand-written <code>jsHandler</code> answer the same 2,000 events and end on the same marking. In plain Node, the median call is 1.59 µs compiled and 0.90 µs by hand (the fastest calls 0.66 and 0.71 µs); the interpreter, as the app applies a handler (<code>Evaluator.evaluate_open</code>), 358 µs. <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a> measured about 3.4 ms a call through hazeljs, which carries the values across as well (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-699"><code class="ref"><b>^ticket(</b>699<b>)</b></code></a>).</p>
+<p><b>ReScript's and Melange's compilers do better than both</b>, 0.55 and 0.46 µs a call on the same rule written in their languages, and the reasons are in what they write: a function's arguments as JS arguments, not an array; <code>===</code> on Ints; loops for tail calls; options unboxed. <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>, beside this one, puts the five compilers' code side by side, with what it suggests for hazel-jit's next version (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-698"><code class="ref"><b>^ticket(</b>698<b>)</b></code></a>).</p>
+<p class="note">On the way: applying the same handler with <code>Evaluator.evaluate</code>, which closes its answer, took 63 ms a call, 175 times <code>evaluate_open</code>: closing copies what the closure closes over into the answer. The app applies handlers open; a library that calls Hazel functions should too.</p>
+
 <h2 id="how">How it works<a class="anchor" href="#how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="how" title="copy this section's address">copy link</button></h2>
 <p><b>hazel-jit turns an elaborated Hazel term into the source text of a JS function, once, and the browser's own JavaScript engine runs it.</b> <code>HazelJit.compile_full</code>, in <code>src/language/dynamics/HazelJit.re</code>, walks the term Hazel's elaborator makes (the same term the interpreter runs) and writes JS, which is made into a function with <code>new Function</code>.</p>
 <div class="figrow"><figure class="f wide"><svg viewBox="0 0 940 250" role="img" aria-label="Once per definition, HazelJit compiles the elaborated definition to JS source, made into a cached JS function, with the constructor types and function table the way back reads. Each render: the model goes into JS (to_js), the compiled view is called, the answer comes back as a Hazel value (of_js), and ViewCmdRunner draws it as today." style="width:100%;height:auto;display:block"><text x="16.0" y="18.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">A livelit's view with hazel-jit: compiled once, run on each model</text><text x="16.0" y="46.0" font-size="11.5" text-anchor="start" fill="var(--accent2)" font-weight="700">once per definition</text><rect x="16" y="54" width="170" height="56" rx="8" fill="var(--paper)" stroke="var(--line)" stroke-width="1.6"/><text x="101.0" y="80.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">the definition</text><text x="101.0" y="96.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">elaborated Hazel</text><rect x="226" y="54" width="210" height="56" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="1.6"/><text x="331.0" y="80.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">HazelJit.compile_full</text><text x="331.0" y="96.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">Hazel to JS source text</text><rect x="476" y="54" width="200" height="56" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="1.6"/><text x="576.0" y="80.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">a JS function</text><text x="576.0" y="96.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">new Function, cached</text><rect x="716" y="54" width="208" height="56" rx="8" fill="var(--paper)" stroke="var(--line)" stroke-width="1.6"/><text x="820.0" y="80.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">and what the way back reads</text><text x="820.0" y="96.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">constructor types, functions</text><line x1="186" y1="82" x2="222" y2="82" stroke="var(--accent2)" stroke-width="1.8"/><path d="M214.8 85.5 L222 82 L214.8 78.5" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linejoin="round"/><line x1="436" y1="82" x2="472" y2="82" stroke="var(--accent2)" stroke-width="1.8"/><path d="M464.8 85.5 L472 82 L464.8 78.5" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linejoin="round"/><line x1="676" y1="82" x2="712" y2="82" stroke="var(--muted)" stroke-width="1.8"/><path d="M704.8 85.5 L712 82 L704.8 78.5" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><text x="16.0" y="150.0" font-size="11.5" text-anchor="start" fill="var(--accent)" font-weight="700">each render</text><rect x="16" y="158" width="150" height="56" rx="8" fill="var(--paper)" stroke="var(--line)" stroke-width="1.6"/><text x="91.0" y="184.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">the model</text><text x="91.0" y="200.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">a Hazel value</text><rect x="196" y="158" width="140" height="56" rx="8" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.6"/><text x="266.0" y="184.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">to_js</text><text x="266.0" y="200.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">into JS values</text><rect x="366" y="158" width="140" height="56" rx="8" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.6"/><text x="436.0" y="184.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">view(model)</text><text x="436.0" y="200.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">the compiled call</text><rect x="536" y="158" width="150" height="56" rx="8" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.6"/><text x="611.0" y="184.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">of_js</text><text x="611.0" y="200.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">back, by the types</text><rect x="716" y="158" width="208" height="56" rx="8" fill="var(--paper)" stroke="var(--line)" stroke-width="1.6"/><text x="820.0" y="184.0" font-size="12.5" text-anchor="middle" fill="var(--ink)" font-weight="700">a ViewCmd, then Html</text><text x="820.0" y="200.0" font-size="11.5" text-anchor="middle" fill="var(--muted)" font-weight="400">ViewCmdRunner, as today</text><line x1="166" y1="186" x2="192" y2="186" stroke="var(--accent)" stroke-width="1.8"/><path d="M184.8 189.5 L192 186 L184.8 182.5" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/><line x1="336" y1="186" x2="362" y2="186" stroke="var(--accent)" stroke-width="1.8"/><path d="M354.8 189.5 L362 186 L354.8 182.5" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/><line x1="506" y1="186" x2="532" y2="186" stroke="var(--accent)" stroke-width="1.8"/><path d="M524.8 189.5 L532 186 L524.8 182.5" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/><line x1="686" y1="186" x2="712" y2="186" stroke="var(--muted)" stroke-width="1.8"/><path d="M704.8 189.5 L712 186 L704.8 182.5" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><line x1="576" y1="110" x2="576" y2="154" stroke="var(--muted)" stroke-width="1.8"/><path d="M572.5 146.8 L576 154 L579.5 146.8" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><line x1="820" y1="110" x2="650" y2="154" stroke="var(--muted)" stroke-width="1.8"/><path d="M656.1 148.8 L650 154 L657.8 155.6" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round"/><text x="16.0" y="240.0" font-size="11.5" text-anchor="start" fill="var(--muted)" font-weight="400">Anything hazel-jit cannot compile, or carry back, runs on the interpreter as before; the console says why, once.</text></svg><figcaption>What runs where, in <code>LivelitProj.eval_view</code> since 4c0ed173f1.</figcaption></figure></div>
@@ -323,7 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <ul>
 <li><b>The setting</b> is <i>Compiled views</i>, in the settings menu, on by default; off, every view runs on the interpreter as before.</li>
 <li><b>When it cannot</b> (a form it does not compile, a recursive function in the answer, an error while running), the view runs on the interpreter, the browser's console says why, once for each reason, and that definition is not tried again.</li>
-<li><b>Not checked in a browser yet.</b> The tests run the same code in Node; trying it on the slides is the next step.</li>
+<li><b>Checked in a browser</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-716"><code class="ref"><b>^ticket(</b>716<b>)</b></code></a>): Firefox, on the six polygon slides, <a href="#browser">the same drawings both ways</a>.</li>
 </ul>
 
 <h2 id="right">Does it give the same answers<a class="anchor" href="#right" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="right" title="copy this section's address">copy link</button></h2>
@@ -335,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>The call memo, probes and the step budget</b> do not apply inside a compiled view: no reuse of repeated calls between renders, no probe's samples from inside the view, and a deep recursion is JS's stack, not Hazel's step limit (a stack overflow falls back to the interpreter).</li>
 <li><b>A recursive function in a view's answer</b> is refused (a Hazel closure cannot hold a cycle as a plain value), and so is a JS builtin passed as a handler.</li>
 <li><b>Values made again on the way back</b> get new ids; whether anything in the app depends on a model's ids surviving the trip has not been checked.</li>
-<li><b>The direct drawing and the compiled update are in the app, not yet tried in a browser.</b> The tests run them in Node, against the Hazel route and the interpreter; trying them on the slides is <a href="https://matthewhammer.org/hazel/dashboard/#ticket-716"><code class="ref"><b>^ticket(</b>716<b>)</b></code></a>.</li>
+<li><b>One browser.</b> Compiled views are tried in Firefox on GitHub's machines (<a href="#browser">in a browser</a>), not yet in Chrome or Safari, and not by hand on the laptop.</li>
 <li><b>One slide measured.</b> Full Body, the Witch, Hands and the Scenes slide's woods, the slides with the most polygons, come next.</li>
 </ul>
 
@@ -347,10 +371,10 @@ document.addEventListener("DOMContentLoaded", () => {
 <li>Draw a view's answer straight from its JS in the app: <code>eval_view</code> and the three places that draw a livelit's view, and the rest of HazelDOM's forms. <i>Done, 11-07 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-714"><code class="ref"><b>^ticket(</b>714<b>)</b></code></a>, 889271cfbb): the two places that evaluate a view (the live samples are the interpreter's), and every form; tried in a browser in step 4.</i></li>
 <li>Carry a livelit update's model back as a diff against the model it was given. <i>Done, 11-07 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-715"><code class="ref"><b>^ticket(</b>715<b>)</b></code></a>, 4c0ed173f1): the update compiled, its model back as a diff; an event's update 0.023 to 0.081 ms, against 68.3 to 83.3 ms.</i></li>
 <li>Talk through sublinear diffs, lists as trees on both sides (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-710"><code class="ref"><b>^ticket(</b>710<b>)</b></code></a>).</li>
-<li>Try it in the app on the polygon slides, with the setting on and off, and check the drawings are the same.</li>
-<li>Time it in browsers on GitHub's machines, from a release build, on Polygons, Polygon Viewer, Full Body, the Witch, Hands and the woods.</li>
-<li>Compare the compiled Petri net rule with the hand-written one of <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>, the code side by side and the time per call (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-699"><code class="ref"><b>^ticket(</b>699<b>)</b></code></a>).</li>
-<li>Put a short note beside this one on how BuckleScript, ReScript and Melange compile the same small program (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-698"><code class="ref"><b>^ticket(</b>698<b>)</b></code></a>).</li>
+<li>Try it in the app on the polygon slides, with the setting on and off, and check the drawings are the same. <i>Done, 11-07 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-716"><code class="ref"><b>^ticket(</b>716<b>)</b></code></a>): <a href="#browser">in a browser</a>, the same drawings on all six slides, before and after the same clicks.</i></li>
+<li>Time it in browsers on GitHub's machines, from a release build, on Polygons, Polygon Viewer, Full Body, the Witch, Hands and the woods. <i>Done in Firefox, 11-07 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-717"><code class="ref"><b>^ticket(</b>717<b>)</b></code></a>): a click's change 77 against 124 ms on Polygons, 319 against 368 on Full Body; Chrome next.</i></li>
+<li>Compare the compiled Petri net rule with the hand-written one of <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>, the code side by side and the time per call (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-699"><code class="ref"><b>^ticket(</b>699<b>)</b></code></a>). <i>Done, 11-07 (28fc073ed5): <a href="#hand">beside JS written by hand</a>, 1.59 µs a call against 0.90; the code side by side in <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>.</i></li>
+<li>Put a short note beside this one on how BuckleScript, ReScript and Melange compile the same small program (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-698"><code class="ref"><b>^ticket(</b>698<b>)</b></code></a>). <i>Done, 11-07: <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>, the Petri rule compiled by ReScript, Melange, js_of_ocaml and hazel-jit, and five changes it suggests for hazel-jit.</i></li>
 </ol>
 
 <h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
@@ -661,6 +685,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
  ],
  "files": [
+  "data/browser.json",
   "data/meta.json",
   "data/tables.json",
   "data/timings.json"
@@ -2914,6 +2939,7 @@ document.addEventListener("DOMContentLoaded", () => {
    }
   ]
  },
+ "browser": "browser.json: the six polygon slides in Firefox on GitHub's machines (workflow jit.yml, run 42397562248, trial/694-view-jit at 567c8d9620, a release build): each slide loaded fresh with Compiled views on and off, the livelits' drawings compared, six clicks (and on Polygons a drag) each way, each event's time to the first change of the page under its livelit, and the page's counts of what ran how.",
  "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
  "tables": [
   {
@@ -3058,6 +3084,61 @@ document.addEventListener("DOMContentLoaded", () => {
      "0.90",
      "0.028",
      "2 of 2"
+    ]
+   ]
+  },
+  {
+   "section": "In a browser",
+   "section_id": "browser",
+   "columns": [
+    "Slide",
+    "Livelits",
+    "A click, compiled, ms",
+    "A click, on the interpreter, ms",
+    "Loaded fresh, compiled / on the interpreter, s"
+   ],
+   "rows": [
+    [
+     "Polygons",
+     "1",
+     "77",
+     "124",
+     "5.4 / 4.6"
+    ],
+    [
+     "Polygon Viewer",
+     "1",
+     "83",
+     "73",
+     "4.5 / 4.5"
+    ],
+    [
+     "Full Body",
+     "43",
+     "319",
+     "368",
+     "12.9 / 21.3"
+    ],
+    [
+     "the Witch",
+     "53",
+     "304",
+     "354",
+     "19.2 / 22.2"
+    ],
+    [
+     "Hands",
+     "17",
+     "168",
+     "213",
+     "14.9 / 14.5"
+    ],
+    [
+     "Scenes",
+     "10",
+     "122",
+     "147",
+     "13.6 / 14.8"
     ]
    ]
   }

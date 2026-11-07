@@ -1,0 +1,112 @@
+[
+ {
+  "section": "How fast",
+  "section_id": "speed",
+  "columns": [
+   "Compiler",
+   "µs a call, median",
+   "the fastest call"
+  ],
+  "rows": [
+   [
+    "Melange 5.0.0",
+    "0.46",
+    "0.35"
+   ],
+   [
+    "ReScript 12.3.1",
+    "0.55",
+    "0.38"
+   ],
+   [
+    "js_of_ocaml 5.9.1 (the rule inlined into the loop)",
+    "0.71",
+    "0.40"
+   ],
+   [
+    "JS written by hand (the example's jsHandler)",
+    "0.90",
+    "0.71"
+   ],
+   [
+    "hazel-jit",
+    "1.59",
+    "0.66"
+   ],
+   [
+    "Hazel's interpreter (Evaluator.evaluate_open)",
+    "358",
+    ""
+   ]
+  ]
+ },
+ {
+  "section": "How each lays out values",
+  "section_id": "values",
+  "columns": [
+   "Value",
+   "hazel-jit",
+   "ReScript",
+   "Melange",
+   "js_of_ocaml"
+  ],
+  "rows": [
+   [
+    "a list cell; the empty list",
+    "{h, t}; null",
+    "{hd, tl}; 0",
+    "{hd, tl}; 0",
+    "[0, hd, tl]; 0"
+   ],
+   [
+    "a record, or labeled tuple",
+    "an array, each label also a property",
+    "an object by field name",
+    "an object by field name",
+    "an array, [0, f1, f2, …]"
+   ],
+   [
+    "Take(a, b, k)",
+    "{c: \"Take\", v: [a, b, k]}",
+    "{TAG: \"Take\", _0, _1, _2}",
+    "{TAG: 0, _0, _1, _2}",
+    "[0, a, b, k]"
+   ],
+   [
+    "Done (no argument)",
+    "{c: \"Done\"}",
+    "\"Done\"",
+    "0",
+    "0"
+   ],
+   [
+    "Some(t); None",
+    "{c: \"Some\", v: t}; {c: \"None\"}",
+    "t; undefined",
+    "t; undefined",
+    "[0, t]; 0"
+   ],
+   [
+    "a function of two",
+    "one argument, an array [a, b]",
+    "f(a, b)",
+    "f(a, b)",
+    "f(a, b)"
+   ],
+   [
+    "i == 0 on Ints",
+    "$R.eq(i, 0)",
+    "i === 0",
+    "i === 0",
+    "0 === i"
+   ],
+   [
+    "a tail call",
+    "a call",
+    "a while loop",
+    "a while loop",
+    "a for loop"
+   ]
+  ]
+ }
+]
