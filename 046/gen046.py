@@ -19,6 +19,8 @@ EXTRA = """
   .pair { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .pair h4 { margin: 10px 0 2px; font-size: 0.95em; }
   table.vals.wrap1 td:first-child { white-space: normal; min-width: 9em; }
+  /* (a narrow window: a wide table scrolls in its own box, not the page) */
+  table.vals { display: block; overflow-x: auto; max-width: 100%; }
   .witchrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
   .witchrow figure.witchcell { margin: 0; text-align: center; }
   .witchrow img { width: 100%; height: auto; display: block; border-radius: 6px; }
@@ -179,6 +181,7 @@ body = body.replace("{{fig_speed_log}}", keep("speed-log", fig_speed_log()))
 import witch046 as W  # noqa: E402
 body = body.replace("{{fig_witch}}", keep("witch", W.fig_witch())).replace("{{fig_witch_frame}}", keep("witch-frame", W.fig_witch_frame()))
 body = body.replace("{{witch_svgs}}", W.fig_witch_svgs())
+body = body.replace("{{fig_witch_firefox}}", keep("witch-firefox", W.fig_witch_firefox()))
 for k, v in W.WNUMS.items():
     body = body.replace("{{w:" + k + "}}", v)
 WF = dict(W.WT["node_fastest_ms"], jsoo_tofixed=W.WT["jsoo_tofixed_fastest_ms"], jsoo_printf=W.WT["jsoo_printf_fastest_ms"])

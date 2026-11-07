@@ -123,6 +123,61 @@ def fig_witch_frame():
             "Shaded: inside one frame at 60 fps. The frames a second are each time alone, as if updating the state were free.</figcaption></figure></div>")
 
 
+# (Matthew, 2026-11-07: "Yes, in Firefox") the slide's views timed again in the page, in Firefox on GitHub's machines
+FF = json.loads(DW("firefox.json"))
+FFV = {k: v for k, v in FF["views"].items() if "before the run" not in k}
+FF_PIC = next(v for k, v in FFV.items() if k.startswith("Drawing.picture"))
+FF_POLY = [v for k, v in FFV.items() if k.startswith("Drawing.polygons")]
+_pc = sorted(v["compiled"]["median"] for v in FF_POLY)
+_pi = sorted(v["interpreted"]["median"] for v in FF_POLY)
+_px = sorted(v["interpreted"]["median"] / v["compiled"]["median"] for v in FF_POLY)
+WNUMS.update({
+    "ff_pic": f"{FF_PIC['interpreted']['median']:.0f}", "ff_pic_fps": fps(FF_PIC["interpreted"]["median"]),
+    "ff_pic_app": f"{FF_PIC['compiled']['median']:.0f}", "ff_pic_app_fps": fps(FF_PIC["compiled"]["median"]),
+    "ff_pic_late": f"{FF_PIC['interpreted']['median'] / FRAME_60:.0f}",
+    "ff_poly_lo": f"{_pc[0]:.2f}", "ff_poly_hi": f"{_pc[-1]:.2f}", "ff_poly_fps_lo": fps(_pc[-1]), "ff_poly_fps_hi": fps(_pc[0]),
+    "ff_polyi_lo": f"{_pi[0]:.0f}", "ff_polyi_hi": f"{_pi[-1]:.0f}", "ff_polyi_fps_lo": fps(_pi[-1]), "ff_polyi_fps_hi": fps(_pi[0]),
+    "ff_polyx_lo": f"{_px[0]:.0f}", "ff_polyx_hi": f"{_px[-1]:.0f}", "ff_run": str(FF["run"]), "ff_sha": FF["sha"],
+})
+
+
+def fig_witch_firefox():
+    """the Witch slide's views in Firefox, in the app, against a 60 fps frame: the picture on the interpreter (its
+    compiled path refused), and the slide's four polygon editors both ways"""
+    rows = [("Drawing.picture", "interpreter (not compiled)", FF_PIC["compiled"]["median"], "var(--warn, #b45309)")]
+    for i, v in enumerate(sorted(FF_POLY, key=lambda v: v["interpreted"]["median"])):
+        rows.append((f"Drawing.polygons {i + 1}", "interpreter", v["interpreted"]["median"], "var(--warn, #b45309)"))
+        rows.append(("", "compiled", v["compiled"]["median"], "var(--accent2)"))
+    W, left, right = 940, 330, 120
+    lo, hi = math.log10(0.1), math.log10(300)
+    xof = lambda v: left + (math.log10(v) - lo) / (hi - lo) * (W - left - right)
+    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The Witch slide\'s views in Firefox, in the app, '
+           'ms a render on a log scale, against a 60 fps frame (16.7 ms)</text>']
+    top, step = 34, 24
+    bottom = top + len(rows) * step
+    for t in (0.1, 1, 10, 100):
+        x = xof(t)
+        out.append(f'<line x1="{x:.1f}" y1="28" x2="{x:.1f}" y2="{bottom:.0f}" stroke="var(--line)" stroke-width="1"/>')
+        out.append(f'<text x="{x:.1f}" y="{bottom + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{t:g} ms</text>')
+    x60 = xof(FRAME_60)
+    out.append(f'<rect x="{left}" y="28" width="{x60 - left:.1f}" height="{bottom - 28:.0f}" fill="var(--good, #2e7d32)" opacity="0.07"/>')
+    out.append(f'<line x1="{x60:.1f}" y1="26" x2="{x60:.1f}" y2="{bottom + 2:.0f}" stroke="var(--good, #2e7d32)" stroke-width="2"/>')
+    out.append(f'<text x="{x60 + 5:.1f}" y="{bottom + 14}" font-size="11" fill="var(--good, #2e7d32)" font-weight="700">60 fps, 16.7 ms</text>')
+    y = top
+    for name, sub, v, colour in rows:
+        label = (html.escape(name) + ", " if name else "") + html.escape(sub)
+        out.append(f'<text x="{left - 10}" y="{y + 13}" font-size="12" text-anchor="end" fill="var(--ink)"{" font-weight=\"700\"" if name else ""}>{label}</text>')
+        out.append(f'<rect x="{left}" y="{y + 3}" width="{max(2, xof(v) - left):.1f}" height="14" rx="3" fill="{colour}" opacity="0.85"><title>{html.escape(name or "")} {sub}: {v:.3f} ms</title></rect>')
+        out.append(f'<text x="{max(xof(v), left + 2) + 8:.1f}" y="{y + 14}" font-size="11" fill="var(--ink)">{ms(v)} ms ({fps(v)} fps)</text>')
+        y += step
+    h = bottom + 24
+    alt = "In Firefox, against 16.7 ms: " + "; ".join(f"{n or 'the same'}, {s}, {ms(v)} ms" for n, s, v, _ in rows)
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{alt}" style="width:100%;height:auto;display:block">'
+            + "".join(out) + f"</svg><figcaption>Firefox on GitHub's machines, a release build ({FF['sha']}, run {FF['run']}): each view "
+            "run again on its last model, bypassing the app's memo, 15 samples, each a loop of calls at least 25 ms long. The frames a "
+            "second are each time alone, as if updating the state were free.</figcaption></figure></div>")
+
+
 SVGS = [("hazel-jit", "hazel-jit", NODE["hazel-jit"]), ("rescript", "ReScript", NODE["ReScript"]),
         ("melange", "Melange", NODE["Melange"]), ("js_of_ocaml", "js_of_ocaml", WT["jsoo_printf_ms"]),
         ("by-hand", "by hand", NODE["hand-written JS"])]

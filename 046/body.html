@@ -9,7 +9,7 @@
 <li><a href="#speed">How fast</a>: on the rule, Melange and ReScript beat JS written by hand; hazel-jit is about {{n:hj_x_res}} times ReScript, and {{n:interp_x_hj}} times faster than the interpreter.</li>
 <li><a href="#code">The same rule, compiled</a>: side by side.</li>
 <li><a href="#values">How each lays out values</a>: lists, records, constructors, options, arguments.</li>
-<li><a href="#witch">A view: the Witch slide's picture</a>: all five within {{w:hj_x_hand}}% of one another, {{w:hand}} to {{w:hj}} ms (about {{w:hj_fps}} to {{w:hand_fps}} fps), since most of the work is one builtin; on the interpreter a frame is {{w:interp}} ms ({{w:interp_fps}} fps), compiled {{w:frame}} ms ({{w:frame_fps}} fps), well inside 60 fps. The drawings, and one page per compiled output.</li>
+<li><a href="#witch">A view: the Witch slide's picture</a>: all five within {{w:hj_x_hand}}% of one another, {{w:hand}} to {{w:hj}} ms (about {{w:hj_fps}} to {{w:hand_fps}} fps), since most of the work is one builtin; in the Hazel test a frame is {{w:interp}} ms ({{w:interp_fps}} fps) on the interpreter and {{w:frame}} ms ({{w:frame_fps}} fps) compiled; in the app, in Firefox, the picture is not compiled yet ({{w:ff_pic}} ms, {{w:ff_pic_fps}} fps), while the slide's polygon editors are, {{w:ff_poly_lo}} to {{w:ff_poly_hi}} ms against {{w:ff_polyi_lo}} to {{w:ff_polyi_hi}}. The drawings, and one page per compiled output.</li>
 <li><a href="#witch-values">How each lays out the view's values</a>: shapes, vertices, Html, numbers formatted, the walks.</li>
 <li><a href="#general">What holds across both</a>: the compilers differ in calls, matches and layouts, and converge where a builtin does the work.</li>
 <li><a href="#suggests">What it suggests for hazel-jit</a>: five changes to its output, in the order they would help.</li>
@@ -83,7 +83,7 @@
 <p><b>On the deck's largest view, the five versions run within {{w:hj_x_hand}}% of one another: {{w:hand}} to {{w:hj}} ms (about {{w:hj_fps}} to {{w:hand_fps}} fps, as if updating the state were free), hand-written JS the fastest and hazel-jit the slowest of the five, {{w:hj_x_res}}% behind ReScript. Most of the work is one builtin: the picture's {{w:tofixed_calls}} numbers formatted with <code>toFixed</code> take {{w:tofixed}} ms alone. The exception is js_of_ocaml through OCaml's <code class="ml">Printf</code>: {{w:jsoo_pf}} ms ({{w:jsoo_pf_fps}} fps), {{w:pf_x_tf}} times its time when it calls <code>toFixed</code> instead.</b> All five draw the same SVG, byte for byte ({{w:svg_chars}} characters), and it is the interpreter's drawing.</p>
 <p>The Livelit Playground deck's Witch slide draws Messed Up Dress Up's witch, {{w:shapes}} shapes and {{w:points}} points in all. Its <code class="hz">^picture</code> livelit shows a picture it is given: the view fits a box around every point, then writes one SVG <code>polygon</code> or <code>polyline</code> per shape, each coordinate formatted to one decimal. Here that view is written again in ReScript and in OCaml (for Melange and js_of_ocaml) as the Hazel is written, and once by hand in JS. Each version is timed on the same picture in one Node process (js_of_ocaml's in its own), from the picture as that language holds it to the Html the view returns.</p>
 {{fig_witch}}
-<table class="vals">
+<table class="vals wrap1">
 <tr><th>Version</th><th>ms, the view's work (median)</th><th>fps, if updating the state were free</th><th>the fastest call, ms</th></tr>
 <tr><td>JS written by hand</td><td>{{w:hand}}</td><td>{{w:hand_fps}}</td><td>{{wf:hand-written JS}}</td></tr>
 <tr><td>Melange 5.0.0</td><td>{{w:mel}}</td><td>{{w:mel_fps}}</td><td>{{wf:Melange}}</td></tr>
@@ -94,10 +94,16 @@
 <tr><td>Hazel's interpreter (in the app's terms, <a href="#witch-frame">below</a>)</td><td>{{w:interp}}</td><td>{{w:interp_fps}}</td><td></td></tr>
 </table>
 
-<h3 id="witch-frame">In the app's terms: one frame</h3>
+<h3 id="witch-frame">In the Hazel test: one frame</h3>
+<p class="note"><i>Corrected 11-07, 13:28: this section first said "in the app's terms". It is the Hazel test's process, with the view handed the picture already evaluated. In the app, in Firefox, the picture's view is not compiled yet, and a render takes {{w:ff_pic}} ms (<a href="#witch-firefox">below</a>).</i></p>
 <p><b>On the interpreter, a frame of the Witch's picture takes {{w:interp}} ms ({{w:interp_fps}} fps), about {{w:frames_late}} frames' time at 60 fps. Compiled, it takes {{w:frame}} ms ({{w:frame_fps}} fps), {{w:interp_x_frame}} times less, leaving {{w:frame_left}} ms of a 60 fps frame's 16.7 ms.</b> These are timed in the Hazel test's process, the way the app runs a view. On the interpreter: the view evaluated ({{w:interp_eval}} ms), then its command run, which evaluates the splice's value and is most of the time, then its Html drawn as virtual DOM. Compiled: the model carried into JS ({{w:trip_in}} ms), the view and its commands run in JS ({{w:app_view}} ms), and the Html drawn straight from JS ({{w:draw_only}} ms).</p>
-<p>That process holds all of Hazel, and there the same compiled view takes {{w:app_over_node}} times as long as in the benchmark's own process: {{w:app_view}} ms against {{w:hj}} ms. The difference is not the code; it is likely the process's large heap and its garbage collection. Which of the two a browser sees, on the slide itself, is the next thing to measure.</p>
+<p>That process holds all of Hazel, and there the same compiled view takes {{w:app_over_node}} times as long as in the benchmark's own process: {{w:app_view}} ms against {{w:hj}} ms. The difference is not the code; it is likely the process's large heap and its garbage collection.</p>
 {{fig_witch_frame}}
+
+<h3 id="witch-firefox">In Firefox, in the app</h3>
+<p><b>In the app, the Witch's picture is not compiled yet: a render takes {{w:ff_pic}} ms in Firefox ({{w:ff_pic_fps}} fps), about {{w:ff_pic_late}} frames' time at 60 fps, all on the interpreter. Its model reaches the view holding the splice's code, <code class="hz">skinned(dressed(outfit))</code>, not the picture it evaluates to, and hazel-jit carries only values into JS. The slide's views that do compile are as fast in the browser as in Node: its four polygon editors take {{w:ff_poly_lo}} to {{w:ff_poly_hi}} ms compiled (about {{w:ff_poly_fps_lo}} to {{w:ff_poly_fps_hi}} fps), against {{w:ff_polyi_lo}} to {{w:ff_polyi_hi}} ms on the interpreter, {{w:ff_polyx_lo}} to {{w:ff_polyx_hi}} times faster.</b></p>
+<p>Timed in the page itself: each livelit view the app draws now leaves a way to run it again on its last model, without the app's memo of the last answer, both ways (<code>globalThis.hazelJit.bench</code>, ^ticket(694), <code>{{w:ff_sha}}</code>), and the Firefox check (<code>scripts/jit_slides.py --bench</code>) loads the Witch slide fresh and times every polygon and picture view on it. The page's own log says why the picture stays on the interpreter: "a value hazel-jit does not carry into JS", a <code class="hz">Splice</code> around that code. The test hands the view the picture already evaluated, which is why its frame is {{w:frame}} ms; in the app, the {{w:frame}} ms waits on the picture reaching the view as a value. In the laptop's Chromium (the browser pane, a release build), the same: the picture 60 ms on the interpreter, a polygon editor 0.32 ms compiled against 13 ms.</p>
+{{fig_witch_firefox}}
 
 <h3 id="witch-drawings">The drawings</h3>
 <p>Each version's Html, written out as SVG markup by a function in its own language, shown here as an image. They are the same, byte for byte, and each links to its page:</p>
@@ -167,7 +173,8 @@
 <ol>
 <li>Try the first three changes in hazel-jit (arguments as JS arguments, <code>===</code> on Ints, tail calls as loops), and time the rule again.</li>
 <li>Then the layouts (flat constructors, unboxed options, objects for labeled tuples), with the trip in and out and <code>HazelJitDOM</code> changed to match.</li>
-<li>Time the Witch's picture on the slide itself, in Firefox: which of the two numbers for hazel-jit's view, {{w:hj}} ms alone or {{w:app_view}} ms in a process holding all of Hazel, does a page see, and why do they differ?</li>
+<li>Time the Witch's picture on the slide itself, in Firefox. <i>Done 11-07 (<a href="#witch-firefox">in Firefox</a>): in the app it is not compiled yet, {{w:ff_pic}} ms a render on the interpreter.</i></li>
+<li><b>Hand hazel-jit the picture's value, not its code.</b> Find where the interpreter's run of the view gets the picture from a model that holds <code class="hz">Splice(skinned(dressed(outfit)))</code>, and give hazel-jit the same value: then the Witch's frame is the test's {{w:frame}} ms in the app too.</li>
 <li>Find what the interpreter spends its {{w:interp}} ms on: most of it is the splice's value, the picture, evaluated again on every render, which the app's call memo may already spare it.</li>
 </ol>
 
