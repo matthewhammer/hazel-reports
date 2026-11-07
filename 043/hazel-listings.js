@@ -40,15 +40,137 @@
   function specOf(P) {
     return { preamble: P.preamble ? P.preamble.text : "", modules: P.modules.map(L => ({ name: L.module, text: L.text })), tail: P.tail || "" };
   }
+
+  // ---- long lines broken to fit the listing's width (^ticket(707), hazelgrove/hazeljs#1; Matthew, 2026-11-06: "adjust to
+  // resize --- like we do in MUDU, to linewrap dynamically on LHS (or any code listing)"). Messed Up Dress Up's way, from its
+  // js/25-scripting.js at 15181ee0 (scriptTokens, scriptFlowPieces, scriptFlow, scriptTileCols), Hazel's half of it: a line
+  // longer than the listing is laid out as a pretty-printer would, broken at the outermost places the code allows (a case's
+  // arms, a let's body, a list's items...), each piece 2 deeper; only spaces and line breaks change, never inside a string or
+  // a comment, so the program means what it meant. The frame is sent that copy; the page keeps its own text, so a wider
+  // listing gets the long lines back.
+  const KEYWORDS = new Set("let in fun case end if then else type module test rec and or".split(" "));
+  function tokens(text) {
+    const rules = [["c", /#[^#\n]*#?/y], ["s", /"(\\.|[^"\\\n])*"?/y], ["n", /\d+(\.\d+)?/y],
+      ["w", /[A-Za-z_]\w*/y], ["o", /=>|->|\+\+|[|=<>!+\-*\/%:;,.?#@&^~]+/y], ["t", /\s+|./y]];
+    const out = [];
+    for (let i = 0; i < text.length;) {
+      for (const [k, re] of rules) {
+        re.lastIndex = i; const m = re.exec(text);
+        if (!m || !m[0]) continue;
+        const w = m[0];
+        out.push([k === "w" ? (KEYWORDS.has(w) ? "k" : /^[A-Z]/.test(w) ? "C" : "") : k === "t" ? "" : k, w]);
+        i += w.length; break;
+      }
+    }
+    return out;
+  }
+  // the places a line may break, best first: before a case's | ; before a sum's + ; before then and else ; after ; and before
+  // a closing } ; after , and { and in ; after => and -> ; before || and && ; after a let's =. (Since 707, a string's ++ breaks
+  // where a sum's + does: the game's never did, and a long message in a Say(...) stayed wider than the listing)
+  const BREAKS = [[["|"], []], [["+", "++"], []], [["then", "else"], []], [["}"], [";"]], [[], [",", "{", "in"]], [[], ["=>", "->"]], [["||", "&&"], []], [[], ["="]]];
+  function flowPieces(toks, indent, cols, out) {
+    const text = toks.map(([, w]) => w).join("").trim();
+    if (indent + text.length <= cols) { out.push(" ".repeat(indent) + text); return; }
+    // a comment alone, too long: several comments, its words shared out, each # ... # closed
+    const real = toks.filter(([, w]) => w.trim());
+    if (real.length === 1 && real[0][0] === "c") {
+      const words = text.replace(/^#\s*/, "").replace(/\s*#$/, "").split(/\s+/);
+      const room = Math.max(12, cols - indent - 4);
+      let cur = "";
+      const flush = () => { if (cur) out.push(" ".repeat(indent) + "# " + cur + " #"); cur = ""; };
+      for (const w of words) { if (cur && cur.length + 1 + w.length > room) flush(); cur = cur ? cur + " " + w : w; }
+      flush(); return;
+    }
+    // each place: the token index the next piece starts at, the bracket depth there, how good a place it is, and how deeply
+    // it sits inside an open let, fun, case or if (a then, else, in, -> or => belongs to its own one, so a line cuts at its
+    // outermost first, and an inner one that fits stays whole)
+    const places = [], open = [];
+    let depth = 0;
+    toks.forEach(([k, w], i) => {
+      const code = k === "o" || k === "k" || (k === "" && /^[()[\]{}]$/.test(w));
+      const here = () => open.filter(o => o.depth === depth), top = () => here().pop();
+      const owner = kind => here().some(o => o.kind === kind && !o.done);
+      const upTo = kind => { while (!(top().kind === kind && !top().done)) open.pop(); top().done = true; };
+      let part = false;
+      if (k === "k" && ["if", "let", "fun", "case"].includes(w)) open.push({ kind: w, depth, done: false });
+      else if (k === "k" && w === "then") part = true;
+      else if (k === "k" && w === "else") { if (owner("if")) upTo("if"); part = true; }
+      else if (k === "k" && w === "in" && owner("let")) { upTo("let"); part = true; }
+      else if (k === "o" && w === "->" && owner("fun")) { upTo("fun"); part = true; }
+      else if (k === "o" && w === "=>" && owner("arm")) { upTo("arm"); part = true; }
+      else if (k === "o" && w === "|" && owner("case")) { while (top().kind !== "case") open.pop(); part = true; }
+      else if (k === "k" && w === "end" && owner("case")) { while (top().kind !== "case") open.pop(); open.pop(); }
+      else if ((k === "o" && ["|", ",", ";"].includes(w)) || (k === "k" && w === "in")) while (top()) open.pop();
+      const nest = part ? Math.max(0, here().length - 1) : here().length, d0 = depth;
+      if (k === "o" && w === "|") open.push({ kind: "arm", depth, done: false });
+      if (k === "c" && i > 0) places.push({ at: i, depth, rank: -1, nest: 0 });   // (a comment after code: first to its own line)
+      if (code && i > 0) BREAKS.forEach(([before], rank) => { if (before.includes(w)) places.push({ at: i, depth, rank, nest }); });
+      if (k === "" || k === "o") for (const ch of w) depth += "([{".includes(ch) ? 1 : ")]}".includes(ch) ? -1 : 0;
+      while (open.length && open[open.length - 1].depth > depth) open.pop();
+      if (code && i + 1 < toks.length) BREAKS.forEach(([, after], rank) => { if (after.includes(w)) places.push({ at: i + 1, depth, rank, after: w, nest: depth === d0 ? nest : 0 }); });
+    });
+    if (!places.length) { out.push(" ".repeat(indent) + text); return; }
+    const low = Math.min(...places.map(p => p.depth));
+    const atDepth = places.filter(p => p.depth === low), least = Math.min(...atDepth.map(p => p.nest)), atLow = atDepth.filter(p => p.nest === least);
+    const best = Math.min(...atLow.map(p => p.rank));
+    const chosen = atLow.filter(p => p.rank === best || (best === 3 && p.after === "{"));
+    const cuts = [...new Set(chosen.map(p => p.at))].sort((x, y) => x - y);
+    // members cut apart at the line's own level (after ; , or in) are siblings, each at the line's indent; so are an if's then
+    // and else, and a case's arms, when the piece begins with that if or case
+    const sibling = new Set(low === 0 ? chosen.filter(p => [";", ",", "in"].includes(p.after)).map(p => p.at) : []);
+    const lead = toks.filter(([, w]) => w.trim()).slice(0, 2).map(([, w]) => w).join(" ");
+    if (low === 0 && (lead === "else if" || lead.startsWith("if "))) chosen.filter(p => !p.after && ["then", "else"].includes(toks[p.at][1])).forEach(p => sibling.add(p.at));
+    if (low === 0 && lead.startsWith("case ")) chosen.filter(p => !p.after && toks[p.at][1] === "|").forEach(p => sibling.add(p.at));
+    let from = 0;
+    for (const c of [...cuts, toks.length]) {
+      const piece = toks.slice(from, c);
+      if (piece.some(([, w]) => w.trim())) {
+        const first = piece.filter(([, w]) => w.trim())[0][1];
+        const ind = from === 0 || sibling.has(from) ? indent : indent + 2 * (/^[)\]}]/.test(first) ? Math.max(0, low - 1) : Math.max(1, low));
+        flowPieces(piece, ind, cols, out);
+      }
+      from = c;
+    }
+  }
+  function flow(text, cols) {
+    if (!(cols > 20) || cols === Infinity) return text;
+    return text.split("\n").flatMap(line => {
+      if (line.length <= cols) return [line];
+      const base = line.match(/^ */)[0].length, out = [];
+      flowPieces(tokens(line.slice(base)), base, cols, out);
+      return out;
+    }).join("\n");
+  }
+  // the listing's width in characters, measured in the font the frame is sent (the page's own for its code), less the
+  // editor's margins; Infinity while it has no width (not drawn yet), so nothing is broken
+  const GUTTER = 3;
+  let measure = null;
+  function cols(L) {
+    const w = L.holder.clientWidth;
+    if (!(w > 0)) return Infinity;
+    measure = measure || document.createElement("canvas").getContext("2d");
+    measure.font = L.fontSize + "px " + L.fontFamily;
+    const ch = measure.measureText("0123456789").width / 10 || 0.6 * L.fontSize;
+    return Math.max(20, Math.floor(w / ch) - GUTTER);
+  }
+
+  // (since ^ticket(707)) the listing's own text broken to fit it; the others' as they are (the frame shows its own alone)
   function frameSpec(L) {
-    const P = programs.get(L.program);
-    return L.module ? specOf(P) : { preamble: L.text, modules: [], tail: "" };
+    const P = programs.get(L.program), c = cols(L);
+    if (!L.module) return { preamble: flow(L.text, c), modules: [], tail: "" };
+    const sp = specOf(P);
+    return { ...sp, modules: sp.modules.map(m => m.name === L.module ? { ...m, text: flow(m.text, c) } : m) };
+  }
+  // what the frame shows of the listing's own text, as last sent: an edit message carrying it back is no edit
+  function shownOf(sp, L) {
+    return L.module ? (sp.modules.find(m => m.name === L.module) || {}).text : sp.preamble;
   }
   function send(L, force) {
     if (!L.ready) return;
     const sp = frameSpec(L), key = JSON.stringify(sp);
     if (key === L.sent && !force) return;
     L.sent = key;
+    L.shown = shownOf(sp, L);
     post(L, { type: "set", ...sp });
   }
   function sendAll(P, except) { for (const L of [P.preamble, ...P.modules]) if (L && L !== except) send(L); }
@@ -122,7 +244,7 @@
       const dark = pageDark();
       post(L, { type: "theme", dark, contrast: dark });
       if (L.editable) post(L, { type: "editable", on: true });
-      post(L, { type: "font", size: L.fontSize });
+      post(L, { type: "font", size: L.fontSize, family: L.fontFamily });   // (the family, so cols() measures what it shows)
       if (L.module) post(L, { type: "focus", module: L.module });
       send(L, true);
       if (L.reveal) { const n = L.reveal; L.reveal = null; setTimeout(() => post(L, { type: "reveal", name: n }), 300); }
@@ -143,9 +265,10 @@
       // was, any edit to the preamble left `in?` before the modules, the whole program broken, and every listing showing it
       // however the edit was undone. The preamble is its text without that hole.
       const text = L.module ? String(m.text || "") : String(m.text || "").replace(/\s+$/, "").replace(/\bin\s*\?$/, "in");
-      if (text === L.text) return;
+      if (text === L.text || text === L.shown) return;
       L.undo.push(L.text); L.redo = [];
       L.text = text;
+      L.shown = text;
       L.sent = JSON.stringify(frameSpec(L));   // (this frame has it: not posted back, its caret stays)
       sendAll(P, L);
       changed(P);
@@ -214,6 +337,7 @@
       holder.append(pre);
       const L = { pre, holder, program, module: pre.dataset.module || null, text: pre.textContent.replace(/\s+$/, ""),
                   editable: pre.dataset.editable !== "false", fontSize: Math.round(parseFloat(getComputedStyle(pre).fontSize) || 13),
+                  fontFamily: getComputedStyle(pre).fontFamily || "ui-monospace, Menlo, Consolas, monospace", shown: null,
                   frame: null, ready: false, sent: null, undo: [], redo: [], original: null };
       L.original = L.text;
       if (L.module) P.modules.push(L); else P.preamble = L;
@@ -234,6 +358,12 @@
       document.head.prepend(st);
     }
     window.addEventListener("message", onMessage);
+    // broken to fit again when a listing's width changes (the window, a divider, full screen): each frame whose columns
+    // changed is sent its text anew, 300 ms after the last change (send() sends nothing when nothing changed)
+    let reflowTimer = null;
+    const reflowSoon = () => { clearTimeout(reflowTimer); reflowTimer = setTimeout(() => { for (const L of listings) send(L); }, 300); };
+    if (window.ResizeObserver) { const ro = new ResizeObserver(reflowSoon); for (const L of listings) ro.observe(L.holder); }
+    window.addEventListener("resize", reflowSoon);
     const again = () => { const dark = pageDark(); for (const L of listings) if (L.ready) post(L, { type: "theme", dark, contrast: dark }); };
     new MutationObserver(again).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", again);
