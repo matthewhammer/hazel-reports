@@ -63,10 +63,33 @@ NUMS = {
     "poly_first_1": ms(poly["through_boundary_first_ms"][0]),
     "poly_first_last5": ms(med(poly["through_boundary_first_ms"][-5:])),
 }
+# (Matthew, 2026-11-07: three ideas for the way back) cheaper ids; a view's answer drawn without Hazel; the way back as a diff
+NUMS.update({
+    "poly_ids_old": ms(med(poly["fresh_ids_old_ms"])),
+    "poly_ids_x": f"{med(poly['fresh_ids_old_ms']) / med(poly['fresh_ids_ms']):.1f}",
+    "poly_back_shared": ms(med(poly["trip_back_shared_id_ms"])),
+    "poly_ids_left": ms(med(poly["trip_back_ms"]) - med(poly["trip_back_shared_id_ms"])),
+    "poly_cmd": ms(med(poly["view_cmd_run_ms"])),
+    "poly_draw": ms(med(poly["hazeldom_draw_ms"])),
+    "poly_raw": ms(med(poly["vdom_to_raw_ms"])),
+    "poly_hroute": ms(med(poly["hazel_route_draw_ms"])),
+    "poly_direct": ms(med(poly["direct_draw_ms"])),
+    "poly_direct_x": f"{med(poly['hazel_route_draw_ms']) / med(poly['direct_draw_ms']):.1f}",
+    "poly_e2e_hazel": ms(med(poly["trip_in_ms"]) + med(poly["call_alone_ms"]) + med(poly["hazel_route_draw_ms"])),
+    "poly_e2e_direct": ms(med(poly["trip_in_ms"]) + med(poly["call_alone_ms"]) + med(poly["direct_draw_ms"])),
+    "poly_e2e_interp": ms(med(poly["interpreter_ms"]) + med(poly["hazeldom_draw_ms"])),
+    "poly_e2e_x": f"{(med(poly['interpreter_ms']) + med(poly['hazeldom_draw_ms'])) / (med(poly['trip_in_ms']) + med(poly['call_alone_ms']) + med(poly['direct_draw_ms'])):.0f}",
+})
+DIFF = {n: runs[f"the way back as a diff, {n} points"] for n in (10, 100, 1000, 10000)}
+for n, r in DIFF.items():
+    dp = med(r["diff_ms"]) + med(r["patch_ms"])
+    NUMS.update({f"d{n}_whole": ms(med(r["whole_ms"])), f"d{n}_diff": ms(med(r["diff_ms"])), f"d{n}_patch": ms(med(r["patch_ms"])),
+                 f"d{n}_dp": ms(dp), f"d{n}_x": f"{med(r['whole_ms']) / dp:,.0f}", f"d{n}_shared": f"{int(r['shared_elements'][0]):,}"})
 CENSUS = poly.get("census", {})
 for side in ("model", "answer"):
     for k, v in CENSUS.get(side, {}).items():
-        NUMS[f"{side}_{k}"] = f"{v:,}"
+        if isinstance(v, int):
+            NUMS[f"{side}_{k}"] = f"{v:,}"
 NUMS.update({
     "answer_x_model": f"{CENSUS['answer']['visits'] / CENSUS['model']['visits']:.1f}",
     "terms_made": f"{CENSUS['terms_made']:,}",
@@ -164,6 +187,71 @@ def fig_boundary():
             "answer. Percentages are of the whole render's median.</figcaption></figure></div>")
 
 
+def fig_routes():
+    """From the model to the page's virtual DOM, two ways, to scale: through Hazel, and straight from the JS answer."""
+    W, left, right = 940, 190, 80
+    routes = [
+        ("through Hazel", [("model in", med(poly["trip_in_ms"]), "var(--accent2)", "0.5"),
+                           ("view", med(poly["call_alone_ms"]), "var(--accent)", "0.9"),
+                           ("back as Hazel, run, drawn by HazelDOM", med(poly["hazel_route_draw_ms"]), "var(--muted)", "0.55")]),
+        ("straight from JS", [("model in", med(poly["trip_in_ms"]), "var(--accent2)", "0.5"),
+                              ("view", med(poly["call_alone_ms"]), "var(--accent)", "0.9"),
+                              ("drawn by HazelJitDOM", med(poly["direct_draw_ms"]), "var(--accent2)", "0.9")]),
+    ]
+    scale = max(sum(p[1] for p in parts) for _, parts in routes)
+    width = W - left - right
+    out = [text(16, 18, "One Polygons render, compiled, from its model to the page's virtual DOM (ms, to scale)", 12.5, weight="700")]
+    y = 34
+    for name, parts in routes:
+        out.append(text(left - 10, y + 22, name, 12, "end", "var(--ink)", "700"))
+        x = left
+        for label, v, colour, op in parts:
+            w = width * v / scale
+            out.append(f'<rect x="{x:.1f}" y="{y}" width="{max(w, 2):.1f}" height="34" rx="4" fill="{colour}" opacity="{op}"/>')
+            if w > 150:
+                out.append(text(x + w / 2, y + 21, label + ": " + ms(v), 11.5, "middle", "var(--ink)", "700"))
+            x += w
+        out.append(text(x + 6, y + 21, ms(sum(p[1] for p in parts)) + " ms", 12, "start", "var(--ink)", "700"))
+        y += 50
+    out.append(text(16, y + 10, "The first two steps, the model into JS and the compiled view, are " + NUMS["poly_in"] + " and " + NUMS["poly_call"]
+                    + " ms on both. On the interpreter the same render is " + NUMS["poly_e2e_interp"] + " ms.", 11.5, "start", "var(--muted)"))
+    h = y + 22
+    alt = (f"From the model to the virtual DOM: through Hazel {NUMS['poly_e2e_hazel']} ms, of which the trip back, the command and HazelDOM's "
+           f"drawing are {NUMS['poly_hroute']} ms; straight from JS {NUMS['poly_e2e_direct']} ms, of which the drawing is {NUMS['poly_direct']} ms.")
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{alt}" '
+            'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>Medians of " + NUMS["n"]
+            + " runs each, warm. Both routes make the same virtual DOM, compared as virtual-dom's own objects (event handlers compared only as functions)."
+            "</figcaption></figure></div>")
+
+
+def fig_diff():
+    """A list of n points, one changed: carried back whole, and diffed and patched, on a log scale."""
+    import math
+    W, left, right = 940, 130, 150
+    lo, hi = math.log10(0.001), math.log10(200)
+    xof = lambda v: left + (math.log10(max(v, 0.001)) - lo) / (hi - lo) * (W - left - right)
+    out = [text(16, 18, "One point of n changed, carried back as Hazel: whole, or as a diff (ms, a log scale)", 12.5, weight="700")]
+    y = 34
+    bottom = 34 + len(DIFF) * 52
+    for tick in (0.001, 0.01, 0.1, 1, 10, 100):
+        x = xof(tick)
+        out.append(f'<line x1="{x:.1f}" y1="28" x2="{x:.1f}" y2="{bottom:.0f}" stroke="var(--line)" stroke-width="1"/>')
+        out.append(text(x, bottom + 14, f"{tick:g} ms", 11, "middle", "var(--muted)"))
+    for n, r in DIFF.items():
+        out.append(text(left - 10, y + 24, f"{n:,} points", 12, "end", "var(--ink)", "700"))
+        for label, v, colour, dy in (("whole", med(r["whole_ms"]), "var(--muted)", 2),
+                                     ("diff + patch", med(r["diff_ms"]) + med(r["patch_ms"]), "var(--accent)", 24)):
+            x = xof(v)
+            out.append(f'<rect x="{left}" y="{y + dy}" width="{max(2, x - left):.1f}" height="16" rx="3" fill="{colour}" opacity="0.85"/>')
+            out.append(text(x + 6, y + dy + 12, label + " " + ms(v) + " ms", 11.5, "start", "var(--ink)", "700"))
+        y += 52
+    h = bottom + 24
+    alt = "; ".join(f"{n:,} points: whole {NUMS[f'd{n}_whole']} ms, diff and patch {NUMS[f'd{n}_dp']} ms" for n in DIFF)
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{alt}" '
+            'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>Medians of 15 runs each, after 5 untimed. The middle "
+            "point replaced by compiled Hazel; the diff stops where the old and new lists share their tail.</figcaption></figure></div>")
+
+
 def box(x, y, w, h, title, sub, stroke="var(--line)"):
     return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="var(--paper)" stroke="{stroke}" stroke-width="1.6"/>'
             + text(x + w / 2, y + h / 2 - 2, title, 12.5, "middle", "var(--ink)", "700")
@@ -209,7 +297,7 @@ def fig_how():
 updated = subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True, text=True).stdout.strip()
 body = open(os.path.join(HERE, "body.html")).read()
 body = body.replace("{{updated}}", updated).replace("{{fig_speed}}", fig_speed()).replace("{{fig_boundary}}", fig_boundary())
-body = body.replace("{{fig_how}}", fig_how())
+body = body.replace("{{fig_how}}", fig_how()).replace("{{fig_routes}}", fig_routes()).replace("{{fig_diff}}", fig_diff())
 for k, v in NUMS.items():
     body = body.replace("{{n:" + k + "}}", v)
 assert "{{" not in body, body[body.index("{{"):body.index("{{") + 40]
