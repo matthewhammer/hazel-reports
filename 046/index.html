@@ -166,7 +166,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>46<b>)</b></code> · hazel-jit · 2026-11-07, updated 2026-11-07 11:02 MST · <span class="wip">work in progress</span> · beside <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> (<a href="../045/#next">its next step 7</a>)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>46<b>)</b></code> · hazel-jit · 2026-11-07, updated 2026-11-07 11:03 MST · <span class="wip">work in progress</span> · beside <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> (<a href="../045/#next">its next step 7</a>)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -263,7 +263,9 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#values">How each lays out values</a>: lists, records, constructors, options, arguments.</li>
 <li><a href="#suggests">What it suggests for hazel-jit</a>: five changes to its output, in the order they would help.</li>
 <li><a href="#use">Could any of them be used</a>: not as hazel-jit's back end; their layouts and optimizations, yes.</li>
-<li><a href="#next">What next</a>, and <a href="#method">how this was made</a>.</li>
+<li><a href="#next">What next</a>.</li>
+<li><a href="#alternatives">Each alternative, for and against</a>: hazel-jit stays the base; ReScript and Melange are the models for its output; js_of_ocaml stays Hazel's own build.</li>
+<li><a href="#method">How this was made</a>.</li>
 </ol>
 
 <h2 id="what">What each is<a class="anchor" href="#what" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="what" title="copy this section's address">copy link</button></h2>
@@ -526,6 +528,51 @@ document.addEventListener("DOMContentLoaded", () => {
 <li>Try the first three changes in hazel-jit (arguments as JS arguments, <code class="jx"><span class="jo">===</span></code> on Ints, tail calls as loops), and time the rule again.</li>
 <li>Then the layouts (flat constructors, unboxed options, objects for labeled tuples), with the trip in and out and <code class="jx"><span class="jC">HazelJitDOM</span></code> changed to match.</li>
 </ol>
+
+<h2 id="alternatives">Each alternative, for and against<a class="anchor" href="#alternatives" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alternatives" title="copy this section's address">copy link</button></h2>
+<p><b>For running a Hazel program's views and updates compiled, in the browser, as the program is edited, hazel-jit stays the right base: it is the only one of these that compiles Hazel itself, all of it that it can, while the program runs. ReScript and Melange are the models for its output; js_of_ocaml stays what Hazel itself is built with.</b> The question for each is the one Hazel has: compile a program that is being edited, holes and all, in the page, and hand its values back and forth with the editor.</p>
+
+<h3 id="alt-hazel-jit">hazel-jit<a class="anchor" href="#alt-hazel-jit" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alt-hazel-jit" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>For:</b> it compiles Hazel's own elaborated terms, so nothing is translated first, and whatever it cannot compile (a hole, a test, a splice) runs on the interpreter, one definition or one form at a time. It runs in the page, and fast enough to compile on every edit: the Petri rule's program in about 0.6 ms, the Polygons livelit's definition in 3 to 10 ms. Its values come back as Hazel values, closures as Hazel closures, so the editor, the probes and the interpreter take them as their own. Its runtime is about 2.5 KB; the compiler is already in Hazel's bundle.</li>
+<li><b>Against:</b> its code is the slowest of the compilers here, 1.59 µs a call, about 2.9 times ReScript's, for the reasons <a href="#suggests">above</a>: arguments in an array, a generic equality, no loops, boxed options. It uses no types to choose its code yet. Its Ints are JS numbers, which overflow and round as JS's do, the best-case trade agreed for now. It compiles one definition at a time, so it cannot inline across a program as js_of_ocaml does.</li>
+</ul>
+
+<h3 id="alt-rescript">ReScript<a class="anchor" href="#alt-rescript" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alt-rescript" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>For:</b> among the fastest code here, 0.55 µs a call, and the most readable: named tags, objects by field name, functions called with their arguments. It is mature and used in production, its layouts are documented, and its code passes values to and from plain JS easily.</li>
+<li><b>Against:</b> it is a language of its own, with its own syntax and standard library, so Hazel would be translated into it first, and Hazel's holes, gradual types and livelits have no counterpart there: the translation would refuse an unfinished program, which is most programs while they are being edited. Its compiler is a native program; in the page it would have to be loaded as JavaScript, as its online playground does. And each edit would mean a translation and a build.</li>
+</ul>
+
+<h3 id="alt-melange">Melange<a class="anchor" href="#alt-melange" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alt-melange" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>For:</b> the fastest code here, 0.46 µs a call. It compiles OCaml, the language Hazel is written in, with OCaml's own tools (dune, opam), so Hazel's implementers know it, and OCaml that Hazel's tools generate could go through it unchanged. Its playground shows it running in the browser.</li>
+<li><b>Against:</b> everything said of ReScript as a back end, with OCaml in place of ReScript: Hazel translated to OCaml first, and OCaml's type checker rejecting what Hazel accepts (a hole, a mismatch the gradual types allow). The whole compiler loaded in the page. Its constructors are numbered, not named, so its JS is a little harder to read than ReScript's.</li>
+</ul>
+
+<h3 id="alt-jsoo">js_of_ocaml<a class="anchor" href="#alt-jsoo" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alt-jsoo" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>For:</b> it already builds Hazel. It optimizes a whole program at once, and inlined the whole rule into its caller here (0.71 µs a call, a best case). It compiles OCaml's bytecode, so any OCaml runs, exactly as OCaml means it, its integers included.</li>
+<li><b>Against:</b> for a Hazel program it would mean Hazel to OCaml, OCaml to bytecode, bytecode to JS, ahead of time: far too heavy to do as a program is edited. Its JS is OCaml's memory layout (every value an array with its tag first), hard to read and awkward to hand to plain JS.</li>
+</ul>
+
+<h3 id="alt-buckle">BuckleScript<a class="anchor" href="#alt-buckle" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alt-buckle" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>For:</b> it is where ReScript's and Melange's code generator comes from, and why their output looks alike.</li>
+<li><b>Against:</b> it is no longer developed under that name: ReScript continues it, and Melange is the fork that kept OCaml. Not an option of its own.</li>
+</ul>
+
+<h3 id="alt-hand">Writing the JS by hand<a class="anchor" href="#alt-hand" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alt-hand" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>For:</b> no compiler at all, and full control: the Petri example's own fallback handler is written this way, for when its Hazel rules do not build.</li>
+<li><b>Against:</b> the point is to write the rule in Hazel, and see it in Hazel's editor. And hand-written JS is not the fastest by default: 0.90 µs a call here, slower than three of the compilers, because it is written the way people write JS.</li>
+</ul>
+
+<h3 id="alt-interpreter">Hazel's interpreter<a class="anchor" href="#alt-interpreter" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="alt-interpreter" title="copy this section's address">copy link</button></h3>
+<ul>
+<li><b>For:</b> all of Hazel: holes, tests, probes, stepping, the call memo, Hazel's own Ints. No compile step, and the semantics are the definition's.</li>
+<li><b>Against:</b> 358 µs a call on this rule, 225 times hazel-jit's; on a Polygons render, about 37 times (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>). It stays what runs whatever hazel-jit cannot.</li>
+</ul>
 
 <h2 id="method">How this was made<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
 <ul>
