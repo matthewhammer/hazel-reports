@@ -102,7 +102,7 @@ FIGS = {
              (F.fig_undo_growth(), "Each step against program size, both scales logarithmic: parallel to the dotted guide means in proportion to the program. Release build, medians of 12 (^report(36)).", False),
              (F.fig_undo_fix(), "The third fix (9df1b2601e, on #2635): a redo now costs an edit; an undo, an edit and the outline (^report(38)).", False)],
     "hazel-jit": [(kept("045", "speed"), "Each program's time per run, the interpreter against compiled, a log scale: medians of 30, Node 22, a dev build (^report(45)).", True),
-                  (kept("046", "witch-firefox"), "The Witch slide's views in Firefox, in the app, against a 60 fps frame: the picture not compiled yet, the polygon editors compiled; fps as if updating the state were free (^report(46)).", True),
+                  (kept("046", "witch-firefox"), "The Witch slide's views in Firefox, in the app, against a 60 fps frame: the picture before the fix and after it, compiled, and the polygon editors both ways; fps as if updating the state were free (^report(46)).", True),
                   (kept("046", "witch-frame"), "One frame of the Witch slide's picture in the Hazel test, the picture handed over already evaluated, against a 60 fps frame; fps as if updating the state were free (^report(46)).", True),
                   (kept("045", "routes"), "A Polygons render from the model to the page's virtual DOM: through Hazel, or straight from the compiled view's JS answer, to scale (^report(45)).", True)],
     "bucklescript": [(kept("046", "witch"), "The Witch slide's picture view, compiled five ways: the view's own work in one Node process, and the time toFixed alone takes, dashed (^report(46)).", True),
