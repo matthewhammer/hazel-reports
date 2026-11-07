@@ -48,7 +48,34 @@ NUMS = {
     "sum_jit": ms(med(rsum["compiled_ms"])),
     "sum_x": f"{med(rsum['interpreter_ms']) / med(rsum['compiled_ms']):,.0f}",
     "n": str(len(poly["interpreter_ms"])),
+    # (Matthew, 2026-11-06: which trip costs more) each trip timed alone, and its share of a compiled render
+    "poly_in": ms(med(poly["trip_in_ms"])),
+    "poly_back": ms(med(poly["trip_back_ms"])),
+    "poly_in_share": f"{100 * med(poly['trip_in_ms']) / med(poly['through_boundary_ms']):.0f}",
+    "poly_back_share": f"{100 * med(poly['trip_back_ms']) / med(poly['through_boundary_ms']):.0f}",
+    "poly_call_share": f"{100 * med(poly['call_alone_ms']) / med(poly['through_boundary_ms']):.0f}",
+    "poly_back_x": f"{med(poly['trip_back_ms']) / med(poly['trip_in_ms']):.0f}",
+    "poly_back_vs_call": f"{med(poly['trip_back_ms']) / med(poly['call_alone_ms']):.0f}",
+    "poly_parts": ms(med(poly["trip_in_ms"]) + med(poly["call_alone_ms"]) + med(poly["trip_back_ms"])),
+    # the first renders after compiling, before Node has optimized the way back
+    "poly_first": ms(med(poly["through_boundary_first_ms"])),
+    "poly_first_x": f"{med(poly['interpreter_ms']) / med(poly['through_boundary_first_ms']):.0f}",
+    "poly_first_1": ms(poly["through_boundary_first_ms"][0]),
+    "poly_first_last5": ms(med(poly["through_boundary_first_ms"][-5:])),
 }
+CENSUS = poly.get("census", {})
+for side in ("model", "answer"):
+    for k, v in CENSUS.get(side, {}).items():
+        NUMS[f"{side}_{k}"] = f"{v:,}"
+NUMS.update({
+    "answer_x_model": f"{CENSUS['answer']['visits'] / CENSUS['model']['visits']:.1f}",
+    "terms_made": f"{CENSUS['terms_made']:,}",
+    "poly_ids": ms(med(poly["fresh_ids_ms"])),
+    "poly_ids_share": f"{100 * med(poly['fresh_ids_ms']) / med(poly['trip_back_ms']):.0f}",
+    "us_in": f"{1000 * med(poly['trip_in_ms']) / CENSUS['model']['visits']:.2f}",
+    "us_back": f"{1000 * med(poly['trip_back_ms']) / CENSUS['answer']['visits']:.2f}",
+    "us_id": f"{1000 * med(poly['fresh_ids_ms']) / CENSUS['terms_made']:.2f}",
+})
 
 
 def text(x, y, s, size=12, anchor="start", fill="var(--ink)", weight="400"):
@@ -62,6 +89,7 @@ def fig_speed():
     rows = [
         ("A Polygons render", [
             ("the interpreter", med(poly["interpreter_ms"]), "var(--muted)"),
+            ("compiled, its first " + NUMS["n"] + " renders", med(poly["through_boundary_first_ms"]), "var(--accent2)"),
             ("compiled, with the trip in and out", med(poly["through_boundary_ms"]), "var(--accent2)"),
             ("the compiled call alone", med(poly["call_alone_ms"]), "var(--accent)"),
         ]),
@@ -78,11 +106,13 @@ def fig_speed():
     lo, hi = math.log10(0.005), math.log10(100)
     xof = lambda v: left + (math.log10(v) - lo) / (hi - lo) * (W - left - right)
     out, y = [], 34
+    nbars = sum(len(b) for _, b in rows)
+    bottom = 26 + (nbars + 2) * 22 + len(rows) * 16
     out.append(text(16, 18, "Time per run, ms (a log scale: each step to the right is ten times as long)", 12.5, weight="700"))
     for tick in (0.01, 0.1, 1, 10, 100):
         x = xof(tick)
-        out.append(f'<line x1="{x:.1f}" y1="26" x2="{x:.1f}" y2="{26 + 9 * 22 + 3 * 16:.0f}" stroke="var(--line)" stroke-width="1"/>')
-        out.append(text(x, 26 + 9 * 22 + 3 * 16 + 14, f"{tick:g} ms", 11, "middle", "var(--muted)"))
+        out.append(f'<line x1="{x:.1f}" y1="26" x2="{x:.1f}" y2="{bottom:.0f}" stroke="var(--line)" stroke-width="1"/>')
+        out.append(text(x, bottom + 14, f"{tick:g} ms", 11, "middle", "var(--muted)"))
     for title, bars in rows:
         y += 4
         out.append(text(16, y + 10, title, 12, weight="700"))
@@ -93,36 +123,45 @@ def fig_speed():
             out.append(f'<rect x="{left}" y="{y + 2}" width="{max(2, x - left):.1f}" height="14" rx="3" fill="{colour}" opacity="0.85"/>')
             out.append(text(x + 6, y + 13, ms(v) + " ms", 11.5, "start", "var(--ink)", "700"))
             y += 22
-    h = 26 + 9 * 22 + 3 * 16 + 24
-    alt = ("Time per run on a log scale. A Polygons render: the interpreter " + NUMS["poly_interp"] + " ms, compiled with the trip in and out "
+    h = bottom + 24
+    alt = ("Time per run on a log scale. A Polygons render: the interpreter " + NUMS["poly_interp"] + " ms, compiled, its first " + NUMS["n"]
+           + " renders " + NUMS["poly_first"] + " ms, compiled once warm with the trip in and out "
            + NUMS["poly_through"] + " ms, the compiled call alone " + NUMS["poly_call"] + " ms. The Petri net rule: " + NUMS["petri_interp"] + " ms against "
            + NUMS["petri_jit"] + " ms. A recursive sum: " + NUMS["sum_interp"] + " ms against " + NUMS["sum_jit"] + " ms.")
     return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{alt}" '
             f'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>Medians of "
             + NUMS["n"] + " runs each, in Node 22, from a development build of <code>trial/694-view-jit</code> (" + T["commit"]
-            + "), on one laptop. The compiled times count the compiled code only; the Polygons render is also shown with the model carried in and its answer carried back.</figcaption></figure></div>")
+            + "), on one laptop. The compiled times count the compiled code only; the Polygons render is also shown with the model carried in and its answer carried back: "
+            "its first " + NUMS["n"] + " renders after compiling, and " + NUMS["n"] + " more once warm (after 10 untimed).</figcaption></figure></div>")
 
 
 def fig_boundary():
-    """The compiled path of a Polygons render, split: the call, and the carrying both ways."""
+    """The compiled path of a Polygons render, split three ways, each timed alone: the trip in, the call, the trip back.
+    The three are drawn to scale against the whole render's median, so any time not in them shows as a gap at the end."""
     W = 940
     total = med(poly["through_boundary_ms"])
-    call = med(poly["call_alone_ms"])
-    cross = total - call
+    parts = [("in", med(poly["trip_in_ms"]), "var(--accent2)", "0.55"),
+             ("call", med(poly["call_alone_ms"]), "var(--accent)", "0.9"),
+             ("back", med(poly["trip_back_ms"]), "var(--accent2)", "0.85")]
+    scale = max(total, sum(p[1] for p in parts))
     left, width = 16, W - 32
-    xc = left + width * call / total
-    out = [text(16, 18, "One Polygons render, compiled: " + ms(total) + " ms in all", 12.5, weight="700"),
-           f'<rect x="{left}" y="30" width="{xc - left:.1f}" height="34" rx="4" fill="var(--accent)" opacity="0.9"/>',
-           f'<rect x="{xc:.1f}" y="30" width="{left + width - xc:.1f}" height="34" rx="4" fill="var(--accent2)" opacity="0.55"/>',
-           text(left, 84, "the compiled view: " + ms(call) + " ms", 12, "start", "var(--ink)", "700"),
-           text(left + width / 2 + 40, 52, "carrying the model into JS, and the command tree with its Html back: " + ms(cross) + " ms ("
-                + NUMS["poly_cross_share"] + "%)", 12, "middle", "var(--ink)", "700"),
-           text(16, 106, "Not yet split: the model in (to_js) and the answer back (of_js); the answer, every node of the Html tree made again as a Hazel term, is the bigger.", 11.5, "start", "var(--muted)")]
-    alt = (f"One compiled Polygons render takes {ms(total)} ms: the compiled view {ms(call)} ms, and carrying values in and out {ms(cross)} ms, "
-           f"{NUMS['poly_cross_share']} percent of it.")
+    out = [text(16, 18, "One Polygons render, compiled: " + ms(total) + " ms in all, its three steps each timed alone", 12.5, weight="700")]
+    x = left
+    for name, v, colour, op in parts:
+        w = width * v / scale
+        out.append(f'<rect x="{x:.1f}" y="30" width="{max(w, 2):.1f}" height="34" rx="4" fill="{colour}" opacity="{op}"/>')
+        x += w
+    out.append(f'<rect x="{left}" y="30" width="{width * total / scale:.1f}" height="34" rx="4" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"/>')
+    out.append(text(left, 86, "the model into JS (to_js): " + NUMS["poly_in"] + " ms (" + NUMS["poly_in_share"] + "%)", 12, "start", "var(--ink)", "700"))
+    out.append(text(left, 104, "the compiled view: " + NUMS["poly_call"] + " ms (" + NUMS["poly_call_share"] + "%)", 12, "start", "var(--ink)", "700"))
+    out.append(text(left + width, 86, "the answer back as Hazel (of_js): " + NUMS["poly_back"] + " ms (" + NUMS["poly_back_share"] + "%)", 12, "end", "var(--ink)", "700"))
+    out.append(text(left + width, 104, "dashed: the whole render, timed in one go", 11.5, "end", "var(--muted)"))
+    alt = (f"One compiled Polygons render takes {ms(total)} ms. Timed alone, the model into JS takes {NUMS['poly_in']} ms, the compiled view "
+           f"{NUMS['poly_call']} ms, and the answer back as a Hazel value {NUMS['poly_back']} ms.")
     return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} 116" role="img" aria-label="{alt}" '
-            'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>The same runs as above: the median with the trip in "
-            "and out, less the median of the call alone.</figcaption></figure></div>")
+            'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>The same session as above, medians of "
+            + NUMS["n"] + " runs each: the trip in on the slide's model, the call on that model already in JS, and the trip back on that call's "
+            "answer. Percentages are of the whole render's median.</figcaption></figure></div>")
 
 
 def box(x, y, w, h, title, sub, stroke="var(--line)"):

@@ -5,8 +5,8 @@
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
-<li><a href="#speed">How much faster</a>: a render of the Polygons slide's view, on the interpreter and compiled.</li>
-<li><a href="#boundary">Where the time goes now</a>: carrying the model into JS and the answer back, which is most of the compiled path.</li>
+<li><a href="#speed">How much faster</a>: a render of the Polygons slide's view, on the interpreter and compiled, its first renders and once warm.</li>
+<li><a href="#boundary">Where the time goes now</a>: the trip back, the view's answer made again as Hazel terms, is most of a compiled render; the trip in is small.</li>
 <li><a href="#how">How it works</a>: the compiler, how Hazel's values look in JS, and the trip in and out.</li>
 <li><a href="#app">In the app</a>: where the compiled view runs, the setting, and what happens when it cannot.</li>
 <li><a href="#right">Does it give the same answers</a>: the tests, and checking that they can fail.</li>
@@ -16,12 +16,14 @@
 </ol>
 
 <h2 id="speed">How much faster</h2>
-<p><b>A render of the Polygons slide's view takes {{n:poly_interp}} ms on the interpreter and {{n:poly_through}} ms compiled, about {{n:poly_x}} times faster</b>, counting the trip into JS and back. The compiled code itself takes {{n:poly_call}} ms of that, about {{n:poly_call_x}} times faster than the interpreter. Smaller programs gain more, since there is no trip to take: the Petri net rule of report 043, answering four events, {{n:petri_interp}} ms against {{n:petri_jit}} ms ({{n:petri_x}} times), and a recursive sum of 1,000 numbers, {{n:sum_interp}} ms against {{n:sum_jit}} ms ({{n:sum_x}} times).</p>
+<p><b>A render of the Polygons slide's view takes {{n:poly_interp}} ms on the interpreter and {{n:poly_through}} ms compiled, about {{n:poly_x}} times faster</b>, counting the trip into JS and back, once Node has warmed up to it. The first {{n:n}} renders after compiling take {{n:poly_first}} ms (their median), about {{n:poly_first_x}} times faster: the first took {{n:poly_first_1}} ms, and they fall to about {{n:poly_first_last5}} ms while Node optimizes the way back. The compiled code itself takes {{n:poly_call}} ms of that, about {{n:poly_call_x}} times faster than the interpreter. Smaller programs gain more, since there is no trip to take: the Petri net rule of report 043, answering four events, {{n:petri_interp}} ms against {{n:petri_jit}} ms ({{n:petri_x}} times), and a recursive sum of 1,000 numbers, {{n:sum_interp}} ms against {{n:sum_jit}} ms ({{n:sum_x}} times).</p>
+<p class="note"><b>Update, 2026-11-06 19:00:</b> the first version of this report said a render was about 16 times faster. Those renders were timed first and cold, the first 30 after compiling, and their times fell from 2.1 ms to 0.4 ms over the 30 runs as Node optimized the way back, so their median measured the warm-up more than a render. Each series is now timed after 10 untimed runs. Warm, a render is about {{n:poly_x}} times faster; the first renders, timed cold as before, are a row of their own (^ticket(694)).</p>
 {{fig_speed}}
 <p>These are Node's numbers, from a development build, on one laptop, medians of {{n:n}} runs in one test session; the runs vary (the Petri net rule's interpreter time ran from 4.8 to 9.2 ms over the day's test sessions), so read the ratios to within a factor of two. The interpreter's numbers do not include the call memo the app gives a view (report 001's <a href="../001/#call-memo">CallMemo</a>), which saves calls repeated between renders; compiling the definition took {{n:poly_compile}} ms, once. Browser numbers, and a release build, come next.</p>
 <table class="vals">
 <tr><th>Program</th><th>Interpreter, ms</th><th>Compiled, ms</th><th>Faster</th></tr>
-<tr><td>A Polygons render, with the trip in and out</td><td>{{n:poly_interp}}</td><td>{{n:poly_through}}</td><td>{{n:poly_x}}×</td></tr>
+<tr><td>A Polygons render, its first {{n:n}} renders, with the trip in and out</td><td>{{n:poly_interp}}</td><td>{{n:poly_first}}</td><td>{{n:poly_first_x}}×</td></tr>
+<tr><td>A Polygons render, warm, with the trip in and out</td><td>{{n:poly_interp}}</td><td>{{n:poly_through}}</td><td>{{n:poly_x}}×</td></tr>
 <tr><td>A Polygons render, the compiled call alone</td><td>{{n:poly_interp}}</td><td>{{n:poly_call}}</td><td>{{n:poly_call_x}}×</td></tr>
 <tr><td>The Polygons view's whole program (its definitions and the view applied)</td><td>{{n:pview_interp}}</td><td>{{n:pview_jit}}</td><td>{{n:pview_x}}×</td></tr>
 <tr><td>The Petri net rule, four events</td><td>{{n:petri_interp}}</td><td>{{n:petri_jit}}</td><td>{{n:petri_x}}×</td></tr>
@@ -29,9 +31,11 @@
 </table>
 
 <h2 id="boundary">Where the time goes now</h2>
-<p><b>Carrying values across is {{n:poly_cross_share}}% of a compiled render: {{n:poly_cross}} ms of {{n:poly_through}}.</b> The compiled view needs its model as JS values, so the model is converted on the way in; and the app draws a Hazel value, so the view's whole answer, its command and every node of its Html tree, is made again as a Hazel term on the way out. The way out is the bigger part: the Html tree has many nodes, each a new term. The two halves are not yet timed apart.</p>
+<p><b>The trip back is {{n:poly_back_share}}% of a compiled render: {{n:poly_back}} ms of {{n:poly_through}}.</b> The trip in takes {{n:poly_in}} ms ({{n:poly_in_share}}%) and the compiled view {{n:poly_call}} ms ({{n:poly_call_share}}%), so the way back costs about {{n:poly_back_x}} times the way in, and about {{n:poly_back_vs_call}} times the view itself. Each step was timed alone, warm, and the three add up to {{n:poly_parts}} ms, about the whole render's time.</p>
 {{fig_boundary}}
-<p>Three ways to make it cheaper, not tried yet: keep the answer in JS until it is drawn, so the part of the app that turns it into the page's elements reads JS values directly; convert lazily, only the parts that are read; or keep what did not change since the last render, as the call memo does for the interpreter.</p>
+<p><b>Why the way back costs more: there is more of it.</b> The compiled view needs its model as JS values, so the model is converted on the way in; and the app draws a Hazel value, so the view's whole answer, its command and every node of its Html tree, is made again as a Hazel term on the way out. The slide's model is {{n:model_visits}} nodes (cons cells, tuples, constructors and the numbers and strings in them); the answer is {{n:answer_visits}}, about {{n:answer_x_model}} times as many, with {{n:answer_functions}} event handlers, none of them capturing a value. Per node, the way back costs a little more: {{n:us_back}} µs a node, against {{n:us_in}} µs a node in.</p>
+<p><b>Almost half the way back is making ids.</b> Each Hazel term carries an id, and each term the way back makes gets a fresh one, a random UUID ({{n:us_id}} µs each). The trip back makes {{n:terms_made}} terms, and {{n:terms_made}} fresh ids alone take {{n:poly_ids}} ms, {{n:poly_ids_share}}% of the trip back. Terms that are only drawn, and never edited, might not need fresh ids; whether anything in the app reads them is the open question under <a href="#limits">what it does not do yet</a>.</p>
+<p>Ways to make the way back cheaper, not tried yet: give the terms it makes cheaper ids; keep the answer in JS until it is drawn, so the part of the app that turns it into the page's elements reads JS values directly; convert lazily, only the parts that are read; or keep what did not change since the last render, as the call memo does for the interpreter.</p>
 
 <h2 id="how">How it works</h2>
 <p><b>hazel-jit turns an elaborated Hazel term into the source text of a JS function, once, and the browser's own JavaScript engine runs it.</b> <code>HazelJit.compile_full</code>, in <code>src/language/dynamics/HazelJit.re</code>, walks the term Hazel's elaborator makes (the same term the interpreter runs) and writes JS, which is made into a function with <code>new Function</code>.</p>
@@ -65,7 +69,7 @@
 
 <h2 id="next">What next</h2>
 <ol>
-<li>Make the way back cheaper: time the trip in and the trip out apart, then keep the answer in JS until it is drawn, or keep what did not change.</li>
+<li>Make the way back cheaper: it is {{n:poly_back_share}}% of a render, and fresh ids are {{n:poly_ids_share}}% of it. Cheaper ids first, then keeping the answer in JS until it is drawn, or keeping what did not change.</li>
 <li>Try it in the app on the polygon slides, with the setting on and off, and check the drawings are the same.</li>
 <li>Time it in browsers on GitHub's machines, from a release build, on Polygons, Polygon Viewer, Full Body, the Witch, Hands and the woods.</li>
 <li>Compare the compiled Petri net rule with the hand-written one of report 043, the code side by side and the time per call (^ticket(699)).</li>
@@ -75,7 +79,7 @@
 <h2 id="method">How this was put together</h2>
 <ul>
 <li><b>The code</b> is on <code>trial/694-view-jit</code> in hazelgrove/hazel, a branch off #2635 at ab7273c984: slice 1, the compiler and its agreement tests (8c5cd80a29, 14b006d008); slice 2, modules and the Polygons view (79fe5bbebf); slice 3, the trip in and out and <code>eval_view</code> (7a7151443c). All are Claude's, on Matthew's word, 2026-11-06.</li>
-<li><b>The timings</b> are <code>Test_HazelJit</code>'s slow tests, run in Node 22.23.2 (<code>node --stack-size=30000</code>) from a development build of 7a7151443c on a Framework 13 laptop (Intel Core i7-1370P), at 16:08 MST on 2026-11-06: each program 30 times on the interpreter and 30 times compiled, after compiling once, timed with <code>performance.now</code>; the median is the upper middle of the 30 sorted runs, as the tests print it. The interpreter's time for a render is the evaluated view applied to the evaluated model, without the app's call memo. The tests printed each run's reading for this report with a small change to <code>test/Test_HazelJit.re</code>.</li>
+<li><b>The timings</b> are <code>Test_HazelJit</code>'s slow tests, run in Node 22.23.2 (<code>node --stack-size=30000</code>) from a development build of 810df240ea on a Framework 13 laptop (Intel Core i7-1370P), at 18:56 MST on 2026-11-06 (the compiler and the trip in and out as at 7a7151443c; only the tests changed): each program 30 times on the interpreter and 30 times compiled, after compiling once, timed with <code>performance.now</code>; the median is the upper middle of the 30 sorted runs, as the tests print it. The interpreter's time for a render is the evaluated view applied to the evaluated model, without the app's call memo. For the Polygons render, every series runs 10 times untimed first, but for the first 30 renders, timed cold; its three steps are timed alone (the trip in on the slide's model, the call on that model already in JS, the trip back on one answer of the call), and the test counts what each trip carries and times as many fresh ids as the trip back makes. The first version of this report used a session at 16:08 at 7a7151443c, with no warm-up (see the update under <a href="#speed">how much faster</a>).</li>
 <li><b>The Polygons view</b> is the livelit of <code>hazel-programs/docs/livelits/playground/polygons.hz</code>, applied to the model the slide's own <code>shirt</code> gives it, cut from the slide's text by the test.</li>
 <li><b>The page</b> is made by <code>045/gen045.py</code> from <code>045/body.html</code> and <code>045/data/timings.json</code>; its figures are drawn from those numbers.</li>
 </ul>
