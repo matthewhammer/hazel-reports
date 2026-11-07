@@ -90,12 +90,20 @@ def fig_js_app():
     return svg(W, H, "Your JS app hands a typed view of its state and an event to a Hazel function, and acts out the command it returns", o)
 
 
+def kept(nnn, name):
+    """(Matthew, 2026-11-07: the agenda "should have plots in the report once we have them elsewhere") a figure as its
+    report drew it, kept by that report's generator as NNN/figs/NAME.html (its <svg>, in the series' colour variables)"""
+    return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", nnn, "figs", name + ".html")).read().strip()
+
+
 FIGS = {
     "undo": [(fig_where_linear(), "Time: what is linear is a few passes over every top-level definition, not the undo history. Profile at 3,200 definitions after the first two fixes (^ticket(665), 2026-11-02).", False),
              (fig_space_per_entry(), "Space: a compacted entry costs about nothing at every size; the entry kept whole for a fast undo grows with the program, about 1.1 KB a definition (GitHub run 41695584813, one run).", False),
              (F.fig_undo_growth(), "Each step against program size, both scales logarithmic: parallel to the dotted guide means in proportion to the program. Release build, medians of 12 (^report(36)).", False),
              (F.fig_undo_fix(), "The third fix (9df1b2601e, on #2635): a redo now costs an edit; an undo, an edit and the outline (^report(38)).", False)],
-    "hazel-jit": [(fig_jit(), "^ticket(694)'s design: the view is compiled, nothing else; the command tree it returns is the same Hazel value, so the drawing is unchanged.", True)],
+    "hazel-jit": [(kept("045", "speed"), "Each program's time per run, the interpreter against compiled, a log scale: medians of 30, Node 22, a dev build (^report(45)).", True),
+                  (kept("045", "routes"), "A Polygons render from the model to the page's virtual DOM: through Hazel, or straight from the compiled view's JS answer, to scale (^report(45)).", True)],
+    "bucklescript": [(kept("046", "speed-log"), "Report 043's Petri rule, one call, compiled five ways and on the interpreter, a log scale: medians of five runs of 2,000 calls, Node 22 (^report(46)).", True)],
     "readme-pr": [(F.fig_npm(), "hazeljs on npm, as of 2026-11-03: four versions, 0.0.4 the latest (npmjs.com/package/hazeljs). ^report(37)'s figure.", True)],
     "js-dev-report": [(fig_js_app(), "The pattern the report would teach, the one Messed Up Dress Up's rooms use (^report(39)).", True)],
 }
