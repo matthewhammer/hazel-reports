@@ -158,8 +158,9 @@ page = f"""<!doctype html>
   td.n {{ font-variant-numeric: tabular-nums; color: var(--muted); }}
   tr.sec td {{ padding-top: 14px; border-bottom: 2px solid var(--line); }} tr.sec a {{ color: inherit; text-decoration: none; }}
   .scroll {{ overflow-x: auto; }}
-  .chip {{ display: inline-block; font-size: 0.78em; font-weight: 600; white-space: nowrap; vertical-align: 2px;
-           border-radius: 999px; padding: 1px 9px; border: 1px solid currentColor; }}
+  /* (Matthew, 2026-11-07: "these chips need to line wrap") a long status wraps inside its outline */
+  .chip {{ display: inline-block; font-size: 0.78em; font-weight: 600; white-space: normal; overflow-wrap: anywhere; max-width: 100%; box-sizing: border-box; line-height: 1.35; vertical-align: 2px;
+           border-radius: 11px; padding: 1px 9px; border: 1px solid currentColor; }}
   .chip.good {{ color: var(--good); }} .chip.warn {{ color: var(--warn); }} .chip.accent {{ color: var(--accent); }}
   .chip.accent2 {{ color: var(--accent2); }} .chip.muted {{ color: var(--muted); }}
   .item {{ background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--line);
