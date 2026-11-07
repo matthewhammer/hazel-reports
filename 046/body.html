@@ -27,6 +27,7 @@
 <h2 id="speed">How fast</h2>
 <p><b>On report 043's rule, Melange's and ReScript's JavaScript beat the JS a person wrote: {{n:Melange}} and {{n:ReScript}} µs a call against {{n:hand-written JS}}. hazel-jit's takes {{n:hazel-jit}} µs, about {{n:hj_x_res}} times ReScript's and {{n:hj_x_hand}} times the hand-written; Hazel's interpreter takes {{n:interp}} µs.</b> Each answers the same 2,000 events (fire transition <i>i</i> mod 4, then the command performed on the marking), and all end on the same marking. js_of_ocaml's {{n:js_of_ocaml}} µs is a best case: it compiled the timing loop and the rule as one program, and inlined the whole rule into the loop.</p>
 {{fig_speed}}
+{{fig_speed_log}}
 <table class="vals">
 <tr><th>Compiler</th><th>µs a call, median</th><th>the fastest call</th></tr>
 <tr><td>Melange 5.0.0</td><td>{{n:Melange}}</td><td>0.35</td></tr>
@@ -34,15 +35,19 @@
 <tr><td>js_of_ocaml 5.9.1 (the rule inlined into the loop)</td><td>{{n:js_of_ocaml}}</td><td>0.40</td></tr>
 <tr><td>JS written by hand (the example's <code>jsHandler</code>)</td><td>{{n:hand-written JS}}</td><td>0.71</td></tr>
 <tr><td>hazel-jit</td><td>{{n:hazel-jit}}</td><td>0.66</td></tr>
-<tr><td>Hazel's interpreter (<code>Evaluator.evaluate_open</code>)</td><td>{{n:interp}}</td><td></td></tr>
+<tr><td>Hazel's interpreter (<code class="ml">Evaluator.evaluate_open</code>)</td><td>{{n:interp}}</td><td></td></tr>
 </table>
 <p>The hand-written handler is not the fastest because it is written the way people write JS: it copies arrays to walk them backwards (<code>[...t.outputs].reverse()</code>) and calls a closure for each input (<code>every</code>). The compilers' code allocates only what the result holds.</p>
 
 <h2 id="code">The same rule, compiled</h2>
-<p><b>Melange and ReScript make the JavaScript a careful person would write; hazel-jit's is a direct translation, and js_of_ocaml's is OCaml's memory layout in JS.</b> The rule's two functions, <code>fire_at</code> and <code>on_event</code>, as each compiler wrote them (the whole outputs are in this report's data):</p>
+<p><b>Melange and ReScript make the JavaScript a careful person would write; hazel-jit's is a direct translation, and js_of_ocaml's is OCaml's memory layout in JS.</b> The rule's two functions, <code class="hz">fire_at</code> and <code class="hz">on_event</code>, as each compiler wrote them (the whole outputs are in this report's data):</p>
 <div class="pair">
 <h4>Hazel (the example's <code>rules/Rules.hz</code>)</h4>
 {{code:hazel}}
+<h4>ReScript source (<code>data/Petri.res</code>, the rule as the Hazel is written)</h4>
+{{code:res_src}}
+<h4>OCaml source (<code>data/petri.ml</code>, for Melange and js_of_ocaml)</h4>
+{{code:ml_src}}
 <h4>hazel-jit (formatted by esbuild; its runtime is <code>$R</code>)</h4>
 {{code:hazeljit}}
 <h4>ReScript 12.3.1</h4>
@@ -61,24 +66,24 @@
 <tr><th>Value</th><th>hazel-jit</th><th>ReScript</th><th>Melange</th><th>js_of_ocaml</th></tr>
 <tr><td>a list cell; the empty list</td><td><code>{h, t}</code>; <code>null</code></td><td><code>{hd, tl}</code>; <code>0</code></td><td><code>{hd, tl}</code>; <code>0</code></td><td><code>[0, hd, tl]</code>; <code>0</code></td></tr>
 <tr><td>a record, or labeled tuple</td><td>an array, each label also a property</td><td>an object by field name</td><td>an object by field name</td><td>an array, <code>[0, f1, f2, …]</code></td></tr>
-<tr><td><code>Take(a, b, k)</code></td><td><code>{c: "Take", v: [a, b, k]}</code></td><td><code>{TAG: "Take", _0, _1, _2}</code></td><td><code>{TAG: 0, _0, _1, _2}</code></td><td><code>[0, a, b, k]</code></td></tr>
-<tr><td><code>Done</code> (no argument)</td><td><code>{c: "Done"}</code></td><td><code>"Done"</code></td><td><code>0</code></td><td><code>0</code></td></tr>
-<tr><td><code>Some(t)</code>; <code>None</code></td><td><code>{c: "Some", v: t}</code>; <code>{c: "None"}</code></td><td><code>t</code>; <code>undefined</code></td><td><code>t</code>; <code>undefined</code></td><td><code>[0, t]</code>; <code>0</code></td></tr>
+<tr><td><code class="hz">Take(a, b, k)</code></td><td><code>{c: "Take", v: [a, b, k]}</code></td><td><code>{TAG: "Take", _0, _1, _2}</code></td><td><code>{TAG: 0, _0, _1, _2}</code></td><td><code>[0, a, b, k]</code></td></tr>
+<tr><td><code class="hz">Done</code> (no argument)</td><td><code>{c: "Done"}</code></td><td><code>"Done"</code></td><td><code>0</code></td><td><code>0</code></td></tr>
+<tr><td><code class="hz">Some(t)</code>; <code class="hz">None</code></td><td><code>{c: "Some", v: t}</code>; <code>{c: "None"}</code></td><td><code>t</code>; <code>undefined</code></td><td><code>t</code>; <code>undefined</code></td><td><code>[0, t]</code>; <code>0</code></td></tr>
 <tr><td>a function of two</td><td>one argument, an array <code>[a, b]</code></td><td><code>f(a, b)</code></td><td><code>f(a, b)</code></td><td><code>f(a, b)</code></td></tr>
-<tr><td><code>i == 0</code> on Ints</td><td><code>$R.eq(i, 0)</code></td><td><code>i === 0</code></td><td><code>i === 0</code></td><td><code>0 === i</code></td></tr>
+<tr><td><code class="hz">i == 0</code> on Ints</td><td><code>$R.eq(i, 0)</code></td><td><code>i === 0</code></td><td><code>i === 0</code></td><td><code>0 === i</code></td></tr>
 <tr><td>a tail call</td><td>a call</td><td>a <code>while</code> loop</td><td>a <code>while</code> loop</td><td>a <code>for</code> loop</td></tr>
 </table>
 
 <h2 id="suggests">What it suggests for hazel-jit</h2>
 <p><b>Five changes to what hazel-jit writes, each something these compilers already do, would close most of the gap to ReScript.</b> In the order they would likely help this rule:</p>
 <ol>
-<li><b>Pass a function's arguments as JS arguments.</b> A Hazel function of a tuple, <code>fun (n, i) -> …</code>, is a JS function of one array, so every call allocates an array and reads it back. Where the parameter is a tuple pattern, compile <code>(n, i) =&gt; …</code> and call it with <code>f(n, i)</code>, keeping the one-argument form for a function passed as a value.</li>
-<li><b>Compare Ints with <code>===</code>.</b> hazel-jit calls its generic structural equality for every <code>==</code>; the elaborated term knows when both sides are Ints (or Floats, Bools, Strings).</li>
-<li><b>Turn tail calls into loops</b>, as all three do for <code>nth</code>, <code>pick</code> and <code>has</code>: faster, and no stack to overflow on a long list.</li>
-<li><b>Unbox options, and make constructors flat.</b> <code>Some(t)</code> as <code>t</code> and <code>None</code> as <code>undefined</code> saves an allocation per option; <code>{TAG, _0, _1, _2}</code> saves the inner array of <code>{c, v: [a, b, k]}</code>.</li>
+<li><b>Pass a function's arguments as JS arguments.</b> A Hazel function of a tuple, <code class="hz">fun (n, i) -> …</code>, is a JS function of one array, so every call allocates an array and reads it back. Where the parameter is a tuple pattern, compile <code>(n, i) =&gt; …</code> and call it with <code>f(n, i)</code>, keeping the one-argument form for a function passed as a value.</li>
+<li><b>Compare Ints with <code>===</code>.</b> hazel-jit calls its generic structural equality for every <code class="hz">==</code>; the elaborated term knows when both sides are Ints (or Floats, Bools, Strings).</li>
+<li><b>Turn tail calls into loops</b>, as all three do for <code class="hz">nth</code>, <code class="hz">pick</code> and <code class="hz">has</code>: faster, and no stack to overflow on a long list.</li>
+<li><b>Unbox options, and make constructors flat.</b> <code class="hz">Some(t)</code> as <code>t</code> and <code class="hz">None</code> as <code>undefined</code> saves an allocation per option; <code>{TAG, _0, _1, _2}</code> saves the inner array of <code>{c, v: [a, b, k]}</code>.</li>
 <li><b>Lay out labeled tuples as objects only</b>, not as arrays with the labels as properties too: one shape per type, which JS engines optimize best.</li>
 </ol>
-<p>Each changes the layout that the trip in and out reads and writes (^report(45)'s <code>to_js</code> and <code>of_js</code>), so each is a change to both sides, and to <code>HazelJitDOM</code>'s reading of a view's answer. The first three change only the code inside a compiled function, and are the place to start.</p>
+<p>Each changes the layout that the trip in and out reads and writes (^report(45)'s <code class="ml">to_js</code> and <code class="ml">of_js</code>), so each is a change to both sides, and to <code class="ml">HazelJitDOM</code>'s reading of a view's answer. The first three change only the code inside a compiled function, and are the place to start.</p>
 
 <h2 id="use">Could any of them be used</h2>
 <p><b>Not as hazel-jit's back end; but what they do, yes.</b></p>
@@ -96,7 +101,7 @@
 
 <h2 id="method">How this was made</h2>
 <ul>
-<li><b>The program</b> is report 043's Petri net rule as matthewhammer/hazeljs-petri-example has it at 4c85792 (its <code>rules</code>: the preamble, <code>Common</code>, <code>Rules</code> and <code>Main</code>), written again in ReScript (<code>data/Petri.res</code>) and OCaml (<code>data/petri.ml</code>), function for function, as the Hazel is written.</li>
+<li><b>The program</b> is report 043's Petri net rule as matthewhammer/hazeljs-petri-example has it at 4c85792 (its <code>rules</code>: the preamble, <code class="hz">Common</code>, <code class="hz">Rules</code> and <code class="hz">Main</code>), written again in ReScript (<code>data/Petri.res</code>) and OCaml (<code>data/petri.ml</code>), function for function, as the Hazel is written.</li>
 <li><b>The compilers</b>: ReScript 12.3.1 from npm; Melange 5.0.0 (with OCaml 5.3.0) in its playground at melange.re, its JS copied from there; js_of_ocaml 5.9.1 from the opam switch Hazel builds with (<code>ocamlc</code> to bytecode, then <code>js_of_ocaml --pretty</code>); hazel-jit at <code>28fc073ed5</code> on <code>trial/694-view-jit</code>, its compiled program run in plain Node with its runtime.</li>
 <li><b>The timings</b>: Node 22.23.2 on a Framework 13 laptop (Intel Core i7-1370P), 2026-11-07 at 10:43 MST. One script (<code>data/bench.mjs</code>) runs the hand-written handler, ReScript's, Melange's and hazel-jit's in one process, each on its own values, 2,000 events each; js_of_ocaml's program times itself the same way. Five runs of each; the table gives the median of the five runs' medians, and the fastest single call. The interpreter's number is from <code>Test_HazelJit</code> at <code>28fc073ed5</code>, a development build.</li>
 </ul>

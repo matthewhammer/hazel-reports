@@ -2,7 +2,9 @@
 """^report(46), BuckleScript, ReScript and Melange, beside hazel-jit (^ticket(698)): writes 046/index.html from body.html,
 with the series' styles (035's), the timings drawn from 046/data/timings.json, and the code listings cut from the
 compilers' own output in 046/data. Placeholders in body.html: {{updated}}, {{fig_speed}}, {{code:NAME}} (see CODE)."""
-import html, json, os, re, statistics, subprocess
+import html, json, os, re, statistics, subprocess, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+from codehl import hazel_hl, js_hl, ml_hl, res_hl, HL_CSS, HL_INLINE_CSS  # noqa: E402  (Matthew, 2026-11-07: "syntax highlighting throughout")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -52,8 +54,16 @@ def jsoo_excerpt():
     return "\n".join(lines[k - 38: k + 6])
 
 
+def between(src, start, stop=None):
+    i = src.index(start)
+    j = src.index(stop, i) if stop else len(src)
+    return src[i:j].rstrip()
+
+
 CODE = {
     "hazel": ("hazel", hazel_rules()),
+    "res_src": ("rescript", between(D("Petri.res"), "let fire_at", "// the net")),
+    "ml_src": ("ocaml", between(D("petri.ml"), "let fire_at", "let arc p")),
     "hazeljit": ("js", hazeljit_rules()),
     "rescript": ("js", js_function(D("Petri.res.js"), "fire_at") + "\n\n" + js_function(D("Petri.res.js"), "on_event")),
     "melange": ("js", js_function(D("petri-melange.js"), "fire_at") + "\n\n" + js_function(D("petri-melange.js"), "on_event")),
@@ -65,9 +75,25 @@ with open(os.path.join(HERE, "data", "jsoo-excerpt.js"), "w") as f:
     f.write(CODE["jsoo"][1] + "\n")
 
 
+HL = {"hazel": (hazel_hl, "hz"), "ocaml": (ml_hl, "hz"), "rescript": (res_hl, "hz"), "js": (js_hl, "jx")}
+
+
 def code(name):
-    _, src = CODE[name]
-    return '<pre class="code"><code>' + html.escape(src) + "</code></pre>"
+    lang, src = CODE[name]
+    hl, cls = HL[lang]
+    return f'<pre class="code {cls}">' + hl(src) + "</pre>"
+
+
+def inline(body):
+    """every <code> in the text highlighted: as JS, or as Hazel (class hz) or OCaml (class ml), dark like the listings"""
+    def one(m):
+        cls, text = m.group(1) or "", html.unescape(m.group(2))
+        if cls == "hz":
+            return '<code class="hz">' + hazel_hl(text) + "</code>"
+        if cls == "ml":
+            return '<code class="hz">' + ml_hl(text) + "</code>"
+        return '<code class="jx">' + js_hl(text) + "</code>"
+    return re.sub(r'<code(?: class="(hz|ml|js)")?>(.*?)</code>', one, body)
 
 
 def fig_speed():
@@ -95,6 +121,37 @@ def fig_speed():
             "js_of_ocaml's in a process of its own, the rest in one.</figcaption></figure></div>")
 
 
+def fig_speed_log():
+    """(Matthew, 2026-11-07: "a second plot, where it's included, and we use a log scale horizontally") the same calls with
+    Hazel's interpreter among them, on a log scale: each step to the right ten times as long"""
+    import math
+    rows = [("Melange", "var(--accent)"), ("ReScript", "var(--accent)"), ("js_of_ocaml", "var(--accent2)"),
+            ("hand-written JS", "var(--muted)"), ("hazel-jit", "var(--accent2)"), ("the interpreter", "var(--warn, #b45309)")]
+    W, left, right = 940, 170, 130
+    lo, hi = math.log10(0.1), math.log10(1000)
+    xof = lambda v: left + (math.log10(v) - lo) / (hi - lo) * (W - left - right)
+    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The same calls with Hazel\'s interpreter among them, µs a call, a log scale (each step to the right is ten times as long)</text>']
+    y = 34
+    bottom = 34 + len(rows) * 28
+    for t in (0.1, 1, 10, 100, 1000):
+        x = xof(t)
+        out.append(f'<line x1="{x:.1f}" y1="28" x2="{x:.1f}" y2="{bottom:.0f}" stroke="var(--line)" stroke-width="1"/>')
+        out.append(f'<text x="{x:.1f}" y="{bottom + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{t:g} µs</text>')
+    for name, colour in rows:
+        m = T["medians_us"][name]
+        out.append(f'<text x="{left - 10}" y="{y + 15}" font-size="12" text-anchor="end" fill="var(--ink)" font-weight="700">{html.escape(name)}</text>')
+        out.append(f'<rect x="{left}" y="{y + 3}" width="{xof(m) - left:.1f}" height="16" rx="3" fill="{colour}" opacity="0.85"/>')
+        out.append(f'<text x="{xof(m) + 8:.1f}" y="{y + 15}" font-size="11.5" fill="var(--ink)" font-weight="700">{m:.2f} µs</text>' if m < 100 else
+                   f'<text x="{xof(m) + 8:.1f}" y="{y + 15}" font-size="11.5" fill="var(--ink)" font-weight="700">{m:.0f} µs</text>')
+        y += 28
+    h = bottom + 24
+    alt = "On a log scale: " + "; ".join(f"{n} {T['medians_us'][n]:.2f} µs a call" for n, _ in rows)
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{alt}" style="width:100%;height:auto;display:block">'
+            + "".join(out) + "</svg><figcaption>The medians of the chart above, and the interpreter's (" + f"{T['interpreter']['us']:.0f}"
+            + " µs a call, Evaluator.evaluate_open, 200 calls). On this scale the compilers' bars differ by less than one step; the interpreter's is "
+            "more than two steps longer than hazel-jit's.</figcaption></figure></div>")
+
+
 NUMS = {k: f"{v:.2f}" for k, v in T["medians_us"].items()}
 NUMS.update({"interp": f"{T['interpreter']['us']:.0f}",
              "hj_x_res": f"{T['medians_us']['hazel-jit'] / T['medians_us']['ReScript']:.1f}",
@@ -103,6 +160,8 @@ NUMS.update({"interp": f"{T['interpreter']['us']:.0f}",
 
 updated = subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True, text=True).stdout.strip()
 body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated).replace("{{fig_speed}}", fig_speed())
+body = body.replace("{{fig_speed_log}}", fig_speed_log())
+body = inline(body)
 for k in CODE:
     body = body.replace("{{code:" + k + "}}", code(k))
 for k, v in NUMS.items():
@@ -112,6 +171,6 @@ head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<met
         "<title>BuckleScript, ReScript and Melange, beside hazel-jit</title>\n"
         "<meta name=\"description\" content=\"One small program, report 043's Petri net rule, compiled to JavaScript by ReScript, Melange, js_of_ocaml and hazel-jit: "
         "what each makes, how fast it runs, and what that suggests for hazel-jit.\">\n"
-        "<style>" + CSS + EXTRA + "</style>\n</head>\n")
+        "<style>" + CSS + EXTRA + HL_CSS + HL_INLINE_CSS + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
 print("wrote 046/index.html; updated", updated)

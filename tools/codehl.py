@@ -39,7 +39,39 @@ def js_hl(t):
         out.append(f'<span class="{cls}">{esc(g)}</span>')
     out.append(esc(t[i:])); return "".join(out)
 
-HL = {"hazel": (hazel_hl, "hz"), "fumola": (fumola_hl, "fu"), "js": (js_hl, "jx")}
+# (^report(46), 2026-11-07, Matthew: "please use syntax highlighting throughout") OCaml and ReScript, in Hazel's colours
+# (keywords, constructors, strings, numbers, comments, operators): the sources Melange, js_of_ocaml and ReScript compiled
+ML_KW = {"let", "rec", "in", "match", "with", "function", "fun", "if", "then", "else", "type", "of", "and", "begin", "end", "for", "to",
+         "do", "done", "while", "true", "false", "mod", "not", "open", "module", "struct", "sig", "val", "when", "as", "ref"}
+def ml_hl(t):
+    out, i = [], 0
+    pat = re.compile(r'''(\(\*[\s\S]*?\*\))|("(?:[^"\\]|\\.)*")|(\b[0-9]+(?:\.[0-9]*)?\b)|(\b[A-Za-z_][A-Za-z0-9_']*\b)|(->|::|:=|<-|\|\||&&|\^|[=+\-*/<>|;:,.()\[\]{}])''', re.M)
+    for m in pat.finditer(t):
+        out.append(esc(t[i:m.start()])); i = m.end(); g = m.group(0)
+        cls = "hc" if m.group(1) else "hs" if m.group(2) else "hn" if m.group(3) else ("hk" if g in ML_KW else "hC" if g[0].isupper() else "hv") if m.group(4) else "ho"
+        out.append(f'<span class="{cls}">{esc(g)}</span>')
+    out.append(esc(t[i:])); return "".join(out)
+
+RES_KW = {"let", "rec", "switch", "if", "else", "type", "list", "true", "false", "open", "module", "and", "when", "as", "mutable", "external"}
+def res_hl(t):
+    out, i = [], 0
+    pat = re.compile(r'(//[^\n]*|/\*[\s\S]*?\*/)|("(?:[^"\\]|\\.)*")|(\b[0-9]+(?:\.[0-9]*)?\b)|(\b[A-Za-z_][A-Za-z0-9_]*\b)|(=>|->|\.\.\.|\+\+|\*\.|&&|\|\||==|[=+\-*/<>|?:;,.()\[\]{}])', re.M)
+    for m in pat.finditer(t):
+        out.append(esc(t[i:m.start()])); i = m.end(); g = m.group(0)
+        cls = "hc" if m.group(1) else "hs" if m.group(2) else "hn" if m.group(3) else ("hk" if g in RES_KW else "hC" if g[0].isupper() else "hv") if m.group(4) else "ho"
+        out.append(f'<span class="{cls}">{esc(g)}</span>')
+    out.append(esc(t[i:])); return "".join(out)
+
+# (^report(46)) a snippet inside a sentence or a table cell, dark as the listings: <code class="hz"> or <code class="jx">
+HL_INLINE_CSS = """
+code.hz, code.jx { background: #000; color: #f8f8f2; border-radius: 4px; padding: 1px 5px; }
+code.hz .hk { color: #5fd7ff; font-weight: 700; } code.hz .hC { color: #ff87ff; } code.hz .hv { color: #f8f8f2; } code.hz .hs { color: #ffb86c; }
+code.hz .hn { color: #bd93f9; } code.hz .hc { color: #87ff87; font-style: italic; } code.hz .ho { color: #ffd75f; }
+code.jx .jk { color: #ff79c6; font-weight: 700; } code.jx .jC { color: #8be9fd; } code.jx .jv { color: #f8f8f2; } code.jx .js { color: #f1fa8c; }
+code.jx .jn { color: #bd93f9; } code.jx .jc { color: #87ff87; font-style: italic; } code.jx .jo { color: #ffd75f; }
+"""
+
+HL = {"hazel": (hazel_hl, "hz"), "fumola": (fumola_hl, "fu"), "js": (js_hl, "jx"), "ocaml": (ml_hl, "hz"), "rescript": (res_hl, "hz")}
 HL_CSS = """
 pre.hz, pre.fu, pre.jx { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; line-height: 1.5; }
 pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
