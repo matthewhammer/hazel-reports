@@ -18,6 +18,11 @@ EXTRA = """
   pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
   .pair { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .pair h4 { margin: 10px 0 2px; font-size: 0.95em; }
+  table.vals.wrap1 td:first-child { white-space: normal; min-width: 9em; }
+  .witchrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .witchrow figure.witchcell { margin: 0; text-align: center; }
+  .witchrow img { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .witchrow figcaption { font-size: 0.85em; }
 """
 D = lambda name: open(os.path.join(HERE, "data", name)).read()
 T = json.loads(D("timings.json"))
@@ -158,9 +163,27 @@ NUMS.update({"interp": f"{T['interpreter']['us']:.0f}",
              "hj_x_hand": f"{T['medians_us']['hazel-jit'] / T['medians_us']['hand-written JS']:.1f}",
              "interp_x_hj": f"{T['interpreter']['us'] / T['medians_us']['hazel-jit']:.0f}"})
 
+
+def keep(name, fig_html):
+    """(Matthew, 2026-11-07: the agenda, ^report(42), shows the reports' plots) the figure's <svg>, kept as NNN/figs/NAME.html
+    for 042/drivers/figs042.py to draw on an item's card; it uses the series' colour variables, so it is only for inlining"""
+    m = re.search(r"<svg.*?</svg>", fig_html, re.S)
+    os.makedirs(os.path.join(HERE, "figs"), exist_ok=True)
+    open(os.path.join(HERE, "figs", name + ".html"), "w").write(m.group(0) + "\n")
+    return fig_html
+
 updated = subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True, text=True).stdout.strip()
-body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated).replace("{{fig_speed}}", fig_speed())
-body = body.replace("{{fig_speed_log}}", fig_speed_log())
+body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated).replace("{{fig_speed}}", keep("speed", fig_speed()))
+body = body.replace("{{fig_speed_log}}", keep("speed-log", fig_speed_log()))
+# the second program, the Witch slide's ^picture view (witch046.py): its figures, its drawings, its numbers
+import witch046 as W  # noqa: E402
+body = body.replace("{{fig_witch}}", keep("witch", W.fig_witch())).replace("{{fig_witch_frame}}", keep("witch-frame", W.fig_witch_frame()))
+body = body.replace("{{witch_svgs}}", W.fig_witch_svgs())
+for k, v in W.WNUMS.items():
+    body = body.replace("{{w:" + k + "}}", v)
+WF = dict(W.WT["node_fastest_ms"], jsoo_tofixed=W.WT["jsoo_tofixed_fastest_ms"], jsoo_printf=W.WT["jsoo_printf_fastest_ms"])
+for k, v in WF.items():
+    body = body.replace("{{wf:" + k + "}}", f"{v:.2f}")
 body = inline(body)
 for k in CODE:
     body = body.replace("{{code:" + k + "}}", code(k))
@@ -169,8 +192,11 @@ for k, v in NUMS.items():
 assert "{{" not in body, body[body.index("{{"):body.index("{{") + 40]
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         "<title>BuckleScript, ReScript and Melange, beside hazel-jit</title>\n"
-        "<meta name=\"description\" content=\"One small program, report 043's Petri net rule, compiled to JavaScript by ReScript, Melange, js_of_ocaml and hazel-jit: "
+        "<meta name=\"description\" content=\"Two Hazel programs, report 043's Petri net rule and the Witch slide's picture view, compiled to JavaScript by ReScript, Melange, js_of_ocaml and hazel-jit: "
         "what each makes, how fast it runs, and what that suggests for hazel-jit.\">\n"
         "<style>" + CSS + EXTRA + HL_CSS + HL_INLINE_CSS + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
+# (Matthew, 2026-11-07: the view's listings "separate into distinct pages, one per output") 046/witch/*.html
+pages = W.write_pages(CSS + EXTRA, HL, HL_CSS, HL_INLINE_CSS, inline, updated)
+print("wrote", len(pages), "pages in 046/witch")
 print("wrote 046/index.html; updated", updated)

@@ -1,7 +1,7 @@
 <body><main>
 <p class="series"><a href="../">Hazel reports</a> · report 046 · hazel-jit · 2026-11-07, updated {{updated}} MST · <span class="wip">work in progress</span> · beside report 045 (<a href="../045/#next">its next step 7</a>)</p>
 <h1>BuckleScript, ReScript and Melange, beside hazel-jit</h1>
-<p class="sub">Cyrus named BuckleScript and ReScript at the meeting of 2026-11-05 as technologies to know about, and perhaps to compare with, if not to use (^ticket(698)). This note compiles one small program, report 043's Petri net rule, with each of them and with hazel-jit, and puts what they make side by side: the JavaScript, how values look in it, and how fast it runs.</p>
+<p class="sub">Cyrus named BuckleScript and ReScript at the meeting of 2026-11-05 as technologies to know about, and perhaps to compare with, if not to use (^ticket(698)). This note compiles two programs with each of them and with hazel-jit, and puts what they make side by side: the JavaScript, how values look in it, and how fast it runs. The first is small, report 043's Petri net rule; the second is the Livelit Playground deck's largest view, the Witch slide's picture.</p>
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
@@ -9,6 +9,9 @@
 <li><a href="#speed">How fast</a>: on the rule, Melange and ReScript beat JS written by hand; hazel-jit is about {{n:hj_x_res}} times ReScript, and {{n:interp_x_hj}} times faster than the interpreter.</li>
 <li><a href="#code">The same rule, compiled</a>: side by side.</li>
 <li><a href="#values">How each lays out values</a>: lists, records, constructors, options, arguments.</li>
+<li><a href="#witch">A view: the Witch slide's picture</a>: all five within {{w:hj_x_hand}}% of one another, {{w:hand}} to {{w:hj}} ms (about {{w:hj_fps}} to {{w:hand_fps}} fps), since most of the work is one builtin; on the interpreter a frame is {{w:interp}} ms ({{w:interp_fps}} fps), compiled {{w:frame}} ms ({{w:frame_fps}} fps), well inside 60 fps. The drawings, and one page per compiled output.</li>
+<li><a href="#witch-values">How each lays out the view's values</a>: shapes, vertices, Html, numbers formatted, the walks.</li>
+<li><a href="#general">What holds across both</a>: the compilers differ in calls, matches and layouts, and converge where a builtin does the work.</li>
 <li><a href="#suggests">What it suggests for hazel-jit</a>: five changes to its output, in the order they would help.</li>
 <li><a href="#use">Could any of them be used</a>: not as hazel-jit's back end; their layouts and optimizations, yes.</li>
 <li><a href="#next">What next</a>.</li>
@@ -76,6 +79,70 @@
 <tr><td>a tail call</td><td>a call</td><td>a <code>while</code> loop</td><td>a <code>while</code> loop</td><td>a <code>for</code> loop</td></tr>
 </table>
 
+<h2 id="witch">A view: the Witch slide's picture</h2>
+<p><b>On the deck's largest view, the five versions run within {{w:hj_x_hand}}% of one another: {{w:hand}} to {{w:hj}} ms (about {{w:hj_fps}} to {{w:hand_fps}} fps, as if updating the state were free), hand-written JS the fastest and hazel-jit the slowest of the five, {{w:hj_x_res}}% behind ReScript. Most of the work is one builtin: the picture's {{w:tofixed_calls}} numbers formatted with <code>toFixed</code> take {{w:tofixed}} ms alone. The exception is js_of_ocaml through OCaml's <code class="ml">Printf</code>: {{w:jsoo_pf}} ms ({{w:jsoo_pf_fps}} fps), {{w:pf_x_tf}} times its time when it calls <code>toFixed</code> instead.</b> All five draw the same SVG, byte for byte ({{w:svg_chars}} characters), and it is the interpreter's drawing.</p>
+<p>The Livelit Playground deck's Witch slide draws Messed Up Dress Up's witch, {{w:shapes}} shapes and {{w:points}} points in all. Its <code class="hz">^picture</code> livelit shows a picture it is given: the view fits a box around every point, then writes one SVG <code>polygon</code> or <code>polyline</code> per shape, each coordinate formatted to one decimal. Here that view is written again in ReScript and in OCaml (for Melange and js_of_ocaml) as the Hazel is written, and once by hand in JS. Each version is timed on the same picture in one Node process (js_of_ocaml's in its own), from the picture as that language holds it to the Html the view returns.</p>
+{{fig_witch}}
+<table class="vals">
+<tr><th>Version</th><th>ms, the view's work (median)</th><th>fps, if updating the state were free</th><th>the fastest call, ms</th></tr>
+<tr><td>JS written by hand</td><td>{{w:hand}}</td><td>{{w:hand_fps}}</td><td>{{wf:hand-written JS}}</td></tr>
+<tr><td>Melange 5.0.0</td><td>{{w:mel}}</td><td>{{w:mel_fps}}</td><td>{{wf:Melange}}</td></tr>
+<tr><td>ReScript 12.3.1</td><td>{{w:res}}</td><td>{{w:res_fps}}</td><td>{{wf:ReScript}}</td></tr>
+<tr><td>js_of_ocaml 5.9.1, numbers by JS's <code>toFixed</code></td><td>{{w:jsoo_tf}}</td><td>{{w:jsoo_tf_fps}}</td><td>{{wf:jsoo_tofixed}}</td></tr>
+<tr><td>hazel-jit</td><td>{{w:hj}}</td><td>{{w:hj_fps}}</td><td>{{wf:hazel-jit}}</td></tr>
+<tr><td>js_of_ocaml 5.9.1, numbers by OCaml's <code class="ml">Printf.sprintf "%.1f"</code></td><td>{{w:jsoo_pf}}</td><td>{{w:jsoo_pf_fps}}</td><td>{{wf:jsoo_printf}}</td></tr>
+<tr><td>Hazel's interpreter (in the app's terms, <a href="#witch-frame">below</a>)</td><td>{{w:interp}}</td><td>{{w:interp_fps}}</td><td></td></tr>
+</table>
+
+<h3 id="witch-frame">In the app's terms: one frame</h3>
+<p><b>On the interpreter, a frame of the Witch's picture takes {{w:interp}} ms ({{w:interp_fps}} fps), about {{w:frames_late}} frames' time at 60 fps. Compiled, it takes {{w:frame}} ms ({{w:frame_fps}} fps), {{w:interp_x_frame}} times less, leaving {{w:frame_left}} ms of a 60 fps frame's 16.7 ms.</b> These are timed in the Hazel test's process, the way the app runs a view. On the interpreter: the view evaluated ({{w:interp_eval}} ms), then its command run, which evaluates the splice's value and is most of the time, then its Html drawn as virtual DOM. Compiled: the model carried into JS ({{w:trip_in}} ms), the view and its commands run in JS ({{w:app_view}} ms), and the Html drawn straight from JS ({{w:draw_only}} ms).</p>
+<p>That process holds all of Hazel, and there the same compiled view takes {{w:app_over_node}} times as long as in the benchmark's own process: {{w:app_view}} ms against {{w:hj}} ms. The difference is not the code; it is likely the process's large heap and its garbage collection. Which of the two a browser sees, on the slide itself, is the next thing to measure.</p>
+{{fig_witch_frame}}
+
+<h3 id="witch-drawings">The drawings</h3>
+<p>Each version's Html, written out as SVG markup by a function in its own language, shown here as an image. They are the same, byte for byte, and each links to its page:</p>
+{{witch_svgs}}
+
+<h3 id="witch-pages">The view, compiled: one page per output</h3>
+<p><b>The compiled views are long, so each has a page of its own, with its source where there is one, its listing highlighted, and its drawing.</b></p>
+<ul>
+<li><a href="witch/hazel.html">Hazel, the source</a>: the livelit as the slide defines it, 105 lines.</li>
+<li><a href="witch/hazel-jit.html">hazel-jit</a>: the livelit's whole module, as the app compiles it in {{w:compile}} ms: each function of a tuple called with an array, <code>to_fixed</code> through the runtime, every walk a recursive call.</li>
+<li><a href="witch/rescript.html">ReScript</a>: the source and its output: <code>while</code> loops, string tags, <code>toFixed</code> called directly.</li>
+<li><a href="witch/melange.html">Melange</a>: the OCaml source and its output, ReScript's with numbered tags.</li>
+<li><a href="witch/js_of_ocaml.html">js_of_ocaml</a>: the OCaml source and the view's part of the whole program: its walks inlined as <code>for</code> loops, its numbers through <code class="ml">Printf</code>.</li>
+<li><a href="witch/by-hand.html">By hand</a>: arrays and <code>for…of</code>.</li>
+</ul>
+
+<h2 id="witch-values">How each lays out the view's values</h2>
+<p><b>The view's values are records, lists, Html nodes and strings, and the compilers lay them out much as they did the rule's. What sets the times apart is how each makes a number's text, and, for hazel-jit, an array for every call of a function of a tuple.</b></p>
+<table class="vals wrap1">
+<tr><th>Value, or step</th><th>hazel-jit</th><th>ReScript</th><th>Melange</th><th>js_of_ocaml</th><th>by hand</th></tr>
+<tr><td>a vertex, <code class="hz">(at = (x, y), label = Plain)</code></td><td><code>[at, label]</code>, with <code>at</code> and <code>label</code> as properties too; <code>at</code> is <code>[x, y]</code></td><td><code>{at: [x, y], label: "Plain"}</code></td><td><code>{at: [x, y], label: 0}</code></td><td><code>[0, [0, x, y], 0]</code></td><td><code>[x, y, null]</code></td></tr>
+<tr><td>a shape, <code class="hz">Polygon((name = n, points = ps, …))</code></td><td><code>{c: "Polygon", v: [n, ps, …]}</code>, the labels as properties too</td><td>flat: <code>{TAG: "Polygon", name, points, …}</code></td><td>flat: <code>{TAG: 0, name, points, …}</code></td><td><code>[0, n, ps, …]</code></td><td><code>{kind: "Polygon", name, points, …}</code></td></tr>
+<tr><td>an Html node, <code class="hz">Html.node("polygon", attrs, [])</code></td><td><code>{c: "Node", v: ["polygon", attrs, null]}</code></td><td><code>{TAG: "Node", _0, _1, _2}</code></td><td><code>{TAG: 0, _0, _1, _2}</code></td><td><code>[0, "polygon", attrs, 0]</code></td><td><code>{tag, attrs, kids}</code></td></tr>
+<tr><td>an attribute, <code class="hz">Attr.create("fill", f)</code></td><td><code>{c: "Create", v: ["fill", f]}</code></td><td><code>{TAG: "Create", _0, _1}</code></td><td><code>{TAG: 0, _0, _1}</code></td><td><code>[0, "fill", f]</code></td><td><code>["fill", f]</code></td></tr>
+<tr><td>a number's text, <code class="hz">to_fixed(x, 1)</code></td><td><code>$R.b.to_fixed([x, 1])</code>: an array, the digits clamped, then <code>toFixed</code></td><td><code>x.toFixed(1)</code></td><td><code>x.toFixed(1)</code></td><td><code class="ml">Printf.sprintf "%.1f"</code>: the format read at every call, then <code>toFixed</code></td><td><code>x.toFixed(1)</code></td></tr>
+<tr><td>a function of a tuple, <code class="hz">grow((b, v))</code></td><td>one array argument, made at each call</td><td><code>grow(b, v)</code></td><td><code>grow(b, v)</code></td><td>inlined</td><td>inlined by hand</td></tr>
+<tr><td>the walks, <code class="hz">grow_all</code>, <code class="hz">bounds</code>, <code class="hz">framing</code></td><td>recursive calls</td><td><code>while</code> loops</td><td><code>while</code> loops</td><td>nested <code>for</code> loops, inside the view</td><td><code>for…of</code></td></tr>
+<tr><td>the bounds, a 4-tuple</td><td>a new array per point</td><td>a new array per point</td><td>a new array per point</td><td>a new block per point</td><td>four variables</td></tr>
+<tr><td><code class="hz">p.name == "frame"</code></td><td><code>$R.eq(…)</code></td><td><code>===</code></td><td><code>===</code></td><td><code>===</code></td><td><code>===</code></td></tr>
+<tr><td>what the view returns</td><td>a command, <code class="hz">Bind(EvalSplice(ref), k)</code>; <code>k</code>, called with the splice's value, makes the Html</td><td colspan="3">the Html, from the splice's value (the Hazel's <code class="hz">case r</code>)</td><td>the Html</td></tr>
+</table>
+
+<h2 id="general">What holds across both</h2>
+<p><b>The compilers differ in how they make calls, matches and values, and those costs show where a program's work is mostly calls and matches, as in the rule. Where a builtin does most of the work, as in the view, they come out almost the same; then the cost is in how each reaches the builtin.</b> The two tables above, read together:</p>
+<table class="vals">
+<tr><th>Question</th><th>The Petri rule</th><th>The Witch's picture</th><th>What generalizes</th></tr>
+<tr><td>Where does the time go?</td><td>Calls, matches, small allocations: a few list walks and a command built per event.</td><td>Numbers formatted, {{w:tofixed_calls}} of them ({{w:tofixed}} of {{w:hand}} ms by hand), and strings joined.</td><td>The compilers' choices matter in proportion to the program's control and allocation, not its arithmetic or its builtins.</td></tr>
+<tr><td>hazel-jit, against ReScript</td><td>{{n:hj_x_res}} times as long.</td><td>{{w:hj_x_res}}% longer.</td><td>The gap is in hazel-jit's calls (an array per call of a function of a tuple), its generic equality and its recursion; the five changes <a href="#suggests">below</a> address exactly those.</td></tr>
+<tr><td>Compiled, against the interpreter</td><td>{{n:interp_x_hj}} times faster (hazel-jit).</td><td>A frame {{w:interp_x_frame}} times faster; the view's work alone {{w:interp_x_app_view}} times, in the same process.</td><td>Compiling pays most where the interpreter takes many small steps: a view over a large value is such a case.</td></tr>
+<tr><td>JS written by hand</td><td>Slower than three compilers: it copies arrays and calls closures, as people write JS.</td><td>The fastest: plain loops over arrays.</td><td>Hand-written JS is as fast as its idioms; a compiler's is the same every time.</td></tr>
+<tr><td>js_of_ocaml</td><td>Among the fastest, by inlining the rule into its caller.</td><td>The slowest by far through <code class="ml">Printf</code>, among the fastest when it calls JS's <code>toFixed</code>.</td><td>Whole-program inlining helps; OCaml's runtime library, written in JS, can cost more than the program.</td></tr>
+<tr><td>Value layouts</td><td>Constructors and options decide the allocations.</td><td>Records and Html nodes: one object each in ReScript and Melange, an object and an array in hazel-jit.</td><td>Flat objects, one shape per type, as ReScript and Melange make them, are the layout to copy.</td></tr>
+<tr><td>Do they agree?</td><td>The same marking after 2,000 events.</td><td>The same SVG, byte for byte, and the interpreter's.</td><td>On both, nothing was lost in translation that the outputs show.</td></tr>
+</table>
+
 <h2 id="suggests">What it suggests for hazel-jit</h2>
 <p><b>Five changes to what hazel-jit writes, each something these compilers already do, would close most of the gap to ReScript.</b> In the order they would likely help this rule:</p>
 <ol>
@@ -85,6 +152,7 @@
 <li><b>Unbox options, and make constructors flat.</b> <code class="hz">Some(t)</code> as <code>t</code> and <code class="hz">None</code> as <code>undefined</code> saves an allocation per option; <code>{TAG, _0, _1, _2}</code> saves the inner array of <code>{c, v: [a, b, k]}</code>.</li>
 <li><b>Lay out labeled tuples as objects only</b>, not as arrays with the labels as properties too: one shape per type, which JS engines optimize best.</li>
 </ol>
+<p><b>On the Witch's picture the five matter less, since the builtin does most of the work there, but the first and fourth still apply:</b> each point calls <code class="hz">grow</code> and <code class="hz">grow_all</code> with a fresh array of arguments, and each number goes through <code>$R.b.to_fixed([x, 1])</code>, another array, where the others call <code>x.toFixed(1)</code>. A sixth change follows from it: <b>call a builtin JS has directly</b> when its arguments are known to be in range (<code>to_fixed</code>'s digits a literal 1, say), as ReScript and Melange do.</p>
 <p>Each changes the layout that the trip in and out reads and writes (^report(45)'s <code class="ml">to_js</code> and <code class="ml">of_js</code>), so each is a change to both sides, and to <code class="ml">HazelJitDOM</code>'s reading of a view's answer. The first three change only the code inside a compiled function, and are the place to start.</p>
 
 <h2 id="use">Could any of them be used</h2>
@@ -99,6 +167,8 @@
 <ol>
 <li>Try the first three changes in hazel-jit (arguments as JS arguments, <code>===</code> on Ints, tail calls as loops), and time the rule again.</li>
 <li>Then the layouts (flat constructors, unboxed options, objects for labeled tuples), with the trip in and out and <code>HazelJitDOM</code> changed to match.</li>
+<li>Time the Witch's picture on the slide itself, in Firefox: which of the two numbers for hazel-jit's view, {{w:hj}} ms alone or {{w:app_view}} ms in a process holding all of Hazel, does a page see, and why do they differ?</li>
+<li>Find what the interpreter spends its {{w:interp}} ms on: most of it is the splice's value, the picture, evaluated again on every render, which the app's call memo may already spare it.</li>
 </ol>
 
 <h2 id="alternatives">Each alternative, for and against</h2>
@@ -107,25 +177,25 @@
 <h3 id="alt-hazel-jit">hazel-jit</h3>
 <ul>
 <li><b>For:</b> it compiles Hazel's own elaborated terms, so nothing is translated first, and whatever it cannot compile (a hole, a test, a splice) runs on the interpreter, one definition or one form at a time. It runs in the page, and fast enough to compile on every edit: the Petri rule's program in about 0.6 ms, the Polygons livelit's definition in 3 to 10 ms. Its values come back as Hazel values, closures as Hazel closures, so the editor, the probes and the interpreter take them as their own. Its runtime is about 2.5 KB; the compiler is already in Hazel's bundle.</li>
-<li><b>Against:</b> its code is the slowest of the compilers here, {{n:hazel-jit}} µs a call, about {{n:hj_x_res}} times ReScript's, for the reasons <a href="#suggests">above</a>: arguments in an array, a generic equality, no loops, boxed options. It uses no types to choose its code yet. Its Ints are JS numbers, which overflow and round as JS's do, the best-case trade agreed for now. It compiles one definition at a time, so it cannot inline across a program as js_of_ocaml does.</li>
+<li><b>Against:</b> its code is the slowest of the compilers here, {{n:hazel-jit}} µs a call, about {{n:hj_x_res}} times ReScript's, for the reasons <a href="#suggests">above</a>: arguments in an array, a generic equality, no loops, boxed options. It uses no types to choose its code yet. Its Ints are JS numbers, which overflow and round as JS's do, the best-case trade agreed for now. It compiles one definition at a time, so it cannot inline across a program as js_of_ocaml does. On the Witch's picture it is within {{w:hj_x_res}}% of ReScript, at {{w:hj}} ms ({{w:hj_fps}} fps).</li>
 </ul>
 
 <h3 id="alt-rescript">ReScript</h3>
 <ul>
-<li><b>For:</b> among the fastest code here, {{n:ReScript}} µs a call, and the most readable: named tags, objects by field name, functions called with their arguments. It is mature and used in production, its layouts are documented, and its code passes values to and from plain JS easily.</li>
+<li><b>For:</b> among the fastest code here, {{n:ReScript}} µs a call, and the most readable: named tags, objects by field name, functions called with their arguments. It is mature and used in production, its layouts are documented, and its code passes values to and from plain JS easily. On the Witch's picture, {{w:res}} ms ({{w:res_fps}} fps).</li>
 <li><b>Against:</b> it is a language of its own, with its own syntax and standard library, so Hazel would be translated into it first, and Hazel's holes, gradual types and livelits have no counterpart there: the translation would refuse an unfinished program, which is most programs while they are being edited. Its compiler is a native program; in the page it would have to be loaded as JavaScript, as its online playground does. And each edit would mean a translation and a build.</li>
 </ul>
 
 <h3 id="alt-melange">Melange</h3>
 <ul>
-<li><b>For:</b> the fastest code here, {{n:Melange}} µs a call. It compiles OCaml, the language Hazel is written in, with OCaml's own tools (dune, opam), so Hazel's implementers know it, and OCaml that Hazel's tools generate could go through it unchanged. Its playground shows it running in the browser.</li>
+<li><b>For:</b> the fastest compiled code here, {{n:Melange}} µs a call on the rule, {{w:mel}} ms ({{w:mel_fps}} fps) on the Witch's picture. It compiles OCaml, the language Hazel is written in, with OCaml's own tools (dune, opam), so Hazel's implementers know it, and OCaml that Hazel's tools generate could go through it unchanged. Its playground shows it running in the browser.</li>
 <li><b>Against:</b> everything said of ReScript as a back end, with OCaml in place of ReScript: Hazel translated to OCaml first, and OCaml's type checker rejecting what Hazel accepts (a hole, a mismatch the gradual types allow). The whole compiler loaded in the page. Its constructors are numbered, not named, so its JS is a little harder to read than ReScript's.</li>
 </ul>
 
 <h3 id="alt-jsoo">js_of_ocaml</h3>
 <ul>
 <li><b>For:</b> it already builds Hazel. It optimizes a whole program at once, and inlined the whole rule into its caller here ({{n:js_of_ocaml}} µs a call, a best case). It compiles OCaml's bytecode, so any OCaml runs, exactly as OCaml means it, its integers included.</li>
-<li><b>Against:</b> for a Hazel program it would mean Hazel to OCaml, OCaml to bytecode, bytecode to JS, ahead of time: far too heavy to do as a program is edited. Its JS is OCaml's memory layout (every value an array with its tag first), hard to read and awkward to hand to plain JS.</li>
+<li><b>Against:</b> for a Hazel program it would mean Hazel to OCaml, OCaml to bytecode, bytecode to JS, ahead of time: far too heavy to do as a program is edited. Its JS is OCaml's memory layout (every value an array with its tag first), hard to read and awkward to hand to plain JS. And OCaml's library comes along, as JS: on the Witch's picture, numbers formatted with <code class="ml">Printf</code> make its view {{w:pf_x_tf}} times as slow as the same view calling JS's <code>toFixed</code> ({{w:jsoo_pf}} against {{w:jsoo_tf}} ms).</li>
 </ul>
 
 <h3 id="alt-buckle">BuckleScript</h3>
@@ -137,13 +207,13 @@
 <h3 id="alt-hand">Writing the JS by hand</h3>
 <ul>
 <li><b>For:</b> no compiler at all, and full control: the Petri example's own fallback handler is written this way, for when its Hazel rules do not build.</li>
-<li><b>Against:</b> the point is to write the rule in Hazel, and see it in Hazel's editor. And hand-written JS is not the fastest by default: {{n:hand-written JS}} µs a call here, slower than three of the compilers, because it is written the way people write JS.</li>
+<li><b>Against:</b> the point is to write the rule in Hazel, and see it in Hazel's editor. And hand-written JS is not the fastest by default: {{n:hand-written JS}} µs a call here, slower than three of the compilers, because it is written the way people write JS. (On the Witch's picture, written with loops over arrays, it is the fastest: {{w:hand}} ms.)</li>
 </ul>
 
 <h3 id="alt-interpreter">Hazel's interpreter</h3>
 <ul>
 <li><b>For:</b> all of Hazel: holes, tests, probes, stepping, the call memo, Hazel's own Ints. No compile step, and the semantics are the definition's.</li>
-<li><b>Against:</b> {{n:interp}} µs a call on this rule, {{n:interp_x_hj}} times hazel-jit's; on a Polygons render, about 37 times (^report(45)). It stays what runs whatever hazel-jit cannot.</li>
+<li><b>Against:</b> {{n:interp}} µs a call on this rule, {{n:interp_x_hj}} times hazel-jit's; on a Polygons render, about 37 times (^report(45)); a frame of the Witch's picture, {{w:interp}} ms ({{w:interp_fps}} fps), {{w:interp_x_frame}} times hazel-jit's, and far outside a 60 fps frame. It stays what runs whatever hazel-jit cannot.</li>
 </ul>
 
 <h2 id="method">How this was made</h2>
@@ -151,6 +221,8 @@
 <li><b>The program</b> is report 043's Petri net rule as matthewhammer/hazeljs-petri-example has it at 4c85792 (its <code>rules</code>: the preamble, <code class="hz">Common</code>, <code class="hz">Rules</code> and <code class="hz">Main</code>), written again in ReScript (<code>data/Petri.res</code>) and OCaml (<code>data/petri.ml</code>), function for function, as the Hazel is written.</li>
 <li><b>The compilers</b>: ReScript 12.3.1 from npm; Melange 5.0.0 (with OCaml 5.3.0) in its playground at melange.re, its JS copied from there; js_of_ocaml 5.9.1 from the opam switch Hazel builds with (<code>ocamlc</code> to bytecode, then <code>js_of_ocaml --pretty</code>); hazel-jit at <code>28fc073ed5</code> on <code>trial/694-view-jit</code>, its compiled program run in plain Node with its runtime.</li>
 <li><b>The timings</b>: Node 22.23.2 on a Framework 13 laptop (Intel Core i7-1370P), 2026-11-07 at 10:43 MST. One script (<code>data/bench.mjs</code>) runs the hand-written handler, ReScript's, Melange's and hazel-jit's in one process, each on its own values, 2,000 events each; js_of_ocaml's program times itself the same way. Five runs of each; the table gives the median of the five runs' medians, and the fastest single call. The interpreter's number is from <code>Test_HazelJit</code> at <code>28fc073ed5</code>, a development build.</li>
+<li><b>The view</b> is the Witch slide's <code class="hz">Drawing.^picture</code> (<code>hazel-programs/docs/livelits/playground/witch.hz</code> at <code>ba72773d46</code>, <code>data/witch/picture.hz</code>), on the picture the slide draws, evaluated by the Hazel test (<code>Test_HazelJit</code>'s <code>witch_view_run</code>, test 50) and written out as JSON (<code>data/witch/picture.json</code>). Its view is written again in ReScript (<code>Witch.res</code>), in OCaml (<code>witch-core.ml</code>, with a one-line prelude for each compiler) and by hand, from the point where the splice's value arrives. hazel-jit's output is the test's own compile of the livelit's module, with the runtime it printed (<code>hazeljit-witch-src.js</code>, <code>hazeljit-runtime-src.js</code>); in the benchmark its model is laid out as <code>to_js</code> lays it out, and its command run as <code>HazelJitDOM.run</code> runs it.</li>
+<li><b>Its timings</b>: <code>data/witch/witch-bench.mjs</code> times hazel-jit's, ReScript's, Melange's and the hand-written view in one Node 22.23.2 process, three runs, each the median of five rounds of 200 calls after 20 untimed; js_of_ocaml's two programs time themselves, five runs of 200. Each version's Html is written out as markup in its own language and compared with the SVG the test drew from hazel-jit's answer, which the test checks against the interpreter's drawing. The frame's numbers are from the test, at <code>bcec455abc</code> on <code>trial/694-view-jit</code> (the splice's answers made in JS), two runs of 15 pooled (<code>raw-run1.json</code>, <code>raw-run2.json</code>), 2026-11-07 at 11:28 and 11:35 MST.</li>
 </ul>
 </main>
 </body>

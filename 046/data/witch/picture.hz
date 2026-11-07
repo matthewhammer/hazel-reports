@@ -1,0 +1,105 @@
+# ^picture shows a picture it is given: its model is one splice, #
+# the client's code for the picture, and its use means that #
+# picture. A livelit cannot name the slide's own functions, so it #
+# draws with its own few. #
+let ^picture = {
+  type Model = (picture = SpliceRef);
+  type Action = ();
+  type Expansion = Picture;
+  let init = do p <- new_splice((AnyT, None)) in Pure((picture = p));
+  let update = fun m : Model -> fun _a : Action -> Pure(m);
+  let num = fun x : Float -> to_fixed(x, 1);
+  # each point followed by a space, the last too (a points list may end #
+  # with one); to_fixed itself, not num, which cost a call a number #
+  let coords : [Vertex] -> String =
+    fun vs ->
+      case vs
+      | [] => ""
+      | v :: tl =>
+        let (x, y) = v.at in
+        to_fixed(x, 1) ++ "," ++ to_fixed(y, 1) ++ " " ++ coords(tl)
+      end;
+  let shape_node = fun s : Shape ->
+    case s
+    | Polygon(p) =>
+      Html.node("polygon",
+        [Attr.create("points", coords(p.points)), Attr.create("fill", p.fill),
+         Attr.create("stroke", p.stroke.color),
+         Attr.create("stroke-width", num(p.stroke.width)),
+         Attr.create("stroke-linejoin", "round")], [])
+    | Path(p) =>
+      Html.node("polyline",
+        [Attr.create("points", coords(p.points)), Attr.create("fill", "none"),
+         Attr.create("stroke", p.stroke.color),
+         Attr.create("stroke-width", num(p.stroke.width)),
+         Attr.create("stroke-linejoin", "round"),
+         Attr.create("stroke-linecap", "round")], [])
+    end;
+  let shape_nodes : Picture -> [Html.T] =
+    fun ss -> case ss | [] => [] | s :: tl => shape_node(s) :: shape_nodes(tl) end;
+  # The frame: every point, with a margin, made the viewer's shape, #
+  # 320 by 440, about its middle. It fits the drawing, so a slide that #
+  # draws only a head shows the head large; a slide that wants its #
+  # frame to stay put while the drawing changes adds Drawing.frame. #
+  # A picture with a frame is shown framed: the box is the frame's, #
+  # whatever else it draws, and anything outside it is cut off. Its #
+  # points are not walked either: in the woods, that walk was over #
+  # half of the view's work. #
+  let vertices_of = fun s : Shape ->
+    case s | Polygon(p) => p.points | Path(p) => p.points end;
+  let grow = fun ((x0, y0, x1, y1), v) : ((Float, Float, Float, Float), Vertex) ->
+    let (x, y) = v.at in
+    ((if x -. 12. <. x0 then x -. 12. else x0),
+     (if y -. 12. <. y0 then y -. 12. else y0),
+     (if x +. 12. >. x1 then x +. 12. else x1),
+     (if y +. 12. >. y1 then y +. 12. else y1));
+  let grow_all : ((Float, Float, Float, Float), [Vertex]) -> (Float, Float, Float, Float) =
+    fun (b, vs) -> case vs | [] => b | v :: tl => grow_all((grow((b, v)), tl)) end;
+  let bounds : ((Float, Float, Float, Float), Picture) -> (Float, Float, Float, Float) =
+    fun (b, ss) ->
+      case ss | [] => b | s :: tl => bounds((grow_all((b, vertices_of(s))), tl)) end;
+  let framing : Picture -> Picture =
+    fun ss ->
+      case ss
+      | [] => []
+      | s :: tl =>
+        case s
+        | Path(p) => if p.name == "frame" then [s] else framing(tl)
+        | _ => framing(tl)
+        end
+      end;
+  let view_box = fun pic : Picture ->
+    let boxed = case framing(pic) | [] => pic | f => f end in
+    let start =
+      case boxed
+      | [] => (0., 0., 0., 0.)
+      | s :: _ =>
+        case vertices_of(s)
+        | [] => (0., 0., 0., 0.)
+        | v :: _ => let (x, y) = v.at in (x, y, x, y)
+        end
+      end in
+    let (x0, y0, x1, y1) = bounds((start, boxed)) in
+    let (w, h) = (x1 -. x0, y1 -. y0) in
+    let (w2, h2) =
+      if w *. 440. >. h *. 320. then (w, w *. 440. /. 320.) else (h *. 320. /. 440., h) in
+    num(x0 -. (w2 -. w) /. 2.) ++ " " ++ num(y0 -. (h2 -. h) /. 2.) ++ " "
+    ++ num(w2) ++ " " ++ num(h2);
+  let view = fun m : Model ->
+    do r <- eval_splice(m.picture) in
+    Pure(
+      case r
+      | Some(Val(pic)) =>
+        Html.node("svg",
+          [Attr.create("viewBox", view_box(pic)), Attr.width("320"),
+           Attr.height("440"),
+           Attr.style([("border", "1px solid #ccc"), ("background", "#fafafa")])],
+          shape_nodes(pic))
+      | _ =>
+        Html.div([Attr.style([("font-family", "var(--code-font)"), ("font-size", "0.8em")])],
+          [Html.text("no picture yet")])
+      end);
+  # A Macro: the picture is the client's code, so a use means it. #
+  let expand = Macro(fun m : Model -> (quote fun p -> p end, [m.picture]));
+  let shape = Block(34, 22)
+};

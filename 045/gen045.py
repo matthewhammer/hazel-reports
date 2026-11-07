@@ -2,7 +2,7 @@
 """^report(45), hazel-jit: writes 045/index.html from body.html, with the series' styles (035's) and figures drawn from
 045/data/timings.json (each run's reading, from Test_HazelJit's timing tests). Placeholders in body.html: {{updated}},
 {{fig_speed}}, {{fig_boundary}}, {{fig_how}}, and {{n:KEY}} for a number (see NUMS)."""
-import json, os, subprocess, statistics
+import json, os, re, subprocess, statistics
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -318,10 +318,19 @@ def fig_how():
             "<code>LivelitProj.eval_view</code> since " + T["commit"] + ".</figcaption></figure></div>")
 
 
+
+def keep(name, fig_html):
+    """(Matthew, 2026-11-07: the agenda, ^report(42), shows the reports' plots) the figure's <svg>, kept as NNN/figs/NAME.html
+    for 042/drivers/figs042.py to draw on an item's card; it uses the series' colour variables, so it is only for inlining"""
+    m = re.search(r"<svg.*?</svg>", fig_html, re.S)
+    os.makedirs(os.path.join(HERE, "figs"), exist_ok=True)
+    open(os.path.join(HERE, "figs", name + ".html"), "w").write(m.group(0) + "\n")
+    return fig_html
+
 updated = subprocess.run(["date", "+%Y-%m-%d %H:%M"], capture_output=True, text=True).stdout.strip()
 body = open(os.path.join(HERE, "body.html")).read()
-body = body.replace("{{updated}}", updated).replace("{{fig_speed}}", fig_speed()).replace("{{fig_boundary}}", fig_boundary())
-body = body.replace("{{fig_how}}", fig_how()).replace("{{fig_routes}}", fig_routes()).replace("{{fig_diff}}", fig_diff())
+body = body.replace("{{updated}}", updated).replace("{{fig_speed}}", keep("speed", fig_speed())).replace("{{fig_boundary}}", keep("boundary", fig_boundary()))
+body = body.replace("{{fig_how}}", fig_how()).replace("{{fig_routes}}", keep("routes", fig_routes())).replace("{{fig_diff}}", keep("diff", fig_diff()))
 body = body.replace("{{table_update}}", table_update())
 for k, v in NUMS.items():
     body = body.replace("{{n:" + k + "}}", v)

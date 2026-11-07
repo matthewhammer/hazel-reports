@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Witch's picture view: JavaScript by hand</title>
+<meta name="description" content="Report 046: the Witch slide's ^picture view, JavaScript by hand.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals td:first-child { white-space: nowrap; }
+  pre.code { background: color-mix(in srgb, var(--line) 35%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+             overflow-x: auto; font-size: 0.8em; line-height: 1.45; max-width: 100%; }
+  pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
+  .pair { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .pair h4 { margin: 10px 0 2px; font-size: 0.95em; }
+  table.vals.wrap1 td:first-child { white-space: normal; min-width: 9em; }
+  .witchrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .witchrow figure.witchcell { margin: 0; text-align: center; }
+  .witchrow img { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .witchrow figcaption { font-size: 0.85em; }
+
+pre.hz, pre.fu, pre.jx { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; line-height: 1.5; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+pre.jx .jk { color: #ff79c6; font-weight: 700; } pre.jx .jC { color: #8be9fd; } pre.jx .jv { color: #f8f8f2; } pre.jx .js { color: #f1fa8c; }
+pre.jx .jn { color: #bd93f9; } pre.jx .jc { color: #87ff87; font-style: italic; } pre.jx .jo { color: #ffd75f; }
+
+code.hz, code.jx { background: #000; color: #f8f8f2; border-radius: 4px; padding: 1px 5px; }
+code.hz .hk { color: #5fd7ff; font-weight: 700; } code.hz .hC { color: #ff87ff; } code.hz .hv { color: #f8f8f2; } code.hz .hs { color: #ffb86c; }
+code.hz .hn { color: #bd93f9; } code.hz .hc { color: #87ff87; font-style: italic; } code.hz .ho { color: #ffd75f; }
+code.jx .jk { color: #ff79c6; font-weight: 700; } code.jx .jC { color: #8be9fd; } code.jx .jv { color: #f8f8f2; } code.jx .js { color: #f1fa8c; }
+code.jx .jn { color: #bd93f9; } code.jx .jc { color: #87ff87; font-style: italic; } code.jx .jo { color: #ffd75f; }
+
+  figure.witchone img { display: block; max-width: 100%; height: auto; }</style>
+</head>
+<body><main>
+<p class="series"><a href="../../">Hazel reports</a> · <a href="../"><code class="ref"><b>^report(</b>46<b>)</b></code></a> · <a href="../#witch">the Witch's picture</a> · one page per output · updated 2026-11-07 11:58 MST</p>
+<h1>The Witch's picture view: JavaScript by hand</h1>
+<p class="sub">One of six pages, one per version of the Witch slide's <code class="hz">^picture</code> view (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>, <a href="../#witch">a view</a>): <a href="hazel.html">Hazel</a> · <a href="hazel-jit.html">hazel-jit&#x27;s output</a> · <a href="rescript.html">ReScript 12.3.1&#x27;s output</a> · <a href="melange.html">Melange 5.0.0&#x27;s output</a> · <a href="js_of_ocaml.html">js_of_ocaml 5.9.1&#x27;s output</a> · <a href="by-hand.html">JavaScript by hand</a>.</p>
+<p>What a JavaScript programmer might write: arrays and <code class="jx"><span class="jk">for</span>…<span class="jk">of</span></code>, the bounds in four variables instead of a tuple remade per point, attributes as pairs. The fastest of the five here, by a little.</p>
+<figure class="f witchone"><img src="svg/by-hand.svg" width="240" height="330" alt="The Witch, as this output drew her"><figcaption>This output's drawing, written out as markup: 26,044 characters, the same as the other four's and hazel-jit's in the app, byte for byte. Its view's work: 0.17 ms (6,000 fps), the median in one Node process.</figcaption></figure>
+<h2>By hand: the view on the picture as JSON (arrays, plain objects)</h2>
+<pre class="code jx"><span class="jc">// by hand: the view as a JS programmer might write it, on the picture as JSON (arrays, plain objects)</span>
+<span class="jk">function</span> <span class="jv">handView</span><span class="jo">(</span><span class="jv">pic</span><span class="jo">)</span> <span class="jo">{</span>
+  <span class="jk">const</span> <span class="jv">coords</span> <span class="jo">=</span> <span class="jv">pts</span> <span class="jo">=&gt;</span> <span class="jo">{</span> <span class="jk">let</span> <span class="jv">s</span> <span class="jo">=</span> <span class="js">&quot;&quot;</span><span class="jo">;</span> <span class="jk">for</span> <span class="jo">(</span><span class="jk">const</span> <span class="jv">p</span> <span class="jk">of</span> <span class="jv">pts</span><span class="jo">)</span> <span class="jv">s</span> <span class="jo">+</span><span class="jo">=</span> <span class="jv">p</span><span class="jo">[</span><span class="jn">0</span><span class="jo">]</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span> <span class="jo">+</span> <span class="js">&quot;,&quot;</span> <span class="jo">+</span> <span class="jv">p</span><span class="jo">[</span><span class="jn">1</span><span class="jo">]</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span> <span class="jo">+</span> <span class="js">&quot; &quot;</span><span class="jo">;</span> <span class="jk">return</span> <span class="jv">s</span><span class="jo">;</span> <span class="jo">}</span><span class="jo">;</span>
+  <span class="jk">const</span> <span class="jv">frame</span> <span class="jo">=</span> <span class="jv">pic</span><span class="jo">.</span><span class="jv">find</span><span class="jo">(</span><span class="jv">s</span> <span class="jo">=&gt;</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">kind</span> <span class="jo">===</span> <span class="js">&quot;Path&quot;</span> <span class="jo">&amp;&amp;</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">name</span> <span class="jo">===</span> <span class="js">&quot;frame&quot;</span><span class="jo">)</span><span class="jo">;</span>
+  <span class="jk">const</span> <span class="jv">boxed</span> <span class="jo">=</span> <span class="jv">frame</span> <span class="jo">?</span> <span class="jo">[</span><span class="jv">frame</span><span class="jo">]</span> <span class="jo">:</span> <span class="jv">pic</span><span class="jo">;</span>
+  <span class="jk">const</span> <span class="jv">first</span> <span class="jo">=</span> <span class="jv">boxed</span><span class="jo">.</span><span class="jv">length</span> <span class="jo">&amp;&amp;</span> <span class="jv">boxed</span><span class="jo">[</span><span class="jn">0</span><span class="jo">]</span><span class="jo">.</span><span class="jv">points</span><span class="jo">.</span><span class="jv">length</span> <span class="jo">?</span> <span class="jv">boxed</span><span class="jo">[</span><span class="jn">0</span><span class="jo">]</span><span class="jo">.</span><span class="jv">points</span><span class="jo">[</span><span class="jn">0</span><span class="jo">]</span> <span class="jo">:</span> <span class="jo">[</span><span class="jn">0</span><span class="jo">,</span> <span class="jn">0</span><span class="jo">]</span><span class="jo">;</span>
+  <span class="jk">let</span> <span class="jv">x0</span> <span class="jo">=</span> <span class="jv">first</span><span class="jo">[</span><span class="jn">0</span><span class="jo">]</span><span class="jo">,</span> <span class="jv">y0</span> <span class="jo">=</span> <span class="jv">first</span><span class="jo">[</span><span class="jn">1</span><span class="jo">]</span><span class="jo">,</span> <span class="jv">x1</span> <span class="jo">=</span> <span class="jv">first</span><span class="jo">[</span><span class="jn">0</span><span class="jo">]</span><span class="jo">,</span> <span class="jv">y1</span> <span class="jo">=</span> <span class="jv">first</span><span class="jo">[</span><span class="jn">1</span><span class="jo">]</span><span class="jo">;</span>
+  <span class="jk">if</span> <span class="jo">(</span><span class="jo">!</span><span class="jo">(</span><span class="jv">boxed</span><span class="jo">.</span><span class="jv">length</span> <span class="jo">&amp;&amp;</span> <span class="jv">boxed</span><span class="jo">[</span><span class="jn">0</span><span class="jo">]</span><span class="jo">.</span><span class="jv">points</span><span class="jo">.</span><span class="jv">length</span><span class="jo">)</span><span class="jo">)</span> <span class="jv">x0</span> <span class="jo">=</span> <span class="jv">y0</span> <span class="jo">=</span> <span class="jv">x1</span> <span class="jo">=</span> <span class="jv">y1</span> <span class="jo">=</span> <span class="jn">0</span><span class="jo">;</span>
+  <span class="jk">for</span> <span class="jo">(</span><span class="jk">const</span> <span class="jv">s</span> <span class="jk">of</span> <span class="jv">boxed</span><span class="jo">)</span> <span class="jk">for</span> <span class="jo">(</span><span class="jk">const</span> <span class="jo">[</span><span class="jv">x</span><span class="jo">,</span> <span class="jv">y</span><span class="jo">]</span> <span class="jk">of</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">points</span><span class="jo">)</span> <span class="jo">{</span>
+    <span class="jk">if</span> <span class="jo">(</span><span class="jv">x</span> <span class="jo">-</span> <span class="jn">12</span> <span class="jo">&lt;</span> <span class="jv">x0</span><span class="jo">)</span> <span class="jv">x0</span> <span class="jo">=</span> <span class="jv">x</span> <span class="jo">-</span> <span class="jn">12</span><span class="jo">;</span> <span class="jk">if</span> <span class="jo">(</span><span class="jv">y</span> <span class="jo">-</span> <span class="jn">12</span> <span class="jo">&lt;</span> <span class="jv">y0</span><span class="jo">)</span> <span class="jv">y0</span> <span class="jo">=</span> <span class="jv">y</span> <span class="jo">-</span> <span class="jn">12</span><span class="jo">;</span> <span class="jk">if</span> <span class="jo">(</span><span class="jv">x</span> <span class="jo">+</span> <span class="jn">12</span> <span class="jo">&gt;</span> <span class="jv">x1</span><span class="jo">)</span> <span class="jv">x1</span> <span class="jo">=</span> <span class="jv">x</span> <span class="jo">+</span> <span class="jn">12</span><span class="jo">;</span> <span class="jk">if</span> <span class="jo">(</span><span class="jv">y</span> <span class="jo">+</span> <span class="jn">12</span> <span class="jo">&gt;</span> <span class="jv">y1</span><span class="jo">)</span> <span class="jv">y1</span> <span class="jo">=</span> <span class="jv">y</span> <span class="jo">+</span> <span class="jn">12</span><span class="jo">;</span>
+  <span class="jo">}</span>
+  <span class="jk">const</span> <span class="jv">w</span> <span class="jo">=</span> <span class="jv">x1</span> <span class="jo">-</span> <span class="jv">x0</span><span class="jo">,</span> <span class="jv">h</span> <span class="jo">=</span> <span class="jv">y1</span> <span class="jo">-</span> <span class="jv">y0</span><span class="jo">;</span>
+  <span class="jk">const</span> <span class="jo">[</span><span class="jv">w2</span><span class="jo">,</span> <span class="jv">h2</span><span class="jo">]</span> <span class="jo">=</span> <span class="jv">w</span> <span class="jo">*</span> <span class="jn">440</span> <span class="jo">&gt;</span> <span class="jv">h</span> <span class="jo">*</span> <span class="jn">320</span> <span class="jo">?</span> <span class="jo">[</span><span class="jv">w</span><span class="jo">,</span> <span class="jv">w</span> <span class="jo">*</span> <span class="jn">440</span> <span class="jo">/</span> <span class="jn">320</span><span class="jo">]</span> <span class="jo">:</span> <span class="jo">[</span><span class="jv">h</span> <span class="jo">*</span> <span class="jn">320</span> <span class="jo">/</span> <span class="jn">440</span><span class="jo">,</span> <span class="jv">h</span><span class="jo">]</span><span class="jo">;</span>
+  <span class="jk">const</span> <span class="jv">viewBox</span> <span class="jo">=</span> <span class="jo">(</span><span class="jv">x0</span> <span class="jo">-</span> <span class="jo">(</span><span class="jv">w2</span> <span class="jo">-</span> <span class="jv">w</span><span class="jo">)</span> <span class="jo">/</span> <span class="jn">2</span><span class="jo">)</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span> <span class="jo">+</span> <span class="js">&quot; &quot;</span> <span class="jo">+</span> <span class="jo">(</span><span class="jv">y0</span> <span class="jo">-</span> <span class="jo">(</span><span class="jv">h2</span> <span class="jo">-</span> <span class="jv">h</span><span class="jo">)</span> <span class="jo">/</span> <span class="jn">2</span><span class="jo">)</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span> <span class="jo">+</span> <span class="js">&quot; &quot;</span> <span class="jo">+</span> <span class="jv">w2</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span> <span class="jo">+</span> <span class="js">&quot; &quot;</span> <span class="jo">+</span> <span class="jv">h2</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span><span class="jo">;</span>
+  <span class="jk">const</span> <span class="jv">kids</span> <span class="jo">=</span> <span class="jv">pic</span><span class="jo">.</span><span class="jv">map</span><span class="jo">(</span><span class="jv">s</span> <span class="jo">=&gt;</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">kind</span> <span class="jo">===</span> <span class="js">&quot;Polygon&quot;</span>
+    <span class="jo">?</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;polygon&quot;</span><span class="jo">,</span> <span class="jv">attrs</span><span class="jo">:</span> <span class="jo">[</span><span class="jo">[</span><span class="js">&quot;points&quot;</span><span class="jo">,</span> <span class="jv">coords</span><span class="jo">(</span><span class="jv">s</span><span class="jo">.</span><span class="jv">points</span><span class="jo">)</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;fill&quot;</span><span class="jo">,</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">fill</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;stroke&quot;</span><span class="jo">,</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">stroke</span><span class="jo">.</span><span class="jv">color</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;stroke-width&quot;</span><span class="jo">,</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">stroke</span><span class="jo">.</span><span class="jv">width</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;stroke-linejoin&quot;</span><span class="jo">,</span> <span class="js">&quot;round&quot;</span><span class="jo">]</span><span class="jo">]</span><span class="jo">,</span> <span class="jv">kids</span><span class="jo">:</span> <span class="jo">[</span><span class="jo">]</span> <span class="jo">}</span>
+    <span class="jo">:</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;polyline&quot;</span><span class="jo">,</span> <span class="jv">attrs</span><span class="jo">:</span> <span class="jo">[</span><span class="jo">[</span><span class="js">&quot;points&quot;</span><span class="jo">,</span> <span class="jv">coords</span><span class="jo">(</span><span class="jv">s</span><span class="jo">.</span><span class="jv">points</span><span class="jo">)</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;fill&quot;</span><span class="jo">,</span> <span class="js">&quot;none&quot;</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;stroke&quot;</span><span class="jo">,</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">stroke</span><span class="jo">.</span><span class="jv">color</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;stroke-width&quot;</span><span class="jo">,</span> <span class="jv">s</span><span class="jo">.</span><span class="jv">stroke</span><span class="jo">.</span><span class="jv">width</span><span class="jo">.</span><span class="jv">toFixed</span><span class="jo">(</span><span class="jn">1</span><span class="jo">)</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;stroke-linejoin&quot;</span><span class="jo">,</span> <span class="js">&quot;round&quot;</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;stroke-linecap&quot;</span><span class="jo">,</span> <span class="js">&quot;round&quot;</span><span class="jo">]</span><span class="jo">]</span><span class="jo">,</span> <span class="jv">kids</span><span class="jo">:</span> <span class="jo">[</span><span class="jo">]</span> <span class="jo">}</span><span class="jo">)</span><span class="jo">;</span>
+  <span class="jk">return</span> <span class="jo">{</span> <span class="jv">tag</span><span class="jo">:</span> <span class="js">&quot;svg&quot;</span><span class="jo">,</span> <span class="jv">attrs</span><span class="jo">:</span> <span class="jo">[</span><span class="jo">[</span><span class="js">&quot;viewBox&quot;</span><span class="jo">,</span> <span class="jv">viewBox</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;width&quot;</span><span class="jo">,</span> <span class="js">&quot;320&quot;</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;height&quot;</span><span class="jo">,</span> <span class="js">&quot;440&quot;</span><span class="jo">]</span><span class="jo">,</span> <span class="jo">[</span><span class="js">&quot;style&quot;</span><span class="jo">,</span> <span class="js">&quot;border: 1px solid #ccc;background: #fafafa&quot;</span><span class="jo">]</span><span class="jo">]</span><span class="jo">,</span> <span class="jv">kids</span> <span class="jo">}</span><span class="jo">;</span>
+<span class="jo">}</span>
+<span class="jk">const</span> <span class="jv">handMarkup</span> <span class="jo">=</span> <span class="jv">h</span> <span class="jo">=&gt;</span> <span class="js">`&lt;${h.tag}${h.attrs.map(([k, v]) =&gt; `</span> $<span class="jo">{</span><span class="jv">k</span><span class="jo">}</span><span class="jo">=</span><span class="js">&quot;${v}&quot;</span><span class="js">`).join(&quot;&quot;)}&gt;${h.kids.map(handMarkup).join(&quot;&quot;)}&lt;/${h.tag}&gt;`</span><span class="jo">;</span></pre>
+<p class="muted">The files, in 046/data/witch (sources, outputs, the benchmark, the timings): <a href="../data/witch/Witch.res">Witch.res</a>, <a href="../data/witch/Witch.res.js">Witch.res.js</a>, <a href="../data/witch/bench-runs.jsonl">bench-runs.jsonl</a>, <a href="../data/witch/hazeljit-runtime-src.js">hazeljit-runtime-src.js</a>, <a href="../data/witch/hazeljit-witch-pretty.js">hazeljit-witch-pretty.js</a>, <a href="../data/witch/hazeljit-witch-src.js">hazeljit-witch-src.js</a>, <a href="../data/witch/jsoo-excerpt.js">jsoo-excerpt.js</a>, <a href="../data/witch/jsoo-runs.jsonl">jsoo-runs.jsonl</a>, <a href="../data/witch/picture.hz">picture.hz</a>, <a href="../data/witch/picture.json">picture.json</a>, <a href="../data/witch/raw-run1.json">raw-run1.json</a>, <a href="../data/witch/raw-run2.json">raw-run2.json</a>, <a href="../data/witch/timings.json">timings.json</a>, <a href="../data/witch/witch-bench.mjs">witch-bench.mjs</a>, <a href="../data/witch/witch-core.ml">witch-core.ml</a>, <a href="../data/witch/witch-jsoo-tofixed.ml">witch-jsoo-tofixed.ml</a>, <a href="../data/witch/witch-jsoo.ml">witch-jsoo.ml</a>, <a href="../data/witch/witch-melange.js">witch-melange.js</a>, <a href="../data/witch/witch-melange.ml">witch-melange.ml</a>.</p>
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+
+</body>

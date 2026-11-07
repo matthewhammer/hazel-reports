@@ -108,5 +108,207 @@
     "a for loop"
    ]
   ]
+ },
+ {
+  "section": "A view: the Witch slide's picture",
+  "section_id": "witch",
+  "columns": [
+   "Version",
+   "ms, the view's work (median)",
+   "fps, if updating the state were free",
+   "the fastest call, ms"
+  ],
+  "rows": [
+   [
+    "JS written by hand",
+    "0.17",
+    "6,000",
+    "0.16"
+   ],
+   [
+    "Melange 5.0.0",
+    "0.17",
+    "5,800",
+    "0.17"
+   ],
+   [
+    "ReScript 12.3.1",
+    "0.18",
+    "5,600",
+    "0.17"
+   ],
+   [
+    "js_of_ocaml 5.9.1, numbers by JS's toFixed",
+    "0.19",
+    "5,300",
+    "0.18"
+   ],
+   [
+    "hazel-jit",
+    "0.19",
+    "5,200",
+    "0.19"
+   ],
+   [
+    "js_of_ocaml 5.9.1, numbers by OCaml's Printf.sprintf \"%.1f\"",
+    "1.01",
+    "990",
+    "0.91"
+   ],
+   [
+    "Hazel's interpreter (in the app's terms, below)",
+    "155",
+    "6",
+    ""
+   ]
+  ]
+ },
+ {
+  "section": "How each lays out the view's values",
+  "section_id": "witch-values",
+  "columns": [
+   "Value, or step",
+   "hazel-jit",
+   "ReScript",
+   "Melange",
+   "js_of_ocaml",
+   "by hand"
+  ],
+  "rows": [
+   [
+    "a vertex, (at = (x, y), label = Plain)",
+    "[at, label], with at and label as properties too; at is [x, y]",
+    "{at: [x, y], label: \"Plain\"}",
+    "{at: [x, y], label: 0}",
+    "[0, [0, x, y], 0]",
+    "[x, y, null]"
+   ],
+   [
+    "a shape, Polygon((name = n, points = ps, …))",
+    "{c: \"Polygon\", v: [n, ps, …]}, the labels as properties too",
+    "flat: {TAG: \"Polygon\", name, points, …}",
+    "flat: {TAG: 0, name, points, …}",
+    "[0, n, ps, …]",
+    "{kind: \"Polygon\", name, points, …}"
+   ],
+   [
+    "an Html node, Html.node(\"polygon\", attrs, [])",
+    "{c: \"Node\", v: [\"polygon\", attrs, null]}",
+    "{TAG: \"Node\", _0, _1, _2}",
+    "{TAG: 0, _0, _1, _2}",
+    "[0, \"polygon\", attrs, 0]",
+    "{tag, attrs, kids}"
+   ],
+   [
+    "an attribute, Attr.create(\"fill\", f)",
+    "{c: \"Create\", v: [\"fill\", f]}",
+    "{TAG: \"Create\", _0, _1}",
+    "{TAG: 0, _0, _1}",
+    "[0, \"fill\", f]",
+    "[\"fill\", f]"
+   ],
+   [
+    "a number's text, to_fixed(x, 1)",
+    "$R.b.to_fixed([x, 1]): an array, the digits clamped, then toFixed",
+    "x.toFixed(1)",
+    "x.toFixed(1)",
+    "Printf.sprintf \"%.1f\": the format read at every call, then toFixed",
+    "x.toFixed(1)"
+   ],
+   [
+    "a function of a tuple, grow((b, v))",
+    "one array argument, made at each call",
+    "grow(b, v)",
+    "grow(b, v)",
+    "inlined",
+    "inlined by hand"
+   ],
+   [
+    "the walks, grow_all, bounds, framing",
+    "recursive calls",
+    "while loops",
+    "while loops",
+    "nested for loops, inside the view",
+    "for…of"
+   ],
+   [
+    "the bounds, a 4-tuple",
+    "a new array per point",
+    "a new array per point",
+    "a new array per point",
+    "a new block per point",
+    "four variables"
+   ],
+   [
+    "p.name == \"frame\"",
+    "$R.eq(…)",
+    "===",
+    "===",
+    "===",
+    "==="
+   ],
+   [
+    "what the view returns",
+    "a command, Bind(EvalSplice(ref), k); k, called with the splice's value, makes the Html",
+    "the Html, from the splice's value (the Hazel's case r)",
+    "the Html, from the splice's value (the Hazel's case r)",
+    "the Html, from the splice's value (the Hazel's case r)",
+    "the Html"
+   ]
+  ]
+ },
+ {
+  "section": "What holds across both",
+  "section_id": "general",
+  "columns": [
+   "Question",
+   "The Petri rule",
+   "The Witch's picture",
+   "What generalizes"
+  ],
+  "rows": [
+   [
+    "Where does the time go?",
+    "Calls, matches, small allocations: a few list walks and a command built per event.",
+    "Numbers formatted, 1,985 of them (0.14 of 0.17 ms by hand), and strings joined.",
+    "The compilers' choices matter in proportion to the program's control and allocation, not its arithmetic or its builtins."
+   ],
+   [
+    "hazel-jit, against ReScript",
+    "2.9 times as long.",
+    "9% longer.",
+    "The gap is in hazel-jit's calls (an array per call of a function of a tuple), its generic equality and its recursion; the five changes below address exactly those."
+   ],
+   [
+    "Compiled, against the interpreter",
+    "225 times faster (hazel-jit).",
+    "A frame 45 times faster; the view's work alone 134 times, in the same process.",
+    "Compiling pays most where the interpreter takes many small steps: a view over a large value is such a case."
+   ],
+   [
+    "JS written by hand",
+    "Slower than three compilers: it copies arrays and calls closures, as people write JS.",
+    "The fastest: plain loops over arrays.",
+    "Hand-written JS is as fast as its idioms; a compiler's is the same every time."
+   ],
+   [
+    "js_of_ocaml",
+    "Among the fastest, by inlining the rule into its caller.",
+    "The slowest by far through Printf, among the fastest when it calls JS's toFixed.",
+    "Whole-program inlining helps; OCaml's runtime library, written in JS, can cost more than the program."
+   ],
+   [
+    "Value layouts",
+    "Constructors and options decide the allocations.",
+    "Records and Html nodes: one object each in ReScript and Melange, an object and an array in hazel-jit.",
+    "Flat objects, one shape per type, as ReScript and Melange make them, are the layout to copy."
+   ],
+   [
+    "Do they agree?",
+    "The same marking after 2,000 events.",
+    "The same SVG, byte for byte, and the interpreter's.",
+    "On both, nothing was lost in translation that the outputs show."
+   ]
+  ]
  }
 ]
