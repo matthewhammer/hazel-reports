@@ -1,0 +1,1766 @@
+[
+ {
+  "cut": "Reuse check compares cached expressions by structure, walking down to the edit once per enclosing let (quadratic along the lets)",
+  "cost": "reuse_check ~283 ms of a ~410 ms worker release (profiled); on dev, 2,743 ms to re-evaluate after one edit in a 400-definition program (4,353 ms with hashing alone)",
+  "workload": "Kids' Choice slider release, #2635, headless Firefox; 400-definition program on dev, Node, median of 7",
+  "report": "001#pipeline (also 017#pr2673)",
+  "status": "fixed on #2635 by a Merkle hash plus a pair memo (5237161017, 97c910f69c): reuse_check 283 -> 26 ms, worker 410 -> 145 ms; dev PR #2673 open: 2,743 -> 410 ms",
+  "root_cause": "incremental reuse checks",
+  "quote": "so every check walked its whole subterm: O(n²) along a program's lets. Re-evaluating after an edit in a 400-definition program: 2.7 s to 0.41 s."
+ },
+ {
+  "cut": "The page rebuilds its whole view in JS on every redraw, and a release redrew six times",
+  "cost": "about 310 ms (profiled) of a 0.43 s release",
+  "workload": "Kids' Choice slider release, #2635, headless Firefox",
+  "report": "001#pipeline",
+  "status": "mitigated: b481a876e1 (6 -> 4 redraws), main-thread work 1,141-1,427 -> 935-1,051 ms; sub-view reuse 51df91d5d7, 157 -> 138.5 ms",
+  "root_cause": "the page's view and redraw",
+  "quote": "it is Hazel rebuilding its view in JavaScript, once per redraw, and a release redrew six times (now four)."
+ },
+ {
+  "cut": "Every request sent the worker the whole elaborated program and its statics table",
+  "cost": "478 KB of Marshal per request; encoding ~52 ms on the main thread, decoding ~22 ms in the worker (profiled)",
+  "workload": "Kids' Choice slider release, #2635, headless Firefox",
+  "report": "001#pipeline",
+  "status": "fixed on #2635/#2597 by ShareCodec diff requests (993e3d5f91): 478 -> 18.5 KB; release to face 359 -> 228.5/272.5 ms",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "Each request to the eval worker carried the whole elaborated program and its statics table, 478 KB of Marshal, though a slider release changes one model value."
+ },
+ {
+  "cut": "Each worker result was sent whole; marshaling it took as long as evaluating",
+  "cost": "393 KB result; marshaling 44 ms against evaluating 48 ms; page decoding 14 ms (profiled)",
+  "workload": "Kids' Choice release, #2635, Firefox profile",
+  "report": "001#now",
+  "status": "fixed (90994d4443): 393 -> 15-16 KB, encode 44 -> 5 ms, decode 14 -> ~7 ms (005#fixes gives 14 -> 1 ms for the same commit)",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "a release's result went from 393 KB to 15–16 KB, the worker's encoding from 44 to 5 ms and the page's decoding from 14 to about 7 ms (profiled)."
+ },
+ {
+  "cut": "#2597 re-runs statics on the whole program after every livelit commit",
+  "cost": "3.5 s of a 5.8 s profiled release (CachedStatics.init); release 3.76 s on #2597 against ~0.35 s on #2635",
+  "workload": "Kids' Choice release, #2597 vs #2635, headless Firefox, median of 12",
+  "report": "001#pipeline",
+  "status": "open on #2597; avoided on #2635 by #2469's per-item statics (not on dev)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "#2597 spends 2.3–2.7 s on the main thread before it can redraw, where #2635 spends about 60 ms."
+ },
+ {
+  "cut": "#2597's view rebuild without #2469's caches and gates",
+  "cost": "1.6 s profiled (~0.37 s on #2635): view samples rerun 0.57 s, uncached code view 0.41 s, incremental-eval overlay drawn though off 0.39 s, whole-program re-parse 0.2 s",
+  "workload": "Kids' Choice release, #2597, Firefox profile",
+  "report": "001#pipeline",
+  "status": "open on #2597; avoided on #2635 via #2469",
+  "root_cause": "the page's view and redraw",
+  "quote": "the incremental-eval overlay, drawn though it is off | 0.39 s | skipped when off"
+ },
+ {
+  "cut": "The commit re-makes the syntax (livelit placeholder shapes, per-item parsing)",
+  "cost": "26 ms profiled per release",
+  "workload": "Kids' Choice release, #2635, Firefox profile",
+  "report": "001#now",
+  "status": "open",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "The commit: re-making the syntax (livelit placeholder shapes 9, of which gui_shape 7; per-item parsing 7) | main | 26"
+ },
+ {
+  "cut": "Building the request's statics projection walked both statics maps whole (first blamed on hashing)",
+  "cost": "001: 17 ms profiled, first given as 15 ms of hashing; corrected 2026-10-14: hashing 1-4 ms. 013: 1.9-11.9 ms per release (Full Body 11.64-12.22 ms)",
+  "workload": "slider releases on 8 Livelit Playground slides, #2635, Node test build",
+  "report": "013#numbers (also 001#now)",
+  "status": "fixed on #2635 (043508921b on 8fbc86c644): 0.19-0.92 ms; ported to #2469 locally (8.9 -> 0.33 ms); dev and #2597 cannot take it without per-item statics",
+  "root_cause": "the worker trip",
+  "quote": "Building the request's projection of the statics now takes under a millisecond on every slide (0.19–0.92 ms), down from 1.9–11.9 ms."
+ },
+ {
+  "cut": "Livelit views evaluated in each redraw",
+  "cost": "44 ms profiled per release (face evaluation 21, its Html to the page 8, probe sample views 7, rest 8)",
+  "workload": "Kids' Choice release, #2635",
+  "report": "001#now",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "… livelit views: the face's evaluation 21, its Html to the page 8, probe sample views 7, the rest 8 | | 44"
+ },
+ {
+  "cut": "The code editor re-checked every tile's sort on every commit",
+  "cost": "check 16 ms, code editor 26 ms profiled (3-5 ms on the clock); 25,852 tiles per commit on mega-4k",
+  "workload": "Kids' Choice release, #2635; mega programs in tests",
+  "report": "001#now",
+  "status": "fixed (31502d1e3d): check 16 -> 0.3 ms, editor 26 -> 8 ms; mega-4k 25,852 -> 270 tiles",
+  "root_cause": "the page's view and redraw",
+  "quote": "Profiled, the code editor's part of a release went from 26 to 8 ms, but release to face moved only 3–5 ms"
+ },
+ {
+  "cut": "Reusing a cached result walked the whole reused code to copy cache entries",
+  "cost": "16 ms of the worker's 47 ms evaluation (profiled)",
+  "workload": "Kids' Choice release, #2635",
+  "report": "001#now",
+  "status": "fixed (9129cd2774): evaluation 47 -> 25 ms; worker per release 69 -> 45 ms",
+  "root_cause": "incremental reuse checks",
+  "quote": "on a slider release, nearly the whole program, 16 ms of its 47 ms evaluation."
+ },
+ {
+  "cut": "Collecting streamed results re-indexed the whole elaborated program after every commit",
+  "cost": "44 ms profiled per release",
+  "workload": "Kids' Choice release, #2635",
+  "report": "001#issues",
+  "status": "fixed (42902c2d2a): 44 -> 6 ms",
+  "root_cause": "the worker trip",
+  "quote": "44 → 6 ms profiled per release; release to face 195 / 203 → 163.5 / 179 ms"
+ },
+ {
+  "cut": "Measuring the page after each redraw forced synchronous layouts and document-wide style recalcs",
+  "cost": "after-display effect 24 ms profiled; main-thread work 246 ms per release",
+  "workload": "Kids' Choice release, #2635",
+  "report": "001#now",
+  "status": "fixed (3c270617e2): 24 -> 3.6 ms; main thread 246 -> 207 ms",
+  "root_cause": "the page's view and redraw",
+  "quote": "The after-display effect went from 24 to 3.6 ms, and main-thread work per release from 246 to 207 ms (profiled)."
+ },
+ {
+  "cut": "The problems panel walked the whole program for incomplete tiles on every redraw",
+  "cost": "panel 13 ms, walk 6 ms profiled",
+  "workload": "Kids' Choice release, #2635",
+  "report": "001#now",
+  "status": "fixed (0560e5a124): 13 -> 3 ms, walk 6 -> 0.2 ms",
+  "root_cause": "the page's view and redraw",
+  "quote": "The panel went from 13 to 3 ms, the walk everywhere from 6 to 0.2 ms"
+ },
+ {
+  "cut": "The first release after a load re-parsed the whole program (the wrong parse cache was filled)",
+  "cost": "commit 245 ms instead of ~60",
+  "workload": "Kids' Choice first release (8,612-piece face definition), #2635",
+  "report": "001#pipeline",
+  "status": "fixed (9d9d40dae2): 55-63 ms",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "its commit took 245 ms instead of about 60."
+ },
+ {
+  "cut": "A view re-evaluated every call though only one input changed",
+  "cost": "face's first evaluation after a release 43 ms (median of 12)",
+  "workload": "Kids' Choice, #2635",
+  "report": "001#pipeline",
+  "status": "fixed by CallMemo (c64c558e86): 43 -> 12.5 ms; loads ~7.0 -> ~7.4 s",
+  "root_cause": "the page's view and redraw",
+  "quote": "the face's view, first evaluation after a release (median of 12) | 43 ms | 12.5 ms"
+ },
+ {
+  "cut": "Each id minted by copying a byte buffer to a string; polymorphic compare on ids, names, ints",
+  "cost": "face view evaluation ~61 ms median (~58.5 ms min)",
+  "workload": "Kids' Choice face view, #2635, in-page probe",
+  "report": "001#issues",
+  "status": "fixed on #2635 (7a5667e6f2; 045#ids says dev does not have it): ~61 -> ~60 ms median, ~58.5 -> ~53.5 ms min",
+  "root_cause": "ids on every term",
+  "quote": "face view evaluation ~61 → ~60 ms median, ~58.5 → ~53.5 min"
+ },
+ {
+  "cut": "The evaluator re-applied itself to the run's five constants at every call (a closure per node, js_of_ocaml's generic call path)",
+  "cost": "30% of face view evaluation (~60 ms)",
+  "workload": "Kids' Choice face view, #2635",
+  "report": "001#issues",
+  "status": "fixed (857c293962): ~60 -> ~42.5 ms",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "face view evaluation ~60 → ~42.5 ms (−30%)"
+ },
+ {
+  "cut": "Eight fresh stage closures per node; pass-through stages add trampoline bounces",
+  "cost": "call-heavy benchmark 499 ms min, 607-644 ms median before; agenda 037: dev takes 206,834 steps on the PerfBudgets program against 96,438 on #2635",
+  "workload": "call-heavy program (2,000-element list, recursion 3,000 deep), Node, #2635; PerfBudgets test (#2678)",
+  "report": "001#next (also 037#3-why-2635-s-evaluator-takes-half-dev-s-steps-on)",
+  "status": "fixed on #2635/#2597 (2d35bb9e01, 602498d7aa): -16% min, -25% median; PR #2793 to dev open",
+  "root_cause": "trampolines and stack safety",
+  "quote": "call-heavy benchmark −16% (min), −25% (median)"
+ },
+ {
+  "cut": "The evaluator under js_of_ocaml rather than wasm_of_ocaml",
+  "cost": "about 4x slower on fixed-precision work",
+  "workload": "wasm spike #2490",
+  "report": "001#next",
+  "status": "open (spike not meant to merge)",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "The wasm spike (#2490) measured the evaluator about 4× faster under wasm_of_ocaml on fixed-precision work."
+ },
+ {
+  "cut": "Evaluating the face's own view, the largest single cost left",
+  "cost": "~70 ms per release",
+  "workload": "Kids' Choice release, #2635",
+  "report": "001#next",
+  "status": "open",
+  "root_cause": "interpretation itself",
+  "quote": "What is left is mostly real work: evaluating the face's view (~70 ms), and the commit's new text."
+ },
+ {
+  "cut": "Every let-bound function takes statics' recursive path; passes multiply with nesting (up to 4^depth)",
+  "cost": "001: nested lets 400 s; 017: 5.3 s of statics at eight levels; b2t2 example-tables 73 ms",
+  "workload": "nested-let programs and b2t2/example-tables.hz, dev",
+  "report": "017#pr2603 (also 001#issues)",
+  "status": "fix #2603 open to dev: 400 s -> 0.6 s (001); 5.3 s -> 13 ms, 73 -> 49 ms; real programs 20-30% faster (017)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "eight nested functions took 5.3 s of statics, now 13 ms. On real programs statics is 20 to 30% faster."
+ },
+ {
+  "cut": "Jumping to a projector walked the caret token by token",
+  "cost": "~190 ms per projector click",
+  "workload": "editor",
+  "report": "001#issues",
+  "status": "fixed by #2602, merged to dev",
+  "root_cause": "other",
+  "quote": "~190 ms per projector click → direct"
+ },
+ {
+  "cut": "Loading text the fast parser rejects: the fallback types it one character at a time, re-molding each time (quadratic)",
+  "cost": "182 s over 128 inputs; 8 KB of prose 64 s; 001 (with #2614): corpus 1,242 s, Kids' Choice 227 s",
+  "workload": "every program and tutorial section, dev",
+  "report": "017#pr2610 (also 001#issues)",
+  "status": "fix #2610 open: 182 -> 63 s, 64 -> 1.3 s; with #2614, 1,242 -> 433 s and 227 -> 93 s",
+  "root_cause": "parsing on load",
+  "quote": "Over 128 inputs (every program and tutorial section) the fallback takes 63 s instead of 182 s; 8 KB of prose, 1.3 s instead of 64 s."
+ },
+ {
+  "cut": "The recovering parser inserts and re-grouts per character",
+  "cost": "parsing the 72 programs ~220 s; parse-heavy test groups 267 s",
+  "workload": "72 programs and CI parse test groups, dev",
+  "report": "017#pr2614",
+  "status": "fix #2614 open: 220 -> 87 s, 267 -> 142 s",
+  "root_cause": "parsing on load",
+  "quote": "Parsing the 72 programs takes 87 s instead of about 220 s, and the parse-heavy test groups 142 s instead of 267 s"
+ },
+ {
+  "cut": "The worker's answer carries its whole incremental cache, and the page sends it straight back",
+  "cost": "answers 86-98% larger than needed; one livelits answer 332 KB",
+  "workload": "worker answers; a livelits slide on #2635",
+  "report": "017#pr2606 (also 001#issues, 005#fixes)",
+  "status": "fixed on #2635 (e0a5b16555): 332 KB -> 0.9 KB; dev PR #2606 open",
+  "root_cause": "the worker trip",
+  "quote": "An answer carried its whole evaluator state, almost all cache, and the page sent it straight back: answers 86 to 98% smaller"
+ },
+ {
+  "cut": "Elaborations keep every source node's whitespace and comments, which nothing reads",
+  "cost": "requests 12-49% larger (five programs; probes.hz 48.0 vs 24.5 KB); 031: about a third of each program sent before #2608, and ~13.5% of the marshaled size still survives with it (through Typ.normalize)",
+  "workload": "worker requests, marshaled bytes, dev; reviewer's probe over 72 docs programs",
+  "report": "017#prs (also 001#issues, 031#pr-2608)",
+  "status": "PR #2608 to dev open, changes requested 2026-10-21",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "a request's program and its info map are 12 to 49% smaller without them (on five programs, marshaled bytes; probes.hz 48.0 to 24.5 KB), statics time unchanged."
+ },
+ {
+  "cut": "A module binding's definition analyzed a second time",
+  "cost": "1.79 s of 4.2 s of statics (about 43%); CLI statics 6.7 s; on dev, about 0.13 s of 6 s on an 800-function module",
+  "workload": "Shirt and Pants slide, #2635, profile and Hazel CLI; made-up 800-function module on dev",
+  "report": "024#cost (also 001#issues, 017#pr2651)",
+  "status": "fixed on #2635 (7b73b74976); PR #2651 to dev open: CLI 6.7 -> 4.3 s on #2635, within noise on dev",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "a profile of the Shirt and Pants slide put 1.79 s of its 4.2 s of statics in the second pass, and the command line's statics went from 6.7 s to 4.3 s"
+ },
+ {
+  "cut": "A livelit definition analyzed twice (synthesis, then analysis)",
+  "cost": "Shirt and Pants statics 4.3 s",
+  "workload": "Shirt and Pants slide, livelits",
+  "report": "001#issues",
+  "status": "fixed on #2635 (76ecb91394): 2.8 s",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "Shirt and Pants statics 4.3 → 2.8 s"
+ },
+ {
+  "cut": "Statics re-ran 3x per edit (probe pins compared to the wrong keys)",
+  "cost": "head-colour slider 20.6 s",
+  "workload": "livelits slide, 2026-10-01",
+  "report": "001#issues",
+  "status": "fixed (d42ae8193d): ~2 s",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "head-colour slider 20.6 s → ~2 s (10-01)"
+ },
+ {
+  "cut": "The builtin Html type written out in every ascription; Macro uses closed over all builtins",
+  "cost": "a slide's request 609 KB",
+  "workload": "livelits slide, #2597",
+  "report": "001#issues",
+  "status": "fixed (4eeebeaff3, 6b42a0e09a): 224 KB",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "a slide's request 609 → 224 KB"
+ },
+ {
+  "cut": "Every livelit use evaluated the whole livelit definition, then copied it unshared",
+  "cost": "Shoes and Hair analyze 4.3 s",
+  "workload": "Shoes and Hair slide",
+  "report": "001#issues",
+  "status": "fixed on #2635 (54543edc6b): 2.0 s",
+  "root_cause": "environments and substitution",
+  "quote": "Shoes and Hair analyze 4.3 → 2.0 s"
+ },
+ {
+  "cut": "Statics analyzes some expressions several times per multiplier (recursive lets, shadowed builtins, unannotated labelled params)",
+  "cost": "up to 12x per expression on B2T2 programs, 3^d for nested recursion (001); a recursive let 3x, nested recursive lets 27x (021)",
+  "workload": "B2T2 programs and the corpus, counted with --count-passes (dev + #2603 + #2651)",
+  "report": "001#issues (also 021#pr-2689)",
+  "status": "open; #2689 pins the multipliers and budgets the corpus (at most 5 analyses of one expression, 2.5 on average)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "a test pins the known multipliers (a recursive let 3x, nested recursive lets 27x, ...) and budgets every corpus program"
+ },
+ {
+  "cut": "Ascribing a constructor application compares two copies of the same sum type in full (the Html type, at every node of a view)",
+  "cost": "Polygons click 15-17 s profiled, the ascription step 88% of it; dev benchmark 74.5 ms",
+  "workload": "Polygons editor click, #2635; dev's 20-constructor sum builder",
+  "report": "017#pr2661 (also 001#issues)",
+  "status": "fix #2661 (Merkle-hashed types) open to dev: click 15-17 -> 2.0-2.2 s, step under 6%; dev 74.5 -> 60.5 ms",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "a click on the Polygons editor went from 15–17 s to 2 s (profiled), and the ascription step from 88% of the click to under 6%."
+ },
+ {
+  "cut": "Finished livelit definitions and views: every helper copied into every closure, per event and per redraw",
+  "cost": "Kids' Choice release 4.6 s; Polygons click ~11 s",
+  "workload": "Kids' Choice, Polygons, #2635",
+  "report": "001#issues",
+  "status": "fixed (d706d4d1ec): 4.6 -> 1.6 s; Polygons -> 0.17-0.19 s",
+  "root_cause": "environments and substitution",
+  "quote": "Kids' Choice 4.6 → 1.6 s; Polygons → 0.17–0.19 s"
+ },
+ {
+  "cut": "A projector update copies the whole program, so identity-keyed caches (per-item parsing) see a new program",
+  "cost": "Kids' Choice release 1.5-1.7 s; dev 3.12 ms per update on a 2,000-let program",
+  "workload": "Kids' Choice on the livelits branch; 2,000-let program on dev",
+  "report": "017#pr2671 (also 001#issues)",
+  "status": "fixed on #2635 (cefa5c2c5c); PR #2671 to dev open: 1.5-1.7 -> 0.7-0.9 s; dev 3.12 -> 1.92 ms",
+  "root_cause": "incremental reuse checks",
+  "quote": "On dev, 3.1 ms to 1.9 ms per update in a 2,000-let program; on the livelits branch, where items are re-parsed by identity, a Kids' Choice slider release went from 1.5–1.7 s to 0.7–0.9 s."
+ },
+ {
+  "cut": "Every redraw evaluated every livelit's view, changed or not",
+  "cost": "Kids' Choice 0.8 s",
+  "workload": "Kids' Choice, #2635",
+  "report": "001#issues",
+  "status": "fixed (4239ecf04f): 0.53 s",
+  "root_cause": "the page's view and redraw",
+  "quote": "Kids' Choice 0.8 → 0.53 s"
+ },
+ {
+  "cut": "Cursor info rebuilt the program's source and compared it structurally on every redraw",
+  "cost": "~40 ms profiled per release",
+  "workload": "Kids' Choice, #2635",
+  "report": "001#issues",
+  "status": "fixed (4d591fc2bc)",
+  "root_cause": "the page's view and redraw",
+  "quote": "~40 ms profiled per release"
+ },
+ {
+  "cut": "^picture's view prints every point to SVG text in Hazel code; the worker computes points one at a time",
+  "cost": "~1.7 s per change on the main thread and ~1.5 s in the worker (profiled)",
+  "workload": "Hands slide, alien fingers, #2635, headless Firefox",
+  "report": "002#hands",
+  "status": "mitigated in slide code: seven alien fingers 4.7 -> 2.5 s",
+  "root_cause": "the page's view and redraw",
+  "quote": "about 1.7 s per change on the main thread, in ^picture's view, which is Hazel code turning every point of the picture into SVG text, and about 1.5 s in the worker"
+ },
+ {
+  "cut": "Slide code found the head's frame per point instead of once",
+  "cost": "Eyes sliders 1.5-1.8 s",
+  "workload": "Eyes slide, #2635",
+  "report": "002#face",
+  "status": "fixed in the slide: 0.5-1.2 s",
+  "root_cause": "other",
+  "quote": "(Finding the head's frame once, not per point, took the sliders from 1.5–1.8 s.)"
+ },
+ {
+  "cut": "Hands redraw grows with the finger count (not profiled)",
+  "cost": "about 0.3 s per finger; 99 fingers 32.30 s against 5 ms in the game; 100 claws 8.19 s",
+  "workload": "Hands slide, #2635, headless Firefox, single runs",
+  "report": "003#cost",
+  "status": "open, not profiled",
+  "root_cause": "other",
+  "quote": "The redraw grows with the finger count, about 0.3 s per finger."
+ },
+ {
+  "cut": "The worker yielded with setTimeout after every 5,000-step slice; chained timeouts clamp to ~4 ms",
+  "cost": "5.8-6.2 s of a ~10 s woods change idle between 1,292 slices (3.9-4.4 s evaluating)",
+  "workload": "Scenes slide, woods, #2635, headless Firefox",
+  "report": "004#timeline",
+  "status": "fixed (25e515536d): worker 10.0-10.7 -> 2.1-2.6 s; Scenes load 23.5-26.3 -> 17.2-17.4 s",
+  "root_cause": "scheduling (worker slices, message cadence)",
+  "quote": "Only 3.9–4.4 s of that was evaluating; 5.8–6.2 s was between slices."
+ },
+ {
+  "cut": "A recursive let's own name leaked into its free variables, so nothing from the Drawing library on was reused",
+  "cost": "every woods change re-ran all 610,670 steps; ~3 s of a figure move",
+  "workload": "Scenes slide, woods, #2635",
+  "report": "004#reuse",
+  "status": "fixed on #2635 (4b964e6660); dev PR #2675 open (dev has the bug): figure size 8.4-10.7 -> 6.1-7.3 s",
+  "root_cause": "incremental reuse checks",
+  "quote": "Every change in the woods took exactly 610,670 evaluation steps, the same count as the first load"
+ },
+ {
+  "cut": "The view's call memo cost more than it saved (8 entries per function, every call a miss, each paying for its key)",
+  "cost": "a third of the view; woods figure size 6.1-7.3 s with the memo against 2.4-2.9 s without",
+  "workload": "Scenes slide, woods, #2635, four runs",
+  "report": "004#memo",
+  "status": "fixed: give up after 24 misses per hit (126f595ce9): 2.6-3.5 s",
+  "root_cause": "incremental reuse checks",
+  "quote": "A third of the view was the call memo's own work: computing each call's key, which puts every value the function reads in canonical form and hashes it, and looking it up."
+ },
+ {
+  "cut": "The evaluator unrolled the recursive Html type (47 constructors) at every Html node",
+  "cost": "a sixth of the page's time in the woods; an uncached check another 5%",
+  "workload": "Scenes slide, woods, ^picture view, #2635, Gecko profile",
+  "report": "004#casts",
+  "status": "fixed (efaaee244f): figure size 2.6-3.5 -> 2.0-3.1 s",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "Each time, the evaluator unrolled that recursive type of 47 constructors again, substituting through all of it: a sixth of the page's time in the woods."
+ },
+ {
+  "cut": "The worker encoding its result for the page",
+  "cost": "about a third of the worker's share of a woods change; result ~1 MB",
+  "workload": "Scenes slide, woods, #2635, Gecko profile",
+  "report": "004#cost",
+  "status": "unknown",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "The worker: about 60% evaluating the program, and about a third encoding the result for the page."
+ },
+ {
+  "cut": "The page drawing a woods picture it had not drawn before",
+  "cost": "5.7-6.6 s (0.6-1.1 s for one drawn before)",
+  "workload": "woods, #2635, before 004's view fixes",
+  "report": "004#timeline",
+  "status": "mitigated by 004's fixes (figure move median 1.41 s)",
+  "root_cause": "the page's view and redraw",
+  "quote": "After it arrived, the page took 5.7–6.6 s to redraw a picture it had not drawn before."
+ },
+ {
+  "cut": "^picture's view box walked every point; points strings built point by point",
+  "cost": "view_box 134,320 steps (56%), coords 92,703 (39%) of 238,781 view steps",
+  "workload": "woods picture (570 shapes), Node step counts",
+  "report": "004#update",
+  "status": "fixed: 238,781 -> 99,621 steps, redraw median 2.20 -> 1.52 s; cheaper strings -> 74,055 steps, ~6% less time",
+  "root_cause": "the page's view and redraw",
+  "quote": "The box (view_box): every point, to find the bounds | 134,320 | 56%"
+ },
+ {
+  "cut": "Giving a value a type rebuilt it whole at every typed boundary, and the call memo re-keyed the copies",
+  "cost": "woods picture (15,500 nodes) copied; about a quarter of the view every redraw; memo keys copied the picture three times per change (006); 2,000 tuples passed 30 times 382 ms (dev microbenchmark)",
+  "workload": "woods ^picture view, #2635; dev microbenchmark",
+  "report": "004#update (also 006#update, 017#pr2679)",
+  "status": "fixed by #2679, merged to dev 2026-10-19: view 725-830 -> 520-650 ms, redraw median 1.62 -> 1.41 s; 382 -> 268 ms; Scenes view 20-25% faster (778 -> 585 ms)",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "The copies cost time and garbage, and, being new objects, they made the view's call memo redo its keys: about a quarter of the view on every redraw."
+ },
+ {
+  "cut": "The evaluator's own work in the view (variable lookups, pattern matching, fresh ids)",
+  "cost": "about 500 ms of the woods view",
+  "workload": "woods figure move, #2635",
+  "report": "004#update",
+  "status": "open",
+  "root_cause": "interpretation itself",
+  "quote": "What is left of the view is the evaluator's own work, about 500 ms: variable lookups, pattern matching, fresh ids."
+ },
+ {
+  "cut": "When ids change, the reuse check compares terms in full",
+  "cost": "incremental evaluation 7-15 times slower than fresh on Hands and Eyes",
+  "workload": "Node test harness that re-ran statics (not the app)",
+  "report": "004#casts",
+  "status": "harness only; the app has the same trap whenever ids change (see 008#reuse)",
+  "root_cause": "ids on every term",
+  "quote": "Timed in node, incremental evaluation came out 7–15 times slower than fresh on Hands and Eyes."
+ },
+ {
+  "cut": "Evaluating a livelit's view on the page",
+  "cost": "about 50% of the page's main thread, about 69% counting the GC it causes",
+  "workload": "woods, two figure-size changes, #2635, Gecko profile",
+  "report": "005#update",
+  "status": "mitigated by 004's update (median 2.20 -> 1.41 s)",
+  "root_cause": "interpretation itself",
+  "quote": "Counting the garbage collection it causes, evaluating the view is about 69% of the time."
+ },
+ {
+  "cut": "Garbage collection during view evaluation",
+  "cost": "21% of the page's main thread",
+  "workload": "woods, #2635, Gecko profile",
+  "report": "005#update",
+  "status": "open",
+  "root_cause": "persistent maps and allocation (GC)",
+  "quote": "Garbage collection, most of it during that evaluation | 21%"
+ },
+ {
+  "cut": "The app's own update machinery (frame callbacks, recomputing its views)",
+  "cost": "25% of the page's main thread",
+  "workload": "woods, #2635, Gecko profile",
+  "report": "005#update",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "The app's own update machinery: frame callbacks, recomputing its views | 25%"
+ },
+ {
+  "cut": "Html to virtual DOM, the vDOM diff and patch, browser layout",
+  "cost": "1.1%, 0.9%, 1.4% of the woods main thread",
+  "workload": "woods, #2635",
+  "report": "005#update",
+  "status": "left alone (at most ~2% to gain)",
+  "root_cause": "the page's view and redraw",
+  "quote": "Converting Html to virtual DOM is 1.1% of it, and the diff and patch 0.9%."
+ },
+ {
+  "cut": "Stream messages swamped the page (a full update per message)",
+  "cost": "page busy 45.5 s after opening a 1,000-item program; 46.7 s for 2,000",
+  "workload": "generated programs, #2469 (Andrew Blinn's measurements)",
+  "report": "005#fixes",
+  "status": "fixed on #2469/#2635 (throttle c07bdacead): 45.5 -> 5.4 s; a05f8e5791: 46.7 -> 10.2 s",
+  "root_cause": "scheduling (worker slices, message cadence)",
+  "quote": "opening a 1,000-item program, 45.5 → 5.4 s"
+ },
+ {
+  "cut": "#2597 runs a full page update for every stream message, and its worker posts after every slice",
+  "cost": "2,520 messages at ~140 ms each; Scenes first picture 287.5 s (12.5 s on #2635), Witch 173.1 s; worker idle 98.7%",
+  "workload": "Scenes and Witch slides, cold load, #2597, headless Firefox",
+  "report": "007#why",
+  "status": "fixed on a copy of #2597 by #2469's throttle (c07bdacead): Scenes 16.4-17.6 s, 86 messages",
+  "root_cause": "scheduling (worker slices, message cadence)",
+  "quote": "Opening Scenes, the page received 2,520 messages, and each cost it about 140 ms."
+ },
+ {
+  "cut": "#2597 rebuilds the code editor's view of the whole program on every update",
+  "cost": "77% of the main thread during load",
+  "workload": "Scenes load, #2597, Gecko profile",
+  "report": "007#why",
+  "status": "open on #2597",
+  "root_cause": "the page's view and redraw",
+  "quote": "Rebuilding the code editor's view of the whole program (main_view) | 77%"
+ },
+ {
+  "cut": "#2597 runs whole-program statics from scratch on every update during load",
+  "cost": "15% of the main thread",
+  "workload": "Scenes load, #2597",
+  "report": "007#why",
+  "status": "open on #2597",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "— of which, statics on the whole program, from scratch | 15%"
+ },
+ {
+  "cut": "#2597 runs whole-program statics on every slider change (no modular editing)",
+  "cost": "5.4 s of a 13.3 s profiled change; median 8.6 s against 1.2 s on #2635 (statics 38 ms there)",
+  "workload": "Full Body slide, arm-length drag, #2597 vs #2635, headless Firefox",
+  "report": "008#a",
+  "status": "open on #2597; per-item statics on #2635",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "That is 5.4 s of a 13.3 s profiled change."
+ },
+ {
+  "cut": "#2597 rebuilds the whole code view and prints the whole program to text on every change",
+  "cost": "code view 2.3 s, program to text 1.5 s (profiled)",
+  "workload": "Full Body, #2597",
+  "report": "008#a",
+  "status": "open on #2597",
+  "root_cause": "the page's view and redraw",
+  "quote": "The page also rebuilds the whole code view (2.3 s) and turns the whole program into text (1.5 s)."
+ },
+ {
+  "cut": "An open cell re-elaborated with fresh ids; the reuse check traced lexemes once per enclosing let (quadratic)",
+  "cost": "about 2 s per change (122 slow checks of ~6,400-node subterms); GUI-only view 3.5 s against 1.2 s whole",
+  "workload": "Full Body in UX mode, #2635",
+  "report": "008#reuse",
+  "status": "fixed (cbdab791f5): slow path 1-4 ms; 3.5 -> 1.26 s",
+  "root_cause": "incremental reuse checks",
+  "quote": "It is quadratic: the program is a chain of lets, each holding the rest of the program, and each of the 122 enclosing lets builds its trace of a subterm of about 6,400 nodes."
+ },
+ {
+  "cut": "Autosave prints the whole program inside the change; with probes the print was quadratic in top-level items",
+  "cost": "about 600 ms a change (whole program) and about 1 s (GUI only); updated 2026-10-14 from 0.55 s",
+  "workload": "Full Body, #2635, headless Firefox",
+  "report": "008#update",
+  "status": "fixed (ec9f125acd): about 80 ms",
+  "root_cause": "other",
+  "quote": "save_current was 1,821 samples over three changes, about 600 ms each, and 239 (about 80 ms) with the fix."
+ },
+ {
+  "cut": "Cells' livelit views drawn without the view memo",
+  "cost": "about 0.46 s per change profiled; updated 10-14: ~340 ms of profile, perhaps 0.1-0.2 s on the clock",
+  "workload": "Full Body, UX mode, #2635",
+  "report": "008#b",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "The cells' livelit views, about 0.46 s."
+ },
+ {
+  "cut": "The page rebuilt an index of the whole elaboration for each new evaluation",
+  "cost": "204 ms of a 949 ms page update (profiled)",
+  "workload": "Full Body, whole program, #2635",
+  "report": "008#index",
+  "status": "fixed (8717564a5f): 115 ms profiled",
+  "root_cause": "the worker trip",
+  "quote": "it took 204 ms of C's 949 ms page update, profiled."
+ },
+ {
+  "cut": "The evaluator gives a fresh 16-byte id to every node it builds",
+  "cost": "461,422 ids to build a 33,847-node woods picture (7,650 distinct); a slider edit mints 84,528 to 423,362",
+  "workload": "Scenes woods and slider edits on Full Body, Witch, Scenes; Node, #2635",
+  "report": "009#evaluation",
+  "status": "open; a local experiment with content-derived names removed 92-97% of ids at 11-31% more time",
+  "root_cause": "ids on every term",
+  "quote": "The evaluator mints by far the most: 461,422 ids to build the woods' picture of 33,847 nodes."
+ },
+ {
+  "cut": "Variable lookups, environment frames and ascriptions mint most of the evaluator's ids",
+  "cost": "variable lookups 38%, environment frames 20%, ascriptions ~30% of ids minted",
+  "workload": "as above",
+  "report": "009#ids",
+  "status": "open",
+  "root_cause": "environments and substitution",
+  "quote": "Sampling who mints the rest: variable lookups 38% (each copies the value under a new id), environment frames 20%, ascriptions pushed through values about 30%."
+ },
+ {
+  "cut": "Fresh ids make worker messages bigger",
+  "cost": "results 11% larger (387,625 vs 347,920 slots); requests 1.99x (43,248 vs 21,728)",
+  "workload": "8 woods figure moves, headless Firefox, #2635",
+  "report": "009#wire",
+  "status": "open",
+  "root_cause": "ids on every term",
+  "quote": "fresh ids cost 11% of what results send, and requests twice what they could be, on eight woods figure moves."
+ },
+ {
+  "cut": "Analyzing an item again renames what statics adds; the change spreads up the chain of lets",
+  "cost": "667 of Full Body's 111,462 nodes renamed, changing 692 hashes; 6,055-18,637 ids a slider edit; the reuse check falls back to comparing structure (105 parts vs 46)",
+  "workload": "5 Playground slides analyzed twice, Node, #2635",
+  "report": "009#statics",
+  "status": "open; naming two sites cut 667 -> 85 renames (local)",
+  "root_cause": "ids on every term",
+  "quote": "Analyzing the same program again renames what statics adds: 667 of Full Body's 111,462 nodes, and through the program's chain of lets, that changes the hash of 692 expressions"
+ },
+ {
+  "cut": "Incremental evaluation saves nothing on a slider edit",
+  "cost": "Full Body 499 vs 464 ms from scratch, Witch 754 vs 701, Scenes 1,416 vs 1,453 (corrected 2026-10-13 to one protocol; conclusion unchanged)",
+  "workload": "slider edits, Node, each slide in its own process, #2635",
+  "report": "009#reuse",
+  "status": "open",
+  "root_cause": "incremental reuse checks",
+  "quote": "Full Body 499 ms against 464 ms from scratch, Witch 754 against 701, Scenes 1,416 against 1,453"
+ },
+ {
+  "cut": "ValueHash keeps hashes in a JS WeakMap side table that slows as it grows",
+  "cost": "identical woods evaluations 2.3, 5.5, 6.3 s in one session (17.2 s after two slides) as the heap grew 685 MB -> 1.2 GB; corrected 2026-10-13: the '23 times slower' was the table, not derived names",
+  "workload": "Scenes woods with derived names, Node, local branch of #2635",
+  "report": "009#merkle",
+  "status": "fixed in the experiment only (hashes on values: 2.2, 2.5, 2.2 s); production ValueHash still a WeakMap",
+  "root_cause": "persistent maps and allocation (GC)",
+  "quote": "But the hashes were kept in a side table, a JavaScript WeakMap, and with identical work each evaluation in a session took longer: 2.3, 5.5, 6.3 s."
+ },
+ {
+  "cut": "Reuse works only per top-level binding, so nothing inside the picture is reused",
+  "cost": "incremental run skips 8-14% of a from-scratch run's steps; 75-84% of its steps are in calls whose inputs did not change (steps, checks free)",
+  "workload": "Full Body, Witch, Scenes, one slider edit each; Node oracle, #2635",
+  "report": "010#work",
+  "status": "open",
+  "root_cause": "incremental reuse checks",
+  "quote": "Of the steps a from-scratch evaluation takes, today's incremental run skips 8 to 14%, and ^report(9) found it no faster in time."
+ },
+ {
+  "cut": "Every slider edit re-evaluates the whole figure, even when the picture does not change",
+  "cost": "85-95% of a from-scratch run (Full Body, Witch); 85-92% for the 22 edits that change no shape; 85.2-89.0% (012); a position-keyed update would cost 0.0-1.7% (steps)",
+  "workload": "all 63 sliders on Full Body, Witch, Scenes; Node oracle, #2635",
+  "report": "011#sweep (also 012#trace)",
+  "status": "open",
+  "root_cause": "incremental reuse checks",
+  "quote": "they still cost Hazel's update 85 to 92% of a run from scratch, since the binding that builds the figure depends on the slider, whatever it draws"
+ },
+ {
+  "cut": "The picture is a flat list of shapes in absolute coordinates, so moving a part moves every point",
+  "cost": "one slider changes up to 113 of 133 shapes (a group tree: at most 14 nodes); arm-angle trace distance 20,206 vs 5,104 steps on the tree",
+  "workload": "slider sweep (011); Full Body rebuilt as groups (012); steps",
+  "report": "011#representation (also 012#scratch)",
+  "status": "open; the tree is an experimental slide; flattening it for today's renderer erases the gain",
+  "root_cause": "data representation (flat lists, no maps)",
+  "quote": "the witch's shirt width changes 113 of 133 of her shapes."
+ },
+ {
+  "cut": "Walks over the picture's lists rerun down to the last changed shape",
+  "cost": "lists as named cells would cut the update 10.1% (to 1,509,299 steps over 63 edits); 0.6 points median, at most 5.1",
+  "workload": "63 slider edits, Node oracle",
+  "report": "011#cells",
+  "status": "open",
+  "root_cause": "data representation (flat lists, no maps)",
+  "quote": "Over the same edits, with lists as named cells an update would cost at most 1,509,299 steps, 10.1% less than reads."
+ },
+ {
+  "cut": "Hashing and encoding the request on the main thread",
+  "cost": "Full Body hashing 3.88-4.21 ms, encoding 1.96-11.22 ms per release (encoding moved with the heap, not the work)",
+  "workload": "slider releases, Full Body and Witch, Node, #2635",
+  "report": "013#question",
+  "status": "hashing mitigated (9fb2bdf067: 1.04-4.02 ms); encoding unchanged",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "on Full Body, building EvalInfo took 11.9 ms per release, hashing about 4 and encoding 2 to 11."
+ },
+ {
+  "cut": "Each item's spine root carries the whole program below it, so the request grows with how deep the edit is",
+  "cost": "3.6 ms at item 26 of 167, 20.8 ms at item 134; 808 vs 5,768 nodes copied (~46 per item above the edit)",
+  "workload": "Full Body and Witch slider releases, Node, #2635",
+  "report": "013#left",
+  "status": "open",
+  "root_cause": "the worker trip",
+  "quote": "the request's EvalInfo copies 808 nodes for the shirt-width slider (item 26) and 5,768 for the tongue-width slider (item 134), about 46 per item above the edit."
+ },
+ {
+  "cut": "Statics rebuilt the spine root of every item below the edit",
+  "cost": "149 of 179 roots re-added per release; statics 42 ms (Witch), 23 ms (Full Body)",
+  "workload": "Playground slider releases, Node, #2635",
+  "report": "013#change",
+  "status": "fixed on #2635 (9fb2bdf067): 42 -> 23 ms, 23 -> 20 ms",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "Statics after a release went from 42 to 23 ms on Witch, and from 23 to 20 ms on Full Body"
+ },
+ {
+  "cut": "The undo history kept a whole editor state per edit, uncapped by default",
+  "cost": "~92 MB per edit (014; 89.0 MB in 038); 1,048 MB after 12 edits; capped at 2, ~290 MB (020) / 284 MB (038); of 390 MB kept over 4 edits: types and statics 119 MB, ValueHash 98, terms 64, decoded replies 46, layout 41; #2635 52 MB after 12 (036: ~8 MB an edit). Corrected 2026-10-14: first said 'not the caches' (the test build's cap never ran)",
+  "workload": "Full Body slider edits, headless Chromium, #2597 (and #2635)",
+  "report": "014#update (also 014#what, 020#undo, 036#question, 038#space)",
+  "status": "fixed on #2597 by porting Andrew Blinn's compaction (d41c7a0298): 159 MB (020: near +160); with newest entry kept whole (f8ae6f2b9c): 208 MB; open on dev (whole copies, cap off by default, never measured)",
+  "root_cause": "undo and history",
+  "quote": "On #2597 a Full Body tab kept 1,048 MB after 12 edits, 89.0 MB more for each one."
+ },
+ {
+  "cut": "Compaction's price: restoring a compacted undo entry rebuilds its derived data",
+  "cost": "#2597: every redo 6.0-6.5 s against 2.7-3.1 s as built (014); undo 5.8 s, redo 6.1 s against a 6.9 s edit (038). #2635: redo 3.6-4.2 s (median 3.9), undos 3.5-5.1 s (014) or 3.6 s, 1.2-3.9 (038), against a 1.2 s edit",
+  "workload": "Full Body edit/undo/redo in a browser, five runs per build",
+  "report": "014#update (also 038#price)",
+  "status": "mitigated: newest entry kept whole (f8ae6f2b9c on #2597, 032fe3aca6 on #2635): latest undo/redo within 0.3 s; older undos still rebuild",
+  "root_cause": "undo and history",
+  "quote": "With compaction alone, a redo took about as long as an edit: on #2635, 3.6 to 4.2 s against 1.2 s for an edit."
+ },
+ {
+  "cut": "ValueHash's memo: a hash for every object, in a WeakMap of about two million entries",
+  "cost": "98 MB (25%) of what four edits kept on #2597; 9.8 of 37.5 MB on #2635; stopped heap snapshots finishing",
+  "workload": "Full Body, headless Chromium, #2597 and #2635",
+  "report": "014#snapshots",
+  "status": "open",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "ValueHash's memo is a WeakMap, and by its 98 MB in the profile it holds roughly two million entries"
+ },
+ {
+  "cut": "Whole-program memos (Statics.mk keeps 16 programs, MakeTerm 8 parses) fill up",
+  "cost": "about 19 MB per edit until they reach their bounds",
+  "workload": "Full Body slider edits, headless Chromium, #2597",
+  "report": "014#caches",
+  "status": "bounded by design; held to one entry, redraws took 18-31 s",
+  "root_cause": "persistent maps and allocation (GC)",
+  "quote": "The difference, about 19 MB per edit, is these memos filling up to their bounds over the first 15 edits; it stops when they are full."
+ },
+ {
+  "cut": "ShareCodec's tables of values shared with the worker build up between resets",
+  "cost": "#2635 keeps 9 MB after one edit, 94 MB after ten, then 46 MB; cap 200,000 entries",
+  "workload": "Full Body, 30 edits, #2635",
+  "report": "014#update",
+  "status": "bounded (reset at the cap)",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "it keeps 9 MB after the first and 94 MB after the tenth, falls back to 46 MB at the eleventh"
+ },
+ {
+  "cut": "The page checks the whole program for reuse on every dragged value's preview",
+  "cost": "about 40% of the page's time over a Full Body drag (profiled)",
+  "workload": "Full Body slider drag, Gecko profiles, #2635",
+  "report": "015#bridge",
+  "status": "open; partly mitigated by coalescing previews (016)",
+  "root_cause": "incremental reuse checks",
+  "quote": "About 40% of a Full Body drag's time on the page is that check (profiled)."
+ },
+ {
+  "cut": "Livelit views evaluated on the page inside the editor's update",
+  "cost": "about 450 ms of a Full Body change's ~1,010 ms of page JS (the update ~860 ms)",
+  "workload": "Full Body change, headless Firefox 157, #2635",
+  "report": "015#change",
+  "status": "open; views-in-the-worker prototype parked (016)",
+  "root_cause": "the page's view and redraw",
+  "quote": "the editor's update takes about 860 ms of it, and within the update the livelit views about 450 ms."
+ },
+ {
+  "cut": "Every preview in a drag makes the page recalculate",
+  "cost": "freeze 4.02 s per 1.5 s drag (~91 ms per input)",
+  "workload": "Full Body long drags, side-by-side builds, headless Firefox 157, #2635",
+  "report": "016#table",
+  "status": "mitigated on a local branch (3eb4489124, keep only the newest preview): 2.19 s, lower in 10 of 10 rounds; each repaint still ~90 ms",
+  "root_cause": "scheduling (worker slices, message cadence)",
+  "quote": "Frozen per drag: the head 4.0 s, the fix 2.2 s; round by round the fix was lower in all 10 rounds"
+ },
+ {
+  "cut": "Moving the livelit views into the worker makes the final picture wait for the trip",
+  "cost": "final picture +0.28 s later in UX mode (8 of 10 rounds)",
+  "workload": "Full Body long drags, #2635 + prototype 4c9331d13c",
+  "report": "016#release",
+  "status": "open; prototype parked",
+  "root_cause": "the worker trip",
+  "quote": "Letting go to the final picture in UX mode: +0.28 s, later in 8 of 10 rounds"
+ },
+ {
+  "cut": "Per-member module analysis lost on #2635 after a merge, so a module literal is analyzed whole",
+  "cost": "edits in mega-mod-1k wrapped in a module ~100 ms vs 7 ms (Andrew Blinn's commit message)",
+  "workload": "mega-mod-1k on #2687; the loss on #2635",
+  "report": "018#why",
+  "status": "fixed on #2635 by #2699 (2026-10-19)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "His message measures \"edits in mega-mod-1k wrapped or sealed in a module: ~100 → 7ms\"."
+ },
+ {
+  "cut": "A recursive function with an annotated list parameter re-walks its whole argument at every call (quadratic)",
+  "cost": "205 ms at 400 elements",
+  "workload": "microbenchmark, dev",
+  "report": "017#pr2681",
+  "status": "fix #2681 open: 33 ms",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "A recursive function with an annotated list parameter walked its whole argument at every call: quadratic. At 400 elements 205 ms to 33 ms"
+ },
+ {
+  "cut": "After merging #2469 into #2635, a livelit release posted its changed definition whole, unshared",
+  "cost": "~492 KB per release against ~16 KB shared; releases 20-30% slower (median 280 ms against 251.5 before)",
+  "workload": "Kids' Choice eye-size slider, #2635 deploys, GitHub's machines",
+  "report": "020#merge469",
+  "status": "fixed (2b080af683): 203.5 ms median, ~11 KB",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "about 492 KB per release where the shared request had been about 16 KB."
+ },
+ {
+  "cut": "Opening slides: the page's view",
+  "cost": "55 s of 213 s of script (about 26%) over 58 slides; 30-40% on most slides",
+  "workload": "58 slides opened fresh, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "Where the time goes, over all slides (213 s of script, charged to the nearest Hazel caller): the view 55 s, terms 45 s, parsing 41 s, statics 23 s, layout 13 s, evaluation 10 s"
+ },
+ {
+  "cut": "Opening slides: building terms",
+  "cost": "45 s of 213 s (about 21%)",
+  "workload": "58 slides, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "parsing on load",
+  "quote": "the view 55 s, terms 45 s, parsing 41 s"
+ },
+ {
+  "cut": "Opening slides: parsing",
+  "cost": "41 s of 213 s (about 19%); Dynamic Row or Column 12.5 s, parsing 45% of it",
+  "workload": "58 slides, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "parsing on load",
+  "quote": "The slowest are Dynamic Row or Column (12.5 s, parsing 45% of it; 4.2 s on #2597)"
+ },
+ {
+  "cut": "Opening slides: statics",
+  "cost": "23 s of 213 s (about 11%)",
+  "workload": "58 slides, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "statics 23 s, layout 13 s, evaluation 10 s, the runtime with no Hazel caller 14 s, projectors 4 s."
+ },
+ {
+  "cut": "Opening slides: js_of_ocaml's runtime with no Hazel caller",
+  "cost": "14 s of 213 s (about 7%)",
+  "workload": "58 slides, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "the runtime with no Hazel caller 14 s"
+ },
+ {
+  "cut": "Opening slides: layout",
+  "cost": "13 s of 213 s (about 6%)",
+  "workload": "58 slides, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "statics 23 s, layout 13 s, evaluation 10 s"
+ },
+ {
+  "cut": "Opening slides: evaluation",
+  "cost": "10 s of 213 s (about 5%)",
+  "workload": "58 slides, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "interpretation itself",
+  "quote": "statics 23 s, layout 13 s, evaluation 10 s"
+ },
+ {
+  "cut": "The eval worker's own bookkeeping",
+  "cost": "WorkerMetrics.re 4.3 s + WorkerServer.re 6.2 s, about 10 s over 58 slides",
+  "workload": "58 slides, headless Chrome on GitHub, #2635",
+  "report": "020#timing",
+  "status": "open",
+  "root_cause": "the worker trip",
+  "quote": "the worker's own bookkeeping, WorkerMetrics.re 4.3 s and WorkerServer.re 6.2 s."
+ },
+ {
+  "cut": "Opening slides on #2597 (no per-item statics): statics dominates",
+  "cost": "statics 143 s of 362 s of script (about 40%); figure slides 35-71 s (6-8 s on #2635); ConstructorMap.re 45 s (4.5 s on #2635)",
+  "workload": "55 slides, headless Chrome on GitHub, #2597",
+  "report": "020#timing",
+  "status": "open on #2597",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "Where #2597's time goes (362 s of script): statics 143 s, parsing 83 s, terms 81 s, the view 32 s."
+ },
+ {
+  "cut": "The context inspector prints every prelude type whole as tiles",
+  "cost": "6,802 tokens drawn for a 4-line program; froze the browser on Scenes",
+  "workload": "context inspector, #2635",
+  "report": "020#gamma",
+  "status": "fixed with a size budget (^ticket(396))",
+  "root_cause": "the page's view and redraw",
+  "quote": "even on a 4-line program Γ draws 6,802 tokens"
+ },
+ {
+  "cut": "A game rule scans a list each call (no map)",
+  "cost": "0.7 ms per pull with 10 links, 5.7 ms with 100, 65 ms with 1,000",
+  "workload": "lever-to-trapdoor rule, #2635 test build, Node on a GitHub runner",
+  "report": "020#play",
+  "status": "unknown",
+  "root_cause": "data representation (flat lists, no maps)",
+  "quote": "Per pull: 0.7 ms with 10 links (0.95 ms monadic), 5.7 ms with 100, 65 ms with 1,000: linear in the table, since a list is scanned each pull."
+ },
+ {
+  "cut": "Nested module bindings multiply statics passes (3^depth on dev, 2^depth with #2651, counted from code)",
+  "cost": "depth-9 function chain 31.04 and 29.59 s with #2651; 3.8-3.9x per level; depth-12 fix chain 197.2 s",
+  "workload": "test chains of nested modules, Hazel CLI, builds of #2651 and draft #2717 (dev-based)",
+  "report": "024#next",
+  "status": "fix in draft #2717 (a module binding as a non-recursive let): 1.43/1.45 s, flat at depths 4-12",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "At depth 9 the function chain took 31.04 and 29.59 s on #2651 and 1.43 and 1.45 s with #2717"
+ },
+ {
+  "cut": "An annotated recursive helper is re-checked over the rest of the list at every step (quadratic walk)",
+  "cost": "shipped World rule 144 ms at 16x16 vs 18 ms unannotated; 678 vs 40.8 ms at 24x24; 58.6% of a deep find's profile in Ascriptions.transition_multiple",
+  "workload": "Dress Up's World rule via hazel-lib.js (dev-based #2719), Node, laptop",
+  "report": "025#quadratic (also 034#mudu)",
+  "status": "fix #2681 open; on a trial: 144 -> 20.6 ms (7.0x), 678 -> 42.8 ms (15.9x)",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "Most of the time is a type annotation in the rule, and #2681 removes it: 144 ms becomes 20.6 ms at 16x16, 7.0x faster, with the rule unchanged."
+ },
+ {
+  "cut": "The same ascription re-checks inside the woods picture's view",
+  "cost": "memo off vs whole memo 2,823 vs 2,416 ms (runner 1), 2,601 vs 2,214, 2,061 vs 1,749 ms (~14-16%)",
+  "workload": "Scenes woods program, Test_PicView, trial/2635-memo-depth, GitHub runners",
+  "report": "025#woods",
+  "status": "fix #2681; a depth-1 memo keeps 82-96% of the gain",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "Depth 1 keeps 82-96% of the memo's gain on the woods."
+ },
+ {
+  "cut": "The call boundary's floor: every call converts the whole JS argument to Hazel syntax, re-evaluates it, and checks its type",
+  "cost": "identity rule 8.54 ms at 16x16, 19.3 ms at 24x24; 13.8 ms vs 0.44 ms with no cells (~3 µs per node); the same rule in JS 0.003 ms",
+  "workload": "World rule via hazel-lib.js (dev-based), Node, laptop",
+  "report": "025#call (also 030#speed, 034#mudu)",
+  "status": "open (^ticket(539)); workaround: pass only the neighbours, 0.889 ms; see 040 for the direct-conversion trial",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "Every call pays a floor that grows with the map, and the PRs raise it by about a quarter: 8.54 ms at 16x16 before, 10.6 after (19.3 and 25.3 at 24x24)."
+ },
+ {
+  "cut": "Re-stepping the converted argument: of_js builds unevaluated syntax the evaluator steps back into the value it was",
+  "cost": "56% of the 13.8 ms floor of a 16x16 call",
+  "workload": "16x16 World call, 3 s Node CPU profile of the dev build",
+  "report": "025#call",
+  "status": "open (proposal: of_js makes final values)",
+  "root_cause": "values are terms (open terms, holes, closures)",
+  "quote": "The 13.8 ms floor of a 16x16 call that does nothing: 56% re-stepping the literal, 16% ascription, 10% of_js, 18% GC and the rest."
+ },
+ {
+  "cut": "Pushing the parameter type through the whole argument record, a fresh Asc node and id per element",
+  "cost": "16% of the floor of a 16x16 call",
+  "workload": "as above (dev build profile)",
+  "report": "025#call",
+  "status": "open",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "The 13.8 ms floor of a 16x16 call that does nothing: 56% re-stepping the literal, 16% ascription, 10% of_js, 18% GC and the rest."
+ },
+ {
+  "cut": "Id.mk mints a UUID per node (Uuidm.v4's byte copy under js_of_ocaml)",
+  "cost": "Id.mk ~20% of all time; of_js 10% of the floor; the top self-time entry is caml_subarray_to_jsbytes",
+  "workload": "as above (dev build profile)",
+  "report": "025#call",
+  "status": "open on dev (cheaper Id.mk proposed; done on the hazel-jit trial line, 045#ids)",
+  "root_cause": "ids on every term",
+  "quote": "Id.mk is about 20% of all time, and the top self-time entry is caml_subarray_to_jsbytes, the byte copy in its UUID."
+ },
+ {
+  "cut": "Garbage collection in the boundary floor and in a plain walk",
+  "cost": "18% of the floor (with 'the rest'); 19.8% of self time in a held-list walk; 2.45/2.54/2.39 ms per identity call",
+  "workload": "16x16 floor profile; 136-step walk over a held list, dev build, Node",
+  "report": "025#floor",
+  "status": "open",
+  "root_cause": "persistent maps and allocation (GC)",
+  "quote": "The time is spread over the evaluator's per-step pipeline, jsoo's generic calls, fresh ids and GC; there is no single hot spot, and none of the 14 PRs aims at it."
+ },
+ {
+  "cut": "js_of_ocaml's generic calls in the evaluator's steps",
+  "cost": "caml_call_gen 7.9% + caml_call1 3.7% of self time",
+  "workload": "136-step held-list walk, 13.5 ms a call, dev build, Node (025/data/profiles.json)",
+  "report": "025#call",
+  "status": "open",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "The time is spread over the evaluator's per-step pipeline, jsoo's generic calls, fresh ids and GC; there is no single hot spot"
+ },
+ {
+  "cut": "The trampoline in the evaluator's steps",
+  "cost": "trampoline run 3.5% + bind 2.6% of self time",
+  "workload": "as above",
+  "report": "025#call",
+  "status": "open",
+  "root_cause": "trampolines and stack safety",
+  "quote": "The time is spread over the evaluator's per-step pipeline, jsoo's generic calls, fresh ids and GC; there is no single hot spot"
+ },
+ {
+  "cut": "Each evaluation step costs about 3 µs",
+  "cost": "~3 µs a step; a plain walk 25-80 µs per cell; countdown 128 steps 3.836 ms (3.162 ms after the PRs, -18%)",
+  "workload": "micro-programs via hazel-lib.js, Node, laptop",
+  "report": "025#call",
+  "status": "open; no PR aims at it",
+  "root_cause": "interpretation itself",
+  "quote": "Underneath, each evaluation step costs about 3 µs, so even the plain walk is 25-80 µs per cell."
+ },
+ {
+  "cut": "Per-step state merge, run with no live feature in use",
+  "cost": "8.1% inclusive",
+  "workload": "held-list walk, dev build profile",
+  "report": "025#in-hazel-s-library-and-evaluator",
+  "status": "open (proposal)",
+  "root_cause": "probes and samples",
+  "quote": "the state merge, reuse check and probe sampling run on every step even with no probes and no reuse (8.1%, 8.0% and 6.8% inclusive in the walk's profile)."
+ },
+ {
+  "cut": "Per-step reuse check, run where no reuse is possible",
+  "cost": "8.0% inclusive",
+  "workload": "as above",
+  "report": "025#in-hazel-s-library-and-evaluator",
+  "status": "open (proposal)",
+  "root_cause": "incremental reuse checks",
+  "quote": "the state merge, reuse check and probe sampling run on every step even with no probes and no reuse (8.1%, 8.0% and 6.8% inclusive in the walk's profile)."
+ },
+ {
+  "cut": "Per-step probe sampling, run with no probes",
+  "cost": "6.8% inclusive",
+  "workload": "as above",
+  "report": "025#in-hazel-s-library-and-evaluator",
+  "status": "open (proposal)",
+  "root_cause": "probes and samples",
+  "quote": "the state merge, reuse check and probe sampling run on every step even with no probes and no reuse (8.1%, 8.0% and 6.8% inclusive in the walk's profile)."
+ },
+ {
+  "cut": "#2681's type memo is asked at every part of every fresh argument (all misses), raising the floor",
+  "cost": "floor 8.54 -> 10.1 ms at 16x16 (+18%; +9% in the floor driver); per call 4,137 memo lookups (all misses), 2,580 writes, 6,734 type-hash lookups",
+  "workload": "identity rule, trial/r25-2681, Node, laptop",
+  "report": "025#floor",
+  "status": "fixed on trial/r25-2681-depth (depth-1 limit): floor 8.53 ms, rule 18.9 ms",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "It costs the floor about a quarter (8.54 to 10.1 ms at 16x16): every call's argument is a fresh value, so its first push records it without ever reusing it."
+ },
+ {
+  "cut": "A value held in a closure is re-stepped when substituted into each call",
+  "cost": "walk to index 0 still O(L): 7.319 ms at L=1024, 1.443 ms at L=256; converting the map once into a closure 24.8 ms at 16x16",
+  "workload": "walk micro-programs via hazel-lib.js, Node, laptop",
+  "report": "025#t-steps",
+  "status": "open here; fixed on a trial in 029 (^ticket(547))",
+  "root_cause": "environments and substitution",
+  "quote": "at i = 0 it still costs O(L), since the held list is re-stepped when it is substituted into the call."
+ },
+ {
+  "cut": "Compiling a program for the library (parse, then statics)",
+  "cost": "the game's rules 797 ms; first compile in the browser 340-520 ms; Hazel 514 ms where Fumola sets up in 4 ms (027)",
+  "workload": "Dress Up's room rules, first call in a fresh Node process; browser on GitHub",
+  "report": "025#prs (also 027#next, 030#built)",
+  "status": "mitigated on a trial with all 14 PRs: 402 ms (none merged)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "The 14 PRs together halve the compile: the game's rules compile in 402 ms after, against 797 ms before."
+ },
+ {
+  "cut": "The library's size and load",
+  "cost": "hazel-lib.js 2.8 MB; page load ~525 vs 270 ms (Hazel vs JS); heap 67 vs 51 MB; 643 KB over the wire (034)",
+  "workload": "shipped Dress Up, Chrome on GitHub",
+  "report": "025#t-game (also 034)",
+  "status": "open",
+  "root_cause": "other",
+  "quote": "browser: page load, Hazel vs JS | about 525 vs 270 ms"
+ },
+ {
+  "cut": "Hazel has no map, so a rule walks a list to find a square",
+  "cost": "254 ms at 64x64 held, 346 ms passed, against Fumola's held HashMap at 0.54 ms (471x and 641x)",
+  "workload": "World rule 3x3 to 64x64, Node, trial/r25-best vs Fumola wasm",
+  "report": "027#numbers",
+  "status": "open; a balanced map on a trial gave ~1 ms a move (030)",
+  "root_cause": "data representation (flat lists, no maps)",
+  "quote": "Its best here walks a list: 254 ms at 64x64 with the world held in a closure, 346 ms passed in. Against Fumola's held map, that is 471x and 641x."
+ },
+ {
+  "cut": "Hazel walks the same list more slowly than Fumola",
+  "cost": "64x64 passed 346 vs 145 ms (2.4x), held 254 vs 26.3 ms (9.7x) (027); 341 vs 148 ms (2.3x), 261 ms of it walking (~64 µs a cell), held 256 vs 28.7 ms (8.9x) (029)",
+  "workload": "World rule, 64x64, Node/GitHub runners, trial builds",
+  "report": "027#numbers (also 029#report-27)",
+  "status": "mitigated on trials (030: 241 -> 0.97 ms a move with stacked fixes); not in the game's build",
+  "root_cause": "interpretation itself",
+  "quote": "At 64x64, passing the whole map: 145 ms against Hazel's 346 (2.4x). Holding it as a list and walking it: 26.3 ms against 254 (9.7x)."
+ },
+ {
+  "cut": "The least a call across the boundary costs, with a tiny argument",
+  "cost": "about 1 ms at every size (Hazel 1.27, Fumola 1.35 ms at 64x64); 0.889 ms vs 0.003 ms in JS (025)",
+  "workload": "World rule, neighbours only, Node, trial/r25-best",
+  "report": "027#numbers",
+  "status": "open",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "With only the neighbours passed, the two are the same: about 1 ms, at every size (1.35 and 1.27 ms at 64x64). There the call boundary is all there is."
+ },
+ {
+  "cut": "Each Hazel evaluator pass costs far more than a Fumola step",
+  "cost": "~2.6 µs per Hazel pass vs ~0.13 µs per Fumola step, 'some 20 times as much' (029's body); the series index, 035 and 047 say 'about 15 times'. Net Fumola 10x faster on the loop, 6.5x on calls",
+  "workload": "count(n) and fib(n) through Hazel's JS library, Node laptop, trial/r25-best (dev + perf PRs)",
+  "report": "029#steps (also 035, 047#experiments)",
+  "status": "open",
+  "root_cause": "interpretation itself",
+  "quote": "But a Hazel pass costs about 2.6 µs and a Fumola step about 0.13 µs, some 20 times as much."
+ },
+ {
+  "cut": "Garbage collection on every pass (a trampoline closure, a state record, a fresh term per result)",
+  "cost": "36% of a loop's profile (count(5000): 1,032 of 2,836 ms); 15.8% of sumbuild(1000); 13.7% of h_ref",
+  "workload": "profiles through the JS library, Node, embed-520's dev build",
+  "report": "029#hazel-step (also 035#where)",
+  "status": "open",
+  "root_cause": "persistent maps and allocation (GC)",
+  "quote": "On the loop, the rule is 7% of the time; garbage collection is 36%, and the stages and their trampolines 37%."
+ },
+ {
+  "cut": "The evaluator's live-feature stages (state merge, reuse check, probe sample, effects) run on every pass, even with no feature in use",
+  "cost": "25.0% of a loop, 43.6% of h_ref(3,000); with the trampolines 37% of a loop and 66% of h_ref; the rule itself 7%",
+  "workload": "count(5000), h_ref(3,000) profiles, Node, embed-520's dev build",
+  "report": "029#hazel-step (also 035#where)",
+  "status": "mitigated on a trial by the fast path (^ticket(559)); 035's other ideas untried",
+  "root_cause": "probes and samples",
+  "quote": "For a reference to a held list it is 66% stages and trampolines, and for a list loop 46% minting fresh ids"
+ },
+ {
+  "cut": "Trampolines for stack safety (about five closures and continuations per pass)",
+  "cost": "11.7% of a loop, 22.4% of h_ref, 3.5% of sumbuild",
+  "workload": "same profiles",
+  "report": "035#where",
+  "status": "open",
+  "root_cause": "trampolines and stack safety",
+  "quote": "Each stage binds its result with a let.trampoline, so one pass makes about five trampoline closures and continuations, plus the state records."
+ },
+ {
+  "cut": "Environment lookups",
+  "cost": "7.2% of a loop, 2.3% of sumbuild, 0.2% of h_ref",
+  "workload": "same profiles",
+  "report": "035#where",
+  "status": "open",
+  "root_cause": "environments and substitution",
+  "quote": "environments (Environment.re) | 7.2% | 2.3% | 0.2%"
+ },
+ {
+  "cut": "A list loop re-types its whole list every iteration (an ascription pushed through every element, a fresh term and id each)",
+  "cost": "building and summing 3,000 numbers 4,591 ms vs Fumola's 24.7 ms (186x); mapinc 103x; 60% of sumbuild(1000)'s profile inside Ascriptions.re",
+  "workload": "sumbuild/mapinc kernels, Node laptop, trial/r25-best; profile on embed-520's dev build",
+  "report": "029#re-type",
+  "status": "fixed on trial/r25-asc (^ticket(548)): 6,135 -> 693 ms (8.9x), linear; not a PR",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "In the profile of sumbuild(1000), 60% of the time is spent inside Ascriptions.re, the ids it mints included."
+ },
+ {
+  "cut": "Minting fresh ids",
+  "cost": "46% of a list loop's profile (sumbuild(1000): 1,158 of 2,508 ms); 4% of a plain loop",
+  "workload": "sumbuild(1000), count(5000), Node, embed-520's dev build",
+  "report": "029#ids",
+  "status": "mostly avoided in that loop by ^ticket(548); cheaper ids open on dev",
+  "root_cause": "ids on every term",
+  "quote": "In the list loop's profile, 46% of the time is under Id.mk, and three quarters of that is js_of_ocaml's caml_subarray_to_jsbytes and caml_convert_bytes_to_array."
+ },
+ {
+  "cut": "js_of_ocaml turns each id's 16 bytes into a JS string by hand",
+  "cost": "about three quarters of minting an id (of the 46% above)",
+  "workload": "sumbuild(1000) profile, Node, dev build",
+  "report": "029#ids",
+  "status": "open on dev",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "This is the one place where the target clearly costs Hazel: natively it would be a 16-byte copy."
+ },
+ {
+  "cut": "A function Hazel's JS library returns has its environment substituted into its body, so a held list is re-evaluated at every call",
+  "cost": "h_ref 0.234, 1.14, 3.94 ms for held lists of 100, 1,000, 3,000 vs Fumola ~0.291 ms (029); 4,096 numbers held: 5.31 ms and 29.0 MB a call; World rule 90 ms a move at 64x64 (040)",
+  "workload": "h_ref kernel via the JS library, trial/r25-best; hazeljs Boundary benchmark on GitHub, hazeljs 0.0.3",
+  "report": "029#re-walk (also 040#held)",
+  "status": "fixed on trials (^ticket(547) -> lib-closures ^ticket(558), PR #2808 open): h_ref(3,000) 4.27 -> 0.055 ms (77x); 5.31 -> 0.025 ms and 93 KB (~215x); World 90 -> 0.75 ms",
+  "root_cause": "environments and substitution",
+  "quote": "A function Hazel returned, holding 4,096 numbers, took 5.31 ms and allocated 29.0 MB a call with the package's build, growing with what it holds."
+ },
+ {
+  "cut": "The evaluator visits values that are already final (values are expressions)",
+  "cost": "a third of a loop's passes take no step (count(1000): 14,009 passes for 9,007 steps); h_ref(3,000) 3,008 passes for one reference",
+  "workload": "kernels, counter build trial/r25-stats",
+  "report": "029#fix-fast-path",
+  "status": "mitigated on trials (^ticket(559), library path only): a tenth of a loop (035: ~8%); h_ref 3.9 -> 0.122 ms (35x; 035 says 32x)",
+  "root_cause": "values are terms (open terms, holes, closures)",
+  "quote": "A third fewer passes on a loop buys about a tenth of its time: the stages are only part of a pass's cost."
+ },
+ {
+  "cut": "Converting a JS argument into Hazel at every call (no handles)",
+  "cost": "64x64 map 80.3 ms; 48.9 ms a call for a rule that ignores the map (029); 4,096 cells 66.5 ms converted each call (040)",
+  "workload": "World rule and skip kernel via the JS library, trial builds (029); handles trial build (040)",
+  "report": "029#report-27 (also 029#fix-world-passed, 040#handles)",
+  "status": "mitigated on the handles trial (^ticket(551), PR #2809 open): 0.025 ms (029), 0.024 ms (040) a call at any size",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "^ticket(551), handles: the map crosses the boundary in 0.025 ms a call at any size, where converting it costs 49 ms at 64x64"
+ },
+ {
+  "cut": "Building the World map: three list walks at the per-pass cost",
+  "cost": "1,539 ms at 64x64 (order check 662, count 286, build 927); 60-70 µs a cell; set-up 2,136 ms vs Fumola's 326 (~6.5x)",
+  "workload": "Common.squares, trial/r25-553, GitHub runners",
+  "report": "029#fix-game-map (also 030#setup)",
+  "status": "open (^ticket(554)); merging the count into the order check saved 15%",
+  "root_cause": "interpretation itself",
+  "quote": "the set-up is the per-pass cost three times over, not the map."
+ },
+ {
+  "cut": "Hazel's tiles in the game: a whole Hazel app per script box, made one at a time",
+  "cost": "~3.7 s for six boxes (3.0-4.5 s); the run ~4 s longer than with JS (17.4 vs 13.1 s)",
+  "workload": "Dress Up Scripting tab, Chrome headless on GitHub",
+  "report": "032#table",
+  "status": "open",
+  "root_cause": "other",
+  "quote": "Hazel's tiles take about 3.7 s for all six boxes (median; 3.0 to 4.5 s), Common's first at about 2.9 s"
+ },
+ {
+  "cut": "The first event after a reset compiles the rule program",
+  "cost": "0.5-0.7 s (502, 692, 519 ms); Fumola's slowest pull 12-21 ms",
+  "workload": "trap-room lever pulls, Dress Up, Chrome headless on GitHub",
+  "report": "032#table",
+  "status": "open (next: compile ahead)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "But Hazel has one slow event in every round: 0.5 to 0.7 s (502, 692, 519 ms), the first pull after the state is reset, which compiles the program"
+ },
+ {
+  "cut": "A call into a Hazel rule in the game",
+  "cost": "3.5 ms median vs Fumola 1.6 ms; a lever pull 13.7 ms with Hazel, 10.7 with Fumola, 9.7 with JS",
+  "workload": "60 lever pulls, Dress Up, Chrome headless on GitHub",
+  "report": "032#events (also 039#speed)",
+  "status": "open",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "So a rule adds about 1 ms in Fumola and 4 ms in Hazel to an event, under a quarter of a 60 Hz frame."
+ },
+ {
+  "cut": "After an edit, readiness grows with the program (whole-program analysis)",
+  "cost": "357.5/435.4/744 ms at 1x/2x/4x Common's size (~4 ms a line); analysis 260/302/428 ms; Fumola flat ~125 ms",
+  "workload": "Common copied 1x-4x, Dress Up, GitHub runner",
+  "report": "032#scale",
+  "status": "open",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "In Hazel it takes about 360 ms at Common's size, 435 ms at twice, 745 ms at four times"
+ },
+ {
+  "cut": "The stack overflows on long let chains and large modules",
+  "cost": "Stack_overflow at 8x Common (184 lines) after an edit (032); ~150 module members overflow Node's default stack (034, 039); the undo probe at 6,400 definitions crashed 4 of 6 runs with an 8 MB stack (036)",
+  "workload": "the game's Hazel build on GitHub; hazeljs in Node; Test_UndoScaling on #2635",
+  "report": "032#scale (also 034#release-found, 036#method)",
+  "status": "open (^ticket(591))",
+  "root_cause": "trampolines and stack safety",
+  "quote": "at eight times (184 lines of Common) the game's Hazel build runs out of stack (Stack_overflow) compiling it, and the rooms go back to their JS."
+ },
+ {
+  "cut": "Analysis of a module grows superlinearly with its members",
+  "cost": "100 short members ~110 ms, 400 members ~2.3 s (4x the members, ~21x the time)",
+  "workload": "hazeljs 0.0.1 (dev of 2026-10-19 + library), Node 22, laptop, measured once",
+  "report": "034#release-found (also 039#package)",
+  "status": "unknown",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "A module of 400 members, run with a larger stack, analyzes in about 2.3 s."
+ },
+ {
+  "cut": "The recovering parser is quadratic on an unclosed bracket",
+  "cost": "21-81 ms for well-formed modules, up to 1.8 s with an unclosed bracket",
+  "workload": "Dress Up Scripting panel modules, draft library (#2711/#2719)",
+  "report": "034#mudu",
+  "status": "partly mitigated (#2719's FastParse keeps an unfinished last member on the fast path)",
+  "root_cause": "parsing on load",
+  "quote": "Reading the program is 21 to 81 ms for the panel's modules (well formed), but up to 1.8 s when a module has an unclosed bracket"
+ },
+ {
+  "cut": "First load of the library and its first analysis",
+  "cost": "about a second ('analyzed and run in 1148 ms')",
+  "workload": "Dress Up game log, draft library",
+  "report": "034#mudu",
+  "status": "open",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "The first load of the library and its first analysis took about a second (the game's own log: \"analyzed and run in 1148 ms\")."
+ },
+ {
+  "cut": "Edit, undo and redo each grow linearly with the program",
+  "cost": "at 6,400 definitions: edit 106 ms, undo 292, redo 184 (163/422/340 before two fixes), each followed by ~78 ms of statics; log-log slope 1.10-1.16",
+  "workload": "Test_UndoScaling, a chain of n lets (400-6,400), Node, release build, #2635",
+  "report": "036#scaling (also 038#time)",
+  "status": "partly mitigated by two fixes on #2635 (31-46% off at the largest sizes); still linear",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "At 6,400 definitions, after the fixes below, an edit takes 106 ms, an undo 292 and a redo 184, and the statics refresh after each about 78 more."
+ },
+ {
+  "cut": "MakeTerm rebuilds the whole top-level term every step",
+  "cost": "523 ms, 38% of the profile (527 ms, 29% before the fixes)",
+  "workload": "CPU profile, 12 steps at 3,200 definitions, Node, #2635",
+  "report": "036#where (also 038#time)",
+  "status": "open (needs the top level as a balanced tree)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "rebuilding the top-level term (38% of the time at 3,200 definitions), statics' walk down the chain of definitions (20%), the outline (15%, on undo and redo only), and layout's walk (6%)"
+ },
+ {
+  "cut": "DefStatics walks the whole chain of definitions every step",
+  "cost": "283 ms, 20% (289 ms, 16% before)",
+  "workload": "same profile, #2635",
+  "report": "036#where (also 038#time)",
+  "status": "open",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "rebuilding the top-level term (38% of the time at 3,200 definitions), statics' walk down the chain of definitions (20%)"
+ },
+ {
+  "cut": "The outline is rebuilt from scratch on every undo (its memo misses the restored program)",
+  "cost": "036: 211 ms, 15% of the profile, '~26 ms of each undo and redo' at 3,200 definitions. Corrected in 038 (2026-11-03 07:52): ~39 ms per undo at 3,200 definitions, 32-40% of an undo from 1,600 up (116 ms, 40%, at 6,400), nearly all of what an undo costs beyond a redo",
+  "workload": "Test_UndoScaling, release step times and dev-profile CPU profiles, #2635 (dev has no outline)",
+  "report": "038#outline (also 036#twice, 036#where)",
+  "status": "open",
+  "root_cause": "undo and history",
+  "quote": "An undo rebuilds it from scratch every time, about 39 ms at 3,200 definitions: 32 to 40% of the undo."
+ },
+ {
+  "cut": "Layout's walk over the program (Measured.of_segment)",
+  "cost": "78 ms, 6% of the profile",
+  "workload": "same profile, #2635",
+  "report": "036#where",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "the outline (15%, on undo and redo only), and layout's walk (6%)"
+ },
+ {
+  "cut": "Comparing ids (Id.compare) inside the walks",
+  "cost": "134 ms, 10% of the profile",
+  "workload": "same profile, #2635",
+  "report": "036#where",
+  "status": "open",
+  "root_cause": "ids on every term",
+  "quote": "Id.compare (src/util/Id.re:123), from several of the above | 134 ms · 10%"
+ },
+ {
+  "cut": "Auto-probe rebuilt the whole top level's skeleton every frame (memo keyed on a segment every edit replaces)",
+  "cost": "244 ms, 13% of the profile",
+  "workload": "same profile, #2635",
+  "report": "036#fix-root",
+  "status": "fixed on #2635 (394552d5d0; #2635/#2469 only); with the next fix, 31-46% off at the largest sizes",
+  "root_cause": "probes and samples",
+  "quote": "it missed on every frame after an edit: 13% of the profile before."
+ },
+ {
+  "cut": "Completion suggestions computed after every typed digit (a pass over the program)",
+  "cost": "178 ms, 10% of the profile",
+  "workload": "same profile, #2635",
+  "report": "036#fix-digits",
+  "status": "fixed on #2635 (bfa36a6ede); dev has the same code",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "That is a pass over the program, 10% of the profile before."
+ },
+ {
+  "cut": "Garbage collection and the rest, in the undo probe",
+  "cost": "370 ms, 27% (375 ms, 21% before)",
+  "workload": "same profile, #2635",
+  "report": "036#where",
+  "status": "open",
+  "root_cause": "persistent maps and allocation (GC)",
+  "quote": "the rest | garbage collection, the probe's own frames, and everything below the list | 375 ms · 21% | 370 ms · 27%"
+ },
+ {
+  "cut": "Initial build of the editor for a large program",
+  "cost": "173 ms at 400 definitions up to 2,637 ms at 6,400",
+  "workload": "Test_UndoScaling, Node, #2635",
+  "report": "036#scaling",
+  "status": "unknown",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "\"Building the program\" is the first run's initial build of the editor, for scale."
+ },
+ {
+  "cut": "The newest undo entry, kept whole for a fast undo, grows with the program",
+  "cost": "0.55 MB at 400 definitions, 1.9 MB at 1,600, 6.9 MB at 6,400 (~1.1 KB a definition) vs ~0.01 MB compacted",
+  "workload": "chain of n definitions, Node on GitHub, trial/665-space off #2635",
+  "report": "038#persize",
+  "status": "open (by design)",
+  "root_cause": "undo and history",
+  "quote": "A whole entry grows with the program, about 1.1 KB a definition, because its derived data is built anew by every edit."
+ },
+ {
+  "cut": "With the sidebar shown, every edit rebuilds the outline",
+  "cost": "44 ms after an edit of 51 ms at 3,200 definitions; 84 after 113 at 6,400",
+  "workload": "same probe asking for the outline each step, dev-profile build, #2635",
+  "report": "038#sidebar",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "Each edit rebuilds the outline, about as much again as the edit itself: 44 ms after an edit of 51 at 3,200 definitions, 84 after 113 at 6,400."
+ },
+ {
+  "cut": "An undo or redo rebuilt the program's syntax twice (RealizeView counted as an edit)",
+  "cost": "undo 141 ms at 3,200 definitions, 263 at 6,400; redo 96 ms; a redo spent ~1.8x an edit's time in CachedSyntax.mk",
+  "workload": "same probe, dev-profile build, Node",
+  "report": "038#twice",
+  "status": "fixed (ed4d484671; on #2635 as 9df1b2601e per agendas 037/042, 038 says trial only): undo 141 -> 84 ms (40%; agendas say 85), 263 -> 184 (30%); redo 96 -> 41 ms (57%)",
+  "root_cause": "undo and history",
+  "quote": "An undo: 40% off at 3,200 definitions (141 to 84 ms) and 30% at 6,400 (263 to 184)."
+ },
+ {
+  "cut": "Decoded worker results lose object identity, so identity-keyed memos miss",
+  "cost": "0 of 192 blocks (Kids' Choice) and 60 of 137 (Full Body) came back as the objects decoded before; costs little at this size (037)",
+  "workload": "^ticket(666)'s probe, #2635, Node",
+  "report": "038#precompact",
+  "status": "open",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "none of the 192 blocks of Kids' Choice's result came back as the objects decoded the time before, and 60 of Full Body's 137 did."
+ },
+ {
+  "cut": "A JS argument becomes Hazel syntax with a fresh id per node, is evaluated back, and is type-checked: time",
+  "cost": "4,096 cells typed 139.2 ms, untyped 107.5 ms; 64 cells typed 1.49 ms",
+  "workload": "hazeljs Boundary benchmark, Node 22 on GitHub, hazeljs 0.0.3 (#2719, dev-based)",
+  "report": "040#time",
+  "status": "mitigated on the lib-floor trial (^ticket(539), PR #2807 open): 51.3 ms (-63%), 18.3 ms (-83%), 0.62 ms",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "Passing 4,096 cells from JavaScript to a Hazel function took 139.2 ms with the package's build and 51.3 ms with the trial that converts directly (-63%)."
+ },
+ {
+  "cut": "The same boundary conversion: memory",
+  "cost": "1,024 cells typed 80.4 MB a call, untyped 71.2 MB",
+  "workload": "same benchmark, one call after a forced GC",
+  "report": "040#space",
+  "status": "mitigated on lib-floor (PR #2807): 20.2 MB, 11.0 MB",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "At 1,024 cells, a typed call allocated 80.4 MB with the package's build and 20.2 MB with the trial; an untyped call 71.2 MB against 11.0 MB."
+ },
+ {
+  "cut": "The parameter's type annotation is re-checked against the converted value on every call",
+  "cost": "a typed call about 2.8x an untyped one, even with direct conversion",
+  "workload": "same benchmark, lib-floor",
+  "report": "040#time",
+  "status": "open (#2681's work)",
+  "root_cause": "run-time type checks (ascriptions, casts)",
+  "quote": "With the trial, a typed call still takes about 2.8 times an untyped one: Hazel checks the converted value against the parameter's type again."
+ },
+ {
+  "cut": "A Hazel event-handler call through hazeljs vs the same handler in JS",
+  "cost": "about 3.3 ms a call (3.2-3.4; p90 ~4 ms) vs 0.7 µs in JS; 2,000 steps ~7 s; boundary/evaluation split not measured (045: the interpreter alone 358 µs on this rule)",
+  "workload": "Petri net rule, hazeljs 0.0.4 (#2719), Node v22, laptop, 2,000 calls x 3",
+  "report": "043#cost",
+  "status": "open (hazel-jit being tried)",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "A call costs about 3.3 ms, against 0.7 µs for the same handler in JS: fast enough for each click, but not yet for a simulator's inner loop."
+ },
+ {
+  "cut": "Building and rebuilding a small program",
+  "cost": "first build 338-366 ms; rebuild after an edit 138-154 ms whether a module changed or not; ~180 ms in the browser",
+  "workload": "same Petri example, Node, three runs",
+  "report": "043#cost",
+  "status": "open (the game hides it behind a 600 ms typing pause)",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "Building the program takes 338 to 366 ms, and rebuilding after an edit 138 to 154 ms (Node, three runs)."
+ },
+ {
+  "cut": "(agenda only) A request to the worker without sharing",
+  "cost": "Full Body after one retyped number 1.95 MB in 260 ms whole vs 26.8 KB in 4 ms shared; Kids' Choice 494 vs 52 KB",
+  "workload": "^ticket(666)'s probe, #2635, Node on GitHub",
+  "report": "037#2-how-much-sharing-is-lost-passing-data-to-and-f",
+  "status": "mitigated (requests are shared on #2635)",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "On Full Body, with one number retyped, 26.8 KB go to the worker in 4 ms, against 1.95 MB in 260 ms without sharing."
+ },
+ {
+  "cut": "(agenda only) Two slides were never sent in pieces: livelit annotations reused the signature's ids, so the whole program was re-encoded every request",
+  "cost": "~200 ms a request on Full Body, ~55 ms on Kids' Choice",
+  "workload": "same probe, #2635",
+  "report": "037#2-how-much-sharing-is-lost-passing-data-to-and-f",
+  "status": "fixed on #2635 (c079fa2e24): 1.8 ms and 0.3 ms",
+  "root_cause": "ids on every term",
+  "quote": "on Full Body and Kids' Choice, every request sent the whole program, encoded again each time. That was about 200 ms a request on Full Body."
+ },
+ {
+  "cut": "(agenda only) The first send with sharing costs double",
+  "cost": "Full Body 624 ms shared vs 308 ms whole",
+  "workload": "same probe, #2635",
+  "report": "037#2-how-much-sharing-is-lost-passing-data-to-and-f",
+  "status": "open",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "A first send gains nothing: sharing takes about twice the time there (Full Body: 624 ms against 308)."
+ },
+ {
+  "cut": "(agenda only) The worker reassembled the program from its pieces on every request",
+  "cost": "47 ms on Full Body even when nothing changed (0.1 ms sent whole), 8 ms on Kids' Choice",
+  "workload": "same probe, #2635",
+  "report": "037#2-how-much-sharing-is-lost-passing-data-to-and-f",
+  "status": "fixed (39ad6c8cdc, worker memo of composed programs): 36.2 -> 0.8 ms, 9.3 -> 0.1 ms",
+  "root_cause": "the worker trip",
+  "quote": "in pieces, the worker puts the program back together on every request: 47 ms on Full Body even when nothing changed (0.1 ms when it came whole), 8 ms on Kids' Choice."
+ },
+ {
+  "cut": "(agenda only) Fresh ids for an item's body hole on every analysis made undo miss the worker's memo",
+  "cost": "undo/redo 40-55 ms; an undo posted 7 KB instead of ~130 bytes; Kids' Choice undo still 15.8 ms",
+  "workload": "same probe, Full Body, #2635",
+  "report": "037#2-how-much-sharing-is-lost-passing-data-to-and-f",
+  "status": "fixed for Full Body (ab7273c984, derived ids): 0.7 and 0.6 ms; open on livelit slides",
+  "root_cause": "ids on every term",
+  "quote": "an undo and a redo find what the worker composed: it takes them in 0.7 and 0.6 ms, against 40 to 55 before."
+ },
+ {
+  "cut": "(agenda only) A one-literal edit re-sends about 10% of a chain of lets",
+  "cost": "about 10% of the program; every let around the edit hashes anew",
+  "workload": "^ticket(666), a chain of lets, #2635",
+  "report": "042#1-undo-and-redo-in-o-log-n-in-space-and-in-time",
+  "status": "open (balanced tree proposed)",
+  "root_cause": "the worker trip",
+  "quote": "^ticket(666) found a one-literal edit re-sends about 10% of a chain of lets, every let around the edit hashing anew"
+ },
+ {
+  "cut": "A livelit view on Hazel's interpreter (Polygons)",
+  "cost": "a render 13.7 ms on the interpreter vs 0.34 ms compiled, warm, with the trip in and out (40x); the compiled call alone 0.043 ms (315x); Petri rule 7.19 vs 0.011 ms (630x); recursive sum of 1,000 47.9 vs 0.042 ms (1,152x). Update 2026-11-06 19:00: first said ~16x (cold renders), then 34x warm",
+  "workload": "Test_HazelJit slow tests, Node 22, dev build of trial/694-view-jit (4c0ed173f1), laptop; interpreter without the app's call memo",
+  "report": "045#speed",
+  "status": "mitigated on trial/694-view-jit (hazel-jit, off #2635), not merged",
+  "root_cause": "interpretation itself",
+  "quote": "A render of the Polygons slide's view takes 13.7 ms on the interpreter and 0.34 ms compiled, about 40 times faster, counting the trip into JS and back, once Node has warmed up to it."
+ },
+ {
+  "cut": "The way back: a compiled view's answer made again as Hazel terms",
+  "cost": "0.27 ms of a 0.34 ms compiled render (79%), against 0.037 ms in (11%); the answer has 861 nodes vs the model's 115",
+  "workload": "Polygons render, Node, trial/694-view-jit",
+  "report": "045#boundary",
+  "status": "mitigated: the answer drawn straight from its JS (HazelJitDOM, ^ticket(714), 889271cfbb): vDOM in 0.30 vs 0.71 ms; model to page 0.38 vs 0.79 ms (14.1 ms on the interpreter)",
+  "root_cause": "values are terms (open terms, holes, closures)",
+  "quote": "The trip back is 79% of a compiled render: 0.27 ms of 0.34."
+ },
+ {
+  "cut": "Making ids for every term the way back makes",
+  "cost": "906 ids took 0.29 ms, 'almost half' of the way back. Corrected 2026-11-07 07:40: Id.mk is a counter, not a random UUID; the cost was eight string concatenations per id (from 7a5667e6f2 on #2635's line, which dev lacks)",
+  "workload": "Polygons render, Node, trial/694-view-jit",
+  "report": "045#ids (also 045#boundary)",
+  "status": "fixed in Id.mk (one concatenation an id): 0.044 ms, 16% of the way back",
+  "root_cause": "ids on every term",
+  "quote": "Making 906 ids now takes 0.044 ms; made as before, in the same session, 0.29 ms (between 2.5 and 6 times as long over today's runs)."
+ },
+ {
+  "cut": "HazelDOM drawing a view's Hazel Html into virtual DOM",
+  "cost": "0.44 ms, more than the trip back (0.27 ms); 0.71 ms through Hazel vs 0.30 ms straight from JS",
+  "workload": "Polygons render, Node",
+  "report": "045#direct",
+  "status": "mitigated on the trial (HazelJitDOM)",
+  "root_cause": "the page's view and redraw",
+  "quote": "Through Hazel, the answer is carried back (0.27 ms), its command run down to its Html (0.0007 ms), and the Html drawn by HazelDOM into the virtual DOM (0.44 ms), which costs more than the trip back."
+ },
+ {
+  "cut": "The app evaluated the whole livelit definition on every event before applying its update",
+  "cost": "68.3-83.3 ms per event for the Polygons livelit (its update alone 0.67-5.18 ms); a drag step 80.7 ms",
+  "workload": "Polygons livelit, twelve actions, Node, trial/694-view-jit",
+  "report": "045#diff",
+  "status": "fixed on the trial (update compiled, new model back as a diff, ^ticket(715), 4c0ed173f1): 0.023-0.081 ms; a drag step 0.050 ms",
+  "root_cause": "other",
+  "quote": "on every event the app evaluated the whole definition, 68.3 to 83.3 ms for the Polygons livelit, before applying its update (0.67 to 5.18 ms)."
+ },
+ {
+  "cut": "Carrying a changed value back into Hazel whole",
+  "cost": "a list of 1,000 labeled points 5.76 ms (5.76 µs a point; a third of a 16.7 ms frame)",
+  "workload": "diff tests, Node, trial/694-view-jit",
+  "report": "045#diff",
+  "status": "mitigated: back as a diff, 0.052 ms (111x); still linear in the change's position until lists are trees (^ticket(710))",
+  "root_cause": "values are terms (open terms, holes, closures)",
+  "quote": "A diff of the last answer and the new one, applied to the last Hazel value, carries one changed point of 1,000 back in 0.052 ms, against 5.76 ms whole."
+ },
+ {
+  "cut": "Whole numbers carried back through Printf and big-integer parsing; tuple labels found by raising and catching an exception per label",
+  "cost": "about 2 µs a number; a list of 1,000 labeled points 8.2 ms back",
+  "workload": "Node, trial/694-view-jit",
+  "report": "045#diff",
+  "status": "fixed: 2.2-5.6 ms",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "A whole number came back through Printf and big-integer parsing, about 2 µs each; one that fits an int is now converted directly."
+ },
+ {
+  "cut": "The page's work after a livelit event (the program's text changed and analysed again, the editor drawn), now most of an event",
+  "cost": "a click's change 77 ms compiled vs 124 on Polygons; 319 vs 368 ms on Full Body; 304 vs 354 on the Witch; a drag step 36 vs 62 ms, while the livelit's own update is ~0.05 ms",
+  "workload": "six polygon slides, Firefox on GitHub, release build, trial/694-view-jit",
+  "report": "045#browser",
+  "status": "open",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "what is left is the rest of the page's work after an event, the program's text changed and analysed again and the editor drawn, which is now most of it"
+ },
+ {
+  "cut": "Applying a handler with Evaluator.evaluate, which closes its answer, copies what the closure closes over",
+  "cost": "63 ms a call, 175x evaluate_open (358 µs)",
+  "workload": "Petri net rule, Hazel test, Node",
+  "report": "045#hand",
+  "status": "avoided (the app applies handlers open; a library should too)",
+  "root_cause": "environments and substitution",
+  "quote": "applying the same handler with Evaluator.evaluate, which closes its answer, took 63 ms a call, 175 times evaluate_open: closing copies what the closure closes over into the answer."
+ },
+ {
+  "cut": "A small rule on Hazel's interpreter vs compiled code",
+  "cost": "358 µs a call (evaluate_open) vs hazel-jit 1.59 µs, hand-written JS 0.90, ReScript 0.55, Melange 0.46 µs (225x hazel-jit)",
+  "workload": "report 043's Petri net rule, 2,000 events, Node 22, laptop",
+  "report": "046#speed (also 045#hand)",
+  "status": "mitigated on trial/694-view-jit",
+  "root_cause": "interpretation itself",
+  "quote": "hazel-jit's takes 1.59 µs, about 2.9 times ReScript's and 1.8 times the hand-written; Hazel's interpreter takes 358 µs."
+ },
+ {
+  "cut": "hazel-jit's own output: an array per call of a tuple function, generic equality, no loops for tail calls, boxed options",
+  "cost": "1.59 µs a call, 2.9x ReScript's 0.55 µs; 9% behind ReScript on the Witch view",
+  "workload": "Petri rule and Witch view, Node 22, laptop",
+  "report": "046#speed (also 046#suggests)",
+  "status": "open (five changes proposed)",
+  "root_cause": "other",
+  "quote": "hazel-jit's takes 1.59 µs, about 2.9 times ReScript's and 1.8 times the hand-written"
+ },
+ {
+  "cut": "OCaml's Printf under js_of_ocaml for number formatting",
+  "cost": "Witch view 1.01 ms via Printf.sprintf vs 0.19 ms via toFixed (5.3x)",
+  "workload": "the Witch view ported to OCaml, js_of_ocaml 5.9.1, Node (a benchmark port, not Hazel's own code)",
+  "report": "046#witch",
+  "status": "n/a (benchmark finding)",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "The exception is js_of_ocaml through OCaml's Printf: 1.01 ms (990 fps), 5.3 times its time when it calls toFixed instead."
+ },
+ {
+  "cut": "The Witch picture's view on the interpreter",
+  "cost": "Hazel test: a frame 155 ms (6 fps) vs 3.4 ms compiled (45x), most of it the command evaluating the splice's value; Firefox: 87 ms (11 fps) vs 3.0 ms (29x); polygon editors 26-29 ms vs 0.29-0.45 ms. Corrected 11-07 13:28: the frame is the Hazel test's process, not the app; before cb560ebb86 every Firefox render took 90 ms on the interpreter",
+  "workload": "Test_HazelJit witch_view_run, Node; Firefox on GitHub, release build, trial/694-view-jit",
+  "report": "046#witch-frame (also 046#witch-firefox)",
+  "status": "mitigated on the trial (compiled views)",
+  "root_cause": "interpretation itself",
+  "quote": "On the interpreter, a frame of the Witch's picture takes 155 ms (6 fps), about 9 frames' time at 60 fps."
+ },
+ {
+  "cut": "The splice's value carried back to Hazel and in again",
+  "cost": "20 of the 21 ms of the Witch picture drawn from JS",
+  "workload": "Hazel test, Node, trial/694-view-jit",
+  "report": "046#witch-45 (also 045#direct)",
+  "status": "fixed (bcec455abc): 2.6 ms (3.4 with the trip in)",
+  "root_cause": "values are terms (open terms, holes, closures)",
+  "quote": "Until bcec455abc, the splice's value went back to Hazel and in again, and that was 20 of the 21 ms of the picture's drawing from JS in the Hazel test."
+ },
+ {
+  "cut": "The same compiled view runs 6x slower inside Hazel's process (likely its heap and GC)",
+  "cost": "1.16 ms vs 0.19 ms in a benchmark process",
+  "workload": "Witch view, Hazel test vs plain Node",
+  "report": "046#witch-frame",
+  "status": "unknown (cause a guess)",
+  "root_cause": "persistent maps and allocation (GC)",
+  "quote": "That process holds all of Hazel, and there the same compiled view takes 6 times as long as in the benchmark's own process: 1.16 ms against 0.19 ms."
+ },
+ {
+  "cut": "js_of_ocaml's to_js, carrying the picture into JS",
+  "cost": "0.88 ms of the 3.4 ms frame vs 0.08 ms building the same objects in plain JS (11x; different processes, rough)",
+  "workload": "Witch picture, Hazel test vs Node",
+  "report": "046#witch-share",
+  "status": "open",
+  "root_cause": "the JS boundary (js_of_ocaml)",
+  "quote": "js_of_ocaml's to_js takes 0.88 ms for the picture in the Hazel test. Building the same JS objects in plain JS takes 0.08 ms in Node, 11 times less."
+ },
+ {
+  "cut": "The main thread's own work on an edit before the request goes (update, a page view, statics and the request's pieces)",
+  "cost": "0.31-0.41 s to the page's first change (19-24 frames); 0.18-0.27 s before the request in the timeline run",
+  "workload": "Witch slide small edits, Firefox on GitHub, release build, trial/694-view-jit",
+  "report": "046#witch-edit (also 046#witch-edit-parts)",
+  "status": "open, not broken down",
+  "root_cause": "re-analysis per edit (statics, parsing)",
+  "quote": "The page's first change after the edit (the slider's new number, and the status saying a run has started) came 0.31 to 0.41 s after it, 19 to 24 frames at 60 fps."
+ },
+ {
+  "cut": "The program's run on the evaluator in the worker",
+  "cost": "1.2-2.6 s of a 5.3-8.8 s small edit (18-20%, 1.1-1.3 s on the neck edits); after two cuts 1.0-1.1 s (44-56%); with sharing dropped 0.81-0.92 s (50-64%), now the largest cost",
+  "workload": "Witch slide small edits, Firefox on GitHub, release build, trial/694-view-jit",
+  "report": "046#witch-edit-parts (also 046#witch-trip, 046#witch-cuts, 047#goal)",
+  "status": "open",
+  "root_cause": "interpretation itself",
+  "quote": "The program's evaluation is 1.2 to 2.6 s of a small edit's 5.3 to 8.8 s."
+ },
+ {
+  "cut": "The worker's sharing pass hashes every value of its answer and finds almost nothing to share",
+  "cost": "1.4-1.6 s a result (2.0-3.4 s on an arms edit with its stream); 0 references found on the arms edits, 242 on the neck; after two cuts 154-255 ms to save 0.46 -> 0.42 MB, more than encoding and decoding",
+  "workload": "Witch neck and arms edits, Firefox on GitHub, release build",
+  "report": "046#witch-trip (also 046#witch-cuts)",
+  "status": "fixed: dropped from the worker's answers (4747a4120d): edit 1.3-1.7 s, the trip 79-102 ms (5-8%); requests keep sharing",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "So on this slide it costs 1.4 to 1.6 s a result, and 2.0 to 3.4 s on an arms edit with its stream, and saves nothing measurable."
+ },
+ {
+  "cut": "Encoding the worker's answer with Marshal",
+  "cost": "1.1-1.2 s for the 5.4 MB result (~0.22 s a MB)",
+  "workload": "Witch neck edits, Firefox on GitHub",
+  "report": "046#witch-trip",
+  "status": "mitigated by a smaller answer: 48-57 ms (0.42 MB), 59-80 ms unshared (0.59 MB)",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "Encoding is Marshal to a string, about 0.22 s a MB here."
+ },
+ {
+  "cut": "Decoding the worker's answer on the main thread, one long task (Marshal back, references resolved, every new value hashed)",
+  "cost": "1.4-2.0 s for the 5.4 MB result (trip run); 1.9-3.1 s (timeline run), at least 116 frames frozen; 1.3-1.5 s for a 4.4 MB stream; ~0.32 s a MB",
+  "workload": "Witch small edits, Firefox on GitHub, release build",
+  "report": "046#witch-edit-parts (also 046#witch-trip)",
+  "status": "mitigated: 113-159 ms after two cuts; 16-24 ms unshared",
+  "root_cause": "serialization (Marshal, sharing)",
+  "quote": "The main thread then decodes the result in 1.9 to 3.1 s, one long task during which the page cannot draw: at least 116 frames at 60 fps."
+ },
+ {
+  "cut": "A probe's environment written out whole: the Drawing module in the sample of a probe whose value is a few bytes",
+  "cost": "result 5.4 MB for a 10 KB request (~536x); probe samples' environments 4.14 MB (77%); Drawing alone 3.8-3.9 MB (~70%), kept because an explicit probe keeps every name its expression uses and Sample.Env.elide substitutes each value's environment in, eliding only bare functions",
+  "workload": "Witch neck and arms edits, Firefox on GitHub, trial/694-view-jit",
+  "report": "046#witch-answer (also 046#witch-cuts)",
+  "status": "fixed on the trial (20a3067c18, function-holding values left out) with the trace cleared: result 0.42 MB (13x smaller), edit 1.9-2.4 s (2.2-3.2x sooner)",
+  "root_cause": "probes and samples",
+  "quote": "Nearly all of that is one binding in one sample: Drawing, the module that defines the slide's livelits, 3.8 to 3.9 MB, about 70% of the result by itself."
+ },
+ {
+  "cut": "The observation trace shipped to the page, where nothing reads it",
+  "cost": "1.40 MB of the 5.4 MB result (1.27 MB the environments of 5 span-close events)",
+  "workload": "Witch edits, Firefox on GitHub",
+  "report": "046#witch-answer",
+  "status": "fixed on the trial (cleared in WorkerServer.slim_state, 20a3067c18)",
+  "root_cause": "the worker trip",
+  "quote": "The run's final state also keeps its observation trace, 11 events and 1.4 MB, nearly all of it the environments of its 5 span-close events (1.3 MB)."
+ },
+ {
+  "cut": "The picture written out afresh in each of four samples (substitution makes each copy new, so even the encoding cannot share them)",
+  "cost": "probes 0.34-0.35 MB of the 0.42 MB answer after the cuts",
+  "workload": "Witch edits after two cuts, Firefox on GitHub",
+  "report": "046#witch-cuts",
+  "status": "open (^ticket(718), 047)",
+  "root_cause": "environments and substitution",
+  "quote": "The probes, 0.34 to 0.35 MB: the picture, written out again in each of four samples"
+ },
+ {
+  "cut": "The whole slide's page view, drawn five times an edit",
+  "cost": "24-506 ms (median 117) each draw; 0.5-0.9 s an edit; the picture's own view 3.0 ms of it",
+  "workload": "Witch small edits, Firefox on GitHub, release build",
+  "report": "046#witch-edit-parts (also 047#goal)",
+  "status": "open",
+  "root_cause": "the page's view and redraw",
+  "quote": "Each time the page draws, its view takes 24 to 506 ms (median 117), and an edit draws it five times before the picture shows: 0.5 to 0.9 s in all."
+ },
+ {
+  "cut": "Each run's new picture shares nothing with the last, so finding unchanged parts costs a whole walk",
+  "cost": "the merge 0.23 ms, as much as the whole view (0.24 ms), where a kept view would redo the neck's 17 shapes in 0.043 ms (5x less)",
+  "workload": "prototype edit-share.mjs on hazel-jit's compiled Witch view, Node",
+  "report": "046#witch-share",
+  "status": "open (proposal: share during the trip in)",
+  "root_cause": "incremental reuse checks",
+  "quote": "Done after the trip in, as a walk of its own, it costs 0.23 ms: as much as the view it saves."
+ },
+ {
+  "cut": "Sending closed, first-order values as Hazel terms (ids on every node, a sharing table)",
+  "cost": "the Witch's picture 142.2 KB, 24.0 ms to encode and decode as terms vs 48.0 KB, 6.09 ms as data (3.0x smaller, 3.9x quicker); all 108 samples 275.9 KB as terms vs 144.7 KB as data",
+  "workload": "last worker answer on the Witch slide, DataExperiment on trial/694-view-jit (a64335dc37), Firefox on GitHub",
+  "report": "047#exp1",
+  "status": "open (design note, ^ticket(718))",
+  "root_cause": "values are terms (open terms, holes, closures)",
+  "quote": "As data, the Witch's picture is 3.0 times smaller than as Hazel's terms (48.0 KB against 142.2 KB), and its trip by Marshal, encoded and decoded, takes 6.09 ms against 24.0, 3.9 times less."
+ },
+ {
+  "cut": "Converting a value term to data after the fact",
+  "cost": "110.0 ms for the picture (templated from data/hazel-exp1.json; 276.3 ms for all samples). Caveat: the text says the first, quadratic version took 110 ms and was fixed, yet the filled value is also 110.0, so the post-fix time looks unmeasured",
+  "workload": "same experiment",
+  "report": "047#exp1",
+  "status": "unclear (the evaluator's form would avoid it)",
+  "root_cause": "values are terms (open terms, holes, closures)",
+  "quote": "The prototype turns a value term into data after the fact, in 110.0 ms for the picture."
+ },
+ {
+  "cut": "Samples' environment copies in retained memory (a code comment, not measured in the series)",
+  "cost": "once about 80% of retained memory",
+  "workload": "note in CachedStatics.compute_targets, read on dev",
+  "report": "047#why",
+  "status": "unknown",
+  "root_cause": "probes and samples",
+  "quote": "the note in CachedStatics.compute_targets, where samples' environment copies were once about 80% of retained memory."
+ }
+]

@@ -1,0 +1,95 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 048 · for Cyrus · 2026-11-08, updated {{updated}} MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (report 042)</p>
+<h1>Why Hazel Is Slow: A Thousand Cuts</h1>
+<p class="sub">Cyrus wants to know why Hazel is slow. Matthew, 2026-11-08: "Cyrus wants to know why Hazel is slow, and I say: death by a thousand cuts. I'd like more substance behind that idea." This report is that substance: the costs this series has measured in Hazel, {{n_cuts}} of them from {{n_reports}} reports, side by side, each with its number, what it was measured on, whether it is fixed, and the design choice it comes from.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#short">In short</a>: no single bottleneck; {{n_cuts}} measured costs, many of them most of their workload, many multiplying one another, from four design choices applied everywhere.</li>
+<li><a href="#cuts">All the cuts at once</a>: a treemap, one rectangle a cut.</li>
+<li><a href="#families">The four families</a>: values held as terms; whole-program work on every edit; values moved as terms across boundaries; an interpreter that pays for the editor at every step.</li>
+<li><a href="#compound">How the cuts multiply</a>: five cases where one cost makes another larger.</li>
+<li><a href="#witch">One small edit, cut by cut</a>: the Witch slide's slider, from {{w0_lo}} to {{w0_hi}} s down to {{w2_lo}} to {{w2_hi}} s, and the 16.7 ms still to go.</li>
+<li><a href="#dev">Where the fixes are</a>: most on the livelits branches and trial branches, a few in open PRs to dev, two merged.</li>
+<li><a href="#fumola">Beside Fumola</a>: half the steps, each about 20 times the cost.</li>
+<li><a href="#next">What would change it</a>, and <a href="#ledger">the ledger</a>, every cut, with its report.</li>
+</ol>
+
+<h2 id="short">In short</h2>
+<p><b>Hazel is slow for many reasons at once, not for one. The series has measured {{n_cuts}} separate costs; many are most of the workload they were found in, and many make one another larger. Remove the biggest and the next is there: on the Witch slide, the trip of the worker's answer was 70 to 72% of a small edit; cut, the evaluator is now most of it.</b></p>
+<p><b>They come from four design choices, each sound on its own and each applied everywhere:</b></p>
+<ul>
+<li><b>Values are held as terms</b> ({{f_terms}} cuts): every value carries ids on every node, closures carry environments substituted into them, run-time type checks walk values, and probes write values out with their environments.</li>
+<li><b>Every edit redoes whole-program work</b> ({{f_whole}}): statics, parsing, reuse checks, the page's view of the whole program, undo's copies.</li>
+<li><b>Values cross boundaries as terms</b> ({{f_moving}}): to the worker and back, to JS and back, encoded, shared, decoded.</li>
+<li><b>The interpreter pays for the editor at every step</b> ({{f_machine}}): state merging, reuse checks, probe sampling and effects at every pass, trampolines for stack safety, and the garbage all of it makes.</li>
+</ul>
+<p>Each choice buys something Hazel is for: holes, live evaluation, probes, a stepper, an editor that is never in an invalid state. The cost is that every one of them is paid on every value and every edit, including the many that need none of it.</p>
+
+<h2 id="cuts">All the cuts at once</h2>
+{{fig_cuts}}
+<p><b>{{n_fixed}} cuts are fixed somewhere and {{n_mitigated}} mitigated; {{n_openpr}} have a fix waiting in an open PR; {{n_open}} are open; {{n_other}} are unknown, bounded by design, or not a cost of the app.</b> The fixed ones are mostly not on dev (<a href="#dev">below</a>).</p>
+
+<h2 id="families">The four families</h2>
+<h3 id="f-terms">Values held as terms ({{f_terms}} cuts)</h3>
+<p><b>A closed, first-order value pays for what a term can be: open, holed, a closure.</b></p>
+<ul>
+<li><b>Ids.</b> A fresh id is a UUID written into 16 bytes and made a JS string by hand: about three quarters of minting an id, and 46% of a list loop's time (^report(29)).</li>
+<li><b>Run-time type checks.</b> On the livelits branch, where a view is a tree of Html constructors, the ascription step was 88% of a click on the Polygons editor (15 to 17 s); #2661 took it under 6% (^report(17)). A list loop is quadratic: each iteration pushes the list's type over every element again, minting a fresh id for each part, so building and summing 3,000 numbers takes 4,591 ms against Fumola's 24.7 ms, 186 times (^report(29)).</li>
+<li><b>Environments substituted in.</b> A function Hazel returned, holding 4,096 numbers, took 5.31 ms and allocated 29.0 MB a call; with closures kept whole, 0.025 ms, about 215 times faster (^report(40)).</li>
+<li><b>Probes.</b> A probe on the Witch slide's last line, whose value is a few bytes, kept a module of functions written out whole in its environment: 3.8 MB of a 5.4 MB answer from the worker (^report(46), <a href="../046/#witch-answer">what the answer holds</a>).</li>
+</ul>
+<h3 id="f-whole">Whole-program work on every edit ({{f_whole}} cuts)</h3>
+<p><b>An edit to one literal redoes work proportional to the whole program, and sometimes to its depth exponentially.</b></p>
+<ul>
+<li><b>Statics.</b> On dev, statics of nested functions was exponential in their depth: 5.3 s at eight levels, 13 ms with #2603, open (^report(17)).</li>
+<li><b>Re-evaluation.</b> On Full Body and the Witch, the whole figure is one binding that depends on every slider, so every slider edit costs the incremental run 85 to 95% of a run from scratch (^report(11)); 75 to 84% of the steps it takes are in calls whose inputs did not change (^report(10)).</li>
+<li><b>The page's view.</b> On #2597, rebuilding the code editor's view of the whole program was 77% of the main thread while a slide loaded (^report(7)); a drag's every preview ran a whole-program reuse check, about 40% of a Full Body drag (^report(15)); on the Witch, the whole slide's view takes about 117 ms and is drawn five times an edit (^report(46)).</li>
+</ul>
+<h3 id="f-moving">Values moved as terms across boundaries ({{f_moving}} cuts)</h3>
+<p><b>A value leaving the evaluator is encoded with all its ids, and was hashed node by node to find what the other side held.</b> On the Witch slide, the worker's answer going to the page was 70 to 72% of a small edit: shared in 1.4 to 1.6 s, encoded in 1.1 to 1.2 s, decoded in 1.4 to 2.0 s with the page frozen (^report(46), <a href="../046/#witch-trip">the trip</a>). As data instead of terms, the slide's picture is 3 times smaller and 3.5 times quicker to send (^report(47), <a href="../047/#exp1">experiment 1</a>).</p>
+<h3 id="f-machine">An interpreter that pays for the editor at every step ({{f_machine}} cuts)</h3>
+<p><b>Every term the evaluator visits, values included, goes through state merging, a reuse check, probe sampling and recording effects before its rule.</b> On a loop, the rule itself is 7% of the time; garbage collection is 36%, and the stages and their trampolines 37% (^report(29)).</p>
+
+<h2 id="compound">How the cuts multiply</h2>
+<p><b>The cuts are not only many; they make one another larger, so removing one can be worth more than its own share.</b></p>
+<ol>
+<li><b>The Witch's answer.</b> A probe keeps every name its expression uses; substitution writes each out whole; so a module became 3.8 MB. The sharing pass then hashed every value of that answer and found almost nothing to share; encoding and decoding scaled with its size, and decoding froze the page. Cutting the module and the trace gave 2.2 to 3.2 times; dropping the sharing, 2.9 to 4.6 times in all; and the evaluator's own time fell too, unexplained (^report(46)).</li>
+<li><b>A list loop.</b> A type pushed over a growing list each iteration (quadratic), a fresh id for every part it touches (each id three quarters a JS copy of 16 bytes), then the garbage of all of it: the gap to Fumola grows with the list, to 186 times at 3,000 numbers (^report(29)).</li>
+<li><b>Closures.</b> A closure's environment is substituted into its body, so a value it holds is walked again on every call: 5.31 ms and 29 MB a call at 4,096 numbers (^report(40)).</li>
+<li><b>Nesting.</b> Whole-program work inside per-item work becomes quadratic, and nested analysis exponential: nested functions' statics exponential in their depth, 5.3 s at eight levels (^report(17)).</li>
+<li><b>One binding, many sliders.</b> Reuse works per top-level binding, and a picture is one binding over every slider, so a step of any slider re-evaluates 85 to 95% of the run, even when nothing in the picture changes (^report(11)).</li>
+</ol>
+
+<h2 id="witch">One small edit, cut by cut</h2>
+<p><b>A slider's step on the Witch slide took {{w0_lo}} to {{w0_hi}} s to show in the picture; two cuts and the sharing dropped bring it to {{w2_lo}} to {{w2_hi}} s, still {{w2_x_lo}} to {{w2_x_hi}} times the 16.7 ms of a 60 fps floor.</b> Matthew's goal (2026-11-08): "a floor of 60FPS for small edits (sliders changing), just like in JS"; "and each obstacle is worth studying, and overcoming." Each cut so far removed the largest obstacle and exposed the next.</p>
+{{fig_witch}}
+{{fig_now}}
+<p>What is left, by size: the worker's evaluator, then the page's own work (most of it the whole slide's view drawn again), then the answer's trip. None of the three is small enough alone; all three have to go.</p>
+
+<h2 id="dev">Where the fixes are</h2>
+<p><b>Most fixes in the ledger are on the livelits branches (#2635, #2597) or on trial branches; of the PRs against dev it names, two are merged, #2602 and #2679, and nine are open: #2603, #2608, #2610, #2614, #2661, #2671, #2675, #2681 and #2689.</b> So dev pays most of these cuts today. Dev also pays more for the worker's answer than the branches measured: it sends the run's final state as it is, the incremental cache and the trace included, and the cache comes back with the next request (^report(47)).</p>
+
+<h2 id="fumola">Beside Fumola</h2>
+<p><b>Hazel's evaluator takes about half the steps Fumola's machine takes, and each costs about 20 times as much: 2.6 µs a pass against 0.13 µs a step. Net, Fumola is 10 times faster on a loop and 6.5 times on calls</b> (^report(29)). Fumola keeps its values apart from its terms, with no ids in them, and its first-order values serialize as they are (^report(47), <a href="../047/#fumola">beside Fumola's Value</a>).</p>
+
+<h2 id="next">What would change it</h2>
+<p><b>The cuts trace back to a few choices, so the fixes that count are the ones that change a choice everywhere at once, not the next cut alone.</b></p>
+<ul>
+<li><b>Values held as data, not terms</b>, when they are closed and first-order: no ids, no environments, no sharing (^ticket(718), ^report(47)). It reaches the first and third families at once.</li>
+<li><b>Work in proportion to the edit</b>: reuse below a top-level binding (^report(10), ^report(11)), statics per item, no whole-page view for a change to one livelit.</li>
+<li><b>Compiled code for the run</b>, as for views: under ideal conditions (no holes, no probes shown, an edit to livelit models only), the run in JS on the main thread, nothing sent (^report(45), ^report(46), <a href="../046/#witch-jit-run">compiling the run</a>).</li>
+<li><b>The fixes already made, on dev</b>: the open PRs above, and the branches' fixes ported.</li>
+</ul>
+
+<h2 id="ledger">The ledger</h2>
+<p><b>Every cut, by family and root cause, with its number, what it was measured on, its report, and where it stands.</b> Open a group to see its cuts. Numbers are as the reports state them, corrected values where a report corrected itself; measurements differ in program, machine and branch, so compare within a row, not across rows.</p>
+{{ledger}}
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>The ledger</b> was compiled from reports 001 to 047 by reading each report's text for every cost it measured with a number: {{n_cuts}} cuts in {{n_reports}} reports; reports with no measurement of their own (surveys, case studies, how-tos, agendas restating others) contribute none. Each cut's root cause is a judgment, one per cut; the families group them. Data: <code>data/ledger.json</code>.</li>
+<li><b>Checked against the reports</b>: the numbers quoted in the sections above, each found in its report's text (17's 88% and 5.3 s to 13 ms; 29's 46%, 186 times, 2.6 against 0.13 µs, 7%, 36% and 37%; 40's 5.31 ms and 29.0 MB; 10's 75 to 84%; 11's 85 to 95%; 7's 77%; 15's 40%; 46's and 47's own), and the PRs' states on GitHub (2026-11-08).</li>
+<li><b>The Witch's edit</b>: ^report(46)'s runs in Firefox on GitHub's machines, the same eight edits each time.</li>
+</ul>
+</main></body>
