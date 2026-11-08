@@ -257,6 +257,12 @@ WNUMS.update({
     "tl_views_lo": f"{min(sum(r['views']) for r in TL) / 1000:.1f}", "tl_views_hi": f"{max(sum(r['views']) for r in TL) / 1000:.1f}",
     "tl_after_lo": f"{min(r['after'] for r in TL) / 1000:.2f}", "tl_after_hi": f"{max(r['after'] for r in TL) / 1000:.2f}",
 })
+# (Matthew, 2026-11-08: the view's ms are a small part of an edit's seconds) both runs of the small edits together
+_both = _eall + [r["pic"] for r in TL]
+WNUMS.update({
+    "both_pic_lo": f"{min(_both) / 1000:.1f}", "both_pic_hi": f"{max(_both) / 1000:.1f}",
+    "both_frames_lo": f"{min(_both) / FRAME_60:,.0f}", "both_frames_hi": f"{max(_both) / FRAME_60:,.0f}",
+})
 
 
 def table_timeline():
