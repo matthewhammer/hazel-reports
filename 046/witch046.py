@@ -831,3 +831,18 @@ def table_cuts():
     return ('<table class="vals"><tr><th>the edit</th><th>compiled views</th><th>the picture shows it, before the cuts, s</th>'
             '<th>after, s</th><th>the evaluator, s</th><th>the trip of the picture\'s message, s</th><th>that message</th>'
             '<th>faster, times</th></tr>' + "".join(rows) + "</table>")
+
+
+# (Matthew, 2026-11-08: "drop sharing") the worker's answers unshared (4747a4120d), the same edits again
+FN = json.loads(DW("firefox-noshare.json"))
+TN = [trip_parts(e, m) for m in ("on", "off") for e in FN["edits"][m]]
+_rng("ns_pic", TN, lambda r: r["pic"])
+_rng("ns_eval", TN, lambda r: r["eval"], lambda x: f"{x / 1000:.2f}")
+_rng("ns_eval_pct", TN, lambda r: r["eval"] / r["pic"] * 100, lambda x: f"{x:.0f}")
+_rng("ns_trip", TN, lambda r: r["trip"], lambda x: f"{x:.0f}")
+_rng("ns_trip_pct", TN, lambda r: r["trip"] / r["pic"] * 100, lambda x: f"{x:.0f}")
+_rng("ns_enc", TN, lambda r: r["encode"], lambda x: f"{x:.0f}")
+_rng("ns_dec", TN, lambda r: r["decode"], lambda x: f"{x:.0f}")
+_rng("ns_res", TN, lambda r: r["res_bytes"], mb2)
+_rng("ns_x", TN, lambda r: _before[(r["mode"], r["label"], r["from"], r["to"])] / r["pic"], lambda x: f"{x:.1f}")
+WNUMS.update({"ns_run": str(FN["run"]), "ns_sha": FN["sha"]})

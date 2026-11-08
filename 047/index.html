@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First-Order Data in a Form of Its Own</title>
+<meta name="description" content="A design note for dev: closed first-order values, with no holes and no closures, held and moved as data of their own, not as open terms; where it would pay, in what order, and what it costs.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  pre.code { background: color-mix(in srgb, var(--line) 35%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+             overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }
+  pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
+  ol.outline > li { margin: 4px 0; } ol.steps > li { margin: 10px 0; } .muted { color: var(--muted); }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>47<b>)</b></code> · design note · 2026-11-08, updated 2026-11-08 08:04 MST · <span class="wip">work in progress</span> · for <a href="https://matthewhammer.org/hazel/dashboard/#ticket-718"><code class="ref"><b>^ticket(</b>718<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>First-Order Data in a Form of Its Own</h1>
+<p class="sub">A design note for dev. Closed, first-order values (numbers, strings, booleans, lists, tuples, constructors) pay for the generality of open terms wherever they go: ids on every node, environments substituted into them, a hash of every node to share them. Matthew, 2026-11-08: "let's try to do something systematic for dev that solves this, at the cost of another representation form for first-order data, and no closures", and then: "I'm imagining a special case of Value (or whatever it is called in the core language) def that's especially efficient to serialize for first-order data." And: "Fumola is more efficient than Hazel for these values, and we should try to experiment with these other, more efficient design ideas and submit a plan to the group based on what we find." This note proposes that value form, how it is made and sent, and the experiments to run first; the plan for the group comes from what they find.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#why">Why</a>: the same cost, found again and again; last on the Witch slide, where one module written out in a probe's environment was 3.8 MB of a 5.4 MB answer.</li>
+<li><a href="#form">The form</a>: a <code class="ml">Data</code> term, a value made only by the evaluator, with no ids, holes, closures or environments inside it.</li>
+<li><a href="#fumola">Beside Fumola's Value</a>: Fumola keeps values apart from terms, and its first-order cases serialize as they are; the cases here are those, inside Hazel's terms.</li>
+<li><a href="#serialize">Why it is cheap to send</a>: no ids, no sharing to find, numbers packed; or not encoded at all, as plain JS values over the browser's own copy.</li>
+<li><a href="#provenance">Which code made a value</a>: kept beside it, keyed by the code's id, as probe samples already are, and as Fumola's graph keeps it; never in the value.</li>
+<li><a href="#made">When a value becomes data</a>: first where values leave the evaluator, then in the evaluator itself.</li>
+<li><a href="#boundaries">Where it pays, in order</a>: probe samples, the worker's messages, livelit models, hazel-jit, the evaluator.</li>
+<li><a href="#costs">What it costs</a>: a second form wherever values are read, and the same answers both ways.</li>
+<li><a href="#not">What it is not</a>: no sharing, no closures, no holes, no types inside.</li>
+<li><a href="#experiments">The experiments</a>: the same values as Hazel's terms, as data, and as Fumola's values, sent, built and read; measured before anything is proposed.</li>
+<li><a href="#plan">The plan for the group</a>: written from the experiments; a draft of its slices, and <a href="#questions">questions for Matthew</a>.</li>
+</ol>
+
+<h2 id="why">Why<a class="anchor" href="#why" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="why" title="copy this section's address">copy link</button></h2>
+<p><b>Hazel holds every value as a term, and a closed, first-order value pays for what a term can be: open, holed, a closure over an environment.</b> The cost has come up again and again:</p>
+<ul>
+<li><b>Probe samples.</b> A sample keeps, beside its value, the bindings its expression names, each value with the environment substituted into it (<code class="ml">Sample.Env.elide</code>). On the Witch slide, the ⇓ toggle's probe on the program's last line, a closed, first-order tuple of a few bytes, kept the <code class="hz">Drawing</code> module that way: 3.8 MB of the worker's 5.4 MB answer (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>, <a href="../046/#witch-answer">what the answer holds</a>). With function-holding values left out, the answer was 0.42 MB, most of it the picture written out again in four samples, each copy fresh (<a href="../046/#witch-cuts">two cuts</a>).</li>
+<li><b>The trip between the worker and the page.</b> Encoding a term with every node's ids, then a hash of every node to share what the page held, then decoding it: 70% of a small edit on that slide (<a href="../046/#witch-trip">the trip</a>), and the sharing cost more than it saved once the answer was small; it is gone from the answers (Matthew: "drop sharing").</li>
+<li><b>hazel-jit.</b> A compiled view's model goes into JS, and its answer came back as terms: the way back was most of a compiled render, and making ids for it a large part (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>).</li>
+<li><b>Before that.</b> <a href="https://matthewhammer.org/hazel/dashboard/#ticket-666"><code class="ref"><b>^ticket(</b>666<b>)</b></code></a>, how much sharing is lost passing data to and from the worker; <a href="https://matthewhammer.org/hazel/dashboard/#ticket-681"><code class="ref"><b>^ticket(</b>681<b>)</b></code></a>, JS values converted directly at the call boundary; <a href="https://matthewhammer.org/hazel/dashboard/#ticket-710"><code class="ref"><b>^ticket(</b>710<b>)</b></code></a>, lists as trees; <a href="https://matthewhammer.org/hazel/dashboard/#ticket-513"><code class="ref"><b>^ticket(</b>513<b>)</b></code></a>, the sharing itself; and the note in <code class="ml">CachedStatics.compute_targets</code>, where samples' environment copies were once about 80% of retained memory.</li>
+</ul>
+<p>Dev pays more than the branches measured there. Its worker's answer is the run's value and final state as they are: not pruned, with the observation trace, and with the whole incremental cache, which goes to the page and comes back with the next request (<code class="ml">WorkerServer.Request.value.prev</code>).</p>
+
+<h2 id="form">The form<a class="anchor" href="#form" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="form" title="copy this section's address">copy link</button></h2>
+<p><b>A new value form in the core language: <code class="ml">Data</code>, a closed, first-order value with nothing inside it but data.</b> Dev has no type of values apart from terms: a value is a term that <code class="ml">ValueChecker</code> calls a <code>Value</code>. So the special case is a term:</p>
+<pre class="code"><code class="ml">/* Grammar.exp_term, beside Atom, ListLit, Tuple, Constructor, ... */
+| Data(Data.t)
+
+/* Data.re */
+type t =
+  | Atom(Atom.t)                  /* Int, SInt, Nat, Float, Bool, String: the term's own atoms */
+  | List(list(t))
+  | Tuple(list(field))            /* labeled or not; () is Tuple([]) */
+  | Ctor(string, option(t))       /* a constructor, alone or applied */
+and field = {
+  label: option(string),
+  value: t,
+};</code></pre>
+<ul>
+<li><b>No source ids.</b> A value has none: not below the <code class="ml">Data</code> node, and not on it, whose tag is one shared, empty tag, not a fresh id per value. Which code made a value is kept beside it (<a href="#provenance">below</a>). (Matthew, 2026-11-08: "IMO -- Values should not have source ids. That makes very little sense. That association should be stored elsewhere --- like a global DCG, in the case of Fumola.")</li>
+<li><b>Nothing inside but data.</b> No holes, no closures, no environments, no ascriptions. So it is closed: substitution passes over it without a walk, and a probe sample keeps it as it is.</li>
+<li><b>Made only by the evaluator.</b> The user's syntax has no way to write it, and the statics never see it in a program; only values are ever data.</li>
+<li><b>Types.</b> A term's constructor carries its type for the statics of results (<code class="ml">Constructor(string, option(option(typ)))</code>). Data does not, below its root: the <code class="ml">Data</code> node can carry the value's type once, where the evaluator knows it, and turning data back into a term reads the constructors' types from it.</li>
+<li><b>Big numbers.</b> <code class="ml">Atom.t</code> as dev has it: <code>Int</code> and <code>Nat</code> are big integers, <code>SInt</code> a machine one.</li>
+</ul>
+
+<h2 id="fumola">Beside Fumola's Value<a class="anchor" href="#fumola" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fumola" title="copy this section's address">copy link</button></h2>
+<p><b>Fumola keeps its values apart from its terms, and each first-order case of its <code class="ml">Value</code> is plain data that serializes and deserializes as it is. The cases proposed here are those cases, inside Hazel's terms.</b> (Matthew, 2026-11-08: "For comparison --- Fumola has a Value type. Each first-order case of Value (most of them) is simple to serialize and deserialize.")</p>
+<ul>
+<li><b>Fumola's <code class="ml">Value</code></b> (<code>crates/fumola_semantics/src/lib/value.rs</code>, at <code>cb2bcf5</code>): <code>Null</code>, <code>Bool</code>, <code>Unit</code>, <code>Nat</code> and <code>Int</code> (big), <code>Float</code>, <code>Char</code>, <code>Text</code>, <code>Blob</code>, <code>Array</code>, <code>Tuple</code>, <code>Object</code>, <code>Option</code>, <code>Variant</code> (a name and an optional value); then the cases that are not data: pointers, closed functions, primitive functions, modules, quoted code, actors, Adapton's pointers, times, spaces and histories, thunks. Every case derives serde's <code>Serialize</code> and <code>Deserialize</code>; the first-order ones need nothing more, and values come in from JSON as they are (<code>fumola_define_json</code>, #148 in the Fumola repo).</li>
+<li><b>No ids in a value.</b> The program's ids are in its terms, and a value is not a term, so a value carries none: the cost Hazel's terms pay at every node is not there to pay. Which code made a value is in the run's graph (<a href="#provenance">below</a>).</li>
+<li><b>No sharing written.</b> Arrays and tuples are persistent vectors (<code>im-rc</code>), shared by reference in memory and cheap to grow and index; serde writes a shared value where it is met, as a tree. That is what Matthew expects of data here.</li>
+<li><b>What Hazel's form takes from it.</b> The same shape: <code class="ml">Data</code>'s <code>Atom</code>, <code>List</code>, <code>Tuple</code> and <code>Ctor</code> are Fumola's atoms, <code>Array</code>, <code>Tuple</code> and <code>Object</code>, and <code>Variant</code>; no ids; each case encoded as it is; and the same line between data and the rest, closures on the other side.</li>
+<li><b>What differs.</b> In Hazel a value is a term, so that a result can hold holes and be stepped and printed as code. So <code class="ml">Data</code> is a case of the term, made by the evaluator, not a separate type the evaluator returns. A separate value type, as Fumola has, every result a value and terms kept for holes and the stepper, is the larger alternative; it would change the evaluator and the stepper throughout, and is not proposed here.</li>
+</ul>
+
+<h2 id="serialize">Why it is cheap to send<a class="anchor" href="#serialize" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="serialize" title="copy this section's address">copy link</button></h2>
+<p><b>Three things a term costs to encode that data does not: its ids, a search for sharing, and boxed numbers. And data could skip encoding altogether.</b></p>
+<ul>
+<li><b>No ids.</b> Every term node carries an id tag (<code class="ml">IdTagged.IdTag.t</code>): its ids, each a 16-byte UUID, and the secondary runs, incomplete tiles and lexeme the editor keeps for a written term, empty for one the evaluator made, but there. A list of 1,000 numbers as terms is about 1,000 cons blocks, 1,000 term records, 1,000 id tags with their id lists and UUIDs; as data, 1,000 cons blocks and the numbers.</li>
+<li><b>No sharing to find.</b> <code class="ml">Marshal</code> keeps a table of every block it has written, so that a block met twice is written once; for terms with environments that is needed. Data is not expected to share (Matthew, 2026-11-08: "in first order data --- we don't expect any"), so it can be written as a tree, with no table: <code class="ml">Marshal</code>'s <code>No_sharing</code>, or an encoder of its own.</li>
+<li><b>Numbers packed.</b> An encoder of its own can write a list of floats as one array of floats: the Witch's 924 points are 1,848 numbers, about 15 KB as doubles, against about 0.13 MB for the picture as terms (an estimate from <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>'s readings, not measured).</li>
+<li><b>Or not encoded at all.</b> Data turned into plain JS values (arrays, numbers, strings) crosses <code>postMessage</code> by the browser's own structured copy, in native code, with no <code class="ml">Marshal</code> in js_of_ocaml on either side. The browser's copy recurses: it overflowed on deep terms (<a href="https://github.com/hazelgrove/hazel/issues/2368">#2368</a>), so a long list would cross as an array, its depth that of the data's nesting, not its length. A message would then be its terms, encoded as now, and beside them the data, as JS values.</li>
+</ul>
+<p>Which of these to build first is a measurement: the first slice times each on the answers it changes.</p>
+
+<h2 id="provenance">Which code made a value: kept beside it<a class="anchor" href="#provenance" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="provenance" title="copy this section's address">copy link</button></h2>
+<p><b>A value carries no source ids; the association between a value and the code that made it is kept elsewhere, keyed by the code's id. Hazel already keeps most of it that way.</b></p>
+<ul>
+<li><b>Already beside the value.</b> A probe's samples are keyed by the probed expression's id (<code class="ml">Sample.Map</code>: a syntax id to its samples); a test's reports by the test's id (<code class="ml">TestMap</code>); the observation trace names the code of each span it opens and closes; a livelit's model is found by the model's id in the samples.</li>
+<li><b>In Fumola, a global graph.</b> In Fumola's graphical mode, a run's demanded computation graph names each node by a symbol and a time and records its thunk and the value it holds; asking which code made a value is a question for the graph, not for the value.</li>
+<li><b>What reads a value's ids on dev today</b> is slice 1's first list: each reader moves to an association kept beside the value, or reads a term made from the data when it needs one. A value the evaluator makes gets fresh ids today, which name no code, so most such readers should be few.</li>
+</ul>
+
+<h2 id="made">When a value becomes data<a class="anchor" href="#made" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="made" title="copy this section's address">copy link</button></h2>
+<p><b>First where a value leaves the evaluator; then in the evaluator itself.</b></p>
+<ul>
+<li><b>At the edges.</b> A check, <code class="ml">Data.of_term : Exp.t => option(Data.t)</code>, walks a value and gives up at the first function, closure, hole or open term; <code class="ml">Data.to_term</code> makes the term back, with fresh ids, only when something needs a term (a probe's drawer prints a term today). Where the statics know the value's type, a first-order type (no arrows, nothing unknown: <code class="ml">Typ.has_fun_up_to_aliases</code> and its like) says so before the walk.</li>
+<li><b>In the evaluator.</b> A tuple, list or constructor whose parts are all data is made as data, so values stay data as they are built, and are never turned into data at the edges. Then pattern matching, the builtins on lists and numbers, equality and printing read data directly: a match of <code class="hz">hd :: tl</code> against <code>Data(List([a, ...rest]))</code> binds <code class="hz">hd</code> to <code>a</code> and <code class="hz">tl</code> to <code>Data(List(rest))</code>. This is the larger change, and the one that keeps values from ever being terms.</li>
+</ul>
+
+<h2 id="boundaries">Where it pays, in order<a class="anchor" href="#boundaries" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="boundaries" title="copy this section's address">copy link</button></h2>
+<ol class="steps">
+<li><b>Probe samples</b> (dev). A sample's value, and each binding in its environment, is data, or opaque (a function, or a value holding one), or, only when it is open, a term. The drawer turns data into a term when it draws it, once per sample shown. This fixes the Witch's case at its root, and every probe on dev with it.</li>
+<li><b>The worker's messages</b> (dev). The program's value, the samples, and the incremental cache's states, in both directions, carry data; measured as bytes and as encode and decode time on each side.</li>
+<li><b>Livelit models</b> (the livelits branches, then dev when they land). A model is first-order by design, written into the program as a literal: data from the start, and each livelit's samples with it.</li>
+<li><b>hazel-jit</b> (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>). Data into JS and back, directly: arrays, numbers, strings, with no term made on the way back; <a href="https://matthewhammer.org/hazel/dashboard/#ticket-681"><code class="ref"><b>^ticket(</b>681<b>)</b></code></a>'s idea, and the diffs of <a href="https://matthewhammer.org/hazel/dashboard/#ticket-715"><code class="ref"><b>^ticket(</b>715<b>)</b></code></a> on data. <a href="https://matthewhammer.org/hazel/dashboard/#ticket-710"><code class="ref"><b>^ticket(</b>710<b>)</b></code></a>'s lists as trees would be a change to <code class="ml">Data.List</code>, not to every term.</li>
+<li><b>The evaluator</b> (<a href="#made">above</a>): values built as data.</li>
+</ol>
+
+<h2 id="costs">What it costs<a class="anchor" href="#costs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="costs" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>A second form wherever values are read</b>: the matcher, the builtins, equality (a data value against the same value as a term), printing, <code class="ml">ValueChecker</code>, the probes' drawers and their custom renderers (about ten places read <code>sample.value</code> in <code class="ml">ProbeProj</code> on dev). The edges come first because they need only <code class="ml">of_term</code> and <code class="ml">to_term</code>.</li>
+<li><b>The same answers both ways.</b> Tests: <code class="ml">to_term(of_term(v))</code> equal to <code>v</code> up to ids for every value the test programs make; and every program's results, probes and tests the same with data on and off.</li>
+<li><b>No sharing.</b> A value held twice is written twice. Matthew does not expect data to share; a message that grows because of it would show in the measurements.</li>
+<li><b>Floats.</b> <code class="ml">Atom.t</code> compares floats by their printed form; data keeps that.</li>
+</ul>
+
+<h2 id="not">What it is not<a class="anchor" href="#not" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="not" title="copy this section's address">copy link</button></h2>
+<p><b>Not a change to holes or to open terms: anything that is not closed, first-order data stays a term, and behaves as it does now.</b> No closures in data, and no holes; no sharing; no types below the root. Programs, and the editor's terms, are untouched: only values can be data.</p>
+
+<h2 id="experiments">The experiments<a class="anchor" href="#experiments" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="experiments" title="copy this section's address">copy link</button></h2>
+<p><b>Before a plan goes to the group, the same values measured each way: as Hazel's terms today, as the data form here, and as Fumola's values, which already work this way.</b> Where things stand on the Witch slide (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>): with a module kept out of a probe's environment, the trace cleared and the answers unshared, a small edit takes 1.3 to 1.7 s, and the worker's evaluator is 0.81 to 0.92 s of it, 50 to 64%; the trip is 5 to 8% (<a href="../046/#witch-cuts">two cuts, and sharing dropped</a>). So the evaluator, building values as terms, is now the larger cost, and sending them the smaller.</p>
+<ol class="steps">
+<li><b>Sending.</b> The Witch's picture (133 shapes, 924 points, <code>046/data/witch/picture.json</code>) and a probe-heavy answer, encoded and decoded: as Hazel's terms by <code class="ml">Marshal</code> (today); as data by <code class="ml">Marshal</code> with no sharing table; as data packed (numbers in float arrays); as plain JS values by the browser's structured copy; and as Fumola's <code class="ml">Value</code> through serde (its JSON door, and a binary form). Bytes, and ms each way, in Node and in Firefox.</li>
+<li><b>Building.</b> The picture built by each evaluator: Hazel's today (terms, a fresh id per node); Hazel's with a prototype of the data form (values built as data); Fumola's. Time, and blocks allocated. <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a> already set the two evaluators side by side on eight small programs: Hazel took half Fumola's steps, and each step cost about 15 times as much.</li>
+<li><b>Ids.</b> How many fresh ids a run makes on the Witch slide, and what making them costs (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> measured one id at a time; in <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>'s profiles, fresh ids were 46% of one program's time); the first count of what reads a value's ids (<a href="#provenance">above</a>).</li>
+<li><b>Reading.</b> A probe's drawer printing a sample: a term today; data turned into a term; data printed directly.</li>
+<li><b>Into JS.</b> The picture into a compiled view: from Hazel's terms (hazel-jit's trip in, <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>), from data, and from Fumola's values through <code>fumola_wasm</code>.</li>
+</ol>
+<p>Where they run: Hazel's in Node on GitHub's machines (the test build is too heavy for the laptop) and in the Firefox check; Fumola's on the laptop, from its own repo (a cold build is about 3 minutes). Each result goes into this report as it comes, with its commit and run.</p>
+
+<h2 id="plan">The plan for the group<a class="anchor" href="#plan" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="plan" title="copy this section's address">copy link</button></h2>
+<p><b>Written from the experiments, for the group: which form, which edges first, and what each costs and saves, as measured. Until then, a draft of its slices:</b></p>
+<ol class="steps">
+<li><b><code class="ml">Data</code>, <code class="ml">of_term</code> and <code class="ml">to_term</code></b>, with the round-trip tests and the list of what reads a value's ids on dev (<a href="#provenance">above</a>), and a Node benchmark on dev: a program whose probes name a module and a list of a thousand records, its worker answer's bytes and its encode and decode time, as terms and as data (each way of sending, <a href="#serialize">above</a>).</li>
+<li><b>Probe samples as data</b>: the sample's value and environment; the drawer draws data. Measured with that benchmark and on dev's deploy in Firefox.</li>
+<li><b>The worker's messages</b>: the value and the cache's states, and the way of sending the first slice found fastest.</li>
+<li><b>The <code class="ml">Data</code> term in the evaluator</b>: values built as data; the matcher, the builtins, equality and printing.</li>
+<li><b>The livelits branches</b>: models and livelit samples as data, and hazel-jit's trip; measured on the Witch's small edits (now 1.9 to 2.4 s, <a href="../046/#witch-cuts">two cuts</a>).</li>
+</ol>
+
+<h2 id="questions">Questions for Matthew<a class="anchor" href="#questions" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="questions" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>The name: <code class="ml">Data</code>, or something else?</li>
+<li>Lists: an OCaml list, cheap to cons; an array, cheap to send and to index; a persistent vector, as Fumola's arrays are; or a level tree, as <a href="https://matthewhammer.org/hazel/dashboard/#ticket-710"><code class="ref"><b>^ticket(</b>710<b>)</b></code></a> asks?</li>
+<li>Is the evaluator's form (slice 4) in scope from the start, or the edges first, as here? And is a separate value type, as Fumola has, worth weighing instead?</li>
+<li>Constructors' types: carried once at the root, as here, or not at all, the statics finding them again?</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>Dev as read</b>: <code>782249bbd0</code> (2026-11-06), in a worktree of its own: the expression terms (<code class="ml">Grammar.exp_term</code>), <code class="ml">Atom.t</code>, <code class="ml">ValueChecker</code>, <code class="ml">Sample.Env.elide</code>, <code class="ml">CachedStatics.compute_targets</code>, <code class="ml">WorkerServer</code>'s request and answer, and <code class="ml">ProbeProj</code>'s reads of a sample's value. Fumola as read: <code>cb2bcf5</code> (2026-10-22), <code>value.rs</code> and <code>fumola_wasm</code>'s JSON door.</li>
+<li><b>The Witch's current numbers</b> (1.3 to 1.7 s an edit) are <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>'s, after the two cuts and the sharing dropped. <b>The other numbers</b> are <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>'s too, measured on the livelits line (<code>trial/694-view-jit</code>) in Firefox on GitHub's machines; none is measured on dev yet. The 15 KB for the Witch's points is arithmetic, not a measurement.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/047/data"><code>047/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2368": {"author": "7h3kk1d", "comments": 0, "created": "2026-07-01T14:04:27Z", "kind": "issues", "state": "closed", "title": "'DedicatedWorkerGlobalScope': Maximum call stack size exceeded", "updated": "2026-07-22T01:22:41Z"}}, BUILT = "2026-11-08";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 47,
+ "title": "First-Order Data in a Form of Its Own",
+ "date": "2026-11-08",
+ "kind": "design note",
+ "status": "work in progress",
+ "question": "Can closed, first-order values stop paying for open terms, with a value form of their own that is especially efficient to serialize? Matthew, 2026-11-08, ^ticket(718).",
+ "measurements": "None of its own yet. Its numbers are report 046's, measured on the livelits line in Firefox on GitHub's machines; the 15 KB for the Witch's points is arithmetic.",
+ "builds": [
+  {
+   "what": "dev, as read",
+   "branch": "dev",
+   "commit": "782249bbd0"
+  },
+  {
+   "what": "Fumola's Value, for comparison",
+   "branch": "fumola main",
+   "commit": "cb2bcf5"
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/047/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
