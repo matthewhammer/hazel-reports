@@ -101,6 +101,8 @@ FIGS = {
              (fig_space_per_entry(), "Space: a compacted entry costs about nothing at every size; the entry kept whole for a fast undo grows with the program, about 1.1 KB a definition (GitHub run 41695584813, one run).", False),
              (F.fig_undo_growth(), "Each step against program size, both scales logarithmic: parallel to the dotted guide means in proportion to the program. Release build, medians of 12 (^report(36)).", False),
              (F.fig_undo_fix(), "The third fix (9df1b2601e, on #2635): a redo now costs an edit; an undo, an edit and the outline (^report(38)).", False)],
+    "why-slow": [(kept("048", "cuts"), "Every cost the series has measured in Hazel, one rectangle each, grouped by the design choice it comes from and coloured by where it stands (^report(48)).", True),
+                 (kept("048", "witch"), "The Witch slide's small edit at each cut so far, against a 60 fps floor, on a log scale (^report(48)).", True)],
     "hazel-jit": [(kept("046", "witch-cuts"), "After two cuts, the same small edits on the Witch slide, in Firefox: each edit's bar, and the same edit before the cuts, dashed (^report(46)).", True),
                   (kept("046", "witch-trip"), "A small edit on the Witch slide, in Firefox, the neck edits: the run's answer shared and encoded in the worker and decoded on the page (orange), against the worker's evaluator (blue) (^report(46)).", True),
                   (kept("046", "witch-edit-timeline"), "Two small edits on the Witch slide, in Firefox: the main thread's own work, its decoding of the worker's 4 to 5 MB answers, and the worker from the request to its result (^report(46)).", True),

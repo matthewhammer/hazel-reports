@@ -4,12 +4,12 @@
  "meeting": "2026-11-11",
  "meeting_time": "10:00 MST (10 a.m. in Boulder, Colorado)",
  "started": "2026-11-06",
- "updated": "2026-11-08 08:10",
+ "updated": "2026-11-08 08:33",
  "page_title": "Agenda for November 11",
  "title": "Agenda: Matthew and Cyrus, Wednesday 2026-11-11, 10:00 Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Wednesday 2026-11-11 at 10:00 Mountain time (MST, Boulder; the usual time), carrying over the work that continues from their meeting of 2026-11-05 (<a href=\"../037/\"><code class=\"ref\"><b>^report(</b>37<b>)</b></code></a>), in two parts: performance (undo, and Hazel compiled to JS) and hazeljs for other JavaScript developers. <b>A work in progress:</b> updated as items move until the meeting, so each item says where it stands, as of when, and what it needs from the meeting.",
  "short": [
-  "<b>Performance:</b> undo's time is linear because of a few whole-program passes, not the history, and its space is nearly flat when compacted; hazel-jit draws compiled views in the app, the Witch's picture in 3.0 ms a render in Firefox, but a small edit on that slide took 5 to 9 s, 70% of it the run's 5.4 MB answer on its way from the worker, most of that one module written out in a probe sample; two cuts and no sharing bring it to 1.3 to 1.7 s, the evaluator now most of it; ^ticket(718) and ^report(47) are the systematic fix for dev, experiments first; report 046 puts hazel-jit's code beside ReScript's, Melange's and js_of_ocaml's.",
+  "<b>Performance:</b> why Hazel is slow, a thousand cuts, measured (^report(48), 196 costs from 33 reports, four design choices); undo's time is linear because of a few whole-program passes, not the history, and its space is nearly flat when compacted; hazel-jit draws compiled views in the app, the Witch's picture in 3.0 ms a render in Firefox, but a small edit on that slide took 5 to 9 s, 70% of it the run's 5.4 MB answer on its way from the worker, most of that one module written out in a probe sample; two cuts and no sharing bring it to 1.3 to 1.7 s, the evaluator now most of it; ^ticket(718) and ^report(47) are the systematic fix for dev, experiments first; report 046 puts hazel-jit's code beside ReScript's, Melange's and js_of_ocaml's.",
   "<b>hazeljs for others:</b> a README PR on dev (#2812) points JS developers to the package, waiting for a review; report 043 shows how an app scripts its rules in Hazel, and its Petri net example is live at 0.0.10."
  ],
  "sections": [
@@ -18,6 +18,17 @@
    "title": "1. Performance: undo, and Hazel compiled to JS",
    "intro": "Two threads from the last meeting. Undo: what it costs as programs grow, and how close it can get to O(log n). And a new experiment decided there: compile livelits' view functions to JavaScript, to see how much faster Hazel code can get. Measured in Node on #2635 (livelits &times; modular editors) unless an item says otherwise.",
    "items": [
+    {
+     "id": "why-slow",
+     "title": "Why Hazel is slow: a thousand cuts",
+     "asked": "Cyrus; Matthew's answer, 2026-11-08",
+     "ticket": null,
+     "status": "report 048: the 196 costs the series measured, from 33 reports, by the four design choices they come from",
+     "tone": "accent",
+     "as_of": "2026-11-08 08:33",
+     "body": "<p><b>New, 11-08: Cyrus asked why Hazel is slow; Matthew says death by a thousand cuts, and ^report(48) is the substance behind it</b> (<a href=\"../048/\">report 048</a>). The series has measured 196 separate costs in 33 reports; many are most of the workload they were found in, and many make one another larger, so removing the largest exposes the next. They come from four design choices, each applied everywhere: values held as terms (42 cuts: ids on every node, environments substituted in, run-time type checks on values, probes writing values out); whole-program work on every edit (75); values moved as terms across boundaries (44); and an interpreter that pays for the editor at every step (27: per pass about 20 times a Fumola step). Most fixes are on the livelits and trial branches; of the PRs against dev the ledger names, two are merged and nine open. The Witch's small edit, cut by cut: 4.2 to 6.5 s, now 1.3 to 1.7 s, still 80 to 100 times a 60 fps floor.</p>",
+     "meeting": "Which of the four families to change first? Is a 60 fps floor for small edits the right yardstick for Hazel?"
+    },
     {
      "id": "undo",
      "title": "Undo and redo in O(log n), in space and in time: how close are we, and why not yet?",
