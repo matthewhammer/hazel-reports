@@ -181,6 +181,8 @@ body = body.replace("{{witch_svgs}}", W.fig_witch_svgs())
 body = body.replace("{{fig_witch_firefox}}", keep("witch-firefox", W.fig_witch_firefox()))
 body = body.replace("{{fig_witch_edit}}", keep("witch-edit", W.fig_witch_edit()))
 body = body.replace("{{table_share}}", W.table_share())
+body = body.replace("{{fig_witch_edit_timeline}}", keep("witch-edit-timeline", W.fig_witch_edit_timeline()))
+body = body.replace("{{table_timeline}}", W.table_timeline())
 for k, v in W.WNUMS.items():
     body = body.replace("{{w:" + k + "}}", v)
 WF = dict(W.WT["node_fastest_ms"], jsoo_tofixed=W.WT["jsoo_tofixed_fastest_ms"], jsoo_printf=W.WT["jsoo_printf_fastest_ms"])

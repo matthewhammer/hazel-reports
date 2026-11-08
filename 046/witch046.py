@@ -210,6 +210,127 @@ def table_share():
             '<th>the whole view over the kept one, times</th><th>the same markup</th></tr>' + "".join(rows) + "</table>")
 
 
+# (Matthew, 2026-11-07: "Yes, break it down") the same edits with the page's own timeline on (Util.BenchMarks)
+FT = json.loads(DW("firefox-timeline.json"))
+_TOPK = {"update", "calculate", "view", "after display", "worker message decoded", "worker message handled"}
+
+
+def edit_parts(e, mode):
+    """one edit's split: the main thread before its request, the worker until the message that carried the picture,
+    that message decoded, and the page's work after it"""
+    ms, pic = e["marks"], e["picture_changed_ms"]
+    post = next(m for m in ms if m["what"] == "post to worker")
+    big = [m for m in ms if m["what"] == "worker message decoded" and m.get("bytes", 0) > 1e6]
+    carry = max((m for m in big if m["at"] < pic), key=lambda m: m["at"])
+    res_dec = max(big, key=lambda m: m["at"])
+    result = next(m for m in ms if m.get("kind") == "result")
+    views = [m["ms"] for m in ms if m["what"] == "view" and m["at"] <= pic]
+    return {"label": e["label"], "from": e["from"], "to": e["to"], "mode": mode, "post": post["at"], "req": post["bytes"],
+            "worker": carry["at"] - post["at"], "carry_bytes": carry["bytes"], "carry_is_result": carry is res_dec,
+            "decode": carry["ms"], "eval": result["eval_ms"], "pic": pic, "own": e["own_first_ms"],
+            "busy": sum(m["ms"] for m in ms if m["what"] in _TOPK and m["at"] <= pic), "views": views,
+            "res_bytes": res_dec["bytes"], "res_decode": res_dec["ms"], "res_at": res_dec["at"],
+            "after": pic - (carry["at"] + carry["ms"]), "marks": ms}
+
+
+TL = [edit_parts(e, m) for m in ("on", "off") for e in FT["edits"][m]]
+_neck = [r for r in TL if r["carry_is_result"]]
+_allviews = [v for r in TL for v in r["views"]]
+WNUMS.update({
+    "tl_run": str(FT["run"]), "tl_sha": FT["sha"],
+    "tl_pic_lo": f"{min(r['pic'] for r in TL) / 1000:.1f}", "tl_pic_hi": f"{max(r['pic'] for r in TL) / 1000:.1f}",
+    "tl_post_lo": f"{min(r['post'] for r in TL) / 1000:.2f}", "tl_post_hi": f"{max(r['post'] for r in TL) / 1000:.2f}",
+    "tl_req": f"{upper_middle([r['req'] for r in TL]) / 1000:.0f}",
+    "tl_ans_lo": f"{min(r['carry_bytes'] for r in TL) / 1e6:.1f}", "tl_ans_hi": f"{max(r['res_bytes'] for r in TL) / 1e6:.1f}",
+    "tl_ratio": f"{max(r['res_bytes'] for r in TL) / upper_middle([r['req'] for r in TL]):,.0f}",
+    "tl_eval_lo": f"{min(r['eval'] for r in TL) / 1000:.1f}", "tl_eval_hi": f"{max(r['eval'] for r in TL) / 1000:.1f}",
+    "tl_wout_lo": f"{min(r['worker'] - r['eval'] for r in _neck) / 1000:.1f}",
+    "tl_wout_hi": f"{max(r['worker'] - r['eval'] for r in _neck) / 1000:.1f}",
+    "tl_wneck_lo": f"{min(r['worker'] for r in _neck) / 1000:.1f}", "tl_wneck_hi": f"{max(r['worker'] for r in _neck) / 1000:.1f}",
+    "tl_dres_lo": f"{min(r['res_decode'] for r in TL) / 1000:.1f}", "tl_dres_hi": f"{max(r['res_decode'] for r in TL) / 1000:.1f}",
+    "tl_dstr_lo": f"{min(r['decode'] for r in TL if not r['carry_is_result']) / 1000:.1f}",
+    "tl_dstr_hi": f"{max(r['decode'] for r in TL if not r['carry_is_result']) / 1000:.1f}",
+    "tl_dres_frames": f"{min(r['res_decode'] for r in TL) / FRAME_60:.0f}",
+    "tl_busy_lo": f"{min(r['busy'] for r in TL) / 1000:.1f}", "tl_busy_hi": f"{max(r['busy'] for r in TL) / 1000:.1f}",
+    "tl_view_lo": f"{min(_allviews):.0f}", "tl_view_hi": f"{max(_allviews):.0f}",
+    "tl_view_med": f"{upper_middle(_allviews):.0f}",
+    "tl_views_lo": f"{min(sum(r['views']) for r in TL) / 1000:.1f}", "tl_views_hi": f"{max(sum(r['views']) for r in TL) / 1000:.1f}",
+    "tl_after_lo": f"{min(r['after'] for r in TL) / 1000:.2f}", "tl_after_hi": f"{max(r['after'] for r in TL) / 1000:.2f}",
+})
+
+
+def table_timeline():
+    """every edit's split, in seconds from the edit"""
+    rows = []
+    for r in TL:
+        rows.append(
+            f"<tr><td>{html.escape(r['label'])} {r['from']} to {r['to']}</td><td>{r['mode']}</td><td>{r['post'] / 1000:.2f}</td>"
+            f"<td>{r['worker'] / 1000:.1f}</td><td>{r['eval'] / 1000:.1f}</td>"
+            f"<td>{'the result' if r['carry_is_result'] else 'a stream'}, {r['carry_bytes'] / 1e6:.1f} MB</td>"
+            f"<td>{r['decode'] / 1000:.1f}</td><td>{r['after'] / 1000:.2f}</td><td><b>{r['pic'] / 1000:.1f}</b></td>"
+            f"<td>{r['busy'] / 1000:.1f}</td></tr>")
+    return ('<table class="vals"><tr><th>the edit</th><th>compiled views</th><th>its request posted, s</th>'
+            '<th>the worker, from the request to the message that carries the picture, s</th><th>of which its evaluator (the whole run), s</th>'
+            '<th>that message</th><th>decoding it on the main thread, s</th><th>then the page, to the picture, s</th>'
+            '<th>the picture shows the edit, s</th><th>the main thread busy until then, s</th></tr>' + "".join(rows) + "</table>")
+
+
+def fig_witch_edit_timeline():
+    """two edits on a time line, two lanes each: what the main thread did (the page's own work, and decoding the
+    worker's messages), and the worker from the request to the picture's message"""
+    picks = [r for r in TL if r["mode"] == "on" and r["from"] in ("28", "55")]
+    W, left, right = 940, 150, 20
+    span = 11000
+    xof = lambda t: left + t / span * (W - left - right)
+    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">Two small edits on the Witch slide, in Firefox: '
+           'where the time goes, seconds from the edit</text>']
+    y = 40
+    for r in picks:
+        out.append(f'<text x="16" y="{y + 4}" font-size="12" font-weight="700" fill="var(--ink)">{html.escape(r["label"])}, {r["from"]} to {r["to"]}</text>')
+        y += 12
+        # the main thread
+        out.append(f'<text x="{left - 10}" y="{y + 13}" font-size="11" text-anchor="end" fill="var(--muted)">main thread</text>')
+        out.append(f'<rect x="{left}" y="{y + 2}" width="{W - left - right}" height="16" fill="var(--line)" opacity="0.35"/>')
+        for m in r["marks"]:
+            if m["what"] not in _TOPK or m.get("ms", 0) < 2 or m["at"] > span:
+                continue
+            dec = m["what"] == "worker message decoded"
+            colour = "var(--warn, #b45309)" if dec else "var(--accent)"
+            out.append(f'<rect x="{xof(m["at"]):.1f}" y="{y + 2}" width="{max(1.2, xof(m["at"] + m["ms"]) - xof(m["at"])):.1f}" height="16" '
+                       f'fill="{colour}" opacity="0.9"><title>{html.escape(m["what"])}: {m["ms"]:.0f} ms at {m["at"] / 1000:.2f} s'
+                       f'{", " + format(m["bytes"] / 1e6, ".1f") + " MB" if dec and m.get("bytes", 0) > 1e5 else ""}</title></rect>')
+            if dec and m.get("bytes", 0) > 1e6:
+                out.append(f'<text x="{(xof(m["at"]) + xof(m["at"] + m["ms"])) / 2:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" '
+                           f'fill="#fff" font-weight="700">decode {m["bytes"] / 1e6:.1f} MB, {m["ms"] / 1000:.1f} s</text>')
+        y += 22
+        # the worker
+        out.append(f'<text x="{left - 10}" y="{y + 13}" font-size="11" text-anchor="end" fill="var(--muted)">worker</text>')
+        end = r["res_at"]
+        out.append(f'<rect x="{xof(r["post"]):.1f}" y="{y + 2}" width="{xof(end) - xof(r["post"]):.1f}" height="16" fill="var(--muted)" opacity="0.55">'
+                   f'<title>the worker, from the request to its result: {(end - r["post"]) / 1000:.1f} s, of which its evaluator {r["eval"] / 1000:.1f} s</title></rect>')
+        out.append(f'<text x="{xof(r["post"]) + 6:.1f}" y="{y + 14}" font-size="10.5" fill="var(--ink)">request {r["req"] / 1000:.0f} KB; '
+                   f'its evaluator {r["eval"] / 1000:.1f} s in all; the rest, making and sending {r["res_bytes"] / 1e6:.1f} MB back</text>')
+        y += 22
+        # the moments
+        for t, label, colour in ((r["own"], "first redraw", "var(--muted)"), (r["pic"], "the picture", "var(--accent2)")):
+            x = xof(t)
+            out.append(f'<line x1="{x:.1f}" y1="{y - 46}" x2="{x:.1f}" y2="{y + 2}" stroke="{colour}" stroke-width="2"/>')
+            out.append(f'<text x="{x + 4:.1f}" y="{y + 12}" font-size="10.5" fill="{colour}" font-weight="700">{label}, {t / 1000:.1f} s</text>')
+        y += 30
+    for t in range(0, span + 1, 1000):
+        x = xof(t)
+        out.append(f'<line x1="{x:.1f}" y1="{y - 6}" x2="{x:.1f}" y2="{y}" stroke="var(--muted)" stroke-width="1"/>')
+        out.append(f'<text x="{x:.1f}" y="{y + 12}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{t // 1000} s</text>')
+    h = y + 22
+    alt = "; ".join(f"{r['label']} {r['from']} to {r['to']}: request at {r['post'] / 1000:.2f} s, the picture's message after "
+                    f"{r['worker'] / 1000:.1f} s in the worker, decoded in {r['decode'] / 1000:.1f} s, the picture at {r['pic'] / 1000:.1f} s" for r in picks)
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{html.escape(alt)}" style="width:100%;height:auto;display:block">'
+            + "".join(out) + f"</svg><figcaption>Firefox on GitHub's machines, a release build ({FT['sha']}, run {FT['run']}), Compiled views on, "
+            "the page's own timeline (<code>Util.BenchMarks</code>). Main thread, blue: the page's own work (each update, calculate and view); "
+            "orange: decoding a message from the worker. Worker, grey: from the request to its result; when within that its evaluator ran is "
+            "not recorded, only its total.</figcaption></figure></div>")
+
+
 def fig_witch_edit():
     """a small edit on the Witch slide, in Firefox, from the edit to the picture's change, on a log scale, against a
     60 fps frame: the slider's own first redraw, the picture showing the edit, and within it the picture's view"""
