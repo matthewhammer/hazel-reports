@@ -26,30 +26,42 @@ import treemap as TM
 HX = json.load(open(os.path.join(HERE, "data", "hazel-exp1.json")))
 FX = json.load(open(os.path.join(HERE, "data", "fumola-exp1.json")))
 X = HX["experiment"]
-P, A = X["picture"], X["all_converted"]
+RUNS = json.load(open(os.path.join(HERE, "data", "hazel-exp1-runs.json")))["runs"]
+P, A = RUNS[-1]["picture"], RUNS[-1]["all_converted"]
 kb = lambda b: f"{b / 1000:,.1f}"
 ms = lambda v: "" if v is None else (f"{v:.2f}" if v < 10 else f"{v:.1f}")
+
+
+def rng(f, runs=None):
+    """a time over the runs, as lo to hi"""
+    xs = [f(r) for r in (runs or RUNS)]
+    lo, hi = min(xs), max(xs)
+    return ms(lo) if ms(lo) == ms(hi) else f"{ms(lo)} to {ms(hi)}"
+
+
+LINEAR = [r for r in RUNS if not r["note"]]
+pm = lambda k: (lambda r: r["picture"]["ms"][k])
 
 
 def exp1_table():
     def row(label, size, enc, dec, note=""):
         return (f"<tr><td>{label}</td><td>{size}</td><td>{enc}</td><td>{dec}</td><td>{note}</td></tr>")
-    m = P["ms"]
     rows = [
-        row("Hazel's term, by <code class=\"ml\">Marshal</code> (today)", kb(P["term_bytes"]), ms(m["term_encode"]), ms(m["term_decode"])),
-        row("data, by <code class=\"ml\">Marshal</code>", kb(P["data_bytes"]), ms(m["data_encode"]), ms(m["data_decode"])),
-        row("data, by <code class=\"ml\">Marshal</code> with no sharing table", kb(P["data_noshare_bytes"]), ms(m["data_noshare_encode"]), "",
+        row("Hazel's term, by <code class=\"ml\">Marshal</code> (today)", kb(P["term_bytes"]), rng(pm("term_encode")), rng(pm("term_decode"))),
+        row("data, by <code class=\"ml\">Marshal</code>", kb(P["data_bytes"]), rng(pm("data_encode")), rng(pm("data_decode"))),
+        row("data, by <code class=\"ml\">Marshal</code> with no sharing table", kb(P["data_noshare_bytes"]), rng(pm("data_noshare_encode")), "",
             "larger: a string met twice is written twice"),
-        row("data made plain JS values, by <code>structuredClone</code>", "", ms(m["to_js"]) + " (made JS) + " + ms(m["structured_clone"]) + " (the copy)", "",
+        row("data made plain JS values, by <code>structuredClone</code>", "", rng(pm("to_js"), LINEAR) + " (made JS) + " + rng(pm("structured_clone")) + " (the copy)", "",
             "what <code>postMessage</code> does with JS values"),
-        row("data made plain JS values, as JSON", kb(P["json_bytes"]), ms(m["to_js"]) + " (made JS) + " + ms(m["json_encode"]), ms(m["json_decode"])),
+        row("data made plain JS values, as JSON", kb(P["json_bytes"]), rng(pm("to_js"), LINEAR) + " (made JS) + " + rng(pm("json_encode")), rng(pm("json_decode"))),
         row("Fumola's <code class=\"ml\">Value</code>, from JSON (<code>json_in</code>)", kb(FX["json_bytes"]), "", ms(FX["ms"]["json_text_to_value"]),
             "native, on the laptop"),
         row("Fumola's <code class=\"ml\">Value</code>, through its serde derive (JSON)", kb(FX["serde_json_bytes"]), ms(FX["ms"]["value_to_serde_json"]),
             ms(FX["ms"]["serde_json_to_value"]), "native, on the laptop; tagged, so wordier"),
     ]
     return ('<table class="vals"><tr><th>The Witch\'s picture, sent as</th><th>KB</th><th>encode, ms</th><th>decode, ms</th><th></th></tr>'
-            + "".join(rows) + "</table>")
+            + "".join(rows) + "</table><p class=\"muted\">Times in Firefox are ranges over the check's runs (" + ", ".join(str(r["run"]) for r in RUNS)
+            + "); Firefox's clock there ticks in whole milliseconds, and each time is the median of five batches of at least 25 ms.</p>")
 
 
 def fig_treemap():
@@ -69,13 +81,14 @@ def fig_treemap():
 
 body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated)
 body = body.replace("{{exp1_table}}", exp1_table()).replace("{{fig_treemap}}", fig_treemap())
-for k, v in {"x1_run": str(HX["run"]), "x1_sha": HX["sha"], "x1_nodes": f"{P['nodes']:,}", "x1_term": kb(P["term_bytes"]),
+for k, v in {"x1_run": ", ".join(str(r["run"]) for r in RUNS), "x1_sha": RUNS[-1]["sha"], "x1_nodes": f"{P['nodes']:,}", "x1_term": kb(P["term_bytes"]),
              "x1_data": kb(P["data_bytes"]), "x1_x": f"{P['term_bytes'] / P['data_bytes']:.1f}",
-             "x1_trip_term": ms(P["ms"]["term_encode"] + P["ms"]["term_decode"]),
-             "x1_trip_data": ms(P["ms"]["data_encode"] + P["ms"]["data_decode"]),
-             "x1_trip_x": f"{(P['ms']['term_encode'] + P['ms']['term_decode']) / (P['ms']['data_encode'] + P['ms']['data_decode']):.1f}",
-             "x1_of_term": ms(P["ms"]["of_term"]), "x1_json_rt": ms(P["ms"]["json_encode"] + P["ms"]["json_decode"]),
-             "x1_to_js": ms(P["ms"]["to_js"]), "x1_clone": ms(P["ms"]["structured_clone"]),
+             "x1_trip_term": rng(lambda r: r["picture"]["ms"]["term_encode"] + r["picture"]["ms"]["term_decode"]),
+             "x1_trip_data": rng(lambda r: r["picture"]["ms"]["data_encode"] + r["picture"]["ms"]["data_decode"]),
+             "x1_trip_x": (lambda xs: f"{min(xs):.1f} to {max(xs):.1f}")([(r["picture"]["ms"]["term_encode"] + r["picture"]["ms"]["term_decode"])
+                                                                        / (r["picture"]["ms"]["data_encode"] + r["picture"]["ms"]["data_decode"]) for r in RUNS]),
+             "x1_of_term": rng(pm("of_term"), LINEAR), "x1_json_rt": rng(lambda r: r["picture"]["ms"]["json_encode"] + r["picture"]["ms"]["json_decode"]),
+             "x1_to_js": rng(pm("to_js"), LINEAR), "x1_clone": rng(pm("structured_clone")),
              "x1_all_term": kb(A["term_bytes"]), "x1_all_data": kb(A["data_bytes"]), "x1_samples": str(X["samples"]),
              "x1_converted": str(X["converted"]), "fx_in": ms(FX["ms"]["json_text_to_value"]), "fx_out": ms(FX["ms"]["value_to_serde_json"]),
              "fx_back": ms(FX["ms"]["serde_json_to_value"]), "fx_json": kb(FX["json_bytes"]),

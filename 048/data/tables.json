@@ -1,5 +1,194 @@
 [
  {
+  "section": "The largest cuts",
+  "section_id": "largest",
+  "columns": [
+   "share",
+   "the cut",
+   "measured on",
+   "report",
+   "where it stands"
+  ],
+  "rows": [
+   [
+    "88%",
+    "the ascription step, comparing two copies of the same sum type in full, in a click on the Polygons editor (15 to 17 s)",
+    "the livelits branch",
+    "17",
+    "#2661, open: under 6%, the click 2 s; on dev's benchmark 75 to 60 ms"
+   ],
+   [
+    "85 to 95%",
+    "of a run from scratch, re-evaluated on every slider edit, because the whole figure is one binding that depends on every slider",
+    "Full Body and the Witch",
+    "11",
+    "open"
+   ],
+   [
+    "79%",
+    "a compiled render's trip back, the view's answer made Hazel terms again (0.27 of 0.34 ms)",
+    "Polygons, in Node",
+    "45",
+    "mitigated in the app: the answer drawn straight from JS (^ticket(714)), model to page 0.79 to 0.38 ms"
+   ],
+   [
+    "77%",
+    "of the main thread while a slide loads: the code editor's view of the whole program, rebuilt on every update",
+    "#2597, Scenes",
+    "7",
+    "open on #2597"
+   ],
+   [
+    "75 to 84%",
+    "of the steps an incremental run takes are in calls whose inputs did not change",
+    "the livelits slides",
+    "10",
+    "open"
+   ],
+   [
+    "70 to 72%",
+    "of a small edit: the worker's answer to the page, shared, encoded and decoded",
+    "the Witch, Firefox",
+    "46",
+    "fixed on a trial branch: the edit 1.3 to 1.7 s"
+   ],
+   [
+    "71%",
+    "of the page's main thread during two changes: evaluating a livelit's view (50%) and the garbage it made (21%)",
+    "the livelits branch",
+    "5",
+    "mitigated (median 2.20 to 1.41 s, ^report(4)); views compiled since (^report(45))"
+   ],
+   [
+    "60%",
+    "of building a list of 1,000 numbers, inside Ascriptions: the list's type pushed over it again each iteration",
+    "a library build off dev",
+    "29",
+    "fixed on a trial (^ticket(548)): 6,135 to 693 ms, linear; not a PR"
+   ],
+   [
+    "58.6%",
+    "of a deep find, in transition_multiple under matches_inner",
+    "a library build off dev",
+    "25",
+    "#2681 open; on a trial 144 to 20.6 ms"
+   ],
+   [
+    "56%",
+    "of the floor of a call that does nothing: re-stepping the argument, converted to syntax with fresh ids",
+    "a library build off dev",
+    "25",
+    "open (a proposal: conversion makes final values)"
+   ],
+   [
+    "46%",
+    "of a list loop: minting fresh ids, three quarters of each a by-hand copy of 16 bytes into a JS string",
+    "a library build off dev",
+    "29",
+    "mostly avoided in that loop on a trial (^ticket(548)); cheaper ids for dev in #2816, open"
+   ],
+   [
+    "40%",
+    "of a Full Body drag: a whole-program reuse check on every preview",
+    "the livelits branch",
+    "15",
+    "open; partly mitigated by coalescing previews (^report(16))"
+   ],
+   [
+    "38%",
+    "of an edit at 3,200 definitions: rebuilding the top-level term (statics' walk 20%, layout 6%)",
+    "#2635",
+    "36",
+    "open"
+   ],
+   [
+    "37% and 36%",
+    "of a loop: the editor's stages and their trampolines, and garbage collection; the rule itself, 7%",
+    "a library build off dev",
+    "29",
+    "open"
+   ]
+  ]
+ },
+ {
+  "section": "1. Merge the performance PRs already open against dev",
+  "section_id": "next-merge",
+  "columns": [
+   "PR",
+   "what it does",
+   "measured",
+   "family"
+  ],
+  "rows": [
+   [
+    "#2603",
+    "a let analyzed once unless it refers to itself",
+    "nested functions' statics 5.3 s to 13 ms at eight levels; real programs 20 to 30% faster (dev)",
+    "whole-program work"
+   ],
+   [
+    "#2673",
+    "an unchanged expression recognized by its Merkle hash",
+    "re-evaluating after an edit in a 400-definition program, 2.7 s to 0.41 s (dev)",
+    "whole-program work"
+   ],
+   [
+    "#2610, #2614",
+    "text the fast parser rejects parsed without going quadratic",
+    "the 72 programs parsed in 87 s instead of about 220; the parse-heavy test groups 142 s instead of 267 (dev)",
+    "whole-program work"
+   ],
+   [
+    "#2651",
+    "a module binding's definition analyzed once, not twice",
+    "1.8 s of one slide's 4.2 s of statics (livelits branch)",
+    "whole-program work"
+   ],
+   [
+    "#2675",
+    "a recursive let's free variables reported right, so reuse works around it",
+    "no timing on dev; on the livelits branch the woods slide reuses its code after a figure move",
+    "whole-program work"
+   ],
+   [
+    "#2661, #2681",
+    "types hashed, consistency asked once per pair; a value known to have a type not walked again",
+    "dev's benchmark 75 to 60 ms; an annotated list parameter at 400 elements, 205 to 33 ms (dev); a Polygons click 15 to 17 s to 2 s (livelits branch)",
+    "values held as terms"
+   ],
+   [
+    "#2606",
+    "the incremental cache kept in the worker, not sent to the page and back",
+    "answers 86 to 98% smaller (dev)",
+    "values moved across boundaries"
+   ],
+   [
+    "#2608",
+    "the source's whitespace and comments left out of elaborations",
+    "requests 12 to 49% smaller (dev)",
+    "values moved across boundaries"
+   ],
+   [
+    "#2671",
+    "an unchanged piece of the program kept as the same object",
+    "3.1 to 1.9 ms an update at 2,000 lets (dev); a Kids' Choice slider release 1.5–1.7 s to 0.7–0.9 s (livelits branch)",
+    "whole-program work"
+   ],
+   [
+    "#2652",
+    "the worker started at load, and an answer already queued not timed out",
+    "slides that drew nothing in Firefox draw (a fix, not a speed-up)",
+    "values moved across boundaries"
+   ],
+   [
+    "#2816",
+    "ids minted and compared as strings, one concatenation an id",
+    "as on the livelits line since 7a5667e6f2 (^report(45)); not yet timed on dev",
+    "values held as terms"
+   ]
+  ]
+ },
+ {
   "section": "The ledger",
   "section_id": "ledger",
   "columns": [

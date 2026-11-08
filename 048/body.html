@@ -8,11 +8,12 @@
 <li><a href="#short">In short</a>: no single bottleneck; {{n_cuts}} measured costs, many of them most of their workload, many multiplying one another, from four design choices applied everywhere.</li>
 <li><a href="#cuts">All the cuts at once</a>: a treemap, one rectangle a cut.</li>
 <li><a href="#families">The four families</a>: values held as terms; whole-program work on every edit; values moved as terms across boundaries; an interpreter that pays for the editor at every step.</li>
+<li><a href="#largest">The largest cuts</a>: fourteen that were each most, or a large part, of their workload.</li>
 <li><a href="#compound">How the cuts multiply</a>: five cases where one cost makes another larger.</li>
 <li><a href="#witch">One small edit, cut by cut</a>: the Witch slide's slider, from {{w0_lo}} to {{w0_hi}} s down to {{w2_lo}} to {{w2_hi}} s, and the 16.7 ms still to go.</li>
 <li><a href="#dev">Where the fixes are</a>: most on the livelits branches and trial branches, a few in open PRs to dev, two merged.</li>
 <li><a href="#fumola">Beside Fumola</a>: half the steps, each about 20 times the cost.</li>
-<li><a href="#next">What would change it</a>, and <a href="#ledger">the ledger</a>, every cut, with its report.</li>
+<li><a href="#next">Recommendations</a>: merge the open PRs (a table, each with its measured gain), port what the branches measured, change the three choices behind most cuts, and track the goal on dev; and <a href="#ledger">the ledger</a>, every cut, with its report.</li>
 </ol>
 
 <h2 id="short">In short</h2>
@@ -47,9 +48,29 @@
 <li><b>The page's view.</b> On #2597, rebuilding the code editor's view of the whole program was 77% of the main thread while a slide loaded (^report(7)); a drag's every preview ran a whole-program reuse check, about 40% of a Full Body drag (^report(15)); on the Witch, the whole slide's view takes about 117 ms and is drawn five times an edit (^report(46)).</li>
 </ul>
 <h3 id="f-moving">Values moved as terms across boundaries ({{f_moving}} cuts)</h3>
-<p><b>A value leaving the evaluator is encoded with all its ids, and was hashed node by node to find what the other side held.</b> On the Witch slide, the worker's answer going to the page was 70 to 72% of a small edit: shared in 1.4 to 1.6 s, encoded in 1.1 to 1.2 s, decoded in 1.4 to 2.0 s with the page frozen (^report(46), <a href="../046/#witch-trip">the trip</a>). As data instead of terms, the slide's picture is 3 times smaller and 3.5 times quicker to send (^report(47), <a href="../047/#exp1">experiment 1</a>).</p>
+<p><b>A value leaving the evaluator is encoded with all its ids, and was hashed node by node to find what the other side held.</b> On the Witch slide, the worker's answer going to the page was 70 to 72% of a small edit: shared in 1.4 to 1.6 s, encoded in 1.1 to 1.2 s, decoded in 1.4 to 2.0 s with the page frozen (^report(46), <a href="../046/#witch-trip">the trip</a>). As data instead of terms, the slide's picture is 3 times smaller and 2.5 to 3.9 times quicker to send (^report(47), <a href="../047/#exp1">experiment 1</a>).</p>
 <h3 id="f-machine">An interpreter that pays for the editor at every step ({{f_machine}} cuts)</h3>
 <p><b>Every term the evaluator visits, values included, goes through state merging, a reuse check, probe sampling and recording effects before its rule.</b> On a loop, the rule itself is 7% of the time; garbage collection is 36%, and the stages and their trampolines 37% (^report(29)).</p>
+
+<h2 id="largest">The largest cuts</h2>
+<p><b>Each of these alone was most, or a large part, of the work it was found in.</b> Shares are of their own workload, so they do not add across rows.</p>
+<table class="vals">
+<tr><th>share</th><th>the cut</th><th>measured on</th><th>report</th><th>where it stands</th></tr>
+<tr><td>88%</td><td>the ascription step, comparing two copies of the same sum type in full, in a click on the Polygons editor (15 to 17 s)</td><td>the livelits branch</td><td><a href="../017/">17</a></td><td>#2661, open: under 6%, the click 2 s; on dev's benchmark 75 to 60 ms</td></tr>
+<tr><td>85 to 95%</td><td>of a run from scratch, re-evaluated on every slider edit, because the whole figure is one binding that depends on every slider</td><td>Full Body and the Witch</td><td><a href="../011/">11</a></td><td>open</td></tr>
+<tr><td>79%</td><td>a compiled render's trip back, the view's answer made Hazel terms again (0.27 of 0.34 ms)</td><td>Polygons, in Node</td><td><a href="../045/#boundary">45</a></td><td>mitigated in the app: the answer drawn straight from JS (^ticket(714)), model to page 0.79 to 0.38 ms</td></tr>
+<tr><td>77%</td><td>of the main thread while a slide loads: the code editor's view of the whole program, rebuilt on every update</td><td>#2597, Scenes</td><td><a href="../007/">7</a></td><td>open on #2597</td></tr>
+<tr><td>75 to 84%</td><td>of the steps an incremental run takes are in calls whose inputs did not change</td><td>the livelits slides</td><td><a href="../010/">10</a></td><td>open</td></tr>
+<tr><td>70 to 72%</td><td>of a small edit: the worker's answer to the page, shared, encoded and decoded</td><td>the Witch, Firefox</td><td><a href="../046/#witch-trip">46</a></td><td>fixed on a trial branch: the edit 1.3 to 1.7 s</td></tr>
+<tr><td>71%</td><td>of the page's main thread during two changes: evaluating a livelit's view (50%) and the garbage it made (21%)</td><td>the livelits branch</td><td><a href="../005/">5</a></td><td>mitigated (median 2.20 to 1.41 s, ^report(4)); views compiled since (^report(45))</td></tr>
+<tr><td>60%</td><td>of building a list of 1,000 numbers, inside <code class="ml">Ascriptions</code>: the list's type pushed over it again each iteration</td><td>a library build off dev</td><td><a href="../029/">29</a></td><td>fixed on a trial (^ticket(548)): 6,135 to 693 ms, linear; not a PR</td></tr>
+<tr><td>58.6%</td><td>of a deep find, in <code class="ml">transition_multiple</code> under <code class="ml">matches_inner</code></td><td>a library build off dev</td><td><a href="../025/">25</a></td><td>#2681 open; on a trial 144 to 20.6 ms</td></tr>
+<tr><td>56%</td><td>of the floor of a call that does nothing: re-stepping the argument, converted to syntax with fresh ids</td><td>a library build off dev</td><td><a href="../025/">25</a></td><td>open (a proposal: conversion makes final values)</td></tr>
+<tr><td>46%</td><td>of a list loop: minting fresh ids, three quarters of each a by-hand copy of 16 bytes into a JS string</td><td>a library build off dev</td><td><a href="../029/">29</a></td><td>mostly avoided in that loop on a trial (^ticket(548)); cheaper ids for dev in #2816, open</td></tr>
+<tr><td>40%</td><td>of a Full Body drag: a whole-program reuse check on every preview</td><td>the livelits branch</td><td><a href="../015/">15</a></td><td>open; partly mitigated by coalescing previews (^report(16))</td></tr>
+<tr><td>38%</td><td>of an edit at 3,200 definitions: rebuilding the top-level term (statics' walk 20%, layout 6%)</td><td>#2635</td><td><a href="../036/">36</a></td><td>open</td></tr>
+<tr><td>37% and 36%</td><td>of a loop: the editor's stages and their trampolines, and garbage collection; the rule itself, 7%</td><td>a library build off dev</td><td><a href="../029/">29</a></td><td>open</td></tr>
+</table>
 
 <h2 id="compound">How the cuts multiply</h2>
 <p><b>The cuts are not only many; they make one another larger, so removing one can be worth more than its own share.</b></p>
@@ -73,14 +94,43 @@
 <h2 id="fumola">Beside Fumola</h2>
 <p><b>Hazel's evaluator takes about half the steps Fumola's machine takes, and each costs about 20 times as much: 2.6 µs a pass against 0.13 µs a step. Net, Fumola is 10 times faster on a loop and 6.5 times on calls</b> (^report(29)). Fumola keeps its values apart from its terms, with no ids in them, and its first-order values serialize as they are (^report(47), <a href="../047/#fumola">beside Fumola's Value</a>).</p>
 
-<h2 id="next">What would change it</h2>
-<p><b>The cuts trace back to a few choices, so the fixes that count are the ones that change a choice everywhere at once, not the next cut alone.</b></p>
+<h2 id="next">Recommendations</h2>
+<p><b>In order of what they cost to do: first merge what is already built and measured, then port what the branches proved, then change the three choices that make most of the cuts, and track the goal in CI as each lands.</b></p>
+
+<h3 id="next-merge">1. Merge the performance PRs already open against dev</h3>
+<p><b>Most are reviewed in ^report(17) with their reasons to wait; each has a measured gain, most on dev itself.</b> States on GitHub, 2026-11-08.</p>
+<table class="vals">
+<tr><th>PR</th><th>what it does</th><th>measured</th><th>family</th></tr>
+<tr><td>#2603</td><td>a let analyzed once unless it refers to itself</td><td>nested functions' statics 5.3 s to 13 ms at eight levels; real programs 20 to 30% faster (dev)</td><td>whole-program work</td></tr>
+<tr><td>#2673</td><td>an unchanged expression recognized by its Merkle hash</td><td>re-evaluating after an edit in a 400-definition program, 2.7 s to 0.41 s (dev)</td><td>whole-program work</td></tr>
+<tr><td>#2610, #2614</td><td>text the fast parser rejects parsed without going quadratic</td><td>the 72 programs parsed in 87 s instead of about 220; the parse-heavy test groups 142 s instead of 267 (dev)</td><td>whole-program work</td></tr>
+<tr><td>#2651</td><td>a module binding's definition analyzed once, not twice</td><td>1.8 s of one slide's 4.2 s of statics (livelits branch)</td><td>whole-program work</td></tr>
+<tr><td>#2675</td><td>a recursive let's free variables reported right, so reuse works around it</td><td>no timing on dev; on the livelits branch the woods slide reuses its code after a figure move</td><td>whole-program work</td></tr>
+<tr><td>#2661, #2681</td><td>types hashed, consistency asked once per pair; a value known to have a type not walked again</td><td>dev's benchmark 75 to 60 ms; an annotated list parameter at 400 elements, 205 to 33 ms (dev); a Polygons click 15 to 17 s to 2 s (livelits branch)</td><td>values held as terms</td></tr>
+<tr><td>#2606</td><td>the incremental cache kept in the worker, not sent to the page and back</td><td>answers 86 to 98% smaller (dev)</td><td>values moved across boundaries</td></tr>
+<tr><td>#2608</td><td>the source's whitespace and comments left out of elaborations</td><td>requests 12 to 49% smaller (dev)</td><td>values moved across boundaries</td></tr>
+<tr><td>#2671</td><td>an unchanged piece of the program kept as the same object</td><td>3.1 to 1.9 ms an update at 2,000 lets (dev); a Kids' Choice slider release 1.5–1.7 s to 0.7–0.9 s (livelits branch)</td><td>whole-program work</td></tr>
+<tr><td>#2652</td><td>the worker started at load, and an answer already queued not timed out</td><td>slides that drew nothing in Firefox draw (a fix, not a speed-up)</td><td>values moved across boundaries</td></tr>
+<tr><td>#2816</td><td>ids minted and compared as strings, one concatenation an id</td><td>as on the livelits line since 7a5667e6f2 (^report(45)); not yet timed on dev</td><td>values held as terms</td></tr>
+</table>
+<p>Merged already: #2602, #2672, #2678 (CI fails when an evaluation exceeds its step budget) and #2679 (a value crossing a typed parameter no longer copied: 382 to 268 ms). Known conflicts, from ^report(17): #2610 with #2614 (merge one, rebase the other), #2661 with #2679 (resolved in #2681), #2673 with #2681, and Andrew's #2469 with #2603, #2606 and #2614.</p>
+
+<h3 id="next-port">2. Port what the branches measured</h3>
 <ul>
-<li><b>Values held as data, not terms</b>, when they are closed and first-order: no ids, no environments, no sharing (^ticket(718), ^report(47)). It reaches the first and third families at once.</li>
-<li><b>Work in proportion to the edit</b>: reuse below a top-level binding (^report(10), ^report(11)), statics per item, no whole-page view for a change to one livelit.</li>
-<li><b>Compiled code for the run</b>, as for views: under ideal conditions (no holes, no probes shown, an edit to livelit models only), the run in JS on the main thread, nothing sent (^report(45), ^report(46), <a href="../046/#witch-jit-run">compiling the run</a>).</li>
-<li><b>The fixes already made, on dev</b>: the open PRs above, and the branches' fixes ported.</li>
+<li><b>The Witch's cuts</b> (^report(46), trial branch): a value holding a function left out of a probe sample's environment; the trace cleared before the worker's answer leaves; the answers unshared. A small edit from 4.2–6.5 s to 1.3–1.7 s. Dev has the same <code class="ml">Sample.Env.elide</code>, keeps the trace, and also sends its cache both ways (#2606 above).</li>
+<li><b>Closures kept whole</b> (^report(40), a trial): a function holding 4,096 numbers, 5.31 ms and 29.0 MB a call, to 0.025 ms and 93 KB.</li>
+<li><b>Views compiled to JS</b> (^report(45), the livelits line): a Polygons render, model to page, 14.1 ms on the interpreter and 0.38 ms compiled, drawn straight from JS.</li>
 </ul>
+
+<h3 id="next-change">3. Change the three choices behind most cuts</h3>
+<ul>
+<li><b>Values held as data, not terms</b>, when closed and first-order: no source ids, no environments, no sharing (^ticket(718), ^report(47)). It reaches the {{f_terms}} cuts of the first family and the {{f_moving}} of the third. Its first experiment: the Witch's picture 3 times smaller and 2.5 to 3.9 times quicker to send.</li>
+<li><b>Work in proportion to the edit</b>: reuse below a top-level binding, where 75 to 84% of an incremental run's steps are in calls whose inputs did not change (^report(10)); statics per item; for a change to one livelit, no whole-page view (the Witch's is about 117 ms, five times an edit). It reaches the {{f_whole}} cuts of the second family.</li>
+<li><b>Compiled code for the run</b>, as for views: under ideal conditions (no holes, no probes shown, an edit to livelit models only), the run in JS on the main thread, with nothing sent (^report(46), <a href="../046/#witch-jit-run">compiling the run</a>). It reaches the {{f_machine}} cuts of the fourth family, and it is the road to a 60 fps floor.</li>
+</ul>
+
+<h3 id="next-track">4. Track the goal on dev</h3>
+<p><b>A small edit's time, from the edit to the picture, on a dev slide in Firefox on GitHub's machines, for every PR, against 16.7 ms.</b> CI already fails a PR whose evaluation exceeds its step budget (#2678); steps do not show the trip, the page's view or the garbage. The Firefox check that measured the Witch (<code>scripts/jit_slides.py --edit</code>, on the livelits line) can run on dev's slides.</p>
 
 <h2 id="ledger">The ledger</h2>
 <p><b>Every cut, by family and root cause, with its number, what it was measured on, its report, and where it stands.</b> Open a group to see its cuts. Numbers are as the reports state them, corrected values where a report corrected itself; measurements differ in program, machine and branch, so compare within a row, not across rows.</p>
@@ -89,7 +139,7 @@
 <h2 id="method">How this was put together</h2>
 <ul>
 <li><b>The ledger</b> was compiled from reports 001 to 047 by reading each report's text for every cost it measured with a number: {{n_cuts}} cuts in {{n_reports}} reports; reports with no measurement of their own (surveys, case studies, how-tos, agendas restating others) contribute none. Each cut's root cause is a judgment, one per cut; the families group them. Data: <code>data/ledger.json</code>.</li>
-<li><b>Checked against the reports</b>: the numbers quoted in the sections above, each found in its report's text (17's 88% and 5.3 s to 13 ms; 29's 46%, 186 times, 2.6 against 0.13 µs, 7%, 36% and 37%; 40's 5.31 ms and 29.0 MB; 10's 75 to 84%; 11's 85 to 95%; 7's 77%; 15's 40%; 46's and 47's own), and the PRs' states on GitHub (2026-11-08).</li>
+<li><b>Checked against the reports</b>: the numbers quoted in the sections above, each found in its report's text (17's 88% and 5.3 s to 13 ms; 29's 46%, 186 times, 2.6 against 0.13 µs, 7%, 36% and 37%; 40's 5.31 ms and 29.0 MB; 10's 75 to 84%; 11's 85 to 95%; 7's 77%; 15's 40%; 46's and 47's own), and the PRs' states on GitHub (2026-11-08); the recommendations' PR gains are ^report(17)'s and ^report(1)'s, each as those reports state it.</li>
 <li><b>The Witch's edit</b>: ^report(46)'s runs in Firefox on GitHub's machines, the same eight edits each time.</li>
 </ul>
 </main></body>
