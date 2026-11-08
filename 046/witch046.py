@@ -348,9 +348,14 @@ def trip_parts(e, mode):
     ms = e["marks"]
     post = next(m for m in ms if m["what"] == "post to worker")
     res = [m for m in ms if m.get("kind") == "result"][-1]
-    dec = sorted([m for m in ms if m["what"] == "worker message decoded" and m.get("bytes", 0) > 1e6], key=lambda m: m["at"])
-    rdec = dec[-1]
-    sdec = [m for m in dec if m is not rdec]
+    # (each message decoded, told apart by the kind its handling then names: the result, and the streams of 100 KB or
+    # more, which carry the run's samples; 5.4 MB before the cuts, 0.4 MB after)
+    srt = sorted(ms, key=lambda m: m["at"])
+    def kind_of(d):
+        return next((m.get("kind") for m in srt if m["what"] == "worker message handled" and m["at"] >= d["at"]), None)
+    decs = [m for m in srt if m["what"] == "worker message decoded"]
+    rdec = [d for d in decs if kind_of(d) == "result"][-1]
+    sdec = [d for d in decs if kind_of(d) == "stream" and d.get("bytes", 0) > 1e5 and d["at"] < rdec["at"]]
 
     def w(name):
         # (after the edit: a run of slices that posted the last edit's result shows in this edit's marks, before it)
@@ -502,11 +507,13 @@ def table_answer():
     return '<table class="vals"><tr><th>the result, as it crossed</th>' + head + "</tr>" + "".join(rows) + "</table>"
 
 
-def fig_witch_trip():
+def fig_witch_trip(rows=None, title=None, caption=None, ghost=None, name="witch-trip"):
     """the neck edits, each a bar from the edit to the picture: the page before the request, the worker's evaluator and
-    its other work, the result shared and encoded in the worker, decoded on the main thread, and the page after"""
+    its other work, the result shared and encoded in the worker, decoded on the main thread, and the page after; with
+    [ghost], each edit's picture time before the cuts as a dashed mark"""
+    rows = rows if rows is not None else _nk
     W, left, right = 940, 190, 20
-    span = max(r["pic"] for r in _nk)
+    span = max([r["pic"] for r in rows] + [g for g in (ghost or {}).values()])
     xof = lambda t: left + t / span * (W - left - right)
     segs = [("the page, before the request", "post", "var(--line)"),
             ("the worker's evaluator", "eval", "var(--accent)"),
@@ -515,10 +522,10 @@ def fig_witch_trip():
             ("encoded (worker)", "encode", "#ea580c"),
             ("decoded (main thread)", "decode", "#f59e0b"),
             ("the page, to the picture", "after", "var(--line)")]
-    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A small edit on the Witch slide, in Firefox: '
-           'the trip between the worker and the page (orange) against the evaluator (blue)</text>']
+    title = title or "A small edit on the Witch slide, in Firefox: the trip between the worker and the page (orange) against the evaluator (blue)"
+    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">{html.escape(title)}</text>']
     y = 36
-    for r in _nk:
+    for r in rows:
         out.append(f'<text x="{left - 10}" y="{y + 14}" font-size="11.5" text-anchor="end" fill="var(--ink)">{html.escape(r["label"])} '
                    f'{r["from"]} to {r["to"]}, views {r["mode"]}</text>')
         t = 0
@@ -533,6 +540,13 @@ def fig_witch_trip():
                 out.append(f'<text x="{(x0 + x1) / 2:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" '
                            f'fill="{"var(--ink)" if colour in ("var(--line)", "var(--muted)") else "#fff"}" font-weight="700">{d / 1000:.1f} s</text>')
             t += d
+        g = (ghost or {}).get((r["mode"], r["label"], r["from"], r["to"]))
+        if g:
+            gx = xof(g)
+            out.append(f'<line x1="{gx:.1f}" y1="{y - 2}" x2="{gx:.1f}" y2="{y + 22}" stroke="var(--ink)" stroke-width="1.5" '
+                       f'stroke-dasharray="3 2"><title>before the cuts: {g / 1000:.1f} s</title></line>')
+            out.append(f'<text x="{xof(t) + 6:.1f}" y="{y + 14}" font-size="10.5" fill="var(--muted)">{s1(r["pic"])} s; '
+                       f'before the cuts {g / 1000:.1f} s (dashed)</text>')
         y += 28
     # the legend
     x = left
@@ -548,7 +562,10 @@ def fig_witch_trip():
         out.append(f'<text x="{xx:.1f}" y="{y + 18}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{t // 1000} s</text>')
     h = y + 26
     alt = "; ".join(f"{r['label']} {r['from']} to {r['to']}, views {r['mode']}: the picture at {s1(r['pic'])} s; evaluator {s1(r['eval'])} s; "
-                    f"result shared {s1(r['share'])} s, encoded {s1(r['encode'])} s, decoded {s1(r['decode'])} s" for r in _nk)
+                    f"result shared {s1(r['share'])} s, encoded {s1(r['encode'])} s, decoded {s1(r['decode'])} s" for r in rows)
+    if caption:
+        return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{html.escape(alt)}" '
+                f'style="width:100%;height:auto;display:block">' + "".join(out) + f"</svg><figcaption>{caption}</figcaption></figure></div>")
     return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{html.escape(alt)}" '
             f'style="width:100%;height:auto;display:block">' + "".join(out) +
             f"</svg><figcaption>Firefox on GitHub's machines, a release build (<code>{FA['sha']}</code>, run {FA['run']}), the neck "
@@ -759,3 +776,58 @@ def write_pages(CSS, HL, HL_CSS, HL_INLINE_CSS, inline, updated):
                 "<style>" + CSS + HL_CSS + HL_INLINE_CSS + "\n  figure.witchone img { display: block; max-width: 100%; height: auto; }</style>\n</head>\n")
         open(os.path.join(HERE, "witch", slug + ".html"), "w").write(head + "\n".join(body) + "\n")
     return [os.path.join("046", "witch", s + ".html") for s, _, _, _ in PAGES]
+
+
+# (Matthew, 2026-11-08: "Yes, make the cuts") two of them made (20a3067c18), the same edits measured again
+FC = json.loads(DW("firefox-cuts.json"))
+TC = [trip_parts(e, m) for m in ("on", "off") for e in FC["edits"][m]]
+_tcr = [r for r in TC if not r["via_stream"]]
+_tcs = [r for r in TC if r["via_stream"]]
+_cres = [_ans(r, "result") for r in _tcr]
+_before = {(r["mode"], r["label"], r["from"], r["to"]): r["pic"] for r in TR}
+_pt = lambda r: r["s_trip"] if r["via_stream"] else r["trip"]
+_rng("cut_pic", TC, lambda r: r["pic"])
+_rng("cut_eval", TC, lambda r: r["eval"])
+_rng("cut_eval_pct", TC, lambda r: r["eval"] / r["pic"] * 100, lambda x: f"{x:.0f}")
+_rng("cut_trip", TC, _pt, lambda x: f"{x / 1000:.2f}")
+_rng("cut_trip_pct", TC, lambda r: _pt(r) / r["pic"] * 100, lambda x: f"{x:.0f}")
+_rng("cut_share", _tcr, lambda r: r["share"], lambda x: f"{x:.0f}")
+_rng("cut_enc", _tcr, lambda r: r["encode"], lambda x: f"{x:.0f}")
+_rng("cut_dec", _tcr, lambda r: r["decode"], lambda x: f"{x:.0f}")
+_rng("cut_res", _cres, lambda p: p["bytes"], mb2)
+_rng("cut_unsh", _cres, lambda p: p["unshared_bytes"], mb2)
+_rng("cut_held", _cres, lambda p: p["held_refs"], lambda x: f"{x:,.0f}")
+_rng("cut_probes", _cres, lambda p: _part(p, "result.state.probes"), mb2)
+_rng("cut_page", _tcr, lambda r: r["post"] + r["after"], lambda x: f"{x / 1000:.2f}")
+_rng("cut_x", TC, lambda r: _before[(r["mode"], r["label"], r["from"], r["to"])] / r["pic"], lambda x: f"{x:.1f}")
+WNUMS.update({
+    "cut_run": str(FC["run"]), "cut_sha": FC["sha"], "cut_n": str(len(TC)), "cut_nres": str(len(_tcr)),
+    "cut_s_kb": f"{_tcs[0]['s_bytes'] / 1000:.0f}" if _tcs else "", "cut_s_pic": s1(_tcs[0]["pic"]) if _tcs else "",
+    "cut_drawn": mb2(max(next(e["bytes"] for e in a["probes"]["top"][0]["first"]["env"] if e["name"] == "drawn")
+                          for a in [_ans(r, "result") for r in _tcr] if a["probes"]["top"][0].get("first"))),
+    "cut_ratio": f"{max(r['bytes'] for r in _res) / max(p['bytes'] for p in _cres):.0f}",
+})
+
+
+def fig_witch_cuts():
+    return fig_witch_trip(
+        rows=_tcr, ghost=_before, name="witch-cuts",
+        title="After two cuts: the same small edits on the Witch slide, in Firefox, on the same scale",
+        caption=(f"Firefox on GitHub's machines, a release build (<code>{FC['sha']}</code>, run {FC['run']}), the {len(_tcr)} edits "
+                 "whose picture came with the run's result, both ways, after the two cuts: a value holding a function left out of a "
+                 "sample's environment, and the trace cleared. The dashed mark is the same edit before the cuts (run "
+                 f"{FA['run']}). The evaluator (blue) is now about half of each bar; the trip (orange) is the result shared, "
+                 "encoded and decoded."))
+
+
+def table_cuts():
+    rows = []
+    for r in TC:
+        b = _before[(r["mode"], r["label"], r["from"], r["to"])]
+        rows.append(f"<tr><td>{html.escape(r['label'])} {r['from']} to {r['to']}</td><td>{r['mode']}</td><td>{s1(b)}</td>"
+                    f"<td><b>{s1(r['pic'])}</b></td><td>{s1(r['eval'])}</td><td>{_pt(r) / 1000:.2f}</td>"
+                    f"<td>{(r['s_bytes'] if r['via_stream'] else r['res_bytes']) / 1e6:.2f} MB, "
+                    f"{'a stream' if r['via_stream'] else 'the result'}</td><td>{b / r['pic']:.1f}</td></tr>")
+    return ('<table class="vals"><tr><th>the edit</th><th>compiled views</th><th>the picture shows it, before the cuts, s</th>'
+            '<th>after, s</th><th>the evaluator, s</th><th>the trip of the picture\'s message, s</th><th>that message</th>'
+            '<th>faster, times</th></tr>' + "".join(rows) + "</table>")

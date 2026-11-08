@@ -186,6 +186,8 @@ body = body.replace("{{table_timeline}}", W.table_timeline())
 body = body.replace("{{fig_witch_trip}}", keep("witch-trip", W.fig_witch_trip()))
 body = body.replace("{{table_trip}}", W.table_trip())
 body = body.replace("{{table_answer}}", W.table_answer())
+body = body.replace("{{fig_witch_cuts}}", keep("witch-cuts", W.fig_witch_cuts()))
+body = body.replace("{{table_cuts}}", W.table_cuts())
 for k, v in W.WNUMS.items():
     body = body.replace("{{w:" + k + "}}", v)
 WF = dict(W.WT["node_fastest_ms"], jsoo_tofixed=W.WT["jsoo_tofixed_fastest_ms"], jsoo_printf=W.WT["jsoo_printf_fastest_ms"])
