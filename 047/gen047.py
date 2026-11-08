@@ -64,6 +64,17 @@ def exp1_table():
             + "); Firefox's clock there ticks in whole milliseconds, and each time is the median of five batches of at least 25 ms.</p>")
 
 
+def TM_NUMS(tree):
+    """the treemap's own totals, by kind, so the text says what the figure draws"""
+    parts = TM.parts_with_rest(tree)
+    tot = {k: sum(TM.kinds_of(sp, "term").get(k, 0) for _, sp in parts) for k in ("ids", "term", "dstruct", "data")}
+    t = sum(tot.values())
+    d = tot["dstruct"] + tot["data"]
+    return {"tm_ids": kb(tot["ids"]), "tm_ids_pct": f"{tot['ids'] / t * 100:.0f}", "tm_term": kb(tot["term"]),
+            "tm_dstruct": kb(tot["dstruct"]), "tm_data": kb(tot["data"]), "tm_total": kb(t), "tm_dtotal": kb(d),
+            "tm_payload_pct": f"{tot['data'] / t * 100:.0f}", "tm_parts": str(len(tree["parts"]))}
+
+
 def fig_treemap():
     if not X.get("picture_tree"):
         return "<p class=\"note\">(The treemaps come from the next run of the check.)</p>"
@@ -76,7 +87,9 @@ def fig_treemap():
                      "Treemaps (Ben Shneiderman's, University of Maryland, 1991; the squarified layout of Bruls, Huijsing and van "
                      "Wijk, 2000): each rectangle's area is its bytes. Each outer rectangle is one of the picture's shapes, named where "
                      "it is large enough, and is split into what its bytes are; each amount a difference of exact <code>Marshal</code> "
-                     "sizes (<code class=\"ml\">DataExperiment.split</code>). Firefox on GitHub's machines, run " + str(HX["run"])
+                     "sizes, taken shape by shape as each adds to the shapes before it, so the shapes add up to the whole and what they "
+                     "share (the types every constructor carries, a repeated string) is counted once, on the first shape that uses it "
+                     "(<code class=\"ml\">DataExperiment.tree</code>). Firefox on GitHub's machines, run " + str(HX["run"])
                      + " (<code>" + HX["sha"] + "</code>). Hover a rectangle for its bytes.") + note
 
 body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated)
@@ -92,11 +105,7 @@ for k, v in {"x1_run": ", ".join(str(r["run"]) for r in RUNS), "x1_sha": RUNS[-1
              "x1_all_term": kb(A["term_bytes"]), "x1_all_data": kb(A["data_bytes"]), "x1_samples": str(X["samples"]),
              "x1_converted": str(X["converted"]), "fx_in": ms(FX["ms"]["json_text_to_value"]), "fx_out": ms(FX["ms"]["value_to_serde_json"]),
              "fx_back": ms(FX["ms"]["serde_json_to_value"]), "fx_json": kb(FX["json_bytes"]),
-             **({} if not X.get("picture_tree") else (lambda w: {
-                 "tm_ids": kb(w["term"] - w["shared_tags"]), "tm_ids_pct": f"{(w['term'] - w['shared_tags']) / w['term'] * 100:.0f}",
-                 "tm_term": kb(w["shared_tags"] - w["data"]), "tm_dstruct": kb(w["data"] - w["atoms"]), "tm_data": kb(w["atoms"]),
-                 "tm_total": kb(w["term"]), "tm_dtotal": kb(w["data"]),
-                 "tm_payload_pct": f"{w['atoms'] / w['term'] * 100:.0f}"})(X["picture_tree"]["whole"]))}.items():
+             **({} if not X.get("picture_tree") else TM_NUMS(X["picture_tree"]))}.items():
     body = body.replace("{{" + k + "}}", v)
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         "<title>First-Order Data in a Form of Its Own</title>\n"
