@@ -137,6 +137,10 @@ h3.grp { margin-top: 1.2em; }
              overflow-x: auto; font-size: 0.84em; line-height: 1.45; max-width: 100%; }
   pre.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; white-space: pre; }
   ol.outline > li { margin: 4px 0; } ol.steps > li { margin: 10px 0; } .muted { color: var(--muted); }
+  table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  table.vals th, table.vals td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals th { font-weight: 600; } figure.f { margin: 1.2em 0; } figure.f svg { max-width: 100%; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
 </style>
 <style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
@@ -149,7 +153,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>47<b>)</b></code> · design note · 2026-11-08, updated 2026-11-08 08:04 MST · <span class="wip">work in progress</span> · for <a href="https://matthewhammer.org/hazel/dashboard/#ticket-718"><code class="ref"><b>^ticket(</b>718<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>47<b>)</b></code> · design note · 2026-11-08, updated 2026-11-08 08:28 MST · <span class="wip">work in progress</span> · for <a href="https://matthewhammer.org/hazel/dashboard/#ticket-718"><code class="ref"><b>^ticket(</b>718<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -240,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
 <ol class="outline">
+<li><a href="#goal">The goal</a>: a 60 fps floor for small edits; the Witch slide is at 1.3 to 1.7 s an edit.</li>
 <li><a href="#why">Why</a>: the same cost, found again and again; last on the Witch slide, where one module written out in a probe's environment was 3.8 MB of a 5.4 MB answer.</li>
 <li><a href="#form">The form</a>: a <code class="ml">Data</code> term, a value made only by the evaluator, with no ids, holes, closures or environments inside it.</li>
 <li><a href="#fumola">Beside Fumola's Value</a>: Fumola keeps values apart from terms, and its first-order cases serialize as they are; the cases here are those, inside Hazel's terms.</li>
@@ -250,8 +255,12 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#costs">What it costs</a>: a second form wherever values are read, and the same answers both ways.</li>
 <li><a href="#not">What it is not</a>: no sharing, no closures, no holes, no types inside.</li>
 <li><a href="#experiments">The experiments</a>: the same values as Hazel's terms, as data, and as Fumola's values, sent, built and read; measured before anything is proposed.</li>
+<li><a href="#exp1">Experiment 1: sending the Witch's picture</a>: as data, 3.0 times smaller and 3.5 times quicker to send than as terms; as JS values or JSON, quicker still once made; Fumola's side beside it; and <a href="#treemaps">treemaps</a> of where the bytes are.</li>
 <li><a href="#plan">The plan for the group</a>: written from the experiments; a draft of its slices, and <a href="#questions">questions for Matthew</a>.</li>
 </ol>
+
+<h2 id="goal">The goal: 60 fps for a small edit<a class="anchor" href="#goal" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="goal" title="copy this section's address">copy link</button></h2>
+<p><b>A slider's step drawn in 16.7 ms, a 60 fps floor for small edits, as a JS app holds; the Witch slide is at 1.3 to 1.7 s, about 80 to 100 times that.</b> Matthew, 2026-11-08: "I'd really like Hazel to have a floor of 60FPS for small edits (sliders changing), just like in JS (but well beyond there, obviously)." And: "And each obstacle is worth studying, and overcoming." Where the Witch's small edit stands (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>, <a href="../046/#witch-cuts">two cuts, and sharing dropped</a>): the worker's evaluator 0.81 to 0.92 s; the page's own work, about 0.4 to 0.8 s, most of it the whole slide's view drawn again, about 117 ms each time and five times an edit; the trip between the worker and the page, 79 to 102 ms. First-order data is one obstacle among these: it is in what the evaluator builds and in what the worker sends.</p>
 
 <h2 id="why">Why<a class="anchor" href="#why" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="why" title="copy this section's address">copy link</button></h2>
 <p><b>Hazel holds every value as a term, and a closed, first-order value pays for what a term can be: open, holed, a closure over an environment.</b> The cost has come up again and again:</p>
@@ -351,6 +360,21 @@ and field = {
 <li><b>Into JS.</b> The picture into a compiled view: from Hazel's terms (hazel-jit's trip in, <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>), from data, and from Fumola's values through <code>fumola_wasm</code>.</li>
 </ol>
 <p>Where they run: Hazel's in Node on GitHub's machines (the test build is too heavy for the laptop) and in the Firefox check; Fumola's on the laptop, from its own repo (a cold build is about 3 minutes). Each result goes into this report as it comes, with its commit and run.</p>
+
+<h2 id="exp1">Experiment 1: sending the Witch's picture<a class="anchor" href="#exp1" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="exp1" title="copy this section's address">copy link</button></h2>
+<p><b>As data, the Witch's picture is 3.0 times smaller than as Hazel's terms (48.0 KB against 142.2 KB), and its trip by <code class="ml">Marshal</code>, encoded and decoded, takes 7.28 ms against 25.7, 3.5 times less. As plain JS values it would cross by the browser's own copy in 0.86 ms, once made JS (0.81 ms), or as JSON in 0.75 ms both ways. Fumola, natively, reads the same picture from JSON into its <code class="ml">Value</code> in 1.04 ms.</b></p>
+<table class="vals"><tr><th>The Witch's picture, sent as</th><th>KB</th><th>encode, ms</th><th>decode, ms</th><th></th></tr><tr><td>Hazel's term, by <code class="ml">Marshal</code> (today)</td><td>142.2</td><td>11.3</td><td>14.3</td><td></td></tr><tr><td>data, by <code class="ml">Marshal</code></td><td>48.0</td><td>5.20</td><td>2.08</td><td></td></tr><tr><td>data, by <code class="ml">Marshal</code> with no sharing table</td><td>62.0</td><td>2.50</td><td></td><td>larger: a string met twice is written twice</td></tr><tr><td>data made plain JS values, by <code>structuredClone</code></td><td></td><td>0.81 (made JS) + 0.86 (the copy)</td><td></td><td>what <code>postMessage</code> does with JS values</td></tr><tr><td>data made plain JS values, as JSON</td><td>66.3</td><td>0.81 (made JS) + 0.45</td><td>0.30</td><td></td></tr><tr><td>Fumola's <code class="ml">Value</code>, from JSON (<code>json_in</code>)</td><td>44.3</td><td></td><td>1.04</td><td>native, on the laptop</td></tr><tr><td>Fumola's <code class="ml">Value</code>, through its serde derive (JSON)</td><td>113.8</td><td>0.27</td><td>0.99</td><td>native, on the laptop; tagged, so wordier</td></tr></table>
+<ul>
+<li><b>What was measured.</b> In the page, from the last answer the worker sent on the Witch slide after a slider's step: the picture, the probe sample with the most nodes as data (5,636), sent each way (<code class="ml">DataExperiment</code>, on <code>trial/694-view-jit</code>; <code>6ae614198f</code>, run 42494174912). Every one of the answer's 108 samples converts to data (108): together 275.9 KB as terms, 144.7 KB as data.</li>
+<li><b>No sharing table: larger, not faster.</b> Data written with <code class="ml">Marshal</code>'s <code>No_sharing</code> is larger, because a string met twice (a shape's colour, its kind) is then written twice; and it is hardly faster to write. Data is not expected to share, but its strings do, by accident of the evaluator; an encoder of its own could keep a table of strings alone.</li>
+<li><b>Making data from a term.</b> The prototype turns a value term into data after the fact, in 2.00 ms for the picture. (The first version took 110 ms: it stripped the ascriptions of the whole subterm at every node, so it was quadratic. Matthew: "can we fix the quadratic cost?" It peels each node's own now.) In the evaluator's form, a value would be made as data and never converted.</li>
+<li><b>Fumola beside it</b> (native, on the laptop, a release build; <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a> measured Fumola's wasm at 1.2 to 1.5 times its native time): the picture's JSON is 44.3 KB; read into a <code class="ml">Value</code> in 1.04 ms; written through <code class="ml">Value</code>'s own serde derive in 0.27 ms and read back in 0.99 ms (that form tags every case, so it is wordier than the plain JSON). Hazel's numbers are Firefox's on GitHub's machines; the two are not the same machine, so read the comparison to within a factor of two or so.</li>
+</ul>
+
+<h3 id="treemaps">Where the bytes are: treemaps<a class="anchor" href="#treemaps" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="treemaps" title="copy this section's address">copy link</button></h3>
+<p><b>The picture's bytes as Hazel's terms and as data, drawn as treemaps: each rectangle's area is its bytes, each shape an outer rectangle split into what its bytes are.</b> Treemaps are Ben Shneiderman's, from the University of Maryland's Human-Computer Interaction Lab (1991), made first to show where a disk's space goes; the layout here is the squarified one of Bruls, Huijsing and van Wijk (2000), which keeps rectangles near square so their sizes compare by eye. (Matthew, 2026-11-08: "I'd really like to see 'tree maps' as figures (2d, not 1d) ... for before and after the first-order representation is applied.")</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 940 504" role="img" aria-label="The Witch&#x27;s picture, its bytes as Hazel&#x27;s terms and as data, on one scale: as terms 142,186 bytes, as data 47,980 bytes; ids and tags: 55,823 bytes as terms; term structure: 38,383 bytes as terms; data structure: 28,551 bytes as terms; the data itself: 19,429 bytes as terms" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The Witch&#x27;s picture, its bytes as Hazel&#x27;s terms and as data, on one scale</text><text x="16" y="44" font-size="11.5" fill="var(--ink)">As Hazel terms, today: 142.2 KB</text><rect x="16.00" y="52.00" width="219.86" height="420.00" fill="#ea580c"><title>the whole picture: ids and tags, 55,823 bytes</title></rect><rect x="235.86" y="52.00" width="340.14" height="186.66" fill="#9ca3af"><title>the whole picture: term structure, 38,383 bytes</title></rect><rect x="235.86" y="238.66" width="202.40" height="233.34" fill="#60a5fa"><title>the whole picture: data structure, 28,551 bytes</title></rect><rect x="438.26" y="238.66" width="137.74" height="233.34" fill="#16a34a"><title>the whole picture: the data itself, 19,429 bytes</title></rect><rect x="16.00" y="52.00" width="560.00" height="420.00" fill="none" stroke="var(--paper, #fff)" stroke-width="1.2"><title>the whole picture: 142,186 bytes</title></rect><text x="19.0" y="63.0" font-size="9.5" fill="#111" font-weight="700" style="paint-order:stroke;stroke:#fff;stroke-width:2.5px">the whole picture</text><text x="616" y="44" font-size="11.5" fill="var(--ink)">As data: 48.0 KB, 3.0 times smaller</text><rect x="616.00" y="52.00" width="167.64" height="281.72" fill="#60a5fa"><title>the whole picture: data structure, 28,551 bytes</title></rect><rect x="783.64" y="52.00" width="114.08" height="281.72" fill="#16a34a"><title>the whole picture: the data itself, 19,429 bytes</title></rect><rect x="616.00" y="52.00" width="281.72" height="281.72" fill="none" stroke="var(--paper, #fff)" stroke-width="1.2"><title>the whole picture: 47,980 bytes</title></rect><text x="619.0" y="63.0" font-size="9.5" fill="#111" font-weight="700" style="paint-order:stroke;stroke:#fff;stroke-width:2.5px">the whole picture</text><rect x="16" y="480" width="12" height="12" fill="#ea580c"/><text x="32" y="490" font-size="11" fill="var(--muted)">ids and tags</text><rect x="128.4" y="480" width="12" height="12" fill="#9ca3af"/><text x="144.4" y="490" font-size="11" fill="var(--muted)">term structure</text><rect x="253.2" y="480" width="12" height="12" fill="#60a5fa"/><text x="269.2" y="490" font-size="11" fill="var(--muted)">data structure</text><rect x="378.0" y="480" width="12" height="12" fill="#16a34a"/><text x="394.0" y="490" font-size="11" fill="var(--muted)">the data itself</text></svg><figcaption>Treemaps (Ben Shneiderman's, University of Maryland, 1991; the squarified layout of Bruls, Huijsing and van Wijk, 2000): each rectangle's area is its bytes. Each outer rectangle is one of the picture's shapes, named where it is large enough, and is split into what its bytes are; each amount a difference of exact <code>Marshal</code> sizes (<code class="ml">DataExperiment.split</code>). Firefox on GitHub's machines, run 42494174912 (<code>6ae614198f</code>). Hover a rectangle for its bytes.</figcaption></figure></div><p class="note">For now the whole picture, split four ways; the next run splits each of its shapes (run 42494936942).</p>
+<p><b>As Hazel's terms, the picture's ids and tags are 55.8 KB of its 142.2 KB (39%); the rest of the terms' structure 38.4 KB; the data's own structure 28.6 KB; and the data itself, its numbers and strings, 19.4 KB, 14% of the whole.</b> As data, only the last two are left: 48.0 KB. Each amount is a difference of two exact sizes: the term against the same term with every id tag one shared tag; that against the data; the data against its numbers and strings alone.</p>
 
 <h2 id="plan">The plan for the group<a class="anchor" href="#plan" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="plan" title="copy this section's address">copy link</button></h2>
 <p><b>Written from the experiments, for the group: which form, which edges first, and what each costs and saves, as measured. Until then, a draft of its slices:</b></p>
@@ -680,11 +704,77 @@ and field = {
   }
  ],
  "files": [
+  "data/exp_718_send.rs",
+  "data/fumola-exp1.json",
+  "data/hazel-exp1.json",
   "data/meta.json",
   "data/tables.json"
  ],
  "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
- "tables": [],
+ "tables": [
+  {
+   "section": "Experiment 1: sending the Witch's picture",
+   "section_id": "exp1",
+   "columns": [
+    "The Witch's picture, sent as",
+    "KB",
+    "encode, ms",
+    "decode, ms",
+    ""
+   ],
+   "rows": [
+    [
+     "Hazel's term, by Marshal (today)",
+     "142.2",
+     "11.3",
+     "14.3",
+     ""
+    ],
+    [
+     "data, by Marshal",
+     "48.0",
+     "5.20",
+     "2.08",
+     ""
+    ],
+    [
+     "data, by Marshal with no sharing table",
+     "62.0",
+     "2.50",
+     "",
+     "larger: a string met twice is written twice"
+    ],
+    [
+     "data made plain JS values, by structuredClone",
+     "",
+     "0.81 (made JS) + 0.86 (the copy)",
+     "",
+     "what postMessage does with JS values"
+    ],
+    [
+     "data made plain JS values, as JSON",
+     "66.3",
+     "0.81 (made JS) + 0.45",
+     "0.30",
+     ""
+    ],
+    [
+     "Fumola's Value, from JSON (json_in)",
+     "44.3",
+     "",
+     "1.04",
+     "native, on the laptop"
+    ],
+    [
+     "Fumola's Value, through its serde derive (JSON)",
+     "113.8",
+     "0.27",
+     "0.99",
+     "native, on the laptop; tagged, so wordier"
+    ]
+   ]
+  }
+ ],
  "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/047/data"
 }
 </script>

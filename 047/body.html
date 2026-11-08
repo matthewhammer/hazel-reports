@@ -5,6 +5,7 @@
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
+<li><a href="#goal">The goal</a>: a 60 fps floor for small edits; the Witch slide is at 1.3 to 1.7 s an edit.</li>
 <li><a href="#why">Why</a>: the same cost, found again and again; last on the Witch slide, where one module written out in a probe's environment was 3.8 MB of a 5.4 MB answer.</li>
 <li><a href="#form">The form</a>: a <code class="ml">Data</code> term, a value made only by the evaluator, with no ids, holes, closures or environments inside it.</li>
 <li><a href="#fumola">Beside Fumola's Value</a>: Fumola keeps values apart from terms, and its first-order cases serialize as they are; the cases here are those, inside Hazel's terms.</li>
@@ -15,8 +16,12 @@
 <li><a href="#costs">What it costs</a>: a second form wherever values are read, and the same answers both ways.</li>
 <li><a href="#not">What it is not</a>: no sharing, no closures, no holes, no types inside.</li>
 <li><a href="#experiments">The experiments</a>: the same values as Hazel's terms, as data, and as Fumola's values, sent, built and read; measured before anything is proposed.</li>
+<li><a href="#exp1">Experiment 1: sending the Witch's picture</a>: as data, {{x1_x}} times smaller and {{x1_trip_x}} times quicker to send than as terms; as JS values or JSON, quicker still once made; Fumola's side beside it; and <a href="#treemaps">treemaps</a> of where the bytes are.</li>
 <li><a href="#plan">The plan for the group</a>: written from the experiments; a draft of its slices, and <a href="#questions">questions for Matthew</a>.</li>
 </ol>
+
+<h2 id="goal">The goal: 60 fps for a small edit</h2>
+<p><b>A slider's step drawn in 16.7 ms, a 60 fps floor for small edits, as a JS app holds; the Witch slide is at 1.3 to 1.7 s, about 80 to 100 times that.</b> Matthew, 2026-11-08: "I'd really like Hazel to have a floor of 60FPS for small edits (sliders changing), just like in JS (but well beyond there, obviously)." And: "And each obstacle is worth studying, and overcoming." Where the Witch's small edit stands (^report(46), <a href="../046/#witch-cuts">two cuts, and sharing dropped</a>): the worker's evaluator 0.81 to 0.92 s; the page's own work, about 0.4 to 0.8 s, most of it the whole slide's view drawn again, about 117 ms each time and five times an edit; the trip between the worker and the page, 79 to 102 ms. First-order data is one obstacle among these: it is in what the evaluator builds and in what the worker sends.</p>
 
 <h2 id="why">Why</h2>
 <p><b>Hazel holds every value as a term, and a closed, first-order value pays for what a term can be: open, holed, a closure over an environment.</b> The cost has come up again and again:</p>
@@ -116,6 +121,21 @@ and field = {
 <li><b>Into JS.</b> The picture into a compiled view: from Hazel's terms (hazel-jit's trip in, ^report(45)), from data, and from Fumola's values through <code>fumola_wasm</code>.</li>
 </ol>
 <p>Where they run: Hazel's in Node on GitHub's machines (the test build is too heavy for the laptop) and in the Firefox check; Fumola's on the laptop, from its own repo (a cold build is about 3 minutes). Each result goes into this report as it comes, with its commit and run.</p>
+
+<h2 id="exp1">Experiment 1: sending the Witch's picture</h2>
+<p><b>As data, the Witch's picture is {{x1_x}} times smaller than as Hazel's terms ({{x1_data}} KB against {{x1_term}} KB), and its trip by <code class="ml">Marshal</code>, encoded and decoded, takes {{x1_trip_data}} ms against {{x1_trip_term}}, {{x1_trip_x}} times less. As plain JS values it would cross by the browser's own copy in {{x1_clone}} ms, once made JS ({{x1_to_js}} ms), or as JSON in {{x1_json_rt}} ms both ways. Fumola, natively, reads the same picture from JSON into its <code class="ml">Value</code> in {{fx_in}} ms.</b></p>
+{{exp1_table}}
+<ul>
+<li><b>What was measured.</b> In the page, from the last answer the worker sent on the Witch slide after a slider's step: the picture, the probe sample with the most nodes as data ({{x1_nodes}}), sent each way (<code class="ml">DataExperiment</code>, on <code>trial/694-view-jit</code>; <code>{{x1_sha}}</code>, run {{x1_run}}). Every one of the answer's {{x1_samples}} samples converts to data ({{x1_converted}}): together {{x1_all_term}} KB as terms, {{x1_all_data}} KB as data.</li>
+<li><b>No sharing table: larger, not faster.</b> Data written with <code class="ml">Marshal</code>'s <code>No_sharing</code> is larger, because a string met twice (a shape's colour, its kind) is then written twice; and it is hardly faster to write. Data is not expected to share, but its strings do, by accident of the evaluator; an encoder of its own could keep a table of strings alone.</li>
+<li><b>Making data from a term.</b> The prototype turns a value term into data after the fact, in {{x1_of_term}} ms for the picture. (The first version took 110 ms: it stripped the ascriptions of the whole subterm at every node, so it was quadratic. Matthew: "can we fix the quadratic cost?" It peels each node's own now.) In the evaluator's form, a value would be made as data and never converted.</li>
+<li><b>Fumola beside it</b> (native, on the laptop, a release build; ^report(29) measured Fumola's wasm at 1.2 to 1.5 times its native time): the picture's JSON is {{fx_json}} KB; read into a <code class="ml">Value</code> in {{fx_in}} ms; written through <code class="ml">Value</code>'s own serde derive in {{fx_out}} ms and read back in {{fx_back}} ms (that form tags every case, so it is wordier than the plain JSON). Hazel's numbers are Firefox's on GitHub's machines; the two are not the same machine, so read the comparison to within a factor of two or so.</li>
+</ul>
+
+<h3 id="treemaps">Where the bytes are: treemaps</h3>
+<p><b>The picture's bytes as Hazel's terms and as data, drawn as treemaps: each rectangle's area is its bytes, each shape an outer rectangle split into what its bytes are.</b> Treemaps are Ben Shneiderman's, from the University of Maryland's Human-Computer Interaction Lab (1991), made first to show where a disk's space goes; the layout here is the squarified one of Bruls, Huijsing and van Wijk (2000), which keeps rectangles near square so their sizes compare by eye. (Matthew, 2026-11-08: "I'd really like to see 'tree maps' as figures (2d, not 1d) ... for before and after the first-order representation is applied.")</p>
+{{fig_treemap}}
+<p><b>As Hazel's terms, the picture's ids and tags are {{tm_ids}} KB of its {{tm_total}} KB ({{tm_ids_pct}}%); the rest of the terms' structure {{tm_term}} KB; the data's own structure {{tm_dstruct}} KB; and the data itself, its numbers and strings, {{tm_data}} KB, {{tm_payload_pct}}% of the whole.</b> As data, only the last two are left: {{tm_dtotal}} KB. Each amount is a difference of two exact sizes: the term against the same term with every id tag one shared tag; that against the data; the data against its numbers and strings alone.</p>
 
 <h2 id="plan">The plan for the group</h2>
 <p><b>Written from the experiments, for the group: which form, which edges first, and what each costs and saves, as measured. Until then, a draft of its slices:</b></p>
