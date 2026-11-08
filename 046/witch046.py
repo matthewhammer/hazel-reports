@@ -452,6 +452,20 @@ WNUMS.update({
 })
 
 
+# (the next run) the largest probe's first sample: its environment's bindings
+FP = json.loads(DW("firefox-answer-probes.json"))
+_big = [(a, a["top"][0]["first"]) for a in FP["answers"]]
+_dr = [(a, next(e for e in f["env"] if e["name"] == "Drawing")) for a, f in _big]
+_drr = [(a, e) for a, e in _dr if a["kind"] == "result"]
+WNUMS.update({
+    "dr_run": str(FP["run"]), "dr_sha": FP["sha"],
+    "dr_lo": mb(min(e["bytes"] for _, e in _dr)), "dr_hi": mb(max(e["bytes"] for _, e in _dr)),
+    "dr_pct": f"{max(e['bytes'] / a['bytes'] for a, e in _drr) * 100:.0f}",
+    "dr_env_lo": mb(min(f["env_bytes"] for _, f in _big)), "dr_env_hi": mb(max(f["env_bytes"] for _, f in _big)),
+    "dr_drawn": mb2(max(next(e["bytes"] for e in f["env"] if e["name"] == "drawn") for _, f in _big)),
+})
+
+
 def table_trip():
     """every edit: the picture's time, and the worker's and the page's parts of it"""
     rows = []
