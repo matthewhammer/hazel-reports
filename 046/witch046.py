@@ -149,6 +149,116 @@ WNUMS.update({
 })
 
 
+# (Matthew, 2026-11-07: "we should measure the cost of a small edit") one slider step on the Witch slide, in Firefox,
+# both ways; and, in Node, what report 45's sharing would save on the picture's view after such an edit
+FE = json.loads(DW("firefox-edit.json"))
+SH = json.loads(DW("edit-share.json"))
+SHK = {r["k"]: r for r in SH["rows"]}
+
+
+def upper_middle(xs):
+    s = sorted(xs)
+    return s[len(s) // 2]
+
+
+_eon = [e["picture_changed_ms"] for e in FE["edits"]["on"]]
+_eoff = [e["picture_changed_ms"] for e in FE["edits"]["off"]]
+_eall = _eon + _eoff
+_own = [e["own_first_ms"] for m in ("on", "off") for e in FE["edits"][m]]
+_runend = [e["dynamics"][-1][0] for m in ("on", "off") for e in FE["edits"][m]]
+_changed = {e["label"]: e["shapes_changed"] for e in FE["edits"]["on"]}
+E_PIC = upper_middle(_eon)
+WNUMS.update({
+    "e_pic_lo": f"{min(_eall) / 1000:.1f}", "e_pic_hi": f"{max(_eall) / 1000:.1f}",
+    "e_pic_on": f"{E_PIC / 1000:.1f}", "e_pic_off": f"{upper_middle(_eoff) / 1000:.1f}",
+    "e_pic_on_lo": f"{min(_eon) / 1000:.1f}", "e_pic_on_hi": f"{max(_eon) / 1000:.1f}",
+    "e_pic_off_lo": f"{min(_eoff) / 1000:.1f}", "e_pic_off_hi": f"{max(_eoff) / 1000:.1f}",
+    "e_pic_frames": f"{E_PIC / FRAME_60:,.0f}",
+    "e_own_lo": f"{min(_own) / 1000:.2f}", "e_own_hi": f"{max(_own) / 1000:.2f}",
+    "e_own_frames_lo": f"{min(_own) / FRAME_60:.0f}", "e_own_frames_hi": f"{max(_own) / FRAME_60:.0f}",
+    "e_run_lo": f"{min(_runend) / 1000:.1f}", "e_run_hi": f"{max(_runend) / 1000:.1f}",
+    "e_neck": str(_changed["neck"]), "e_arms": str(_changed["arms (up / down)"]), "e_shapes": str(FE["edits"]["on"][0]["shapes"]),
+    "e_view_share": f"{FF_PIC['compiled']['median'] / E_PIC * 100:.2f}",
+    "e_interp_share": f"{FF_PIC['interpreted']['median'] / E_PIC * 100:.1f}",
+    "e_run_id": str(FE["run"]), "e_sha": FE["sha"],
+    "sh_today": f"{SHK[1]['today_view_ms']:.2f}", "sh_share": f"{SHK[1]['share_ms']:.2f}",
+    "sh_kept1": f"{SHK[1]['kept_view_ms']:.3f}", "sh_kept17": f"{SHK[17]['kept_view_ms']:.3f}", "sh_kept30": f"{SHK[30]['kept_view_ms']:.3f}",
+    "sh_x1": f"{SHK[1]['today_view_ms'] / SHK[1]['kept_view_ms']:.0f}",
+    "sh_x17": f"{SHK[17]['today_view_ms'] / SHK[17]['kept_view_ms']:.0f}",
+    "sh_x30": f"{SHK[30]['today_view_ms'] / SHK[30]['kept_view_ms']:.0f}",
+    "sh_js_in": f"{SHK[1]['js_trip_in_ms']:.2f}", "sh_jsoo_x": f"{APP['trip_in_ms'] / SHK[1]['js_trip_in_ms']:.0f}",
+    "sh_runs": f"{SH['runs']:,}", "sh_visits": f"{SHK[1]['share_visits']:,}",
+    "e_saved": f"{FF_PIC['interpreted']['median'] - FF_PIC['compiled']['median']:.0f}",
+})
+# (the page's counts are since its load: each edit's own, from the second on, as the difference from the one before)
+_cnt = [e["jit"] for e in FE["edits"]["on"]]
+_draws = [b["drawn from JS"] - a["drawn from JS"] for a, b in zip(_cnt, _cnt[1:])]
+_calls = sorted({b["view compiled"] - a["view compiled"] for a, b in zip(_cnt, _cnt[1:])})
+WNUMS.update({"e_draws_lo": str(min(_draws)), "e_draws_hi": str(max(_draws)),
+              "e_calls": " or ".join(map(str, _calls))})
+
+
+def table_share():
+    """the sharing prototype's rows: k shapes changed, the whole view, the merge, the kept view"""
+    rows = []
+    for k in (1, 5, 17, 30, 60):
+        r = SHK[k]
+        rows.append(f"<tr><td>{k}</td><td>{r['today_view_ms']:.3f}</td><td>{r['share_ms']:.3f}</td><td>{r['kept_view_ms']:.3f}</td>"
+                    f"<td>{r['today_view_ms'] / r['kept_view_ms']:.0f}</td><td>{'yes' if r['same_markup'] else 'NO'}</td></tr>")
+    return ('<table class="vals"><tr><th>shapes changed, of ' + str(SH["shapes"]) + '</th><th>the whole view, ms (today)</th>'
+            '<th>the merge with the last picture, ms</th><th>the kept view on the merged picture, ms</th>'
+            '<th>the whole view over the kept one, times</th><th>the same markup</th></tr>' + "".join(rows) + "</table>")
+
+
+def fig_witch_edit():
+    """a small edit on the Witch slide, in Firefox, from the edit to the picture's change, on a log scale, against a
+    60 fps frame: the slider's own first redraw, the picture showing the edit, and within it the picture's view"""
+    rows = [("the slider, redrawn", "the page's first change, after the edit's own work", upper_middle(_own), "var(--muted)"),
+            ("the picture shows the edit", "compiled views on (median of 4)", E_PIC, "var(--accent2)"),
+            ("", "compiled views off (median of 4)", upper_middle(_eoff), "var(--warn, #b45309)"),
+            ("of which, the picture's view", "on the interpreter", FF_PIC["interpreted"]["median"], "var(--warn, #b45309)"),
+            ("", "compiled", FF_PIC["compiled"]["median"], "var(--accent2)")]
+    W, left, right = 940, 330, 150
+    lo, hi = math.log10(1), math.log10(20000)
+    xof = lambda v: left + (math.log10(v) - lo) / (hi - lo) * (W - left - right)
+    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A small edit on the Witch slide, in Firefox: '
+           'time from the edit, on a log scale, against a 60 fps frame (16.7 ms)</text>']
+    top, step = 34, 30
+    bottom = top + len(rows) * step
+    for t in (1, 10, 100, 1000, 10000):
+        x = xof(t)
+        tick = f"{t / 1000:g} s" if t >= 1000 else f"{t:g} ms"
+        out.append(f'<line x1="{x:.1f}" y1="28" x2="{x:.1f}" y2="{bottom:.0f}" stroke="var(--line)" stroke-width="1"/>')
+        out.append(f'<text x="{x:.1f}" y="{bottom + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{tick}</text>')
+    x60 = xof(FRAME_60)
+    out.append(f'<rect x="{left}" y="28" width="{x60 - left:.1f}" height="{bottom - 28:.0f}" fill="var(--good, #2e7d32)" opacity="0.07"/>')
+    out.append(f'<line x1="{x60:.1f}" y1="26" x2="{x60:.1f}" y2="{bottom + 2:.0f}" stroke="var(--good, #2e7d32)" stroke-width="2"/>')
+    out.append(f'<text x="{x60 + 5:.1f}" y="{bottom + 14}" font-size="11" fill="var(--good, #2e7d32)" font-weight="700">60 fps</text>')
+    y = top
+    for name, sub, v, colour in rows:
+        if name:
+            out.append(f'<text x="{left - 10}" y="{y + 11}" font-size="12" text-anchor="end" fill="var(--ink)" font-weight="700">{html.escape(name)}</text>')
+            out.append(f'<text x="{left - 10}" y="{y + 24}" font-size="10.5" text-anchor="end" fill="var(--muted)">{html.escape(sub)}</text>')
+        else:
+            out.append(f'<text x="{left - 10}" y="{y + 17}" font-size="10.5" text-anchor="end" fill="var(--muted)">{html.escape(sub)}</text>')
+        out.append(f'<rect x="{left}" y="{y + 5}" width="{max(2, xof(v) - left):.1f}" height="16" rx="3" fill="{colour}" opacity="0.85"><title>{html.escape(name or "")} {sub}: {v:.1f} ms</title></rect>')
+        if v >= 1000:
+            label = f"{v / 1000:.1f} s ({v / FRAME_60:,.0f} frames)"
+        elif v >= 100:
+            label = f"{v / 1000:.2f} s ({v / FRAME_60:.0f} frames)"
+        else:
+            label = f"{ms(v)} ms ({fps(v)} fps)"
+        out.append(f'<text x="{xof(v) + 8:.1f}" y="{y + 17}" font-size="11.5" fill="var(--ink)" font-weight="700">{label}</text>')
+        y += step
+    h = bottom + 24
+    alt = "A small edit, against a 60 fps frame: " + "; ".join(f"{n or 'the same'}, {s}, {v:.0f} ms" for n, s, v, _ in rows)
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{alt}" style="width:100%;height:auto;display:block">'
+            + "".join(out) + f"</svg><figcaption>Firefox on GitHub's machines, a release build ({FE['sha']}, run {FE['run']}): four edits each "
+            "way (the neck slider 2 steps, there and back; the arms slider 10, there and back), each from the edit to the first change of "
+            "the page under the slider, and to the picture's first new drawing. Frames are counted at 60 fps. The picture's view is the "
+            f"bench of <a href=\"#witch-firefox\">in Firefox</a> ({FF['sha']}, run {FF['run']}), one render alone.</figcaption></figure></div>")
+
+
 def fig_witch_firefox():
     """the Witch slide's views in Firefox, in the app, against a 60 fps frame: the picture on the interpreter (its
     compiled path refused), and the slide's four polygon editors both ways"""

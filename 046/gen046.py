@@ -179,6 +179,8 @@ import witch046 as W  # noqa: E402
 body = body.replace("{{fig_witch}}", keep("witch", W.fig_witch())).replace("{{fig_witch_frame}}", keep("witch-frame", W.fig_witch_frame()))
 body = body.replace("{{witch_svgs}}", W.fig_witch_svgs())
 body = body.replace("{{fig_witch_firefox}}", keep("witch-firefox", W.fig_witch_firefox()))
+body = body.replace("{{fig_witch_edit}}", keep("witch-edit", W.fig_witch_edit()))
+body = body.replace("{{table_share}}", W.table_share())
 for k, v in W.WNUMS.items():
     body = body.replace("{{w:" + k + "}}", v)
 WF = dict(W.WT["node_fastest_ms"], jsoo_tofixed=W.WT["jsoo_tofixed_fastest_ms"], jsoo_printf=W.WT["jsoo_printf_fastest_ms"])
