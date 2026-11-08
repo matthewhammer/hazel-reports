@@ -1,0 +1,37 @@
+{
+ "about": "^report(47), experiment 5, Fumola's side: the Witch's picture (046/data/witch/picture.json) into a Fumola instance by fumola_define_json, and out to JS values by fumola_eval_top (value_to_json, the tagged JSON the Hazel side decodes) then JSON.parse. wasm32 release build, wasm-bindgen --target nodejs, Node v22.23.2 on the laptop; ms per call, the median of five batches of at least 25 ms. This script is exp_718_fumola_js.js beside this file. Three runs of the script, one after another; eval_top_constant is the same call on the program 0, the control.",
+ "fumola_commit": "cb2bcf5",
+ "build": "cargo build --release --target wasm32-unknown-unknown -p fumola_wasm --no-default-features, -j 2, 2m 33s; wasm-bindgen-cli 0.2.108 (the crate's) --target nodejs",
+ "node": "v22.23.2",
+ "picture_bytes": 44311,
+ "out_bytes": 160073,
+ "runs": [
+  {
+   "in_define_json": 0.8252983225806453,
+   "out_eval_top": 8.662231,
+   "eval_top_constant": 0.27545463736263737,
+   "out_json_parse": 0.7635500606060628,
+   "plain_json_parse": 0.21595718103448341,
+   "out_total": 9.425781060606063,
+   "out_translate": 8.386776362637363
+  },
+  {
+   "in_define_json": 0.8108500645161305,
+   "out_eval_top": 8.504597666666655,
+   "eval_top_constant": 0.2700810967741931,
+   "out_json_parse": 0.7473561470588246,
+   "plain_json_parse": 0.2178803879310347,
+   "out_total": 9.251953813725478,
+   "out_translate": 8.234516569892461
+  },
+  {
+   "in_define_json": 0.8058348125000006,
+   "out_eval_top": 8.600355666666681,
+   "eval_top_constant": 0.26579422105263156,
+   "out_json_parse": 0.7790799696969709,
+   "plain_json_parse": 0.21261205932203364,
+   "out_total": 9.379435636363652,
+   "out_translate": 8.33456144561405
+  }
+ ]
+}

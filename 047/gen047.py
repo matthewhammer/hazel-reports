@@ -64,6 +64,71 @@ X3NUMS = {
 }
 
 
+# (experiment 2, a first slice) the picture built node by node: as terms with fresh ids, as terms with no id minted, as data
+X2 = json.load(open(os.path.join(HERE, "data", "hazel-exp2.json")))
+# only runs timed in batches of at least 300 ms; the two 25 ms runs of 238144b4b8 stay in the file, as the reason for the change
+R2 = [r for r in X2["runs"] if r["more"].get("timer")]
+R2_SHORT = [r for r in X2["runs"] if not r["more"].get("timer")]
+_tn = R2[0]["more"]["build_term_nodes"]
+assert all(r["more"]["build_term_nodes"] == _tn for r in R2), "the picture changed between runs"
+
+
+def span(xs, fmt):
+    lo, hi = fmt(min(xs)), fmt(max(xs))
+    return lo if lo == hi else f"{lo} to {hi}"
+
+
+_bm = lambda k: [r["more"][k] for r in R2]
+_ns = lambda k: [v * 1e6 / _tn for v in _bm(k)]
+# per term node, the evaluator's unit (one fresh id each), run by run: what an id and its tag cost kept in a tree (fresh - temp),
+# and what building as data saves against today's terms (fresh - data; it can come out below zero, the data build's batches being
+# the noisiest)
+_idtree = {r["run"]: (r["more"]["build_term_fresh_ms"] - r["more"]["build_term_temp_ms"]) * 1e6 / _tn for r in R2}
+_save = {r["run"]: (r["more"]["build_term_fresh_ms"] - r["more"]["build_data_ms"]) * 1e6 / _tn for r in R2}
+_e2 = [(r["run"], e) for r in R2 for e in r["edits"] if e["worker_ids"]]
+_idrun = [e["worker_ids"] * _idtree[run] / 1e6 for run, e in _e2]
+_idshare = [e["worker_ids"] * _idtree[run] / 1e6 / e["eval_ms"] * 100 for run, e in _e2]
+_saverun = [max(0.0, e["worker_ids"] * _save[run] / 1e6) for run, e in _e2]
+_saveshare = [max(0.0, e["worker_ids"] * _save[run] / 1e6 / e["eval_ms"] * 100) for run, e in _e2]
+_f0 = lambda v: f"{v:,.0f}"
+_dbatch = [b for r in R2 for b in r["more"]["build_data_ms_batches"]]
+X2NUMS = {
+    "x2_run": ", ".join(str(r["run"]) for r in R2), "x2_sha": R2[-1]["sha"], "x2_nruns": str(len(R2)),
+    "x2_dnodes": f"{R2[0]['more']['build_data_nodes']:,}", "x2_tnodes": f"{_tn:,}",
+    "x2_fresh_ms": span(_bm("build_term_fresh_ms"), ms), "x2_temp_ms": span(_bm("build_term_temp_ms"), ms),
+    "x2_data_ms": span(_bm("build_data_ms"), ms), "x2_data_batch_lo": ms(min(_dbatch)), "x2_data_batch_hi": ms(max(_dbatch)),
+    "x2_fresh_ns": span(_ns("build_term_fresh_ms"), _f0), "x2_temp_ns": span(_ns("build_term_temp_ms"), _f0),
+    "x2_data_ns": span(_ns("build_data_ms"), _f0),
+    "x2_idtree_ns": span(list(_idtree.values()), _f0), "x2_id_ns": span(_bm("id_ns"), _f0),
+    "x2_ids_lo": f"{min(e['worker_ids'] for _, e in _e2):,}", "x2_ids_hi": f"{max(e['worker_ids'] for _, e in _e2):,}",
+    "x2_idrun_ms": span(_idrun, _f0), "x2_idshare_lo": f"{min(_idshare):.1f}", "x2_idshare_hi": f"{max(_idshare):.1f}",
+    "x2_save_hi_ms": _f0(max(_saverun)), "x2_save_hi_pct": f"{max(_saveshare):.1f}",
+    "x2_eval_lo": f"{min(e['eval_ms'] for _, e in _e2) / 1000:.2f}", "x2_eval_hi": f"{max(e['eval_ms'] for _, e in _e2) / 1000:.2f}",
+}
+
+# experiments 3 (an id's cost), 4 and 5, re-timed on the same runs: these replace the 25 ms batches of run 42504537594
+_ratio = lambda a, b: [r["more"][a] / r["more"][b] for r in R2]
+X2NUMS.update({
+    "x3_id_ns": span(_bm("id_ns"), _f0), "x3_old_id_ns": f"{_mo['id_ns']:.0f}", "x3_old_run": str(X3["run"]),
+    "x3_mint_ms": span([e["worker_ids"] * i / 1e6 for e in _e3 for i in _bm("id_ns")], lambda v: f"{v:.1f}"),
+    "x3_share_lo": f"{min(e['worker_ids'] * i / 1e6 / e['eval_ms'] * 100 for e in _e3 for i in _bm('id_ns')):.1f}",
+    "x3_share_hi": f"{max(e['worker_ids'] * i / 1e6 / e['eval_ms'] * 100 for e in _e3 for i in _bm('id_ns')):.1f}",
+    "x4_term_ms": span(_bm("print_term_ms"), ms), "x4_data_ms": span(_bm("print_data_ms"), ms),
+    "x4_x": span(_ratio("print_term_ms", "print_data_ms"), lambda v: f"{v:.0f}"),
+    "x5_term_ms": span(_bm("into_js_term_ms"), ms), "x5_data_ms": span(_bm("into_js_data_ms"), ms),
+    "x5_x": span(_ratio("into_js_term_ms", "into_js_data_ms"), lambda v: f"{v:.1f}"),
+    "x4_old_x": f"{_mo['print_term_ms'] / _mo['print_data_ms']:.0f}", "x5_old_x": f"{_mo['into_js_term_ms'] / _mo['into_js_data_ms']:.1f}",
+    "x2_short_runs": ", ".join(str(r["run"]) for r in R2_SHORT),
+})
+
+# (experiment 5, Fumola's side) the picture into a Fumola instance and out to JS values, through fumola_wasm, in Node on the laptop
+F5 = json.load(open(os.path.join(HERE, "data", "fumola-exp5.json")))
+_fr = lambda k: span([r[k] for r in F5["runs"]], ms)
+X2NUMS.update({"f5_in": _fr("in_define_json"), "f5_out": _fr("out_total"), "f5_translate": _fr("out_translate"),
+               "f5_const": _fr("eval_top_constant"), "f5_parse": _fr("out_json_parse"), "f5_plain_parse": _fr("plain_json_parse"),
+               "f5_out_kb": kb(F5["out_bytes"]), "f5_pic_kb": kb(F5["picture_bytes"])})
+
+
 def exp1_table():
     def row(label, size, enc, dec, note=""):
         return (f"<tr><td>{label}</td><td>{size}</td><td>{enc}</td><td>{dec}</td><td>{note}</td></tr>")
@@ -115,7 +180,7 @@ def fig_treemap():
 
 body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated)
 body = body.replace("{{exp1_table}}", exp1_table()).replace("{{fig_treemap}}", fig_treemap())
-for k, v in X3NUMS.items():
+for k, v in {**X3NUMS, **X2NUMS}.items():
     body = body.replace("{{" + k + "}}", v)
 for k, v in {"x1_run": ", ".join(str(r["run"]) for r in RUNS), "x1_sha": RUNS[-1]["sha"], "x1_nodes": f"{P['nodes']:,}", "x1_term": kb(P["term_bytes"]),
              "x1_data": kb(P["data_bytes"]), "x1_x": f"{P['term_bytes'] / P['data_bytes']:.1f}",
