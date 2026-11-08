@@ -43,6 +43,27 @@ LINEAR = [r for r in RUNS if not r["note"]]
 pm = lambda k: (lambda r: r["picture"]["ms"][k])
 
 
+X3 = json.load(open(os.path.join(HERE, "data", "hazel-exp345.json")))
+_e3 = [e for e in X3["edits"] if e["worker_ids"]]
+_mo = X3["more"]
+_share = [e["worker_ids"] * _mo["id_ns"] / 1e6 / e["eval_ms"] * 100 for e in _e3]
+_pon = [e["page_ids"] for e in X3["edits"] if e["mode"] == "on"]
+_poff = [e["page_ids"] for e in X3["edits"] if e["mode"] == "off"]
+X3NUMS = {
+    "x3_run": str(X3["run"]), "x3_sha": X3["sha"],
+    "x3_ids_lo": f"{min(e['worker_ids'] for e in _e3):,}", "x3_ids_hi": f"{max(e['worker_ids'] for e in _e3):,}",
+    "x3_eval_lo": f"{min(e['eval_ms'] for e in _e3) / 1000:.2f}", "x3_eval_hi": f"{max(e['eval_ms'] for e in _e3) / 1000:.2f}",
+    "x3_id_ns": f"{_mo['id_ns']:.0f}", "x3_mint_ms": f"{min(e['worker_ids'] for e in _e3) * _mo['id_ns'] / 1e6:.0f}",
+    "x3_share_lo": f"{min(_share):.1f}", "x3_share_hi": f"{max(_share):.1f}",
+    "x3_page_on": f"{min(_pon):,} to {max(_pon):,}", "x3_page_off_hi": f"{max(_poff):,}", "x3_page_off_lo": f"{min(_poff):,}",
+    "x4_term_ms": f"{_mo['print_term_ms']:.0f}", "x4_data_ms": f"{_mo['print_data_ms']:.1f}",
+    "x4_x": f"{_mo['print_term_ms'] / _mo['print_data_ms']:.0f}",
+    "x4_term_kc": f"{_mo['print_term_chars'] / 1000:.1f}", "x4_data_kc": f"{_mo['print_data_chars'] / 1000:.1f}",
+    "x5_term_ms": f"{_mo['into_js_term_ms']:.2f}", "x5_data_ms": f"{_mo['into_js_data_ms']:.2f}",
+    "x5_x": f"{_mo['into_js_term_ms'] / _mo['into_js_data_ms']:.1f}",
+}
+
+
 def exp1_table():
     def row(label, size, enc, dec, note=""):
         return (f"<tr><td>{label}</td><td>{size}</td><td>{enc}</td><td>{dec}</td><td>{note}</td></tr>")
@@ -94,6 +115,8 @@ def fig_treemap():
 
 body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated)
 body = body.replace("{{exp1_table}}", exp1_table()).replace("{{fig_treemap}}", fig_treemap())
+for k, v in X3NUMS.items():
+    body = body.replace("{{" + k + "}}", v)
 for k, v in {"x1_run": ", ".join(str(r["run"]) for r in RUNS), "x1_sha": RUNS[-1]["sha"], "x1_nodes": f"{P['nodes']:,}", "x1_term": kb(P["term_bytes"]),
              "x1_data": kb(P["data_bytes"]), "x1_x": f"{P['term_bytes'] / P['data_bytes']:.1f}",
              "x1_trip_term": rng(lambda r: r["picture"]["ms"]["term_encode"] + r["picture"]["ms"]["term_decode"]),
