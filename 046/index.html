@@ -173,7 +173,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>46<b>)</b></code> · hazel-jit · 2026-11-07, updated 2026-11-08 06:25 MST · <span class="wip">work in progress</span> · beside <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> (<a href="../045/#next">its next step 7</a>)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>46<b>)</b></code> · hazel-jit · 2026-11-07, updated 2026-11-08 07:03 MST · <span class="wip">work in progress</span> · beside <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> (<a href="../045/#next">its next step 7</a>)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -273,6 +273,9 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#witch-45"><code class="ref"><b>^report(</b>45<b>)</b></code>'s ideas, here</a>: the view's answer is drawn straight from its JS, never made Hazel; no diffs, since a view's answer never comes back.</li>
 <li><a href="#witch-edit">A small edit</a>: one slider step shows in the picture 5.3 to 8.5 s later, compiled or not; the program's run in the worker and its answer coming back are nearly all of it, the picture's view 0.04% of it.</li>
 <li><a href="#witch-edit-parts">Where a small edit's time goes</a>: the evaluator is 1.2 to 2.6 s of it; most of the rest is the worker's answer, 4.4 to 5.4 MB for a 10 KB request, made in the worker and decoded on the main thread, 1.9 to 3.1 s with the page frozen.</li>
+<li><a href="#witch-trip">The trip between the worker and the page</a>: confirmed, most of an edit, 70 to 72%: the worker shares the result in 1.4 to 1.6 s, finding almost nothing to share, and encodes it in 1.1 to 1.2 s; the page decodes it in 1.4 to 2.0 s. The evaluator, 18 to 20%.</li>
+<li><a href="#witch-answer">What the worker's answer holds</a>: mostly the environments of the livelits' samples, 4.2 MB of 5.4; four cuts, none of them a compiler.</li>
+<li><a href="#witch-jit-run">Compiling the run: a speculation</a>: under ideal conditions the slide's program run compiled on the main thread, each livelit's model handed to its compiled view as a JS value, and no trip at all.</li>
 <li><a href="#witch-share">Better numbers, from <code class="ref"><b>^report(</b>45<b>)</b></code>'s sharing</a>: after such an edit the view could redo only the changed shapes, 5 times less work, if the trip in shares what did not change.</li>
 <li><a href="#witch-values">How each lays out the view's values</a>: shapes, vertices, Html, numbers formatted, the walks.</li>
 <li><a href="#general">What holds across both</a>: the compilers differ in calls, matches and layouts, and converge where a builtin does the work.</li>
@@ -574,13 +577,63 @@ document.addEventListener("DOMContentLoaded", () => {
 <ul>
 <li><b>How it was timed.</b> The page now keeps its own timeline when asked: <code class="hz"><span class="hC">Util</span><span class="ho">.</span><span class="hC">BenchMarks</span></code>, on when <code class="jx"><span class="jv">globalThis</span><span class="jo">.</span><span class="jv">hazelBenchMarks</span></code> is an array, and otherwise doing nothing. It records each update and calculate (with the statics inside it), the page's view, the work after display, the request posted to the worker with its size, and each message back, decoded and then handled. A result also brings the worker's own evaluator time. The check ran the same four edits each way with it on (<code class="jx">3ed2f31844</code>, run 42445268287); this time the picture showed the edit after 5.3 to 8.8 s.</li>
 <li><b>Before the request: 0.18 to 0.27 s.</b> The edit's update, one view of the page, and a calculate (the statics, and the request's pieces) run on the main thread; then the request goes, 10 KB. The page's first redraw comes after one more view.</li>
-<li><b>The worker.</b> On the neck edits, the picture comes with the run's result, 4.1 to 5.9 s after the request. The worker's evaluator ran 1.2 to 2.6 s of each run in all, so 2.5 to 4.7 s of the worker's time before its result went to something else. Making the result and encoding it is the likely part, but the worker's own split is not recorded yet. On the arms edits, the picture comes sooner, in a 4.4 MB stream message the worker sends while it runs, and the result follows seconds later.</li>
+<li><b>The worker.</b> On the neck edits, the picture comes with the run's result, 4.1 to 5.9 s after the request. The worker's evaluator ran 1.2 to 2.6 s of each run in all, so 2.5 to 4.7 s of the worker's time before its result went to something else. Making the result and encoding it is the likely part, but the worker's own split is not recorded yet. <i>(Recorded 11-08, <a href="#witch-trip">below</a>: making the result takes under a millisecond; sharing it and encoding it are the time.)</i> On the arms edits, the picture comes sooner, in a 4.4 MB stream message the worker sends while it runs, and the result follows seconds later.</li>
 <li><b>Decoding on the main thread.</b> A 4.4 MB stream took 1.3 to 1.5 s to decode, and a 5.4 MB result 1.9 to 3.1 s. Each is one task: while it runs, nothing on the page moves. On the arms edits that happens twice, the second time after the picture has already changed.</li>
 <li><b>The page's view.</b> Each time the page draws, its view takes 24 to 506 ms (median 117), and an edit draws it five times before the picture shows: 0.5 to 0.9 s in all. That is the whole slide's view, its code and its livelits; the picture's own view is 3.0 ms of it.</li>
 <li><b>In all</b>, the main thread was busy 2.1 to 3.6 s of the 5.3 to 8.8 s, most of it decoding; the rest of the time it waited for the worker.</li>
 </ul>
 <table class="vals"><tr><th>the edit</th><th>compiled views</th><th>its request posted, s</th><th>the worker, from the request to the message that carries the picture, s</th><th>of which its evaluator (the whole run), s</th><th>that message</th><th>decoding it on the main thread, s</th><th>then the page, to the picture, s</th><th>the picture shows the edit, s</th><th>the main thread busy until then, s</th></tr><tr><td>neck 28 to 30</td><td>on</td><td>0.20</td><td>5.9</td><td>1.2</td><td>the result, 5.4 MB</td><td>2.4</td><td>0.29</td><td><b>8.8</b></td><td>3.4</td></tr><tr><td>neck 30 to 28</td><td>on</td><td>0.27</td><td>4.7</td><td>1.7</td><td>the result, 5.4 MB</td><td>2.1</td><td>0.23</td><td><b>7.4</b></td><td>3.2</td></tr><tr><td>arms (up / down) 55 to 65</td><td>on</td><td>0.18</td><td>3.6</td><td>1.6</td><td>a stream, 4.4 MB</td><td>1.3</td><td>0.19</td><td><b>5.3</b></td><td>2.1</td></tr><tr><td>arms (up / down) 65 to 55</td><td>on</td><td>0.22</td><td>4.4</td><td>2.6</td><td>a stream, 4.4 MB</td><td>1.5</td><td>0.23</td><td><b>6.3</b></td><td>2.5</td></tr><tr><td>neck 28 to 30</td><td>off</td><td>0.21</td><td>4.7</td><td>1.6</td><td>the result, 5.4 MB</td><td>2.4</td><td>0.56</td><td><b>7.9</b></td><td>3.6</td></tr><tr><td>neck 30 to 28</td><td>off</td><td>0.22</td><td>4.1</td><td>1.6</td><td>the result, 5.4 MB</td><td>2.2</td><td>0.42</td><td><b>6.9</b></td><td>3.3</td></tr><tr><td>arms (up / down) 55 to 65</td><td>off</td><td>0.18</td><td>3.5</td><td>1.6</td><td>a stream, 4.4 MB</td><td>1.4</td><td>0.41</td><td><b>5.5</b></td><td>2.4</td></tr><tr><td>arms (up / down) 65 to 55</td><td>off</td><td>0.23</td><td>3.8</td><td>2.5</td><td>a stream, 4.4 MB</td><td>1.4</td><td>0.41</td><td><b>5.9</b></td><td>2.5</td></tr></table>
 <p><b>So the next numbers to improve are the size of the worker's answer and the page's view, not the evaluator alone.</b> Why the answer is so large is not known yet. It carries the run's value and its state (each probe's and livelit's samples, the picture among them), pruned for shipping; but at 5.4 MB, something in it is far larger than the picture's 133 shapes. The next step is to record the worker's own split (evaluating, making the result, encoding it) and what the result holds.</p>
+
+<h3 id="witch-trip">The trip between the worker and the page<a class="anchor" href="#witch-trip" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="witch-trip" title="copy this section's address">copy link</button></h3>
+<p><b>Confirmed: the run's answer, sent from Hazel's worker to the page, is most of a small edit's time, 70 to 72% of it; the evaluator is 18 to 20%. On the neck edits, whose picture comes with the run's result, the picture shows in 5.6 to 6.5 s. The worker shares the 5.4 MB result in 1.4 to 1.6 s and encodes it in 1.1 to 1.2 s, and the main thread decodes it in 1.4 to 2.0 s: 4.0 to 4.6 s in all, 3.5 to 4.0 times the evaluator's 1.1 to 1.3 s.</b> (Matthew, 2026-11-08: "let's presume that the worker-main-thread communication cost dominates (preparing result, sending, decoding); let's confirm that".)</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 940 196" role="img" aria-label="neck 28 to 30, views on: the picture at 6.4 s; evaluator 1.1 s; result shared 1.4 s, encoded 1.2 s, decoded 1.9 s; neck 30 to 28, views on: the picture at 5.6 s; evaluator 1.1 s; result shared 1.5 s, encoded 1.1 s, decoded 1.4 s; neck 28 to 30, views off: the picture at 6.5 s; evaluator 1.3 s; result shared 1.4 s, encoded 1.2 s, decoded 2.0 s; neck 30 to 28, views off: the picture at 6.3 s; evaluator 1.2 s; result shared 1.6 s, encoded 1.2 s, decoded 1.7 s" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A small edit on the Witch slide, in Firefox: the trip between the worker and the page (orange) against the evaluator (blue)</text><text x="180" y="50" font-size="11.5" text-anchor="end" fill="var(--ink)">neck 28 to 30, views on</text><rect x="190.0" y="36" width="22.1" height="20" fill="var(--line)" opacity="0.92"><title>the page, before the request: 0.20 s</title></rect><rect x="212.1" y="36" width="127.4" height="20" fill="var(--accent)" opacity="0.92"><title>the worker's evaluator: 1.14 s</title></rect><text x="275.8" y="50" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.1 s</text><rect x="339.5" y="36" width="28.1" height="20" fill="var(--muted)" opacity="0.92"><title>the worker's other work: 0.25 s</title></rect><rect x="367.6" y="36" width="162.3" height="20" fill="#c2410c" opacity="0.92"><title>the result shared (worker): 1.45 s</title></rect><text x="448.7" y="50" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.4 s</text><rect x="529.9" y="36" width="137.9" height="20" fill="#ea580c" opacity="0.92"><title>encoded (worker): 1.23 s</title></rect><text x="598.9" y="50" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.2 s</text><rect x="667.9" y="36" width="212.4" height="20" fill="#f59e0b" opacity="0.92"><title>decoded (main thread): 1.90 s</title></rect><text x="774.1" y="50" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.9 s</text><rect x="880.3" y="36" width="26.5" height="20" fill="var(--line)" opacity="0.92"><title>the page, to the picture: 0.24 s</title></rect><text x="180" y="78" font-size="11.5" text-anchor="end" fill="var(--ink)">neck 30 to 28, views on</text><rect x="190.0" y="64" width="21.9" height="20" fill="var(--line)" opacity="0.92"><title>the page, before the request: 0.20 s</title></rect><rect x="211.9" y="64" width="126.0" height="20" fill="var(--accent)" opacity="0.92"><title>the worker's evaluator: 1.12 s</title></rect><text x="274.9" y="78" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.1 s</text><rect x="337.9" y="64" width="12.3" height="20" fill="var(--muted)" opacity="0.92"><title>the worker's other work: 0.11 s</title></rect><rect x="350.2" y="64" width="164.2" height="20" fill="#c2410c" opacity="0.92"><title>the result shared (worker): 1.47 s</title></rect><text x="432.3" y="78" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.5 s</text><rect x="514.5" y="64" width="127.1" height="20" fill="#ea580c" opacity="0.92"><title>encoded (worker): 1.14 s</title></rect><text x="578.0" y="78" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.1 s</text><rect x="641.5" y="64" width="153.8" height="20" fill="#f59e0b" opacity="0.92"><title>decoded (main thread): 1.37 s</title></rect><text x="718.5" y="78" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.4 s</text><rect x="795.4" y="64" width="23.1" height="20" fill="var(--line)" opacity="0.92"><title>the page, to the picture: 0.21 s</title></rect><text x="180" y="106" font-size="11.5" text-anchor="end" fill="var(--ink)">neck 28 to 30, views off</text><rect x="190.0" y="92" width="19.8" height="20" fill="var(--line)" opacity="0.92"><title>the page, before the request: 0.18 s</title></rect><rect x="209.8" y="92" width="140.4" height="20" fill="var(--accent)" opacity="0.92"><title>the worker's evaluator: 1.25 s</title></rect><text x="280.0" y="106" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.3 s</text><rect x="350.2" y="92" width="12.8" height="20" fill="var(--muted)" opacity="0.92"><title>the worker's other work: 0.11 s</title></rect><rect x="363.0" y="92" width="161.7" height="20" fill="#c2410c" opacity="0.92"><title>the result shared (worker): 1.44 s</title></rect><text x="443.8" y="106" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.4 s</text><rect x="524.7" y="92" width="132.1" height="20" fill="#ea580c" opacity="0.92"><title>encoded (worker): 1.18 s</title></rect><text x="590.7" y="106" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.2 s</text><rect x="656.8" y="92" width="225.5" height="20" fill="#f59e0b" opacity="0.92"><title>decoded (main thread): 2.01 s</title></rect><text x="769.5" y="106" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">2.0 s</text><rect x="882.3" y="92" width="37.7" height="20" fill="var(--line)" opacity="0.92"><title>the page, to the picture: 0.34 s</title></rect><text x="180" y="134" font-size="11.5" text-anchor="end" fill="var(--ink)">neck 30 to 28, views off</text><rect x="190.0" y="120" width="19.7" height="20" fill="var(--line)" opacity="0.92"><title>the page, before the request: 0.18 s</title></rect><rect x="209.7" y="120" width="131.7" height="20" fill="var(--accent)" opacity="0.92"><title>the worker's evaluator: 1.18 s</title></rect><text x="275.5" y="134" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.2 s</text><rect x="341.4" y="120" width="13.0" height="20" fill="var(--muted)" opacity="0.92"><title>the worker's other work: 0.12 s</title></rect><rect x="354.4" y="120" width="174.0" height="20" fill="#c2410c" opacity="0.92"><title>the result shared (worker): 1.55 s</title></rect><text x="441.4" y="134" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.6 s</text><rect x="528.4" y="120" width="134.6" height="20" fill="#ea580c" opacity="0.92"><title>encoded (worker): 1.20 s</title></rect><text x="595.6" y="134" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.2 s</text><rect x="662.9" y="120" width="186.4" height="20" fill="#f59e0b" opacity="0.92"><title>decoded (main thread): 1.67 s</title></rect><text x="756.1" y="134" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">1.7 s</text><rect x="849.4" y="120" width="47.5" height="20" fill="var(--line)" opacity="0.92"><title>the page, to the picture: 0.42 s</title></rect><text x="873.1" y="134" font-size="10.5" text-anchor="middle" fill="var(--ink)" font-weight="700">0.4 s</text><rect x="190" y="152" width="12" height="12" fill="var(--accent)"/><text x="206" y="162" font-size="10.5" fill="var(--muted)">evaluator (worker)</text><rect x="317.2" y="152" width="12" height="12" fill="var(--muted)"/><text x="333.2" y="162" font-size="10.5" fill="var(--muted)">other (worker)</text><rect x="422.8" y="152" width="12" height="12" fill="#c2410c"/><text x="438.8" y="162" font-size="10.5" fill="var(--muted)">shared (worker)</text><rect x="533.8" y="152" width="12" height="12" fill="#ea580c"/><text x="549.8" y="162" font-size="10.5" fill="var(--muted)">encoded (worker)</text><rect x="650.1999999999999" y="152" width="12" height="12" fill="#f59e0b"/><text x="666.1999999999999" y="162" font-size="10.5" fill="var(--muted)">decoded (page)</text><rect x="755.8" y="152" width="12" height="12" fill="var(--line)"/><text x="771.8" y="162" font-size="10.5" fill="var(--muted)">the page's own work</text><line x1="190.0" y1="170" x2="190.0" y2="176" stroke="var(--muted)" stroke-width="1"/><text x="190.0" y="188" font-size="10.5" text-anchor="middle" fill="var(--muted)">0 s</text><line x1="302.0" y1="170" x2="302.0" y2="176" stroke="var(--muted)" stroke-width="1"/><text x="302.0" y="188" font-size="10.5" text-anchor="middle" fill="var(--muted)">1 s</text><line x1="413.9" y1="170" x2="413.9" y2="176" stroke="var(--muted)" stroke-width="1"/><text x="413.9" y="188" font-size="10.5" text-anchor="middle" fill="var(--muted)">2 s</text><line x1="525.9" y1="170" x2="525.9" y2="176" stroke="var(--muted)" stroke-width="1"/><text x="525.9" y="188" font-size="10.5" text-anchor="middle" fill="var(--muted)">3 s</text><line x1="637.9" y1="170" x2="637.9" y2="176" stroke="var(--muted)" stroke-width="1"/><text x="637.9" y="188" font-size="10.5" text-anchor="middle" fill="var(--muted)">4 s</text><line x1="749.8" y1="170" x2="749.8" y2="176" stroke="var(--muted)" stroke-width="1"/><text x="749.8" y="188" font-size="10.5" text-anchor="middle" fill="var(--muted)">5 s</text><line x1="861.8" y1="170" x2="861.8" y2="176" stroke="var(--muted)" stroke-width="1"/><text x="861.8" y="188" font-size="10.5" text-anchor="middle" fill="var(--muted)">6 s</text></svg><figcaption>Firefox on GitHub's machines, a release build (<code class="jx"><span class="jv">dfa3fcdffe</span></code>, run 42486001354), the neck edits, whose picture comes with the run's result. Each bar runs from the edit to the picture showing it, its parts laid end to end. The worker's parts come from its own timeline (new here); the worker's other work is what is left of its time after the evaluator, sharing and encoding (the reuse plan, composing the request, the waits between slices).</figcaption></figure></div>
+<ul>
+<li><b>How it was timed.</b> The worker now keeps a timeline of its own while the page keeps one (<code class="hz"><span class="hC">ClientMessage</span><span class="ho">.</span><span class="hC">Record</span></code>), and sends it after each result (<code class="hz"><span class="hC">ServerMessage</span><span class="ho">.</span><span class="hC">Timeline</span></code>), each step placed on the page's clock: the request decoded and composed, the reuse plan, each run of slices with its evaluator's share, making the result, and each message shared, encoded and posted, with its size. The same 8 edits as before, both ways (<code class="jx"><span class="jv">dfa3fcdffe</span></code>, run 42486001354).</li>
+<li><b>Sharing is the largest step, and it finds almost nothing to share.</b> Before encoding a message, the worker walks it and hashes every value, so that a value the page already holds goes as a reference (<code class="hz"><span class="hC">Util</span><span class="ho">.</span><span class="hC">ShareCodec</span></code>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-513"><code class="ref"><b>^ticket(</b>513<b>)</b></code></a>). In these results it found none on the arms edits and 242 references on the neck edits, which still came to 5.4 MB. So on this slide it costs 1.4 to 1.6 s a result, and 2.0 to 3.4 s on an arms edit with its stream, and saves nothing measurable.</li>
+<li><b>Encoding, posting, decoding.</b> Encoding is <code class="hz"><span class="hC">Marshal</span></code> to a string, about 0.22 s a MB here. Posting the string takes 2 to 4 ms. Making the result (its value pruned, its cache left in the worker) takes under a millisecond. Decoding, on the main thread, is <code class="hz"><span class="hC">Marshal</span></code> back, then the shared references resolved and the new values hashed and kept, about 0.32 s a MB, in one task during which the page cannot draw.</li>
+<li><b>The arms edits.</b> Their picture comes sooner, 4.2 to 5.5 s after the edit, in a 4.4 MB stream message the worker sends while it runs; that message's trip, shared and encoded in the middle of the run and decoded on the page, is 2.6 to 3.8 s. The result follows, with its own trip of 2.9 to 6.1 s, and the run is done 6.9 to 10.0 s after the edit; their evaluator, 1.2 to 1.8 s.</li>
+<li><b>The rest.</b> The page's own work, before the request and after decoding the result, is 0.40 to 0.60 s; the worker's other work (the reuse plan, the request composed, the waits between slices), 0.11 to 0.25 s. Compiled views on or off, the same.</li>
+</ul>
+<table class="vals"><tr><th>the edit</th><th>compiled views</th><th>the picture shows it, s</th><th>the worker's evaluator, s</th><th>the result shared (in the worker), s</th><th>encoded (in the worker), s</th><th>decoded (on the main thread), s</th><th>the result's trip, s</th><th>the picture came with</th><th>the run done, the result handled, s</th></tr><tr><td>neck 28 to 30</td><td>on</td><td><b>6.4</b></td><td>1.1</td><td>1.4</td><td>1.2</td><td>1.9</td><td><b>4.6</b></td><td>the result</td><td>6.4</td></tr><tr><td>neck 30 to 28</td><td>on</td><td><b>5.6</b></td><td>1.1</td><td>1.5</td><td>1.1</td><td>1.4</td><td><b>4.0</b></td><td>the result</td><td>5.6</td></tr><tr><td>arms (up / down) 55 to 65</td><td>on</td><td><b>4.2</b></td><td>1.2</td><td>1.7</td><td>0.6</td><td>1.8</td><td><b>4.2</b></td><td>a stream, 4.4 MB: shared 0.9, encoded 0.4, decoded 1.2</td><td>7.1</td></tr><tr><td>arms (up / down) 65 to 55</td><td>on</td><td><b>5.2</b></td><td>1.8</td><td>1.0</td><td>0.6</td><td>1.3</td><td><b>2.9</b></td><td>a stream, 4.4 MB: shared 1.0, encoded 0.4, decoded 2.0</td><td>6.9</td></tr><tr><td>neck 28 to 30</td><td>off</td><td><b>6.5</b></td><td>1.3</td><td>1.4</td><td>1.2</td><td>2.0</td><td><b>4.6</b></td><td>the result</td><td>6.5</td></tr><tr><td>neck 30 to 28</td><td>off</td><td><b>6.3</b></td><td>1.2</td><td>1.6</td><td>1.2</td><td>1.7</td><td><b>4.4</b></td><td>the result</td><td>6.3</td></tr><tr><td>arms (up / down) 55 to 65</td><td>off</td><td><b>4.9</b></td><td>1.2</td><td>2.3</td><td>1.1</td><td>2.7</td><td><b>6.1</b></td><td>a stream, 4.4 MB: shared 1.1, encoded 0.6, decoded 1.2</td><td>10.0</td></tr><tr><td>arms (up / down) 65 to 55</td><td>off</td><td><b>5.5</b></td><td>1.2</td><td>1.0</td><td>1.4</td><td>1.4</td><td><b>3.9</b></td><td>a stream, 4.4 MB: shared 1.3, encoded 1.2, decoded 1.3</td><td>8.0</td></tr></table>
+
+<h3 id="witch-answer">What the worker's answer holds<a class="anchor" href="#witch-answer" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="witch-answer" title="copy this section's address">copy link</button></h3>
+<p><b>Mostly the environments of the probes' samples: 4.1 to 4.2 MB of the 5.4 MB result (77%). The program's value is 1 KB, and the samples' own values 0.36 to 0.40 MB.</b> Each sample keeps, beside its value, the bindings its expression refers to, each value written out in full (<code class="hz"><span class="hC">Sample</span><span class="ho">.</span><span class="hC">Env</span><span class="ho">.</span><span class="hv">elide</span></code>, which substitutes the environment into it). The 4.4 MB stream of the arms edits is the same: 4.2 MB of environments.</p>
+<ul>
+<li><b>Whose samples.</b> The result carries 108 probes, about two for each of the slide's 53 livelits: the run samples each livelit use's <code class="hz"><span class="hv">view</span><span class="ho">(</span><span class="hv">model</span><span class="ho">)</span></code> and its model (the view fold-in, <code class="hz"><span class="hC">UserLivelit</span><span class="ho">.</span><span class="hv">instrument_view</span></code>), and that is how the page gets each livelit's view and model after a run. The page's livelit code reads a sample's value (<code class="hz"><span class="hC">LivelitProj</span><span class="ho">.</span><span class="hv">live_html</span></code>, <code class="hz"><span class="hv">latest_value</span></code>), not its environment, which is there for showing probes. Most of the size is one probe's samples; what their environment holds is the next run's question (below).</li>
+<li><b>The observation trace.</b> The run's final state also keeps its observation trace, 11 events and 1.4 MB, nearly all of it the environments of its 5 span-close events (1.3 MB). The evaluation the worker runs in slices returns its state as it is, and the worker's <code class="hz"><span class="hv">slim_state</span></code> empties only the state's cache, so the trace goes to the page, where nothing reads it. (The main thread's own evaluation clears it, <code class="hz"><span class="hv">clear_transient</span></code>.)</li>
+<li><b>The final stream.</b> The result carries the run's last stream, 107 to 216 entries, one per top-level statement finished since the last; each entry's state holds the probes again, the same values, which the encoding writes once. So the parts below add up to more than the whole.</li>
+</ul>
+<table class="vals"><tr><th>the result, as it crossed</th><th>neck 28 to 30, MB</th><th>arms (up / down) 55 to 65, MB</th></tr><tr><td>the whole result</td><td>5.38</td><td>5.40</td></tr><tr><td>the probes' samples: their environments</td><td>4.14</td><td>4.15</td></tr><tr><td>the probes' samples: their values</td><td>0.36</td><td>0.40</td></tr><tr><td>the probes' samples: call stacks, arguments and frames</td><td>0.14</td><td>0.13</td></tr><tr><td>the observation trace (the final state's <code class="jx"><span class="jv">obs_trace</span></code>)</td><td>1.40</td><td>1.44</td></tr><tr><td>of it, the environments of its span-close events</td><td>1.27</td><td>1.31</td></tr><tr><td>the program's value</td><td>&lt; 0.01</td><td>&lt; 0.01</td></tr><tr><td>the final stream's entries, besides their states</td><td>0.01</td><td>0.01</td></tr></table>
+<p><b>So most of the trip can be cut without compiling anything.</b> In the order they would help, each to be measured on this slide:</p>
+<ol>
+<li><b>Send no environments with a livelit's samples</b> (its capture spec): 77% of the bytes, and so most of the encoding and the decoding.</li>
+<li><b>Skip the sharing of the worker's answers</b>, or make it cheap: 1.4 to 3.4 s an edit in the worker, for almost no references.</li>
+<li><b>Clear the trace</b> before the result leaves the worker, as the main thread's evaluation does: 1.4 MB.</li>
+<li><b>Skip the fold-in's view in the worker</b> for a livelit the page draws compiled: the worker runs 53 views on the interpreter that the page then draws from JS.</li>
+</ol>
+<p>At the rates above, a result of half a megabyte would take about a quarter of a second to encode and decode, against 1.1 to 1.2 s and 1.4 to 2.0 s now; with no sharing, a neck edit might then take about 2 s, the evaluator most of it. That is an estimate, not a measurement.</p>
+
+<h3 id="witch-jit-run">Compiling the run: a speculation<a class="anchor" href="#witch-jit-run" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="witch-jit-run" title="copy this section's address">copy link</button></h3>
+<p><b>The trip between the worker and the page is most of an edit (<a href="#witch-trip">above</a>), and the way to save all of it is not to take it. Under the right conditions, the slide's program could run compiled to JS on the main thread, and each livelit's model could go straight into its compiled view as a JS value, as a view's answer goes straight to the page now. Nothing would be made Hazel, encoded, posted or decoded, and nothing would wait on the worker.</b> This is a speculation, not measured. (Matthew, 2026-11-08: "speculate on ways to hazel-jit more of the worker thread for a slide, so it can be absorbed into the main JS thread under ideal conditions".)</p>
+<ul>
+<li><b>What the page takes from the run today.</b> Each livelit's view and model, as samples: the run computes <code class="hz"><span class="hv">view</span><span class="ho">(</span><span class="hv">model</span><span class="ho">)</span></code> for every livelit use on the slide (53 here) and samples it at the use's projector (the view fold-in, <code class="hz"><span class="hC">UserLivelit</span><span class="ho">.</span><span class="hv">instrument_view</span></code>), and the page draws each livelit from its latest sample (<code class="hz"><span class="hC">LivelitProj</span><span class="ho">.</span><span class="hv">live_html</span></code>). Besides those: the probes' samples and the tests, for the editor; the program's value, for its result; and each statement's status, for the editor's highlights. After a slider's edit on this slide, only the first is drawn: the picture, and the slider itself.</li>
+<li><b>The idea, from views to the run.</b> A compiled view's answer stays in JS from the call to the page's elements (<a href="#witch-45">above</a>). The run could do the same. Compile the slide's program once, with each livelit use's model as a parameter (its literal lifted out of the code), so an edit to a model is a new argument, not new code. At each use, where the run samples <code class="hz"><span class="hv">view</span><span class="ho">(</span><span class="hv">model</span><span class="ho">)</span></code> now, call the livelit's compiled view on the model's JS value, and draw its answer as now. The run's answer, as far as the page is concerned, is those calls' answers; nothing else has to leave JS.</li>
+<li><b>The conditions: when the fast path is allowed.</b>
+<ol>
+<li>The program is statically clean: no type errors and no holes (an indeterminate value has no JS form), and every form in it is one hazel-jit compiles.</li>
+<li>No probes or tests are shown for the slide (their samples are Hazel values with environments; a test's pass or fail could be counted in JS instead).</li>
+<li>The edit changes livelit models only (a slider, a polygon editor), each to a value of the same type, so the statics need not run again.</li>
+<li>The run ends within a budget. On the main thread nothing can stop a loop, so the compiled code would count its calls (fuel) and give up past a limit.</li>
+<li>JS's numbers are accepted, as for compiled views (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-694"><code class="ref"><b>^ticket(</b>694<b>)</b></code></a>'s best case).</li>
+<li>No stepper or trace is open on the slide.</li>
+</ol>
+When any fails, the worker runs as it does today.</li>
+<li><b>The worker, afterward.</b> The fast path shows the edit; the worker can still run the program after it, at a lower priority, for what only it gives: probes, statuses and the editor's decorations. Its answer can also check the JS's, as <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>'s tests check compiled views against the interpreter.</li>
+<li><b>What it might gain.</b> The evaluator's 1.1 to 1.8 s is Hazel's interpreter. Compiled, <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>'s whole programs, their answers kept in JS, ran 284 to 1,152 times faster in Node, and the picture's view in Firefox, with its trip in, 29 times. Even at the smallest of those, the run would take 39 to 62 ms, and the trip, 4.0 to 4.6 s, would be gone. What would be left is the page's own work: about 0.18 to 0.27 s before the request today, and the whole slide's view, 117 ms each time it is drawn. That page work would then be the next cost.</li>
+<li><b>The cuts above first.</b> They keep the worker, and every condition below goes away with them; they are the first step whichever way this goes. A compiled run in the worker, posting the livelits' models as plain JS data (tens of KB for the picture) instead of Hazel's values, would be a step between them and this.</li>
+<li><b>Incremental, later.</b> With the models as the program's inputs, its top-level definitions could be kept by their inputs, and an edit could rerun only what depends on the model it changed: the neck slider moves 17 of the picture's 133 shapes. A first cut does not need this.</li>
+</ul>
 
 <h3 id="witch-share">Better numbers, from <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>'s sharing<a class="anchor" href="#witch-share" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="witch-share" title="copy this section's address">copy link</button></h3>
 <p><b>After a small edit, the picture's view could redo only the shapes that changed. In Node that is 0.043 ms for the neck's 17 shapes and 0.071 ms for the arms' 30, against 0.24 ms for the whole view: 5 and 3 times less work, and 0.007 ms for one shape. But it needs the new picture to share its unchanged parts with the last one, and the sharing has to come from the trip in itself. Done after the trip in, as a walk of its own, it costs 0.23 ms: as much as the view it saves.</b></p>
@@ -664,7 +717,9 @@ document.addEventListener("DOMContentLoaded", () => {
 <li>Time the Witch's picture on the slide itself, in Firefox. <i>Done 11-07 (<a href="#witch-firefox">in Firefox</a>): at first not compiled, 90 ms a render on the interpreter; since 15:05, 3.0 ms compiled.</i></li>
 <li><b>Make the Witch's picture compile in the app.</b> <i>Done 11-07 15:05 (<code class="jx"><span class="jv">cb560ebb86</span></code>): the model did hold the picture after the run; a refusal before the run had given up on the definition. Now 3.0 ms a render in Firefox (<a href="#witch-firefox">in Firefox</a>).</i></li>
 <li><b>Break down a small edit</b> (<a href="#witch-edit">above</a>): the 0.31 to 0.41 s on the main thread before the first redraw, and the run's seconds in the worker. That is where a small edit's time is. <i>Done 11-07 21:20 (<a href="#witch-edit-parts">where a small edit's time goes</a>): the evaluator is 1.2 to 2.6 s; the worker's answer, 4.4 to 5.4 MB, takes most of the rest, on both sides.</i></li>
-<li><b>Find what is in the worker's 5.4 MB answer, and record the worker's own split</b> (evaluating, making the result, encoding it). A smaller answer saves time in the worker and on the main thread, where decoding it freezes the page.</li>
+<li><b>Find what is in the worker's 5.4 MB answer, and record the worker's own split</b> (evaluating, making the result, encoding it). A smaller answer saves time in the worker and on the main thread, where decoding it freezes the page. <i>Done 11-08 (<a href="#witch-trip">the trip</a>, <a href="#witch-answer">what the answer holds</a>): the samples' environments, 77% of it; sharing and encoding in the worker, decoding on the page.</i></li>
+<li><b>Make the four cuts</b> (<a href="#witch-answer">above</a>), each measured on the Witch's small edits: the livelits' samples without environments, no sharing of answers, the trace cleared, no fold-in view for a compiled livelit.</li>
+<li><b>Try compiling the run</b> (<a href="#witch-jit-run">the speculation</a>), first in the worker, its answer as plain JS data, then on the main thread under the conditions listed.</li>
 <li><b>The page's view</b>: 117 ms each time on this slide; find what in it is redone when only a slider changed.</li>
 <li>Keep a drawn answer's node with the answer, so that a kept answer is not drawn from JS again on every render.</li>
 <li>Once the run is fast: share in the trip in, and keep the view's and the drawing's per-shape work (<a href="#witch-share">above</a>).</li>
@@ -725,6 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>Its timings</b>: <code class="jx"><span class="jv">data</span><span class="jo">/</span><span class="jv">witch</span><span class="jo">/</span><span class="jv">witch</span><span class="jo">-</span><span class="jv">bench</span><span class="jo">.</span><span class="jv">mjs</span></code> times hazel-jit's, ReScript's, Melange's and the hand-written view in one Node 22.23.2 process, three runs, each the median of five rounds of 200 calls after 20 untimed; js_of_ocaml's two programs time themselves, five runs of 200. Each version's Html is written out as markup in its own language and compared with the SVG the test drew from hazel-jit's answer, which the test checks against the interpreter's drawing. The frame's numbers are from the test, at <code class="jx"><span class="jv">bcec455abc</span></code> on <code class="jx"><span class="jv">trial</span><span class="jo">/</span><span class="jn">694</span><span class="jo">-</span><span class="jv">view</span><span class="jo">-</span><span class="jv">jit</span></code> (the splice's answers made in JS), two runs of 15 pooled (<code class="jx"><span class="jv">raw</span><span class="jo">-</span><span class="jv">run1</span><span class="jo">.</span><span class="jv">json</span></code>, <code class="jx"><span class="jv">raw</span><span class="jo">-</span><span class="jv">run2</span><span class="jo">.</span><span class="jv">json</span></code>), 2026-11-07 at 11:28 and 11:35 MST.</li>
 <li><b>The small edits</b>: <code class="jx"><span class="jv">scripts</span><span class="jo">/</span><span class="jv">jit_slides</span><span class="jo">.</span><span class="jv">py</span> <span class="jo">-</span><span class="jo">-</span><span class="jv">edit</span></code> on hazel-jit's Firefox check (<code class="jx">2a5b2ffefa</code>, run 42441046851, a release build on GitHub's machines), on a fresh load of the Witch slide each way. The script sets the slider's value, dispatches its input and change events together, and watches the whole page with a <code class="jx"><span class="jC">MutationObserver</span></code> from that moment. It records the first change under the slider's livelit, <code class="jx">#<span class="jv">dynamics</span></code>'s class (the run's status), and the first time the picture's livelit (the one drawing the most shapes) shows a different set of shapes, then waits for the page to settle before the next edit. Readings in <code class="jx"><span class="jv">data</span><span class="jo">/</span><span class="jv">witch</span><span class="jo">/</span><span class="jv">firefox</span><span class="jo">-</span><span class="jv">edit</span><span class="jo">.</span><span class="jv">json</span></code>. The observer's own work, finding the livelits again at each change, is inside these times.</li>
 <li><b>The timeline of an edit</b>: the same edits again (<code class="jx">3ed2f31844</code>, run 42445268287, the Witch slide only), with <code class="jx"><span class="jv">globalThis</span><span class="jo">.</span><span class="jv">hazelBenchMarks</span></code> set just before each edit, so the page recorded its own steps (<code class="hz"><span class="hC">Util</span><span class="ho">.</span><span class="hC">BenchMarks</span></code>, in <code class="jx"><span class="jC">Main</span><span class="jo">.</span><span class="jv">re</span></code>, <code class="jx"><span class="jC">PerfMetrics</span><span class="jo">.</span><span class="jv">re</span></code> and <code class="jx"><span class="jC">WorkerClient</span><span class="jo">.</span><span class="jv">re</span></code>) with <code class="jx"><span class="jv">performance</span><span class="jo">.</span><span class="jv">now</span></code>, the clock the check's edit times use. Recording costs two clock reads and a push a step. Readings in <code class="jx"><span class="jv">data</span><span class="jo">/</span><span class="jv">witch</span><span class="jo">/</span><span class="jv">firefox</span><span class="jo">-</span><span class="jv">timeline</span><span class="jo">.</span><span class="jv">json</span></code>.</li>
+<li><b>The worker's timeline and the answer's parts</b>: the same edits again (<code class="jx"><span class="jv">dfa3fcdffe</span></code>, run 42486001354), with the worker's own timeline (<code class="hz"><span class="hC">WorkerServer</span><span class="ho">.</span><span class="hv">wtime</span></code>, on <code class="jx"><span class="jv">performance</span><span class="jo">.</span><span class="jv">timeOrigin</span></code> so the page can place it) and each large answer kept as it arrived and broken down after the edit's timing was done (<code class="hz"><span class="hC">AnswerParts</span></code>, <code class="jx"><span class="jv">globalThis</span><span class="jo">.</span><span class="jv">hazelAnswerParts</span></code>, 56 to 83 s an edit). A part's size is estimated by a walk (a block 8 bytes a field, a string its length, a shared value once) and scaled to the bytes the whole message took: <code class="hz"><span class="hC">Marshal</span></code> itself, part by part, took more than the check's 90 s an edit. The evaluator's time is the result's own <code class="jx"><span class="jv">eval_ms</span></code>: the run of slices that posts a result is recorded after the timeline it would be in has gone. Readings in <code class="jx"><span class="jv">data</span><span class="jo">/</span><span class="jv">witch</span><span class="jo">/</span><span class="jv">firefox</span><span class="jo">-</span><span class="jv">answer</span><span class="jo">.</span><span class="jv">json</span></code>.</li>
 <li><b>The sharing prototype</b>: <code class="jx"><span class="jv">data</span><span class="jo">/</span><span class="jv">witch</span><span class="jo">/</span><span class="jv">edit</span><span class="jo">-</span><span class="jv">share</span><span class="jo">.</span><span class="jv">mjs</span></code> in Node 22.23.2 on the laptop, at 20:20 MST on 2026-11-07, on hazel-jit's compiled view as <code class="jx"><span class="jv">witch</span><span class="jo">-</span><span class="jv">bench</span><span class="jo">.</span><span class="jv">mjs</span></code> runs it, with a memo spliced into its source. For each k it does 500 runs; each draws the last picture once to fill the memo, makes the new picture fresh, then times the whole view on it, the merge, and the kept view on the merged picture. Readings in <code class="jx"><span class="jv">data</span><span class="jo">/</span><span class="jv">witch</span><span class="jo">/</span><span class="jv">edit</span><span class="jo">-</span><span class="jv">share</span><span class="jo">.</span><span class="jv">json</span></code>.</li>
   <!-- data-line: begin -->
   <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code class="jx"><span class="jo">&lt;</span><span class="jv">script</span> <span class="jv">type</span><span class="jo">=</span><span class="js">&quot;application/json&quot;</span> <span class="jv">id</span><span class="jo">=</span><span class="js">&quot;report-data&quot;</span><span class="jo">&gt;</span></code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/046/data"><code class="jx"><span class="jn">046</span><span class="jo">/</span><span class="jv">data</span><span class="jo">/</span></code></a>.</li>
@@ -1224,6 +1280,171 @@ document.addEventListener("DOMContentLoaded", () => {
      "0.41",
      "5.9",
      "2.5"
+    ]
+   ]
+  },
+  {
+   "section": "The trip between the worker and the page",
+   "section_id": "witch-trip",
+   "columns": [
+    "the edit",
+    "compiled views",
+    "the picture shows it, s",
+    "the worker's evaluator, s",
+    "the result shared (in the worker), s",
+    "encoded (in the worker), s",
+    "decoded (on the main thread), s",
+    "the result's trip, s",
+    "the picture came with",
+    "the run done, the result handled, s"
+   ],
+   "rows": [
+    [
+     "neck 28 to 30",
+     "on",
+     "6.4",
+     "1.1",
+     "1.4",
+     "1.2",
+     "1.9",
+     "4.6",
+     "the result",
+     "6.4"
+    ],
+    [
+     "neck 30 to 28",
+     "on",
+     "5.6",
+     "1.1",
+     "1.5",
+     "1.1",
+     "1.4",
+     "4.0",
+     "the result",
+     "5.6"
+    ],
+    [
+     "arms (up / down) 55 to 65",
+     "on",
+     "4.2",
+     "1.2",
+     "1.7",
+     "0.6",
+     "1.8",
+     "4.2",
+     "a stream, 4.4 MB: shared 0.9, encoded 0.4, decoded 1.2",
+     "7.1"
+    ],
+    [
+     "arms (up / down) 65 to 55",
+     "on",
+     "5.2",
+     "1.8",
+     "1.0",
+     "0.6",
+     "1.3",
+     "2.9",
+     "a stream, 4.4 MB: shared 1.0, encoded 0.4, decoded 2.0",
+     "6.9"
+    ],
+    [
+     "neck 28 to 30",
+     "off",
+     "6.5",
+     "1.3",
+     "1.4",
+     "1.2",
+     "2.0",
+     "4.6",
+     "the result",
+     "6.5"
+    ],
+    [
+     "neck 30 to 28",
+     "off",
+     "6.3",
+     "1.2",
+     "1.6",
+     "1.2",
+     "1.7",
+     "4.4",
+     "the result",
+     "6.3"
+    ],
+    [
+     "arms (up / down) 55 to 65",
+     "off",
+     "4.9",
+     "1.2",
+     "2.3",
+     "1.1",
+     "2.7",
+     "6.1",
+     "a stream, 4.4 MB: shared 1.1, encoded 0.6, decoded 1.2",
+     "10.0"
+    ],
+    [
+     "arms (up / down) 65 to 55",
+     "off",
+     "5.5",
+     "1.2",
+     "1.0",
+     "1.4",
+     "1.4",
+     "3.9",
+     "a stream, 4.4 MB: shared 1.3, encoded 1.2, decoded 1.3",
+     "8.0"
+    ]
+   ]
+  },
+  {
+   "section": "What the worker's answer holds",
+   "section_id": "witch-answer",
+   "columns": [
+    "the result, as it crossed",
+    "neck 28 to 30, MB",
+    "arms (up / down) 55 to 65, MB"
+   ],
+   "rows": [
+    [
+     "the whole result",
+     "5.38",
+     "5.40"
+    ],
+    [
+     "the probes' samples: their environments",
+     "4.14",
+     "4.15"
+    ],
+    [
+     "the probes' samples: their values",
+     "0.36",
+     "0.40"
+    ],
+    [
+     "the probes' samples: call stacks, arguments and frames",
+     "0.14",
+     "0.13"
+    ],
+    [
+     "the observation trace (the final state's obs_trace)",
+     "1.40",
+     "1.44"
+    ],
+    [
+     "of it, the environments of its span-close events",
+     "1.27",
+     "1.31"
+    ],
+    [
+     "the program's value",
+     "< 0.01",
+     "< 0.01"
+    ],
+    [
+     "the final stream's entries, besides their states",
+     "0.01",
+     "0.01"
     ]
    ]
   },

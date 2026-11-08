@@ -337,6 +337,213 @@ def fig_witch_edit_timeline():
             "not recorded, only its total.</figcaption></figure></div>")
 
 
+# (Matthew, 2026-11-08: "let's presume that the worker-main-thread communication cost dominates (preparing result,
+# sending, decoding); let's confirm that") the same edits, with the worker's own timeline and each answer broken down
+FA = json.loads(DW("firefox-answer.json"))
+
+
+def trip_parts(e, mode):
+    """one edit's split, from the page's timeline and the worker's: the evaluator (the result's eval_ms), the answer
+    shared, encoded and posted in the worker, and decoded on the main thread; the page's own work before and after"""
+    ms = e["marks"]
+    post = next(m for m in ms if m["what"] == "post to worker")
+    res = [m for m in ms if m.get("kind") == "result"][-1]
+    dec = sorted([m for m in ms if m["what"] == "worker message decoded" and m.get("bytes", 0) > 1e6], key=lambda m: m["at"])
+    rdec = dec[-1]
+    sdec = [m for m in dec if m is not rdec]
+
+    def w(name):
+        # (after the edit: a run of slices that posted the last edit's result shows in this edit's marks, before it)
+        return sum(m["ms"] for m in ms if m["what"] == "worker: " + name and m["at"] > 0)
+
+    pic = e["picture_changed_ms"]
+    done = [d for d in e["dynamics"] if d[1] == "ok"][-1][0]
+    r = {"label": e["label"], "from": e["from"], "to": e["to"], "mode": mode, "pic": pic, "done": done,
+         "post": post["at"], "eval": res["eval_ms"],
+         "share": w("share result"), "encode": w("encode result"), "send": w("post result") + w("make result"),
+         "decode": rdec["ms"], "dec_at": rdec["at"], "res_bytes": rdec["bytes"],
+         "s_share": w("share stream"), "s_encode": w("encode stream"),
+         "s_decode": sum(m["ms"] for m in sdec), "s_at": sdec[0]["at"] if sdec else None,
+         "s_bytes": sdec[0]["bytes"] if sdec else 0, "via_stream": bool(sdec) and sdec[0]["at"] < pic,
+         "parts": e.get("answer_parts") or []}
+    r["trip"] = r["share"] + r["encode"] + r["send"] + r["decode"]
+    r["after"] = pic - (rdec["at"] + rdec["ms"])
+    r["wother"] = rdec["at"] - post["at"] - r["eval"] - r["share"] - r["encode"] - r["send"]
+    r["s_trip"] = r["s_share"] + r["s_encode"] + r["s_decode"]
+    return r
+
+
+TR = [trip_parts(e, m) for m in ("on", "off") for e in FA["edits"][m]]
+_nk = [r for r in TR if not r["via_stream"]]
+_ar = [r for r in TR if r["via_stream"]]
+
+
+def _ans(r, kind):
+    return next(p for p in r["parts"] if p.get("kind") == kind)
+
+
+def _part(p, name):
+    return next((x["bytes"] for x in p["parts"] if x["part"] == name), 0)
+
+
+_res = [_ans(r, "result") for r in TR]
+_str = [_ans(r, "stream") for r in _ar]
+_lohi = lambda xs, f=lambda x: x: (min(f(x) for x in xs), max(f(x) for x in xs))
+s1 = lambda x: f"{x / 1000:.1f}"
+mb = lambda b: f"{b / 1e6:.1f}"
+mb2 = lambda b: f"{b / 1e6:.2f}"
+
+
+def _rng(key, xs, f, fmt=s1):
+    lo, hi = _lohi(xs, f)
+    WNUMS[key + "_lo"], WNUMS[key + "_hi"] = fmt(lo), fmt(hi)
+
+
+WNUMS.update({"an_run": str(FA["run"]), "an_sha": FA["sha"], "an_n": str(len(TR))})
+_rng("an_pic", _nk, lambda r: r["pic"])
+_rng("an_eval", _nk, lambda r: r["eval"])
+_rng("an_share", _nk, lambda r: r["share"])
+_rng("an_enc", _nk, lambda r: r["encode"])
+_rng("an_dec", _nk, lambda r: r["decode"])
+_rng("an_trip", _nk, lambda r: r["trip"])
+_rng("an_trip_pct", _nk, lambda r: r["trip"] / r["pic"] * 100, lambda x: f"{x:.0f}")
+_rng("an_eval_pct", _nk, lambda r: r["eval"] / r["pic"] * 100, lambda x: f"{x:.0f}")
+_rng("an_page", _nk, lambda r: r["post"] + r["after"], lambda x: f"{x / 1000:.2f}")
+_rng("an_wother", _nk, lambda r: r["wother"], lambda x: f"{x / 1000:.2f}")
+_rng("an_trip_x", _nk, lambda r: r["trip"] / r["eval"], lambda x: f"{x:.1f}")
+_rng("an_apic", _ar, lambda r: r["pic"])
+_rng("an_adone", _ar, lambda r: r["done"])
+_rng("an_aeval", _ar, lambda r: r["eval"])
+_rng("an_strip", _ar, lambda r: r["s_trip"])
+_rng("an_rtrip", _ar, lambda r: r["trip"])
+_rng("an_ashare", _ar, lambda r: r["s_share"] + r["share"])
+_rng("an_share_all", TR, lambda r: r["share"] + r["s_share"])
+_rng("an_rbytes", _res, lambda p: p["bytes"], mb)
+_rng("an_sbytes", _str, lambda p: p["bytes"], mb)
+_rng("an_env", _res, lambda p: p["probes"]["env"], mb)
+_rng("an_env_pct", _res, lambda p: p["probes"]["env"] / p["bytes"] * 100, lambda x: f"{x:.0f}")
+_rng("an_val", _res, lambda p: p["probes"]["value"], mb2)
+_rng("an_trace", _res, lambda p: _part(p, "result.state.obs_trace"), mb)
+_rng("an_tenv", _res, lambda p: p["trace"]["span_close_envs"], mb)
+_rng("an_rvalue", _res, lambda p: _part(p, "result.value"), lambda b: f"{b / 1000:.0f}")
+_rng("an_senv", _str, lambda p: p["probes"]["env"], mb)
+_rng("an_held", [p for p in _res if p["held_refs"]], lambda p: p["held_refs"], lambda x: f"{x:.0f}")
+_rng("an_parts_s", [{"s": e["answer_parts_s"]} for m in ("on", "off") for e in FA["edits"][m]], lambda x: x["s"], lambda x: f"{x:.0f}")
+WNUMS.update({
+    "an_probes": str(_res[0]["probes"]["count"]),
+    "an_events": str(sum(ev["n"] for ev in _res[0]["trace"]["events"])),
+    "an_closes": str(next(ev["n"] for ev in _res[0]["trace"]["events"] if ev["kind"] == "span close")),
+    "an_entries_lo": str(min(_part_n for _part_n in [next(x["n"] for x in p["parts"] if x["part"] == "final stream.completed entry.value") for p in _res])),
+    "an_entries_hi": str(max(_part_n for _part_n in [next(x["n"] for x in p["parts"] if x["part"] == "final stream.completed entry.value") for p in _res])),
+    "an_arms_held": str(max(p["held_refs"] for r, p in zip(TR, _res) if r["via_stream"])),
+})
+
+
+# (the speculation's estimate: report 45's whole programs, and the picture's view in Firefox, compiled against the interpreter)
+_ev_all = [r["eval"] for r in TR]
+_x_min = float(WNUMS["ff_pic_x"].replace(",", ""))
+WNUMS.update({
+    "an_evall_lo": s1(min(_ev_all)), "an_evall_hi": s1(max(_ev_all)),
+    "r45_whole_lo": "284", "r45_whole_hi": "1,152",  # (report 45's speed table: the Polygons view's whole program, a recursive sum)
+    "jr_run_lo": f"{min(_ev_all) / _x_min:.0f}", "jr_run_hi": f"{max(_ev_all) / _x_min:.0f}",
+    "e_livelits": "53",  # (the check's count of livelits on the slide, as loaded)
+    "an_enc_rate": f"{sum(r['encode'] for r in _nk) / sum(r['res_bytes'] for r in _nk) * 1e3:.2f}",
+    "an_dec_rate": f"{sum(r['decode'] for r in _nk) / sum(r['res_bytes'] for r in _nk) * 1e3:.2f}",
+})
+
+
+def table_trip():
+    """every edit: the picture's time, and the worker's and the page's parts of it"""
+    rows = []
+    for r in TR:
+        via = (f"a stream, {mb(r['s_bytes'])} MB: shared {s1(r['s_share'])}, encoded {s1(r['s_encode'])}, decoded {s1(r['s_decode'])}"
+               if r["via_stream"] else "the result")
+        rows.append(
+            f"<tr><td>{html.escape(r['label'])} {r['from']} to {r['to']}</td><td>{r['mode']}</td><td><b>{s1(r['pic'])}</b></td>"
+            f"<td>{s1(r['eval'])}</td><td>{s1(r['share'])}</td><td>{s1(r['encode'])}</td><td>{s1(r['decode'])}</td>"
+            f"<td><b>{s1(r['trip'])}</b></td><td>{via}</td><td>{s1(r['done'])}</td></tr>")
+    return ('<table class="vals"><tr><th>the edit</th><th>compiled views</th><th>the picture shows it, s</th>'
+            '<th>the worker\'s evaluator, s</th><th>the result shared (in the worker), s</th><th>encoded (in the worker), s</th>'
+            '<th>decoded (on the main thread), s</th><th>the result\'s trip, s</th><th>the picture came with</th>'
+            '<th>the run done, the result handled, s</th></tr>' + "".join(rows) + "</table>")
+
+
+def table_answer():
+    """what the result holds, as it crossed, on one neck edit and one arms edit"""
+    picks = [next(r for r in TR if not r["via_stream"]), next(r for r in TR if r["via_stream"])]
+    names = [("the whole result", lambda p: p["bytes"]),
+             ("the probes' samples: their environments", lambda p: p["probes"]["env"]),
+             ("the probes' samples: their values", lambda p: p["probes"]["value"]),
+             ("the probes' samples: call stacks, arguments and frames",
+              lambda p: p["probes"]["call_stack"] + p["probes"]["args"] + p["probes"]["frame"]),
+             ("the observation trace (the final state's <code>obs_trace</code>)", lambda p: _part(p, "result.state.obs_trace")),
+             ("of it, the environments of its span-close events", lambda p: p["trace"]["span_close_envs"]),
+             ("the program's value", lambda p: _part(p, "result.value")),
+             ("the final stream's entries, besides their states", lambda p: _part(p, "final stream.completed entry.value") + _part(p, "final stream.completed entry.prev_elab"))]
+    rows = []
+    for label, f in names:
+        cells = "".join(f"<td>{f(_ans(r, 'result')) / 1e6:.2f}</td>" if f(_ans(r, 'result')) >= 5e3 else "<td>&lt; 0.01</td>" for r in picks)
+        rows.append(f"<tr><td>{label}</td>{cells}</tr>")
+    head = "".join(f"<th>{html.escape(r['label'])} {r['from']} to {r['to']}, MB</th>" for r in picks)
+    return '<table class="vals"><tr><th>the result, as it crossed</th>' + head + "</tr>" + "".join(rows) + "</table>"
+
+
+def fig_witch_trip():
+    """the neck edits, each a bar from the edit to the picture: the page before the request, the worker's evaluator and
+    its other work, the result shared and encoded in the worker, decoded on the main thread, and the page after"""
+    W, left, right = 940, 190, 20
+    span = max(r["pic"] for r in _nk)
+    xof = lambda t: left + t / span * (W - left - right)
+    segs = [("the page, before the request", "post", "var(--line)"),
+            ("the worker's evaluator", "eval", "var(--accent)"),
+            ("the worker's other work", "wother", "var(--muted)"),
+            ("the result shared (worker)", "share", "#c2410c"),
+            ("encoded (worker)", "encode", "#ea580c"),
+            ("decoded (main thread)", "decode", "#f59e0b"),
+            ("the page, to the picture", "after", "var(--line)")]
+    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A small edit on the Witch slide, in Firefox: '
+           'the trip between the worker and the page (orange) against the evaluator (blue)</text>']
+    y = 36
+    for r in _nk:
+        out.append(f'<text x="{left - 10}" y="{y + 14}" font-size="11.5" text-anchor="end" fill="var(--ink)">{html.escape(r["label"])} '
+                   f'{r["from"]} to {r["to"]}, views {r["mode"]}</text>')
+        t = 0
+        for name, key, colour in segs:
+            d = max(0, r[key] if key != "send" else 0)
+            if key == "encode":
+                d += r["send"]
+            x0, x1 = xof(t), xof(t + d)
+            out.append(f'<rect x="{x0:.1f}" y="{y}" width="{max(0.8, x1 - x0):.1f}" height="20" fill="{colour}" opacity="0.92">'
+                       f'<title>{name}: {d / 1000:.2f} s</title></rect>')
+            if x1 - x0 > 44:
+                out.append(f'<text x="{(x0 + x1) / 2:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" '
+                           f'fill="{"var(--ink)" if colour in ("var(--line)", "var(--muted)") else "#fff"}" font-weight="700">{d / 1000:.1f} s</text>')
+            t += d
+        y += 28
+    # the legend
+    x = left
+    for name, colour in (("evaluator (worker)", "var(--accent)"), ("other (worker)", "var(--muted)"), ("shared (worker)", "#c2410c"),
+                         ("encoded (worker)", "#ea580c"), ("decoded (page)", "#f59e0b"), ("the page's own work", "var(--line)")):
+        out.append(f'<rect x="{x}" y="{y + 4}" width="12" height="12" fill="{colour}"/>')
+        out.append(f'<text x="{x + 16}" y="{y + 14}" font-size="10.5" fill="var(--muted)">{name}</text>')
+        x += 16 + 5.4 * len(name) + 14
+    y += 22
+    for t in range(0, int(span) + 1, 1000):
+        xx = xof(t)
+        out.append(f'<line x1="{xx:.1f}" y1="{y}" x2="{xx:.1f}" y2="{y + 6}" stroke="var(--muted)" stroke-width="1"/>')
+        out.append(f'<text x="{xx:.1f}" y="{y + 18}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{t // 1000} s</text>')
+    h = y + 26
+    alt = "; ".join(f"{r['label']} {r['from']} to {r['to']}, views {r['mode']}: the picture at {s1(r['pic'])} s; evaluator {s1(r['eval'])} s; "
+                    f"result shared {s1(r['share'])} s, encoded {s1(r['encode'])} s, decoded {s1(r['decode'])} s" for r in _nk)
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{html.escape(alt)}" '
+            f'style="width:100%;height:auto;display:block">' + "".join(out) +
+            f"</svg><figcaption>Firefox on GitHub's machines, a release build (<code>{FA['sha']}</code>, run {FA['run']}), the neck "
+            "edits, whose picture comes with the run's result. Each bar runs from the edit to the picture showing it, its parts laid end "
+            "to end. The worker's parts come from its own timeline (new here); the worker's other work is what is left of its time "
+            "after the evaluator, sharing and encoding (the reuse plan, composing the request, the waits between slices).</figcaption>"
+            "</figure></div>")
+
+
 def fig_witch_edit():
     """a small edit on the Witch slide, in Firefox, from the edit to the picture's change, on a log scale, against a
     60 fps frame: the slider's own first redraw, the picture showing the edit, and within it the picture's view"""
