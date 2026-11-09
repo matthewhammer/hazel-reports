@@ -21,7 +21,7 @@
    [
     "src/language/dynamics/HazelJitRun.re",
     "A slide's whole run, compiled, with each livelit's model a parameter (^report(49)).",
-    "649"
+    "654"
    ],
    [
     "src/haz3lcore/projectors/HazelJitDOM.re",
@@ -45,21 +45,21 @@
   "rows": [
    [
     "a livelit's definition",
-    "130",
+    "314",
     "1.0 ms",
-    "0.0 to 21.0 ms",
+    "0.0 to 24.0 ms",
     "0.0 + 0.0 ms",
-    "294",
-    "0.33 ms"
+    "295",
+    "0.30 ms"
    ],
    [
     "a slide's whole run",
-    "10",
-    "153.0 ms",
-    "87.0 to 299.0 ms",
-    "147.0 + 6.5 ms",
-    "97,896",
-    "1.88 ms"
+    "22",
+    "146.5 ms",
+    "67.0 to 299.0 ms",
+    "138.5 + 6.5 ms",
+    "101,425",
+    "1.71 ms"
    ]
   ]
  },
@@ -237,6 +237,48 @@
   "section": "Next steps, ongoing now",
   "section_id": "next",
   "columns": [
+   "Build",
+   "What it adds to the one above",
+   "A step, to the picture",
+   "A compiled drag"
+  ],
+  "rows": [
+   [
+    "8 · cut C (^report(50)'s last)61f3f01a15, run 42566328043",
+    "^report(50)'s build 8, for comparison.",
+    "176 to 290 ms",
+    "48.4 fpsview 10.1 ms a frame"
+   ],
+   [
+    "9 · steps 3 and 47f5add1519, run 42651798712",
+    "The slide's run compiled once and kept when only models change; its answers kept when the worker catches up; the worker's request held after a compiled step.",
+    "204 to 374 ms",
+    "54.3 fpsview 8.6 ms a frame"
+   ],
+   [
+    "10 · the comparison after the paint3e51af567f, run 42654708022",
+    "The program compared after the paint, not in the view; every compilation timed.",
+    "183 to 398 ms",
+    "47.8 fpsview 9.8 ms a frame"
+   ],
+   [
+    "11 · samples as data1524e96da3, run 42657604986",
+    "Probe samples' first-order values sent from the worker as data (step 7's first slice; it made the answer larger, and is off since 22cd278106).",
+    "152 to 284 ms",
+    "56.3 fpsview 8.2 ms a frame"
+   ],
+   [
+    "12 · steps 2 and 1d9d63c13af, run 42658981172",
+    "A step's edit made after the paint, once the compiled run has drawn it (b37d2e6df1); each editor's decorations and probes' views reused across a drag's frames.",
+    "19 to 124 ms",
+    "57.6 fpsview 6.1 ms a frame"
+   ]
+  ]
+ },
+ {
+  "section": "Next steps, ongoing now",
+  "section_id": "next",
+  "columns": [
    "",
    "What",
    "What it would take away, as measured on build 8",
@@ -244,34 +286,34 @@
   ],
   "rows": [
    [
+    "2",
+    "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
+    "Statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms (build 8).",
+    "done (b37d2e6df1, build 12): when the compiled run has answered, the page draws first and makes the edit after the paint. A step shows in 19 to 24 ms (the first of four, 124). The edit itself is still made, after the paint (^ticket(721))."
+   ],
+   [
+    "1",
+    "Draw only the livelits a drag changes: make the editors' and projectors' views incremental.",
+    "Most of the page's view: 10.1 ms of a 17.1 ms median frame of a drag (build 8); and the whole views after each worker message.",
+    "first part done (d9d63c13af, build 12): each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (8.2 to 10.1 on builds 8 to 11). Left: the projector layer (3.1 ms a frame), and the whole views after each worker message (95 to 143 ms each)."
+   ],
+   [
     "3",
     "Compile the program once, not again after a step that changed only a livelit's model: keep the compiled program, and give it the new models.",
     "126 to 141 ms of the page's thread after each step (build 8).",
-    "done (7f5add1519, 3e51af567f): kept at every step on the Witch, 5 of 5; 34 to 51 ms of comparing after the paint in place of 126 to 141 ms of compiling. Next: a cheaper comparison, since 27 to 39 ms of it copies the program."
+    "done (7f5add1519, 3e51af567f; builds 9 and 10): kept at every step on the Witch, 5 of 5; 29 to 51 ms of comparing after the paint in place of 126 to 141 ms of compiling. Next: a cheaper comparison, since 22 to 39 ms of it copies the program."
    ],
    [
     "4",
     "Leave the worker out when the compiled run has answered: keep the run's answers when the worker catches up, and hold the worker's request until the steps stop.",
     "The page drawing every livelit again from the worker's answer, to the same picture; the worker's run for each step of a quick series.",
-    "partly done (7f5add1519): the answers are kept each time the worker catches up (10 on the Witch) and its request is held 400 ms. But each of the worker's two messages still costs the page a calculate and a whole view, 95 to 143 ms a view, now drawing every livelit from the kept answers: 403 to 543 ms of the page's work after the picture, against 367 to 405 on build 8. What is left is step 1's."
+    "partly done (7f5add1519, build 9): the answers are kept each time the worker catches up (10 on the Witch) and its request is held 400 ms. But each of the worker's two messages still costs the page a calculate and a whole view, 95 to 143 ms a view, now drawing every livelit from the kept answers. What is left is step 1's."
    ],
    [
     "7",
     "Send values as data where they cross: the worker's answer and its probe samples without ids, holes or closures.",
-    "The answer is 0.59 MB, encoded in 74 to 99 ms in the worker and decoded in 23 to 56 ms in the page (3e51af567f); the Witch's picture is 3 times smaller as data (^report(47)).",
-    "first slice committed (1524e96da3): each sample's first-order value, environment and argument cross as data and are made terms again in the page; in the Firefox check now (^ticket(718))"
-   ],
-   [
-    "1",
-    "Draw only the livelits a drag changes: make the editors' and projectors' views incremental.",
-    "Most of the page's view: 10.1 ms of a 17.1 ms median frame of a drag (build 8); and the whole views after each worker message, above.",
-    "next"
-   ],
-   [
-    "2",
-    "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
-    "Statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms (build 8).",
-    "next (^ticket(721))"
+    "The answer is 0.59 MB, encoded in 67 to 99 ms in the worker and decoded in 18 to 56 ms in the page (builds 9 and 10); the Witch's picture is 3 times smaller as data (^report(47)).",
+    "first slice tried, and off (1524e96da3, build 11; off since 22cd278106): the values that went as data came back the same, but only 5 a message passed the strict check, and rebuilding the samples lost Marshal's sharing, so the answer grew to 0.89 MB. Now a survey counts why values are not data; next, make data where samples are made (^ticket(718))."
    ]
   ]
  }

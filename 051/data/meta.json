@@ -4,7 +4,7 @@
  "kind": "status report for colleagues and their agents: a synthesis of reports 045 to 050, with measurements of its own; work in progress",
  "status": "work in progress",
  "question": "What does hazel-jit (Hazel compiled to JavaScript) gain and cost, how can a colleague use it in their own PR today, what has been added since its first version, and what are its limits and next steps? Matthew, 2026-11-09.",
- "measurements": "Gains: report 045's medians in Node 22 on a laptop (not builds of the app), and, in Firefox, build 8 of report 050 (hazelgrove/hazel trial/694-view-jit at 61f3f01a15, run 42566328043 of jit.yml on GitHub's machines): each livelit view the Witch slide drew, timed again in the page compiled and on the interpreter (globalThis.hazelJit.bench, medians of 15 timings), and each polygon slide's load with Compiled views on and off (one load each). Costs: the slide's whole run compiled at four steps on build 8 ('hazel-jit: the run compiled' on the page's timeline, ms), and, from today's build, every compilation the page made (globalThis.hazelJit.compiles: hazel-jit's part, term to JS source, and the browser's, new Function and running a definition's module, ms; the JS source's characters; the elaborated term's nodes). History: git log of trial/694-view-jit from 8c5cd80a29.",
+ "measurements": "Gains: report 045's medians in Node 22 on a laptop (not builds of the app), and, in Firefox, build 8 of report 050 (hazelgrove/hazel trial/694-view-jit at 61f3f01a15, run 42566328043 of jit.yml on GitHub's machines): each livelit view the Witch slide drew, timed again in the page compiled and on the interpreter (globalThis.hazelJit.bench, medians of 15 timings), and each polygon slide's load with Compiled views on and off (one load each). Costs: the slide's whole run compiled at four steps on build 8 ('hazel-jit: the run compiled' on the page's timeline, ms), and, from today's build, every compilation the page made (globalThis.hazelJit.compiles: hazel-jit's part, term to JS source, and the browser's, new Function and running a definition's module, ms; the JS source's characters; the elaborated term's nodes). History: git log of trial/694-view-jit from 8c5cd80a29. Builds 9 to 12 (today, numbered on from report 050's eight): one run each of the same check, the Witch's four steps (ms from the click to the picture changing) and a 3-second drag (frames, ms; and the page's view per frame from the run's log).",
  "builds": [
   {
    "build": "build 8 of report 050",
@@ -14,18 +14,36 @@
    "data": "050/data/runs/42566328043/jit.json"
   },
   {
-   "build": "today's, steps 3 and 4",
+   "build": 9,
+   "what": "steps 3 and 4",
    "branch": "trial/694-view-jit",
    "commit": "7f5add1519",
    "run": "42651798712",
    "data": "051/data/runs/42651798712/jit.json"
   },
   {
-   "build": "today's, the comparison after the paint and the compile times",
+   "build": 10,
+   "what": "the comparison after the paint; every compilation timed",
    "branch": "trial/694-view-jit",
    "commit": "3e51af567f",
    "run": "42654708022",
    "data": "051/data/runs/42654708022/jit.json"
+  },
+  {
+   "build": 11,
+   "what": "samples as data (step 7's first slice; off since 22cd278106)",
+   "branch": "trial/694-view-jit",
+   "commit": "1524e96da3",
+   "run": "42657604986",
+   "data": "051/data/runs/42657604986/jit.json"
+  },
+  {
+   "build": 12,
+   "what": "steps 2 and 1 (a step's edit after the paint; editors' decorations reused)",
+   "branch": "trial/694-view-jit",
+   "commit": "d9d63c13af",
+   "run": "42658981172",
+   "data": "051/data/runs/42658981172/jit.json"
   }
  ],
  "files": [
@@ -34,6 +52,10 @@
   "runs/42651798712/jit.json",
   "runs/42651798712/jit.log",
   "runs/42654708022/jit.json",
-  "runs/42654708022/jit.log"
+  "runs/42654708022/jit.log",
+  "runs/42657604986/jit.json",
+  "runs/42657604986/jit.log",
+  "runs/42658981172/jit.json",
+  "runs/42658981172/jit.log"
  ]
 }
