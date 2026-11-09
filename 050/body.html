@@ -5,6 +5,8 @@
 
 <div class="try" id="try"><p><b>Try it yourself.</b> The branch's build runs in your own browser, with a frame-rate overlay (top right) that shows the frames your browser draws: <a href="https://build.hazel.org/trial/694-view-jit/?slide=livelit-playground-witch&amp;hud">the Witch slide, compiled</a>, and, to compare, <a href="https://build.hazel.org/trial/694-view-jit/?slide=livelit-playground-witch&amp;jit=off&amp;hud">the same with nothing compiled</a>. Drag a slider (the neck, the arms) and watch the picture and the overlay. The overlay is on with <code>?hud</code> in any build's address (hazelgrove/hazel#2818, for dev); the branch is hazelgrove/hazel#2817.</p></div>
 
+<p class="note"><b>Update, 2026-11-08 late:</b> the first next step, begun the same evening: a drag of the Witch's neck slider, compiled, went from {{c0_on_fps}} to {{c2_on_fps}} frames a second in two cuts, its median frame from {{c0_on_med}} to {{c2_on_med}} ms, the drawings unchanged on every slide. Each frame is now the page's view, {{cb_view}} ms, and the compiled run, {{cb_run}} ms (<a href="#fast">the fast path, so far</a>).</p>
+
 <h2 id="outline">Outline</h2>
 <ol class="outline">
 <li><a href="#witch">What the Witch draws</a>: a picture of 133 shapes from 2,222 lines of Hazel and 53 livelits, 33 of them sliders.</li>
@@ -38,6 +40,11 @@
 <figure><img src="img/drag-on.png" alt="The Witch slide in Firefox during a drag of the neck slider, compiled, with the frame-rate overlay at top right"><figcaption>Halfway through a drag of the neck slider, views and run compiled, the picture in view. The overlay at top right reads 9 fps, the longest frame 283 ms, over the last second: the bars are the frames, red above two 60 fps frames (Firefox on GitHub's machines, run {{drag_run}}).</figcaption></figure>
 <figure><img src="img/drag-off.png" alt="The Witch slide in Firefox during a drag of the neck slider, nothing compiled, with the frame-rate overlay"><figcaption>The same drag with nothing compiled: 9 fps, the longest frame 217 ms, at the moment of this screenshot; over the whole timed drag, {{d_off_fps}} fps against {{d_on_fps}} compiled.</figcaption></figure>
 </div>
+<h3 id="fast">The fast path, so far</h3>
+<p><b>Two cuts the same evening took a compiled drag from {{c0_on_fps}} to {{c2_on_fps}} frames a second, its median frame from {{c0_on_med}} to {{c2_on_med}} ms; with nothing compiled, from {{c0_off_fps}} to {{c2_off_fps}}.</b> Cut A (9fca635226): a drag's <code>input</code> events, which change nothing in the program's text, no longer go to the editor as an edit; until then each was taken for one, the whole program's syntax and layout made again, the statics debounce re-armed, the action logged, and every editor's view drawn again. Now the page is asked only to draw again, and its editors' memos hold. Cut B (38d4e4d0f8): each livelit has its own version in the projectors' view cache, so a frame draws again only the livelits whose answers from the compiled run changed, not all 53.</p>
+{{fig_cuts}}
+<p><b>What a frame is now: the page's view, {{cb_view}} ms of it, and the compiled run, {{cb_run}} ms.</b> The page's view is still drawn whole for every frame, even with its parts' memos holding; a median frame of {{c2_on_med}} ms is two of the display's 60 Hz frames, so the view has to fall under about 13 ms for a drag to hold 60 fps. Which parts of the view take the time is being timed next.</p>
+{{fig_frame}}
 <p>The overlay is a few lines of JavaScript, on with <code>?hud</code> in the address: the frames the browser drew in the last second, the longest of them, and two seconds of frame times against a line at 16.7 ms. It times frames as the browser draws them, so a page busy for 300 ms is one 300 ms frame. It is how you can check any number here yourself (<a href="#try">try it</a>).</p>
 
 <h2 id="compiled">Compiled against the interpreter</h2>
@@ -61,7 +68,7 @@
 <h2 id="next">What next</h2>
 <p><b>In the order that reaches 60 fps on the Witch: the page's work for a model-only step first, then what follows it.</b></p>
 <ol>
-<li><b>A drag that changes only livelit models does no whole-program work:</b> no statics, no layout of the program, no view of the whole slide; only the livelits whose answers changed are drawn again. This is the largest part of a step now (<a href="#now">above</a>; ^report(49)).</li>
+<li><b>A drag that changes only livelit models does no whole-program work:</b> no statics, no layout of the program, no view of the whole slide; only the livelits whose answers changed are drawn again. This is the largest part of a step now (<a href="#now">above</a>; ^report(49)). <span class="note">Begun 11-08 late: two cuts, {{c0_on_fps}} to {{c2_on_fps}} fps (<a href="#fast">the fast path, so far</a>); the page's view, drawn whole every frame, is what is left.</span></li>
 <li><b>No second compile when only a parameter's literal changed</b>: the compiled program already takes the new value; {{r5_recompile}} ms a step on the page's thread (^report(49)).</li>
 <li><b>The worker not run, or not drawn from, when the compiled run has answered</b>: about a second of its work, and the page drawing every view again to the same picture (^report(49)).</li>
 <li><b>Try it as a team, and track it:</b> the branch's build (hazelgrove/hazel#2817) and the overlay for dev (hazelgrove/hazel#2818); then a small edit's time, the drag's frames, checked in Firefox on every PR to dev (^report(48), tracking the goal).</li>

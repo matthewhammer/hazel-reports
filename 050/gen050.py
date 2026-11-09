@@ -235,6 +235,86 @@ def fig_drag():
                    f"build of <code>trial/694-view-jit</code> at bb88edfd12, run {DRAG_RUN}. One drag each way.")
 
 
+# (the drag fast path, 11-08 late: each cut's run, the same drag)
+CUTS = [("before (this report's run)", "42556616487", "bb88edfd12"),
+        ("cut A: a drag's inputs, no editor action", "42560502616", "9fca635226"),
+        ("cut B: only the livelits that changed drawn", "42562102280", "38d4e4d0f8")]
+CUT_DRAGS = []
+for _label, _run, _commit in CUTS:
+    _p = os.path.join(HERE, "data", "runs", _run, "jit.json")
+    if not os.path.exists(_p):
+        continue
+    _w = next(s for s in json.load(open(_p))["slides"] if s.get("slide") == "Witch")
+    _dr = {m: next((r for r in (_w.get("drags") or {}).get(m, []) if r.get("frames")), None) for m in ("on", "off")}
+    CUT_DRAGS.append((_label, _run, _commit, _dr))
+
+
+def fig_cuts():
+    W, left, right = 940, 330, 20
+    top = 60
+    xof = lambda fps: left + fps / top * (W - left - right)
+    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A 3-second drag of the Witch\'s neck slider, '
+           'frames a second, cut by cut: compiled (teal) and nothing compiled (grey)</text>']
+    y = 38
+    for label, run, commit, dr in CUT_DRAGS:
+        out.append(f'<text x="{left - 10}" y="{y + 22}" font-size="11.5" text-anchor="end" fill="var(--ink)">{html.escape(label)}</text>')
+        for i, (m, col) in enumerate((("on", "#0d9488"), ("off", "#9ca3af"))):
+            r = dr.get(m)
+            if not r:
+                continue
+            f = r["stats"]["fps"]
+            yy = y + 4 + i * 18
+            out.append(f'<rect x="{left}" y="{yy}" width="{xof(f) - left:.1f}" height="14" rx="2" fill="{col}">'
+                       f'<title>{html.escape(label)}: {f:g} fps, median frame {r["stats"]["median_ms"]:g} ms (run {run}, {commit})</title></rect>')
+            out.append(f'<text x="{xof(f) + 6:.1f}" y="{yy + 11}" font-size="11" fill="var(--ink)">{f:g} fps, median frame {r["stats"]["median_ms"]:g} ms</text>')
+        y += 48
+    gx = xof(60)
+    out.append(f'<line x1="{gx:.1f}" y1="32" x2="{gx:.1f}" y2="{y}" stroke="#15803d" stroke-width="2.5"/>')
+    out.append(f'<text x="{gx - 4:.1f}" y="{y + 14}" font-size="11" text-anchor="end" fill="#15803d" font-weight="700">60 fps</text>')
+    for v in (0, 15, 30, 45):
+        x = xof(v)
+        out.append(f'<line x1="{x:.1f}" y1="32" x2="{x:.1f}" y2="{y}" stroke="var(--line)" stroke-width="1"/>')
+        out.append(f'<text x="{x:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{v}</text>')
+    return svg_fig(W, y + 24, out, "; ".join(f"{l}: {d['on']['stats']['fps'] if d.get('on') else '-'} fps compiled" for l, _, _, d in CUT_DRAGS),
+                   "The same drag each time (one input event a frame, a change at the end), Firefox on GitHub's machines, one "
+                   "drag each way per run: " + ", ".join(f"{c} (run {r})" for _, r, c, _ in CUT_DRAGS) + ".")
+
+
+def fig_frame():
+    """after cut B, a compiled drag's median frame, from the page's own timeline over the drag, per frame"""
+    if not CUT_DRAGS or not CUT_DRAGS[-1][3].get("on"):
+        return ""
+    r = CUT_DRAGS[-1][3]["on"]
+    n = r["stats"]["frames"]
+    marks = r.get("marks") or {}
+    per = lambda k: marks.get(k, {"ms": 0})["ms"] / n
+    parts = [("the page's view", per("view"), "#2563eb"), ("the slide's run, compiled", per("hazel-jit: the run"), "#0d9488"),
+             ("after display", per("after display"), "#93c5fd"), ("update", per("update"), "#bfdbfe")]
+    med = r["stats"]["median_ms"]
+    rest = max(0.0, med - sum(v for _, v, _ in parts))
+    parts.append(("the rest: the browser's diff, layout and paint (not timed)", rest, "#d1d5db"))
+    W, left, right = 940, 16, 20
+    sc = (W - left - right) / max(med, GOAL) * 0.95
+    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">After cut B, a compiled drag\'s median frame, {med:g} ms: '
+           'where it goes (the page\'s own timeline, per frame)</text>']
+    x = left
+    for name, v, col in parts:
+        w = v * sc
+        out.append(f'<rect x="{x:.1f}" y="34" width="{max(1, w):.1f}" height="26" fill="{col}" stroke="var(--paper, #fff)" stroke-width="1"><title>{html.escape(name)}: {v:.1f} ms</title></rect>')
+        x += w
+    y = 82
+    for name, v, col in parts:
+        out.append(f'<rect x="{left}" y="{y - 10}" width="12" height="12" fill="{col}"/>')
+        out.append(f'<text x="{left + 16}" y="{y}" font-size="11" fill="var(--ink)">{html.escape(name)}: {v:.1f} ms</text>')
+        y += 18
+    gx = left + GOAL * sc
+    out.append(f'<line x1="{gx:.1f}" y1="28" x2="{gx:.1f}" y2="66" stroke="#15803d" stroke-width="2.5"/>')
+    out.append(f'<text x="{gx + 4:.1f}" y="30" font-size="11" fill="#15803d" font-weight="700">16.7 ms</text>')
+    return svg_fig(W, y + 4, out, "; ".join(f"{nm}: {v:.1f} ms" for nm, v, _ in parts),
+                   f"The page's timeline (Util.BenchMarks) summed over the drag and divided by its {n} frames; the rest of the "
+                   f"median frame is the browser's own work after the view, which the timeline does not time (run {CUT_DRAGS[-1][1]}).")
+
+
 def kept(nnn, name):
     return open(os.path.join(ROOT, nnn, "figs", name + ".html")).read().strip()
 
@@ -278,8 +358,19 @@ for mode in ("on", "off"):
         NUMS[f"d_{mode}_inputs"] = str(DRAG[mode]["inputs"])
         NUMS[f"d_{mode}_pct"] = f"{100 * st['within_16_7'] / st['frames']:.0f}"
 
+for _i, (_l, _r, _c, _d) in enumerate(CUT_DRAGS):
+    for _m in ("on", "off"):
+        if _d.get(_m):
+            NUMS[f"c{_i}_{_m}_fps"] = f"{_d[_m]['stats']['fps']:g}"
+            NUMS[f"c{_i}_{_m}_med"] = f"{_d[_m]['stats']['median_ms']:g}"
+if CUT_DRAGS and CUT_DRAGS[-1][3].get("on"):
+    _r = CUT_DRAGS[-1][3]["on"]
+    _mk = _r.get("marks") or {}
+    NUMS["cb_view"] = f"{_mk.get('view', {'ms': 0})['ms'] / _r['stats']['frames']:.1f}"
+    NUMS["cb_run"] = f"{_mk.get('hazel-jit: the run', {'ms': 0})['ms'] / _r['stats']['frames']:.1f}"
 body = open(os.path.join(HERE, "body.html")).read().replace("{{updated}}", updated)
-FIGS = {"road": fig_road(), "compiled": fig_compiled(), "compilers": fig_compilers(), "data": fig_data(), "drag": fig_drag()}
+FIGS = {"road": fig_road(), "compiled": fig_compiled(), "compilers": fig_compilers(), "data": fig_data(), "drag": fig_drag(),
+        "cuts": fig_cuts(), "frame": fig_frame()}
 os.makedirs(os.path.join(HERE, "figs"), exist_ok=True)
 for name, fig in FIGS.items():
     m = re.search(r"<svg.*?</svg>", fig, re.S)
