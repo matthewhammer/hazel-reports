@@ -1,21 +1,18 @@
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · report 050 · hazel-jit · 2026-11-08, updated {{updated}} MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (report 042)</p>
+<p class="series"><a href="../">Hazel reports</a> · report 050 · hazel-jit · 2026-11-08, revised {{updated}} MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (report 042)</p>
 <h1>Toward 60 fps: hazel-jit So Far</h1>
-<p class="sub">Where do Hazel's livelits stand against a floor of 60 frames a second for small edits, after a week of compiling them to JavaScript? Not there yet, and this report says how far and why. Matthew's goal, 2026-11-08: "I'd really like Hazel to have a floor of 60FPS for small edits (sliders changing), just like in JS (but well beyond there, obviously)." This report puts reports 045 to 049 together, with what Hazel draws, its numbers so far, screenshots of it running, and what comes next; and it asks you to try it.</p>
+<p class="sub">Can you drag a livelit's slider in Hazel and watch its picture follow at 60 frames a second, as it would on a page written in JavaScript? Not yet, but close: on the Witch slide, a drag now runs at {{b8_on_fps}} frames a second with the picture following, up from {{b5_on_fps}} earlier the same day. This report follows eight builds of one branch, each measured the same way, and says what is left. It puts reports 045 to 049 together, and asks you to try it. Matthew's goal, 2026-11-08: "I'd really like Hazel to have a floor of 60FPS for small edits (sliders changing), just like in JS (but well beyond there, obviously)."</p>
 
-<div class="try" id="try"><p><b>Try it yourself.</b> The branch's build runs in your own browser, with a frame-rate overlay (top right) that shows the frames your browser draws: <a href="https://build.hazel.org/trial/694-view-jit/?slide=livelit-playground-witch&amp;hud">the Witch slide, compiled</a>, and, to compare, <a href="https://build.hazel.org/trial/694-view-jit/?slide=livelit-playground-witch&amp;jit=off&amp;hud">the same with nothing compiled</a>. Drag a slider (the neck, the arms) and watch the picture and the overlay. The overlay is on with <code>?hud</code> in any build's address (hazelgrove/hazel#2818, for dev); the branch is hazelgrove/hazel#2817.</p></div>
-
-<p class="note"><b>Update, 2026-11-08 late:</b> the first next step, begun the same evening: in three cuts, a drag of the Witch's neck slider, compiled, went from {{c0_on_fps}} to {{c3_on_fps}} frames a second, its median frame from {{c0_on_med}} to {{c3_on_med}} ms, one display frame, with the picture following the slider at every frame; most frames now fit a 60 fps frame. The drawings are unchanged on every slide (<a href="#fast">the fast path, so far</a>).</p>
+<div class="try" id="try"><p><b>Try it yourself.</b> The latest build (build 8, below) runs in your own browser, with a frame-rate overlay at top right that shows the frames your browser draws: <a href="https://build.hazel.org/livelits-x-jit/?slide=livelit-playground-witch&amp;hud">the Witch slide, compiled</a>, and, to compare, <a href="https://build.hazel.org/livelits-x-jit/?slide=livelit-playground-witch&amp;jit=off&amp;hud">the same with nothing compiled</a>. Drag a slider (the neck, the arms) and watch the picture and the overlay. Every slide of the Livelit Playground is linked the same way in hazelgrove/hazel#2819, which hosts this build; the overlay goes on with <code>?hud</code> in the address, and is also hazelgrove/hazel#2818, for dev.</p></div>
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
-<li><a href="#witch">What the Witch draws</a>: a picture of 133 shapes from 2,222 lines of Hazel and 53 livelits, 33 of them sliders.</li>
-<li><a href="#road">A slider's step, so far</a>: from {{r0}} s to {{r5_pic}} ms, about {{r0_x}} times sooner; still {{r5_frames}} frames.</li>
-<li><a href="#running">Hazel running, with its frame rate</a>: a drag of a slider ran at {{d_on_fps}} frames a second compiled; after three cuts the same evening, {{c3_on_fps}}, most frames within a 60 fps frame; screenshots with the overlay.</li>
-<li><a href="#compiled">Compiled against the interpreter</a>: 29 to 1,150 times faster, view by view and the whole run.</li>
-<li><a href="#now">Where a step's time goes now</a>: the page's own work, not the run.</li>
+<li><a href="#witch">What the Witch draws</a>: the slide every number here is measured on, 2,222 lines of Hazel with 53 livelits and one picture of 133 shapes.</li>
+<li><a href="#stands">Where it stands</a>: on the latest build, a drag at {{b8_on_fps}} frames a second with the picture following, and a step in {{b8_step}}; not yet a floor of 60.</li>
+<li><a href="#compiled">Compiled code is fast</a>: hazel-jit runs Hazel code {{r_lo}} to {{r_hi}} times faster than the interpreter, and the slide's whole run is {{now_run_ms}} ms of a frame.</li>
+<li><a href="#builds">Eight builds, one change each</a>: how a step went from {{b1_step}} to {{b8_step}}, and a drag from {{b5_on_fps}} to {{b8_on_fps}} frames a second.</li>
+<li><a href="#time">Where the time goes now</a>: the page's own work, in a drag's frame and in a step.</li>
 <li><a href="#why">Why it was slow</a>: a thousand cuts from four design choices, and values as data.</li>
-<li><a href="#compilers">Beside ReScript and Melange</a>: hazel-jit's code within two or three times theirs.</li>
 <li><a href="#next">What next</a>, in the order that reaches 60 fps; <a href="#reports">the five reports</a>; and <a href="#method">how this was put together</a>.</li>
 </ol>
 
@@ -23,60 +20,68 @@
 <div class="witch">
 <img src="img/witch-picture.svg" alt="The Witch slide's picture: a green-faced witch in a purple hat and dress with web patterns, black boots, drawn as 133 polygons and lines">
 <div>
-<p><b>The Witch slide is a Hazel program of 2,222 lines whose 53 livelits (33 sliders, choices, polygon editors and the picture) draw one figure of 133 shapes. A step of the neck slider changes 17 of them; a step of the arms, 30.</b> The picture is a livelit too: its view draws the figure the program computes from every slider. It began as a game Matthew's children, M and N, design (Messed Up Dress Up), ported to Hazel (^report(4)) so that its pieces are live code.</p>
-<p>The drawing at left is the picture's own output, byte for byte the same from the interpreter, from hazel-jit's JavaScript, and from three other compilers and JavaScript written by hand (^report(46)). Below, the same program with its choices changed, drawn by Hazel.</p>
+<p><b>The Witch slide is a Hazel program of 2,222 lines whose 53 livelits (33 sliders, choices, polygon editors and the picture) draw one figure of 133 shapes. A step of the neck slider changes 17 of the shapes; a step of the arms, 30.</b> The picture is a livelit too: its view draws the figure the program computes from every slider. It began as a game Matthew's children, M and N, design (Messed Up Dress Up), ported to Hazel (^report(4)) so that its pieces are live code.</p>
+<p>The drawing at left is the picture's own output, the same from Hazel's interpreter, from hazel-jit's JavaScript, and from three other compilers and JavaScript written by hand (^report(46)). Below, the same program with its choices changed, drawn by Hazel.</p>
 </div>
 </div>
 <figure class="f"><img src="img/witch-variants.png" alt="Five witches: the default; with a cat and a broom; nose out, 200; other colours; a cat at 400 and a broom at 300" style="width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff"><figcaption>The Witch slide's picture with five settings of its livelits, drawn by Hazel (^report(4), 2026-10-11).</figcaption></figure>
 
-<h2 id="road">A slider's step, so far</h2>
-<p><b>One step of a slider on the Witch took {{r0}} s to show in the picture when this week began; it now shows at the page's first redraw, {{r5_pic}} ms after the step, about {{r0_x}} times sooner. That is still {{r5_frames}} frames at 60 fps.</b> Each change removed the largest obstacle and exposed the next: the worker's answer, 5 MB of terms, was most of an edit until two cuts and no sharing took it to {{r2}} s (^report(46)); then the evaluator was most of it, until the slide's whole run, compiled, ran in the page at the slider's event (^report(49)).</p>
-{{fig_road}}
-
-<h2 id="running">Hazel running, with its frame rate</h2>
-<p><b>A 3-second drag of the neck slider, as a browser delivers one (an input event a frame, a change at the end), with views and the run compiled: {{d_on_fps}} frames a second, a median frame of {{d_on_median_ms}} ms, {{d_on_pct}}% of frames within a 60 fps frame. With nothing compiled: {{d_off_fps}} frames a second, a median frame of {{d_off_median_ms}} ms.</b> <b>So Hazel does not run at 60 fps on a drag yet: about ten frames a second, each frame about a tenth of a second of the page's own work for an edit, of which the compiled run is a few milliseconds.</b> Compiling the run took a step from seconds to a third of a second and raised a drag from {{d_off_fps}} to {{d_on_fps}} fps; the frames are now the page's, which is the first of the next steps.</p>
+<h2 id="stands">Where it stands</h2>
+<p><b>On build 8, the latest, a 3-second drag of the Witch's neck slider runs at {{b8_on_fps}} frames a second with views and the slide's run compiled, and the picture follows the slider at every frame. Its median frame is {{b8_on_median_ms}} ms, one display frame: {{b8_on_within_16_7}} of its {{b8_on_frames}} frames ({{now_pct}}%) fit in one 60 fps frame, and the other {{now_miss}} take two to {{now_miss_most}}.</b> So it is not yet a floor of 60 frames a second, but most of the way there.</p>
+<p>With nothing compiled, the same drag runs at {{b8_off_fps}} frames a second, but only the slider moves: the picture waits for the worker to run the program after the release. A single step of a slider, as a click gives it, shows in the picture {{b8_step}} after the click, against {{b8_step_off}} with nothing compiled. That is still {{now_frames}} frames at 60 fps (<a href="#time">why</a>).</p>
 {{fig_drag}}
 <div class="shots">
-<figure><img src="img/drag-on.png" alt="The Witch slide in Firefox during a drag of the neck slider, compiled, with the frame-rate overlay at top right"><figcaption>Halfway through a drag of the neck slider, views and run compiled, the picture in view. The overlay at top right reads 9 fps, the longest frame 283 ms, over the last second: the bars are the frames, red above two 60 fps frames (Firefox on GitHub's machines, run {{drag_run}}).</figcaption></figure>
-<figure><img src="img/drag-off.png" alt="The Witch slide in Firefox during a drag of the neck slider, nothing compiled, with the frame-rate overlay"><figcaption>The same drag with nothing compiled: 9 fps, the longest frame 217 ms, at the moment of this screenshot; over the whole timed drag, {{d_off_fps}} fps against {{d_on_fps}} compiled.</figcaption></figure>
+<figure><img src="img/drag-c-on.png" alt="The Witch slide in Firefox during a drag of the neck slider on build 8, compiled, the overlay reading 42 fps"><figcaption><b class="build">Build 8, compiled:</b> halfway through a drag, the picture in view. The overlay reads 42 fps over the last second, the longest frame 66 ms; over the whole timed drag, {{b8_on_fps}} fps (run {{now_run}}).</figcaption></figure>
+<figure><img src="img/drag-c-off.png" alt="The same drag on build 8 with nothing compiled, the overlay reading 58 fps"><figcaption><b class="build">Build 8, nothing compiled:</b> 58 fps, the longest frame 34 ms; but the picture does not follow the drag, it waits for the worker after the release.</figcaption></figure>
 </div>
-<h3 id="fast">The fast path, so far</h3>
-<p><b>Three cuts the same evening took a compiled drag from {{c0_on_fps}} to {{c3_on_fps}} frames a second, its median frame from {{c0_on_med}} to {{c3_on_med}} ms, one display frame; {{c3_within}} of its {{c3_frames}} frames fit within a 60 fps frame. With nothing compiled, from {{c0_off_fps}} to {{c3_off_fps}}: but then the picture does not follow the drag at all, only the slider moves, and the picture waits for the worker's run after the release; compiled, the slide's whole program runs at every frame and the picture follows.</b> Cut A (9fca635226): a drag's <code>input</code> events, which change nothing in the program's text, no longer go to the editor as an edit; until then each was taken for one, the whole program's syntax and layout made again, the statics debounce re-armed, the action logged, and every editor's view drawn again. Now the page is asked only to draw again, and its editors' memos hold. Cut B (38d4e4d0f8): each livelit has its own version in the projectors' view cache, so a frame draws again only the livelits whose answers from the compiled run changed, not all 53.</p>
-{{fig_cuts}}
-<p>Cut C (bdecaec5d9, 61f3f01a15): the view, timed part by part, showed the projector layer was 14 of its 20 ms a frame, and only 2.4 ms of that drew projectors; the rest made every projector's data and wrapped its views again, about 60 projectors a frame, though a drag changes no editor state. Now both are kept while their inputs are the same objects. (The first try kept nothing: its key held an option made anew each frame; the timeline showed the data made 81 times in 81 frames.)</p>
-<p><b>What a frame is now: the page's view, {{cb_view}} ms, and the compiled run, {{cb_run}} ms; the frames that miss 16.7 ms are the ones the next cuts are for.</b></p>
-{{fig_frame}}
-<div class="shots">
-<figure><img src="img/drag-c-on.png" alt="The Witch slide in Firefox during a drag of the neck slider after three cuts, compiled, the overlay reading 42 fps"><figcaption>After three cuts, halfway through a drag, compiled: the overlay reads 42 fps, the longest frame 66 ms, over the last second (run 42566328043; over the whole timed drag, {{c3_on_fps}} fps).</figcaption></figure>
-<figure><img src="img/drag-c-off.png" alt="The same drag with nothing compiled, the overlay reading 58 fps"><figcaption>The same with nothing compiled: 58 fps, the longest frame 34 ms; the picture does not follow the drag here, it waits for the worker after the release.</figcaption></figure>
-</div>
-<p>The overlay is a few lines of JavaScript, on with <code>?hud</code> in the address: the frames the browser drew in the last second, the longest of them, and two seconds of frame times against a line at 16.7 ms. It times frames as the browser draws them, so a page busy for 300 ms is one 300 ms frame. It is how you can check any number here yourself (<a href="#try">try it</a>).</p>
+<p>The overlay is a few lines of JavaScript, on with <code>?hud</code> in the address: the frames the browser drew in the last second, the longest of them, and two seconds of frame times as bars against a line at 16.7 ms, red above two frames. It times frames as the browser draws them, so a page busy for 300 ms shows as one 300 ms frame. It is how you can check any number here yourself (<a href="#try">try it</a>).</p>
 
-<h2 id="compiled">Compiled against the interpreter</h2>
-<p><b>Compiled by hazel-jit, a livelit's view runs 29 to 1,150 times faster than on Hazel's interpreter, and the Witch's whole run about 110 times: from half a second to 4 or 5 ms in Node, and 2 to 21 ms at a step in the page.</b> A view compiled is drawn straight from its JavaScript, never made a Hazel value again (^report(45)); in Firefox compiled views draw what the interpreter draws, on every polygon slide.</p>
+<h2 id="compiled">Compiled code is fast</h2>
+<p><b>hazel-jit turns Hazel code into JavaScript that runs {{r_lo}} to {{r_hi}} times faster than Hazel's interpreter; the Witch's whole run, about {{r_run}} times faster. On build 8, the slide's whole run, compiled, takes {{now_run_ms}} ms of a drag's frame.</b> That is why the picture can follow a drag at all. It also means the run no longer stands between Hazel and 60 fps: the page's own work around it does (<a href="#time">where the time goes now</a>).</p>
+<p>A view compiled is drawn straight from its JavaScript, never made a Hazel value again (^report(45)). In Firefox, compiled views draw what the interpreter draws: the check compares every livelit's drawing on every polygon slide both ways, and found {{problems}} differences in builds 4 to 8.</p>
 {{fig_compiled}}
+<h3 id="compilers">Close to ReScript and Melange</h3>
+<p><b>On one rule of a Petri net, hazel-jit's code takes 1.59 µs a call: 2.9 times ReScript's, 1.8 times JavaScript written by hand, and 225 times less than Hazel's interpreter. On the Witch's picture view, all five compilers are within 15% of one another, since most of the work is one builtin.</b> ReScript's and Melange's ways of laying out values are the models for what hazel-jit makes next (^report(46)).</p>
+{{fig_compilers}}
 
-<h2 id="now">Where a step's time goes now</h2>
-<p><b>The slide's run, compiled, takes {{r5_first}} ms at a step's first event and {{r5_second}} ms at the next; the page's own work for an edit takes most of the rest: the whole slide's view drawn twice, its layout, and the program's syntax and statics, before the first redraw. After it the page compiles the edited program again, and the worker still runs the program and draws everything once more.</b> None of that is needed for a step that changes only livelit models (^report(49)).</p>
-{{fig_edit49}}
+<h2 id="builds">Eight builds, one change each</h2>
+<p><b>This report's own figures come from eight builds of one branch, <code>trial/694-view-jit</code>, each the build before it plus one change, and each measured the same way in Firefox on GitHub's machines on 2026-11-08. Over them, a slider's step went from {{b1_step}} to {{b8_step}}, and a drag from {{b5_on_fps}} to {{b8_on_fps}} frames a second.</b> Every build compiles livelit views (^report(45)); "nothing compiled" means the same build with Compiled views turned off. Each figure names its build by number.</p>
+{{builds_table}}
+<p>The builds come in three stages:</p>
+<ul>
+<li><b>Builds 1 to 3: the worker's answer</b> (^report(46)). The picture waited for the worker to run the whole program on the interpreter and send back its result, 5 MB of terms. Two cuts and no sharing took a step from {{b1_step}} to {{b3_step}}.</li>
+<li><b>Builds 4 and 5: the run compiled in the page</b> (^report(49)). The slide's whole run is compiled once, with each livelit's model as a parameter, and called at the slider's event. Every livelit draws from its answers at the page's first redraw, without waiting for the worker: a step in {{b5_step}}. Build 4 still took a step back to a slider's starting value for an undo, so those steps waited for the worker.</li>
+<li><b>Builds 6 to 8: a drag's frames</b> (this report). Cut A: a drag's input events, which change nothing in the program's text, no longer go to the editor as edits of the program. Cut B: a frame draws again only the livelits whose answers changed. Cut C: the projectors' data and finished views are kept while nothing they read has changed.</li>
+</ul>
+{{fig_road}}
+<h3 id="fast">A drag, build by build</h3>
+<p><b>The three cuts took a compiled drag from {{b5_on_fps}} to {{b8_on_fps}} frames a second, its median frame from {{b5_on_median_ms}} to {{b8_on_median_ms}} ms.</b> With nothing compiled, a drag went from {{b5_off_fps}} to {{b8_off_fps}}; that drag does less, since only the slider moves. Single runs vary: build 7, measured three times without changing the app, gave {{b7_all}} frames a second compiled. So a step's times for builds 5 to 7 are within that noise (cuts A and B were for a drag's input events, not a step); build 8's steps were the quickest so far, but one run each is not enough to say by how much.</p>
+{{fig_drags}}
+<div class="shots">
+<figure><img src="img/drag-on.png" alt="The Witch slide in Firefox during a drag of the neck slider on build 5, compiled, with the frame-rate overlay at top right"><figcaption><b class="build">Build 5, compiled</b>, before the cuts: halfway through the same drag, the overlay reads 9 fps, the longest frame 283 ms (run {{b5_run}}).</figcaption></figure>
+<figure><img src="img/drag-off.png" alt="The Witch slide in Firefox during a drag of the neck slider on build 5, nothing compiled, with the frame-rate overlay"><figcaption><b class="build">Build 5, nothing compiled:</b> 9 fps, the longest frame 217 ms, at the moment of this screenshot; over the whole drag, {{b5_off_fps}} fps.</figcaption></figure>
+</div>
+
+<h2 id="time">Where the time goes now</h2>
+<p><b>On build 8, a drag's frame is the page's own view, {{now_view}} ms, the compiled run, {{now_run_ms}} ms, and about 4 ms of the browser's own drawing. The view is rebuilt from the whole page's state at every frame, though a drag changes only a few livelits, and it is most of each frame.</b></p>
+{{fig_frame}}
+<p><b>A step takes longer than a drag's frame because its change event is still an edit of the whole program.</b> In a click, the input and change events come together. The input is handled as in a drag: the compiled run, then a redraw. The change goes to the editor: statics and syntax ({{st_statics}} ms), then the whole slide's view ({{st_view}} ms), all before the browser can paint, at {{st_pic}} ms. After the paint, the page compiles the program again ({{st_recompile}} ms), and the worker still runs it; its answer, at {{st_done}} s, draws the same picture again.</p>
+{{fig_step}}
 
 <h2 id="why">Why it was slow</h2>
-<p><b>The series has measured 196 separate costs in Hazel, from four design choices each applied everywhere: values held as terms, whole-program work on every edit, values moved as terms across boundaries, and an interpreter that pays for the editor at every step.</b> Many are most of the work they were found in, and many make one another larger (^report(48)). Compiling the run removes the fourth from a slider's step; the second is what is left.</p>
+<p><b>The series has measured 196 separate costs in Hazel, from four design choices each applied everywhere: values held as terms, whole-program work on every edit, values moved as terms across boundaries, and an interpreter that pays for the editor at every step.</b> Many are most of the work they were found in, and many make one another larger (^report(48)). Compiling the run (builds 4 and 5) took the fourth out of a slider's step; cuts A to C (builds 6 to 8) took some of the second out of a drag. The second is most of what is left.</p>
 {{fig_cuts48}}
 <p><b>Values as data:</b> held without ids, holes or closures, the Witch's picture is 3 times smaller and its trip 2.5 to 4.3 times quicker; but building values as data saves the evaluator a couple of percent at most, so the run itself had to be compiled (^report(47)).</p>
 {{fig_data}}
 
-<h2 id="compilers">Beside ReScript and Melange</h2>
-<p><b>On one rule of a Petri net, hazel-jit's code takes 1.59 µs a call: 2.9 times ReScript's, 1.8 times JavaScript written by hand, and 225 times less than Hazel's interpreter. On the Witch's picture view all five compilers are within 15% of one another, since most of the work is one builtin.</b> ReScript's and Melange's ways of laying out values are the models for what hazel-jit makes next (^report(46)).</p>
-{{fig_compilers}}
-
 <h2 id="next">What next</h2>
-<p><b>In the order that reaches 60 fps on the Witch: the page's work for a model-only step first, then what follows it.</b></p>
+<p><b>In the order that reaches 60 fps on the Witch: the drag's frames that miss first, then a step's change event, then the worker.</b></p>
 <ol>
-<li><b>A drag that changes only livelit models does no whole-program work:</b> no statics, no layout of the program, no view of the whole slide; only the livelits whose answers changed are drawn again. This is the largest part of a step now (<a href="#now">above</a>; ^report(49)). <span class="note">Begun 11-08 late: two cuts, {{c0_on_fps}} to {{c2_on_fps}} fps (<a href="#fast">the fast path, so far</a>); the page's view, drawn whole every frame, is what is left.</span></li>
-<li><b>No second compile when only a parameter's literal changed</b>: the compiled program already takes the new value; {{r5_recompile}} ms a step on the page's thread (^report(49)).</li>
+<li><b>Draw only what a drag changes.</b> The page's view, {{now_view}} ms of each frame on build 8, is rebuilt from the whole page's state, though a drag changes a few livelits. With the editors' and projectors' views made incremental, a frame would be the run and the changed livelits (<a href="#time">above</a>).</li>
+<li><b>A change event that commits only livelit models skips the whole-program work too</b>, or does it after the paint: statics, syntax and the whole view, {{st_pic}} ms of a step on build 8 before the paint.</li>
+<li><b>No second compile when only a model changed</b>: the compiled program already takes the new value as a parameter; {{st_recompile}} ms of the page's thread after a step (^report(49)).</li>
 <li><b>The worker not run, or not drawn from, when the compiled run has answered</b>: about a second of its work, and the page drawing every view again to the same picture (^report(49)).</li>
-<li><b>Try it as a team, and track it:</b> the branch's build (hazelgrove/hazel#2817) and the overlay for dev (hazelgrove/hazel#2818); then a small edit's time, the drag's frames, checked in Firefox on every PR to dev (^report(48), tracking the goal).</li>
+<li><b>Try it as a team, and track it:</b> build 8 is hosted by hazelgrove/hazel#2819, with every playground slide linked; then a step's time and a drag's frames checked in Firefox on every PR to dev (^report(48)).</li>
 <li><b>hazel-jit's output, after ReScript and Melange</b>: their layouts of records, constructors and lists, and fewer calls (^report(46)).</li>
 <li><b>Values as data where they cross</b>, when the worker does run: its answer and probe samples without ids or sharing (^report(47), ^ticket(718)).</li>
 <li><b>Merge the performance PRs open against dev</b>, each with its measured gain (^report(48)).</li>
@@ -87,8 +92,10 @@
 
 <h2 id="method">How this was put together</h2>
 <ul>
-<li><b>The numbers</b> are each report's own, as it states them, with its build and runs there; the charts draw them: the road from ^report(46)'s and ^report(49)'s Firefox runs (their data), the compiled pairs from ^report(45) and ^report(46), the compilers from ^report(46), values as data from ^report(47), and the two figures kept from ^report(48) and ^report(49).</li>
-<li><b>The drag</b> is this report's own: <code>scripts/jit_slides.py</code> in Firefox on GitHub's machines (<code>.github/workflows/jit.yml</code>), a release build of <code>trial/694-view-jit</code> at bb88edfd12, run {{drag_run}}: the Witch loaded fresh with <code>?hud</code>, compiled and not, the neck slider swept 0 to 60 and back for 3 s, one input event a frame and a change at the end, every frame timed with requestAnimationFrame; then the same drag again with the picture scrolled into view (the slider is 1,400 lines above it; the events reach it all the same) and a screenshot halfway, so that the screenshot cannot hold up a timed frame. One drag each way; GitHub's machines vary from run to run.</li>
+<li><b>The builds</b> (<a href="#builds">the table</a>) are release builds of <code>trial/694-view-jit</code>, each measured by <code>scripts/jit_slides.py</code> in Firefox on GitHub's machines (<code>.github/workflows/jit.yml</code>): every polygon slide loaded with Compiled views on and off, its events run, and every livelit's drawing compared; the Witch's four slider steps each way; and, from build 5 on, the drag. Builds 1 to 3 are ^report(46)'s runs, build 4 is ^report(49)'s, and builds 5 to 8 are this report's (their data).</li>
+<li><b>The drag</b>: the Witch loaded fresh with <code>?hud</code>, compiled and not, the neck slider swept from 0 to 60 and back for 3 s, one input event a frame and a change at the end, every frame timed with requestAnimationFrame. Then the same drag again with the picture scrolled into view (the slider is 1,400 lines above it; the events reach it all the same) and a screenshot halfway, so that the screenshot cannot hold up a timed frame. One drag each way per run.</li>
+<li><b>Not builds:</b> the comparisons with the interpreter and with other compilers (^report(45), ^report(46)), values as data (^report(47)) and the thousand cuts (^report(48)) measure Hazel code or values outside the app; each of those figures says so.</li>
 <li><b>The Witch's drawings</b>: its picture as ^report(46)'s compilers drew it (<code>046/witch/svg</code>), and ^report(4)'s screenshot of five settings.</li>
+<li><b>Revised 2026-11-09</b>, on Matthew's word: "It's really confusing to follow what version of the system each figure is plotting. Let's revise the entire thing and reorganize it to be simpler to understand." The builds are numbered, each figure names its build, the comparison with the interpreter moved up, and ^report(49)'s step timeline is drawn again on build 8.</li>
 </ul>
 </main></body>

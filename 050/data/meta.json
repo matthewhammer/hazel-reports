@@ -1,20 +1,94 @@
 {
  "title": "Toward 60 fps: hazel-jit So Far",
  "date": "2026-11-08",
- "kind": "synthesis with one measurement of its own, work in progress",
+ "kind": "synthesis of reports 045 to 049, with measurements of its own: eight builds of one branch, work in progress",
  "status": "work in progress",
  "question": "Where do Hazel's livelits stand against a 60 fps floor for small edits, after a week of compiling them to JavaScript (reports 045 to 049)? Matthew, 2026-11-08, for the meeting with Cyrus on 2026-11-11.",
- "measurements": "The numbers of reports 045 to 049 as they state them (their data: 046's Firefox runs, 049's runs in 049/data/runs). Its own: a 3-second drag of the Witch's neck slider with the frame-rate overlay, compiled and not, every frame timed with requestAnimationFrame, in Firefox on GitHub's machines (jit.yml, scripts/jit_slides.py), a release build of hazelgrove/hazel trial/694-view-jit at bb88edfd12, run 42556616487; frames in ms.",
+ "measurements": "Eight builds of hazelgrove/hazel trial/694-view-jit, each the one before it plus one change, each a release build measured by scripts/jit_slides.py in Firefox on GitHub's machines (jit.yml) on 2026-11-08: the Witch slide's four slider steps each way (ms from the step to the picture changing), and from build 5 on a 3-second drag of the neck slider, compiled and not, every frame timed with requestAnimationFrame (frames in ms). Builds 1 to 3 are report 046's runs (046/data/witch), build 4 is report 049's (049/data/runs), builds 5 to 8 and two repeat runs of build 7 are here in runs/.",
  "builds": [
   {
-   "what": "the drag",
+   "build": 1,
+   "what": "the branch as it was",
+   "branch": "trial/694-view-jit",
+   "commit": "dfa3fcdffe",
+   "run": "42486001354",
+   "data": "046/data/witch/firefox-answer.json"
+  },
+  {
+   "build": 2,
+   "what": "the answer cut",
+   "branch": "trial/694-view-jit",
+   "commit": "20a3067c18",
+   "run": "42490487136",
+   "data": "046/data/witch/firefox-cuts.json"
+  },
+  {
+   "build": 3,
+   "what": "the answer unshared",
+   "branch": "trial/694-view-jit",
+   "commit": "4747a4120d",
+   "run": "42492117212",
+   "data": "046/data/witch/firefox-noshare.json"
+  },
+  {
+   "build": 4,
+   "what": "the run compiled",
+   "branch": "trial/694-view-jit",
+   "commit": "6d71c427bf",
+   "run": "42551267058",
+   "data": "049/data/runs/42551267058/jit.json"
+  },
+  {
+   "build": 5,
+   "what": "steps back kept (a51dc778dd's app, with the overlay and the timed drag)",
    "branch": "trial/694-view-jit",
    "commit": "bb88edfd12",
    "run": "42556616487"
+  },
+  {
+   "build": 6,
+   "what": "cut A",
+   "branch": "trial/694-view-jit",
+   "commit": "9fca635226",
+   "run": "42560502616"
+  },
+  {
+   "build": 7,
+   "what": "cut B",
+   "branch": "trial/694-view-jit",
+   "commit": "38d4e4d0f8",
+   "run": "42562102280",
+   "again": [
+    {
+     "commit": "fa2614e1f6",
+     "run": "42563736665"
+    },
+    {
+     "commit": "bdecaec5d9",
+     "run": "42564711121"
+    }
+   ]
+  },
+  {
+   "build": 8,
+   "what": "cut C",
+   "branch": "trial/694-view-jit",
+   "commit": "61f3f01a15",
+   "run": "42566328043"
   }
  ],
  "files": [
   "runs/42556616487/jit.json",
-  "runs/42556616487/jit.log"
+  "runs/42556616487/jit.log",
+  "runs/42560502616/jit.json",
+  "runs/42560502616/jit.log",
+  "runs/42562102280/jit.json",
+  "runs/42562102280/jit.log",
+  "runs/42563736665/jit.json",
+  "runs/42563736665/jit.log",
+  "runs/42564711121/jit.json",
+  "runs/42564711121/jit.log",
+  "runs/42566328043/jit.json",
+  "runs/42566328043/jit.log"
  ]
 }
