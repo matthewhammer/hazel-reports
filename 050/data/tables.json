@@ -73,25 +73,25 @@
     "1",
     "Draw only the livelits a drag changes. Make the editors' and projectors' views incremental, so a frame no longer rebuilds the view of the whole page.",
     "Most of the page's view: 10.1 ms of a 17.1 ms median frame (where the time goes now).",
-    "not started"
+    "first part done 11-09: each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (build 12 of ^report(51))"
    ],
    [
     "2",
     "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
     "Most of a step: statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms.",
-    "not started (^ticket(721))"
+    "done 11-09: the page draws first and makes the edit after the paint; a step shows in 19 to 24 ms (build 12 of ^report(51), ^ticket(721))"
    ],
    [
     "3",
     "Compile the program once, not again after a step that changed only a livelit's model: the compiled program already takes the model as a parameter.",
     "126 ms of the page's thread after each step.",
-    "not started"
+    "done 11-09: kept at every step; 29 to 51 ms of comparing after the paint instead (builds 9 and 10 of ^report(51))"
    ],
    [
     "4",
     "Leave the worker out when the compiled run has answered: don't run it, or don't draw again from its answer.",
     "About a second of the worker's work a step (its answer at 1.08 s), and the page drawing every view again to the same picture.",
-    "not started (^ticket(720))"
+    "partly done 11-09: the answers kept, the worker's request held; the page still draws a whole view per worker message (build 9 of ^report(51), ^ticket(720))"
    ],
    [
     "5",
@@ -109,7 +109,7 @@
     "7",
     "Send values as data where they cross, when the worker does run: its answer and probe samples without ids or sharing.",
     "The picture 3 times smaller and its trip 2.5 to 4.3 times quicker, measured outside the app (^report(47)).",
-    "measured, not built (^ticket(718))"
+    "first slice tried 11-09, and off: the answer grew to 0.89 MB (build 11 of ^report(51), ^ticket(718))"
    ],
    [
     "8",

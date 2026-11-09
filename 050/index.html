@@ -164,7 +164,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>50<b>)</b></code> · hazel-jit · 2026-11-08, revised 2026-11-09 06:24 MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>50<b>)</b></code> · hazel-jit · 2026-11-08, revised 2026-11-09 10:09 MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#builds">Eight builds, one change each</a>: how a step went from 4.17 to 6.52 s to 176 to 290 ms, and a drag from 9.8 to 48.4 frames a second.</li>
 <li><a href="#time">Where the time goes now</a>: the page's own work, in a drag's frame and in a step.</li>
 <li><a href="#why">Why it was slow</a>: a thousand cuts from four design choices, and values as data.</li>
-<li><a href="#next">What next</a>: eight changes not yet tried, in the order that reaches 60 fps, each with the time it would take away; <a href="#reports">the five reports</a>; and <a href="#method">how this was put together</a>.</li>
+<li><a href="#next">What next</a>: eight changes, in the order that reaches 60 fps, each with the time it would take away and how it has gone (five tried on 11-09, in <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>); <a href="#reports">the five reports</a>; and <a href="#method">how this was put together</a>.</li>
 </ol>
 
 <h2 id="witch">What the Witch draws<a class="anchor" href="#witch" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="witch" title="copy this section's address">copy link</button></h2>
@@ -325,16 +325,16 @@ document.addEventListener("DOMContentLoaded", () => {
 <div class="figrow"><figure class="f wide"><svg viewBox="0 0 940 162" role="img" aria-label="the picture: 142.2 KB as terms, 48.0 KB as data; trip 15.0 to 25.7 ms as terms, 4.38 to 7.28 ms as data" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The Witch&#x27;s picture as Hazel&#x27;s terms (grey) and as data (blue): report 047, experiment 1</text><text x="16" y="50" font-size="11.5" fill="var(--ink)">its size, KB</text><rect x="300" y="56" width="610.0" height="13" rx="2" fill="#9ca3af" opacity="1"/><rect x="300" y="56" width="610.0" height="13" rx="2" fill="#9ca3af"><title>terms: 142.2</title></rect><text x="290" y="67" font-size="11" text-anchor="end" fill="var(--muted)">terms</text><text x="916.0" y="67" font-size="11" fill="var(--ink)">142.2</text><rect x="300" y="74" width="205.9" height="13" rx="2" fill="#2563eb" opacity="1"/><rect x="300" y="74" width="205.9" height="13" rx="2" fill="#2563eb"><title>data: 48</title></rect><text x="290" y="85" font-size="11" text-anchor="end" fill="var(--muted)">data</text><text x="511.9" y="85" font-size="11" fill="var(--ink)">48</text><text x="16" y="112" font-size="11.5" fill="var(--ink)">its trip by Marshal, encoded and decoded, ms</text><rect x="300" y="118" width="610.0" height="13" rx="2" fill="#9ca3af" opacity="0.5"/><rect x="300" y="118" width="356.0" height="13" rx="2" fill="#9ca3af"><title>terms: 15 to 25.7</title></rect><text x="290" y="129" font-size="11" text-anchor="end" fill="var(--muted)">terms</text><text x="916.0" y="129" font-size="11" fill="var(--ink)">15 to 25.7</text><rect x="300" y="136" width="172.8" height="13" rx="2" fill="#2563eb" opacity="0.5"/><rect x="300" y="136" width="104.0" height="13" rx="2" fill="#2563eb"><title>data: 4.38 to 7.28</title></rect><text x="290" y="147" font-size="11" text-anchor="end" fill="var(--muted)">data</text><text x="478.8" y="147" font-size="11" fill="var(--ink)">4.38 to 7.28</text></svg><figcaption>Not a build of the app: the picture's value, held two ways. As data: no ids, no sharing to find, numbers packed (<a href="../047/"><code class="ref"><b>^report(</b>47<b>)</b></code></a>); the lighter bar is the slowest of the readings.</figcaption></figure></div>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
-<p><b>None of these has been tried yet. Each is a change still to make, in the order that reaches 60 fps on the Witch; the middle column is the time it would take away, as measured on build 8 (or in the report named).</b> What has been done is the eight builds (<a href="#builds">the table</a>); the last three, cuts A to C, were this list's first item in the version of 11-08.</p>
+<p><b>Each is a change to make, in the order that reaches 60 fps on the Witch; the middle column is the time it would take away, as measured on build 8 (or in the report named). On 11-09, in the order Matthew set (3, 4, 7, then 1 and 2), five were tried, as builds 9 to 12 in <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>; the status column says how each went.</b> On build 12, a step shows in 19 to 24 ms and a drag's view is 6.1 ms a frame. What had been done before is the eight builds (<a href="#builds">the table</a>); the last three, cuts A to C, were this list's first item in the version of 11-08.</p>
 <table class="vals next">
 <tr><th></th><th>what to do next</th><th>what it would take away, as measured</th><th>status</th></tr>
-<tr><td>1</td><td><b>Draw only the livelits a drag changes.</b> Make the editors' and projectors' views incremental, so a frame no longer rebuilds the view of the whole page.</td><td>Most of the page's view: 10.1 ms of a 17.1 ms median frame (<a href="#time">where the time goes now</a>).</td><td>not started</td></tr>
-<tr><td>2</td><td><b>Handle a slider's change event without an edit of the program</b>, as cut A did for its input events, or do the edit's work after the paint.</td><td>Most of a step: statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms.</td><td>not started (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a>)</td></tr>
-<tr><td>3</td><td><b>Compile the program once, not again after a step</b> that changed only a livelit's model: the compiled program already takes the model as a parameter.</td><td>126 ms of the page's thread after each step.</td><td>not started</td></tr>
-<tr><td>4</td><td><b>Leave the worker out when the compiled run has answered</b>: don't run it, or don't draw again from its answer.</td><td>About a second of the worker's work a step (its answer at 1.08 s), and the page drawing every view again to the same picture.</td><td>not started (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-720"><code class="ref"><b>^ticket(</b>720<b>)</b></code></a>)</td></tr>
+<tr><td>1</td><td><b>Draw only the livelits a drag changes.</b> Make the editors' and projectors' views incremental, so a frame no longer rebuilds the view of the whole page.</td><td>Most of the page's view: 10.1 ms of a 17.1 ms median frame (<a href="#time">where the time goes now</a>).</td><td>first part done 11-09: each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (build 12 of <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>)</td></tr>
+<tr><td>2</td><td><b>Handle a slider's change event without an edit of the program</b>, as cut A did for its input events, or do the edit's work after the paint.</td><td>Most of a step: statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms.</td><td>done 11-09: the page draws first and makes the edit after the paint; a step shows in 19 to 24 ms (build 12 of <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a>)</td></tr>
+<tr><td>3</td><td><b>Compile the program once, not again after a step</b> that changed only a livelit's model: the compiled program already takes the model as a parameter.</td><td>126 ms of the page's thread after each step.</td><td>done 11-09: kept at every step; 29 to 51 ms of comparing after the paint instead (builds 9 and 10 of <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>)</td></tr>
+<tr><td>4</td><td><b>Leave the worker out when the compiled run has answered</b>: don't run it, or don't draw again from its answer.</td><td>About a second of the worker's work a step (its answer at 1.08 s), and the page drawing every view again to the same picture.</td><td>partly done 11-09: the answers kept, the worker's request held; the page still draws a whole view per worker message (build 9 of <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-720"><code class="ref"><b>^ticket(</b>720<b>)</b></code></a>)</td></tr>
 <tr><td>5</td><td><b>Check a step's time and a drag's frames in Firefox on every PR to dev</b>, so they cannot slip back (<a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>).</td><td>Nothing by itself; it keeps the rest.</td><td>the check runs on this branch only (<code>jit.yml</code>); build 8 is hosted for the team by <a href="https://github.com/hazelgrove/hazel/pull/2819">hazelgrove/hazel#2819</a></td></tr>
 <tr><td>6</td><td><b>Make hazel-jit's output more like ReScript's and Melange's</b>: their layouts of records, constructors and lists, and fewer calls.</td><td>On the Petri rule, 1.59 µs a call against ReScript's 0.55 (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>); on the Witch, the run is 2.2 ms of a frame, so little there.</td><td>not started</td></tr>
-<tr><td>7</td><td><b>Send values as data where they cross</b>, when the worker does run: its answer and probe samples without ids or sharing.</td><td>The picture 3 times smaller and its trip 2.5 to 4.3 times quicker, measured outside the app (<a href="../047/"><code class="ref"><b>^report(</b>47<b>)</b></code></a>).</td><td>measured, not built (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-718"><code class="ref"><b>^ticket(</b>718<b>)</b></code></a>)</td></tr>
+<tr><td>7</td><td><b>Send values as data where they cross</b>, when the worker does run: its answer and probe samples without ids or sharing.</td><td>The picture 3 times smaller and its trip 2.5 to 4.3 times quicker, measured outside the app (<a href="../047/"><code class="ref"><b>^report(</b>47<b>)</b></code></a>).</td><td>first slice tried 11-09, and off: the answer grew to 0.89 MB (build 11 of <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-718"><code class="ref"><b>^ticket(</b>718<b>)</b></code></a>)</td></tr>
 <tr><td>8</td><td><b>Merge the performance PRs open against dev.</b></td><td>Each PR's own measured gain (<a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>).</td><td>open, waiting for review</td></tr>
 </table>
 
@@ -795,25 +795,25 @@ document.addEventListener("DOMContentLoaded", () => {
      "1",
      "Draw only the livelits a drag changes. Make the editors' and projectors' views incremental, so a frame no longer rebuilds the view of the whole page.",
      "Most of the page's view: 10.1 ms of a 17.1 ms median frame (where the time goes now).",
-     "not started"
+     "first part done 11-09: each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (build 12 of ^report(51))"
     ],
     [
      "2",
      "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
      "Most of a step: statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms.",
-     "not started (^ticket(721))"
+     "done 11-09: the page draws first and makes the edit after the paint; a step shows in 19 to 24 ms (build 12 of ^report(51), ^ticket(721))"
     ],
     [
      "3",
      "Compile the program once, not again after a step that changed only a livelit's model: the compiled program already takes the model as a parameter.",
      "126 ms of the page's thread after each step.",
-     "not started"
+     "done 11-09: kept at every step; 29 to 51 ms of comparing after the paint instead (builds 9 and 10 of ^report(51))"
     ],
     [
      "4",
      "Leave the worker out when the compiled run has answered: don't run it, or don't draw again from its answer.",
      "About a second of the worker's work a step (its answer at 1.08 s), and the page drawing every view again to the same picture.",
-     "not started (^ticket(720))"
+     "partly done 11-09: the answers kept, the worker's request held; the page still draws a whole view per worker message (build 9 of ^report(51), ^ticket(720))"
     ],
     [
      "5",
@@ -831,7 +831,7 @@ document.addEventListener("DOMContentLoaded", () => {
      "7",
      "Send values as data where they cross, when the worker does run: its answer and probe samples without ids or sharing.",
      "The picture 3 times smaller and its trip 2.5 to 4.3 times quicker, measured outside the app (^report(47)).",
-     "measured, not built (^ticket(718))"
+     "first slice tried 11-09, and off: the answer grew to 0.89 MB (build 11 of ^report(51), ^ticket(718))"
     ],
     [
      "8",
