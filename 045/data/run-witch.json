@@ -1,0 +1,42 @@
+{
+ "about": "^report(45), ^ticket(722): the Witch slide's whole program (hazel-programs/docs/livelits/playground/witch.hz, 2,222 lines, 53 livelit uses) run by Hazel's interpreter and compiled by hazel-jit, in Node v22.23.2 on the laptop, by `hazel jit -n 5` (the CLI, trial/694-view-jit 0926a80c74 plus the --check flag, a development build). Each time is a run's mean over 5 runs after one to warm; the compiled run makes its JS anew each time (new Function on its 176 KB of source). Three invocations. The check (--check): the program's last expression replaced by a tuple of it and every name its top-level lets bind; 194 names, 124 the same both ways, 0 different, 70 functions or modules with no JS form to compare.",
+ "commit": "0926a80c74",
+ "runs": [
+  {
+   "parse_ms": 1328.6,
+   "statics_elab_ms": 2853.8,
+   "jit_compile_ms": 39.2,
+   "interpreter_ms": 502.2,
+   "compiled_ms": 4.24,
+   "same_value": true
+  },
+  {
+   "parse_ms": 1260.7,
+   "statics_elab_ms": 2796.5,
+   "jit_compile_ms": 43.8,
+   "interpreter_ms": 504.9,
+   "compiled_ms": 4.43,
+   "same_value": true
+  },
+  {
+   "parse_ms": 1329.3,
+   "statics_elab_ms": 2858.0,
+   "jit_compile_ms": 38.1,
+   "interpreter_ms": 528.5,
+   "compiled_ms": 4.98,
+   "same_value": true
+  }
+ ],
+ "check": {
+  "names": 194,
+  "same": 124,
+  "differ": 0,
+  "no_js_form": 70
+ },
+ "not_compiled": {
+  "a hole": 52,
+  "a quotation": 1,
+  "undefined": 1,
+  "reached": 0
+ }
+}
