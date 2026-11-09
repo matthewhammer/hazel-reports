@@ -92,6 +92,8 @@ def fig_gains():
     out = []
     title(out, "The same Hazel code on Hazel's interpreter (grey) and as hazel-jit's JavaScript (teal); a log scale")
     y = 40
+    gx = xof(GOAL)
+    out.append(f'<line x1="{gx:.1f}" y1="32" x2="{gx:.1f}" y2="{40 + 32 * len(PAIRS)}" stroke="{GREEN}" stroke-width="2.5"/>')
     for (label, (ia, ib), (ca, cb), where), x in zip(PAIRS, RATIOS):
         out.append(f'<text x="{left - 10}" y="{y + 9}" font-size="11.5" text-anchor="end" fill="var(--ink)">{html.escape(label)}</text>')
         out.append(f'<text x="{left - 10}" y="{y + 21}" font-size="10" text-anchor="end" fill="var(--muted)">{html.escape(where)}</text>')
@@ -101,13 +103,13 @@ def fig_gains():
             out.append(f'<rect x="{xof(a) - 4:.1f}" y="{y + 3}" width="{max(8, xof(b) - xof(a) + 8):.1f}" height="12" rx="6" fill="{col}">'
                        f'<title>{html.escape(label)}: {a:g} to {b:g} ms</title></rect>')
         lab = f"about {x:,.0f} times"
-        if xi + 10 + 6 * len(lab) > W - 4:
-            out.append(f'<text x="{xc - 12:.1f}" y="{y + 13}" font-size="11" text-anchor="end" fill="var(--ink)">{lab}</text>')
+        halo = 'stroke="var(--paper)" stroke-width="4" paint-order="stroke"'
+        xe = xof(ib) + 8
+        if xe + 6 * len(lab) > W - 4:
+            out.append(f'<text x="{xof(ca) - 10:.1f}" y="{y + 13}" font-size="11" text-anchor="end" fill="var(--ink)" {halo}>{lab}</text>')
         else:
-            out.append(f'<text x="{xi + 10:.1f}" y="{y + 13}" font-size="11" fill="var(--ink)">{lab}</text>')
+            out.append(f'<text x="{xe:.1f}" y="{y + 13}" font-size="11" fill="var(--ink)" {halo}>{lab}</text>')
         y += 32
-    gx = xof(GOAL)
-    out.append(f'<line x1="{gx:.1f}" y1="32" x2="{gx:.1f}" y2="{y}" stroke="{GREEN}" stroke-width="2.5"/>')
     out.append(f'<text x="{gx + 5:.1f}" y="{y + 28}" font-size="11" fill="{GREEN}" font-weight="700">16.7 ms, a 60 fps frame</text>')
     log_axis(out, xof, 32, y, [(0.01, "10 µs"), (0.1, "0.1 ms"), (1, "1 ms"), (10, "10 ms"), (100, "0.1 s"), (1000, "1 s")])
     return svg_fig(W, y + 40, out, "; ".join(f"{l}: {a[0]:g} ms on the interpreter, {c[0]:g} ms compiled" for l, a, c, _ in PAIRS),
@@ -233,11 +235,11 @@ def fig_costs():
     yof = lambda ms: 30 + (yhi - math.log10(max(ms, 0.05))) / (yhi - ylo) * (H - 30 - bottom)
     out = []
     title(out, "Each compilation the page made, its time against the size of the term compiled (both log scales)")
-    for v in (0.1, 1, 10, 100, 1000):
+    for v, lab in ((0.05, "read 0"), (1, "1 ms"), (10, "10 ms"), (100, "100 ms"), (1000, "1 s")):
         if ylo <= math.log10(v) <= yhi:
             y = yof(v)
-            out.append(f'<line x1="{left}" y1="{y:.1f}" x2="{W - right}" y2="{y:.1f}" stroke="var(--line)"/>')
-            out.append(f'<text x="{left - 6}" y="{y + 4:.1f}" font-size="10.5" text-anchor="end" fill="var(--muted)">{v:g} ms</text>')
+            out.append(f'<line x1="{left}" y1="{y:.1f}" x2="{W - right}" y2="{y:.1f}" stroke="var(--line)"{" stroke-dasharray=\"3 3\"" if v < 1 else ""}/>')
+            out.append(f'<text x="{left - 6}" y="{y + 4:.1f}" font-size="10.5" text-anchor="end" fill="var(--muted)">{lab}</text>')
     for v in (100, 1000, 10000, 100000, 1000000):
         if xlo <= math.log10(v) <= xhi:
             x = xof(v)
@@ -255,7 +257,8 @@ def fig_costs():
                    "while each polygon slide loaded and its livelits were clicked, in Firefox on GitHub's machines "
                    "(<code>globalThis.hazelJit.compiles</code>). Its time is hazel-jit's part, the term to JS source, and the "
                    "browser's, <code>new Function</code> and, for a definition, running its module; its size is the "
-                   "elaborated term's nodes (expressions, patterns and types).")
+                   "elaborated term's nodes (expressions, patterns and types). Firefox's clock reads whole milliseconds "
+                   "here: the dashed row is the compilations that read 0 ms, under one.")
 
 
 def costs_table():
@@ -302,8 +305,9 @@ NUMS = {
     "v_poly_i": f"{min(b[1] for b in polys):g} to {max(b[1] for b in polys):g}",
     "v_poly_c": f"{min(b[2] for b in polys):.2f} to {max(b[2] for b in polys):.2f}",
     "n_commits": str(len(cs) - 1),
-    "c_run": C_RUN8,
-    "c_def": (f"{st.median([c['to_js_ms'] + c['js_ms'] for c in defs]):.1f} ms (the median of {len(defs)})" if defs
+    "c_run": (f"{min(c['to_js_ms'] + c['js_ms'] for c in runs_c):.0f} to {max(c['to_js_ms'] + c['js_ms'] for c in runs_c):.0f} ms "
+              f"(median {st.median([c['to_js_ms'] + c['js_ms'] for c in runs_c]):.0f})" if runs_c else C_RUN8),
+    "c_def": ("about a millisecond, the largest about 20 ms" if defs
               else "about 4.5 ms (in Node; Firefox's numbers are being measured)"),
     "c_note": meta_today.get("c_note", "The compile times of each definition in Firefox are being measured now; until they are in, the figure shows what compiling does to a slide's load."),
     "c_kept": meta_today.get("c_kept", "what the comparison that replaces it costs is being measured now."),
@@ -339,6 +343,7 @@ FIGS = {
                           "with nothing compiled (grey), on <b class=\"build\">builds 5 to 8</b> of report 050. With nothing "
                           "compiled the picture does not move until the drag ends."),
     "fig_costs": fig_costs(),
+    "fig_loads": fig_loads() if compiles else "",
     "tab_costs": costs_table(),
     "fig_history": fig_history(cs),
 }

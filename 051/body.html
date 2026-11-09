@@ -9,7 +9,7 @@
 <ol class="outline">
 <li><a href="#what">What hazel-jit is</a>: a compiler from Hazel's elaborated terms to the source of a JavaScript function, about 2,000 lines of Reason in three modules.</li>
 <li><a href="#gains">Expected gains</a>: compiled code runs {{g_lo}} to {{g_hi}} times faster than the interpreter; in the app, a slider's step shows in {{b8_step}} instead of {{b1_step}}, and a drag runs at {{b8_fps}} frames a second.</li>
-<li><a href="#costs">Expected costs</a>: compiling a livelit's definition takes {{c_def}}, a whole slide's program {{c_run}}, once; loading a slide is no slower.</li>
+<li><a href="#costs">Expected costs</a>: compiling a livelit's definition takes {{c_def}}, and a whole slide's program {{c_run}}, once; loading the slides with many livelits is no slower.</li>
 <li><a href="#use">How to use it in your own PR</a>: base your branch on <code>trial/694-view-jit</code>, and livelits compile with no change; the API, the command line, the tests and the Firefox check, for anything else.</li>
 <li><a href="#features">What has been added since the first version</a>: {{n_commits}} commits in three days, from a term compiled in a test to a slide's whole run compiled in the page.</li>
 <li><a href="#limits">Limitations</a>: JavaScript's numbers, no probes inside compiled code, the forms it does not compile, one browser, and not on <code>dev</code>.</li>
@@ -43,9 +43,10 @@
 </ul>
 
 <h2 id="costs">Expected costs</h2>
-<p><b>Compiling is paid once per definition or program, and is small beside what it saves: {{c_def}} for a livelit's definition, and {{c_run}} for the Witch's whole program of 2,222 lines, in Firefox. Loading a slide with Compiled views on is no slower than with them off: on build 8, the slides with the most livelits loaded faster.</b> {{c_note}}</p>
+<p><b>Compiling is paid once per definition or program, and is small beside what it saves: {{c_def}} for a livelit's definition, and {{c_run}} for a slide's whole program, in Firefox. Loading the slides with many livelits is no slower with Compiled views on than off, and on two of them faster; on Polygons, with one livelit, a load took 0.3 s (build 8) and 1.8 s (today) longer, in single runs.</b> {{c_note}}</p>
 {{fig_costs}}
 {{tab_costs}}
+{{fig_loads}}
 <p><b>Other costs, smaller:</b></p>
 <ul>
 <li><b>Warm-up.</b> The JS engine optimizes a compiled function as it runs: a Polygons render's first 30 calls took 1.03 ms each (median) in Node, against 0.34 ms warm.</li>
@@ -136,5 +137,5 @@
 <p>Not yet started: a check on every PR to <code>dev</code> (step 5), hazel-jit's output more like ReScript's (step 6), and merging the performance PRs open against <code>dev</code> (step 8).</p>
 
 <h2 id="method">How this was put together</h2>
-<p>This report gathers reports 045 to 050 and adds measurements of its own. The numbers in Node are report 045's and 046's (Node 22, a laptop, medians of 30 runs); those in Firefox are from <code>scripts/jit_slides.py</code> in <code>jit.yml</code> on GitHub's machines, one run per build: build 8 is {{b8}} (run 42566328043), and today's builds are named where they appear. The compile times in the page come from <code>globalThis.hazelJit.compiles</code>, written by <code>HazelJitValue.note_compile</code>: hazel-jit's part (the term to JS source) and the browser's (<code>new Function</code>, and running a definition's module), with the JS source's size and the term's nodes. One run of a build can differ from the next by a third (report 050), so read single runs as such. The line counts are of the branch at {{head}}. The generator is <code>051/gen051.py</code>; every number in the page is also in its embedded data and in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/051/data">051/data</a>.</p>
+<p>This report gathers reports 045 to 050 and adds measurements of its own. The numbers in Node are report 045's and 046's (Node 22, a laptop, medians of 30 runs); those in Firefox are from <code>scripts/jit_slides.py</code> in <code>jit.yml</code> on GitHub's machines, one run per build: build 8 is {{b8}} (run 42566328043), and today's builds are named where they appear. The compile times in the page come from <code>globalThis.hazelJit.compiles</code>, written by <code>HazelJitValue.note_compile</code>: hazel-jit's part (the term to JS source) and the browser's (<code>new Function</code>, and running a definition's module), with the JS source's size and the term's nodes. One run of a build can differ from the next by a third (report 050), so read single runs as such. Firefox reads the page's clock in whole milliseconds on GitHub's machines, so a compilation under a millisecond reads 0 or 1 ms. Today's runs are 42651798712 (7f5add1519, steps 3 and 4) and 42654708022 (3e51af567f, the comparison after the paint, and the compile times); <code>051/drivers/steps.py</code> reads a run's steps and compilations. The line counts are of the branch at {{head}}. The generator is <code>051/gen051.py</code>; every number in the page is also in its embedded data and in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/051/data">051/data</a>.</p>
 </main></body>
