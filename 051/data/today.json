@@ -7,7 +7,7 @@
  "c_note": "On 3e51af567f (run 42654708022) the page compiled 130 livelit definitions on the six polygon slides: most, of about 300 nodes, in a millisecond or less (Firefox's clock reads whole milliseconds here), and the largest, a module of 62,077 nodes, in 14 to 21 ms; all of a slide's definitions together, 19 to 50 ms. A slide's whole run, 24,000 to 112,000 nodes, took 87 to 299 ms (median 153), nearly all of it hazel-jit writing the JS (the browser's <code>new Function</code> took 0 to 14 ms): about 1.3 to 2.8 ms per 1,000 nodes.",
  "c_kept": "on 3e51af567f the comparison that replaces it takes 34 to 51 ms after the paint, 27 to 39 ms of that copying the program without its models, against 126 to 141 ms of compiling on build 8.",
  "c_commit": "3e51af567f",
- "next_note": "Steps 3, 4, 2 and the first part of 1 are in, as builds 9 to 12 (the table), each measured in Firefox on the Witch. Step 2 brought a step from 176 to 290 ms down to 19 to 24; step 1's first part took 2 to 4 ms off each frame of a drag; step 3 did what it set out to; step 4 kept the answers but not the page's redraws; step 7's first slice made the answer larger and is off. Build 13 then took the sidebar's outline out of the page's view (Matthew, 2026-11-09: \"no memoization, but isolation, instead\"): the views after each worker message went from 88 to 130 ms to 45 to 63. Build 14 then took on the rest of the page's work after a step: 0.56 to 0.92 s on build 13 to 0.37 to 0.52 s, on machines of the same speed. Build 15 keeps the livelits an edit does not touch.",
+ "next_note": "Steps 3, 4, 2 and the first part of 1 are in, as builds 9 to 12 (the table), each measured in Firefox on the Witch. Step 2 brought a step from 176 to 290 ms down to 19 to 24; step 1's first part took 2 to 4 ms off each frame of a drag; step 3 did what it set out to; step 4 kept the answers but not the page's redraws; step 7's first slice made the answer larger and is off. Build 13 then took the sidebar's outline out of the page's view (Matthew, 2026-11-09: \"no memoization, but isolation, instead\"): the views after each worker message went from 88 to 130 ms to 45 to 63. Build 14 then took on the rest of the page's work after a step: 0.56 to 0.92 s on build 13 to 0.37 to 0.52 s, on machines of the same speed. Build 15 keeps the livelits an edit does not touch; on a machine like build 13's, the page's work after a step is 0.24 to 0.30 s, against 0.43 to 0.60.",
  "next_rows": [
   [
    "2",
@@ -38,6 +38,12 @@
    "Send values as data where they cross: the worker's answer and its probe samples without ids, holes or closures.",
    "The answer is 0.59 MB, encoded in 67 to 99 ms in the worker and decoded in 18 to 56 ms in the page (builds 9 and 10); the Witch's picture is 3 times smaller as data (report 047).",
    "<b>first slice tried, and off</b> (1524e96da3, build 11; off since 22cd278106): the values that went as data came back the same, but only 5 a message passed the strict check, and rebuilding the samples lost Marshal's sharing, so the answer grew to 0.89 MB. Now a survey counts why values are not data; next, make data where samples are made (^ticket(718))."
+  ],
+  [
+   "8",
+   "The autosave: write the slide's text without printing the whole program again after each step, and its first save after a load without writing everything.",
+   "37 to 46 ms a second after each step, 27 to 36 of them printing the 2,222 lines again; 287 ms the first time after the slide loads (build 15).",
+   "next"
   ]
  ]
 }

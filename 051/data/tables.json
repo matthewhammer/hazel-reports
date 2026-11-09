@@ -286,10 +286,10 @@
     "52.0 fpsview 7.5 ms a frame"
    ],
    [
-    "15 · livelits kept across an edita1b43cba46, run 42696123420",
-    "A livelit's cached view keyed on its own statics record, not the whole statics map and elaborated term (d35f2f2619, a1b43cba46): after an edit only the edited livelit is drawn again, not all 53; a probe's value check remembered per value (515813903a). A machine like build 14's (the worker's encode 71 to 114 ms). Its first step waited for the autosave left from the slide's load (287 ms), which came as the step began.",
-    "24 to 443 ms",
-    "50.3 fpsview 8.4 ms a frame"
+    "15 · livelits kept across an edit1da80a8022, run 42697957029",
+    "A livelit's cached view keyed on its own statics record, not the whole statics map and elaborated term (d35f2f2619, a1b43cba46): after an edit only the edited livelit is drawn again, not all 53; a probe's value check remembered per value (515813903a). Plotted: a run of a1b43cba46 with the autosave's parts timed (1da80a8022, nothing else changed), on a machine like build 13's (the worker's encode 56 to 72 ms, against 52). Its other run (a1b43cba46, run 42696123420) was on a machine like build 14's.",
+    "16 to 126 ms",
+    "58.6 fpsview 4.4 ms a frame"
    ]
   ]
  },
@@ -332,6 +332,12 @@
     "Send values as data where they cross: the worker's answer and its probe samples without ids, holes or closures.",
     "The answer is 0.59 MB, encoded in 67 to 99 ms in the worker and decoded in 18 to 56 ms in the page (builds 9 and 10); the Witch's picture is 3 times smaller as data (^report(47)).",
     "first slice tried, and off (1524e96da3, build 11; off since 22cd278106): the values that went as data came back the same, but only 5 a message passed the strict check, and rebuilding the samples lost Marshal's sharing, so the answer grew to 0.89 MB. Now a survey counts why values are not data; next, make data where samples are made (^ticket(718))."
+   ],
+   [
+    "8",
+    "The autosave: write the slide's text without printing the whole program again after each step, and its first save after a load without writing everything.",
+    "37 to 46 ms a second after each step, 27 to 36 of them printing the 2,222 lines again; 287 ms the first time after the slide loads (build 15).",
+    "next"
    ]
   ]
  }
