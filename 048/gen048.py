@@ -126,6 +126,12 @@ os.chdir(_cwd)
 STEPS = [("before the cuts", [r["pic"] for r in W46.TR], W46.FA["run"]),
          ("a module kept out of a probe's environment, the trace cleared", [r["pic"] for r in W46.TC], W46.FC["run"]),
          ("the worker's answers unshared", [r["pic"] for r in W46.TN], W46.FN["run"])]
+# (^report(49), 11-08 evening: the slide's run compiled and run in the page at the slider's event; the steps whose
+# picture came from it, before the worker's answer, are the steps away from a slider's starting value)
+_R49 = json.load(open(os.path.join(ROOT, "049", "data", "runs", "42551267058", "jit.json")))
+_W49 = next(s for s in _R49["slides"] if s.get("slide") == "Witch")
+_E49 = [e["picture_changed_ms"] for e in _W49["edits"]["on"] if e["picture_changed_ms"] < [t for t, s in e["dynamics"] if s == "ok"][-1]]
+STEPS49 = [("the run compiled in the page (report 049)", _E49, "42551267058")]
 GOAL_MS = 1000 / 60
 
 
@@ -138,7 +144,7 @@ def fig_witch():
     out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A slider\'s step on the Witch slide, from the edit '
            'to the picture showing it, in Firefox: each cut so far, and the goal (a log scale)</text>']
     y = 40
-    for label, xs, run in STEPS + [("the goal: 60 fps", [GOAL_MS], None)]:
+    for label, xs, run in STEPS + STEPS49 + [("the goal: 60 fps", [GOAL_MS], None)]:
         a, b = min(xs), max(xs)
         out.append(f'<text x="{left - 10}" y="{y + 14}" font-size="11.5" text-anchor="end" fill="var(--ink)">{html.escape(label)}</text>')
         if run is None:
@@ -158,7 +164,10 @@ def fig_witch():
     return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="the Witch\'s small edit at each cut, and the goal" '
             f'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>The same eight edits each time (two sliders, "
             "both ways, compiled views on and off), Firefox on GitHub's machines, ^report(46)'s runs: "
-            + ", ".join(str(r) for _, _, r in STEPS) + ".</figcaption></figure></div>")
+            + ", ".join(str(r) for _, _, r in STEPS) + ". The last bar (added 11-08 evening) is report 049's run "
+            "42551267058: the two of its four steps, compiled, whose picture came from the run compiled in the page; the other two "
+            "still waited for the worker (1.66 to 1.69 s), and with nothing compiled the same steps took 1.90 to 2.24 s in that run."
+            "</figcaption></figure></div>")
 
 
 def fig_now():

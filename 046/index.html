@@ -173,7 +173,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>46<b>)</b></code> · hazel-jit · 2026-11-07, updated 2026-11-08 17:23 MST · <span class="wip">work in progress</span> · beside <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> (<a href="../045/#next">its next step 7</a>)</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>46<b>)</b></code> · hazel-jit · 2026-11-07, updated 2026-11-08 19:50 MST · <span class="wip">work in progress</span> · beside <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> (<a href="../045/#next">its next step 7</a>)</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -631,6 +631,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 <h3 id="witch-jit-run">Compiling the run: a speculation<a class="anchor" href="#witch-jit-run" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="witch-jit-run" title="copy this section's address">copy link</button></h3>
+<p class="note"><b>In the app</b> (2026-11-08 evening, <a href="../049/"><code class="ref"><b>^report(</b>49<b>)</b></code></a>): the first point below, that the run samples every livelit's view today, does not hold on the slides: a slide is elaborated with only its cells' own probes, so the run calls no livelit's view, and the page runs each view itself (none of the Witch's 53 livelits is drawn from the run's samples). The compiled run now folds the views in itself, and the idea is measured: in Firefox the run answers a slider's step in 10 to 12 ms, and on two of four steps the picture showed at the page's first redraw, 318 and 469 ms after the step (<a href="../049/"><code class="ref"><b>^report(</b>49<b>)</b></code></a>).</p>
 <p class="note"><b>Now measured</b> (11-08, 17:22): hazel-jit compiles the Witch slide's whole program and runs it in Node in 4.2 to 5.0 ms against the interpreter's 502 to 529 ms, 106 to 119 times faster, with the same values; not yet in the app (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>, <a href="../045/#run">the whole run, compiled</a>; <a href="https://matthewhammer.org/hazel/dashboard/#ticket-722"><code class="ref"><b>^ticket(</b>722<b>)</b></code></a>). The estimate below said 39 to 62 ms at the smallest speedup then measured.</p>
 <p><b>The trip between the worker and the page is most of an edit (<a href="#witch-trip">above</a>), and the way to save all of it is not to take it. Under the right conditions, the slide's program could run compiled to JS on the main thread, and each livelit's model could go straight into its compiled view as a JS value, as a view's answer goes straight to the page now. Nothing would be made Hazel, encoded, posted or decoded, and nothing would wait on the worker.</b> This is a speculation, not measured. (Matthew, 2026-11-08: "speculate on ways to hazel-jit more of the worker thread for a slide, so it can be absorbed into the main JS thread under ideal conditions".)</p>
 <ul>

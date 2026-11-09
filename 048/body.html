@@ -16,8 +16,10 @@
 <li><a href="#next">Recommendations</a>: merge the open PRs (a table, each with its measured gain), port what the branches measured, change the three choices behind most cuts, and track the goal on dev; and <a href="#ledger">the ledger</a>, every cut, with its report.</li>
 </ol>
 
+<p class="note"><b>Update, 2026-11-08 evening:</b> the Witch's whole run, compiled, now runs in the app at a slider's step (report 049): in Firefox it answers in 10 to 12 ms (3 to 4 ms for the next event of a drag), all 53 livelits' views included, and in 2 of 4 steps the picture showed at the page's first redraw, 318 and 469 ms after the step, against 1.90 to 2.24 s with nothing compiled in the same run. On those steps the evaluator is out of the way; what is left is the page's own work (statics, the whole slide's view twice) and the program compiled again after each step.</p>
+
 <h2 id="short">In short</h2>
-<p><b>Hazel is slow for many reasons at once, not for one. The series has measured {{n_cuts}} separate costs; many are most of the workload they were found in, and many make one another larger. Remove the biggest and the next is there: on the Witch slide, the trip of the worker's answer was 70 to 72% of a small edit; cut, the evaluator is now most of it.</b></p>
+<p><b>Hazel is slow for many reasons at once, not for one. The series has measured {{n_cuts}} separate costs; many are most of the workload they were found in, and many make one another larger. Remove the biggest and the next is there: on the Witch slide, the trip of the worker's answer was 70 to 72% of a small edit; cut, the evaluator is now most of it.</b> <span class="note">(Update, 11-08 evening: with the run compiled in the page, the evaluator is out of the way on the steps it answered, and the page's own work, 318 to 469 ms, is most of what is left: report 049.)</span></p>
 <p><b>They come from four design choices, each sound on its own and each applied everywhere:</b></p>
 <ul>
 <li><b>Values are held as terms</b> ({{f_terms}} cuts): every value carries ids on every node, closures carry environments substituted into them, run-time type checks walk values, and probes write values out with their environments.</li>
@@ -84,6 +86,7 @@
 
 <h2 id="witch">One small edit, cut by cut</h2>
 <p><b>A slider's step on the Witch slide took {{w0_lo}} to {{w0_hi}} s to show in the picture; two cuts and the sharing dropped bring it to {{w2_lo}} to {{w2_hi}} s, still {{w2_x_lo}} to {{w2_x_hi}} times the 16.7 ms of a 60 fps floor.</b> Matthew's goal (2026-11-08): "a floor of 60FPS for small edits (sliders changing), just like in JS"; "and each obstacle is worth studying, and overcoming." Each cut so far removed the largest obstacle and exposed the next.</p>
+<p class="note"><b>Update, 2026-11-08 evening:</b> the next cut, the slide's run compiled to JavaScript and run in the page at the slider's event (report 049, <a href="../049/#step">a step, run compiled</a>): the run takes 10 to 12 ms, and on the two steps away from a slider's starting value the picture showed at the page's first redraw, 318 and 469 ms after the step, the last bar below. On the two steps back it still waited for the worker (1.66 to 1.69 s), not yet explained. Now the page's own work is the largest obstacle: statics and the whole slide's view, drawn twice before the first redraw (<a href="../049/#edit">where a step's time goes now</a>).</p>
 {{fig_witch}}
 {{fig_now}}
 <p>What is left, by size: the worker's evaluator, then the page's own work (most of it the whole slide's view drawn again), then the answer's trip. None of the three is small enough alone; all three have to go.</p>
@@ -126,7 +129,7 @@
 <ul>
 <li><b>Values held as data, not terms</b>, when closed and first-order: no source ids, no environments, no sharing (^ticket(718), ^report(47)). It reaches the {{f_terms}} cuts of the first family and the {{f_moving}} of the third. Its first experiment: the Witch's picture 3 times smaller and 2.5 to 3.9 times quicker to send.</li>
 <li><b>Work in proportion to the edit</b>: reuse below a top-level binding, where 75 to 84% of an incremental run's steps are in calls whose inputs did not change (^report(10)); statics per item; for a change to one livelit, no whole-page view (the Witch's is about 117 ms, five times an edit). It reaches the {{f_whole}} cuts of the second family.</li>
-<li><b>Compiled code for the run</b>, as for views: under ideal conditions (no holes, no probes shown, an edit to livelit models only), the run in JS on the main thread, with nothing sent (^report(46), <a href="../046/#witch-jit-run">compiling the run</a>). It reaches the {{f_machine}} cuts of the fourth family, and it is the road to a 60 fps floor.</li>
+<li><b>Compiled code for the run</b>, as for views: under ideal conditions (no holes, no probes shown, an edit to livelit models only), the run in JS on the main thread, with nothing sent (^report(46), <a href="../046/#witch-jit-run">compiling the run</a>). It reaches the {{f_machine}} cuts of the fourth family, and it is the road to a 60 fps floor. <span class="note">(Update, 11-08 evening: measured in the app, report 049: the Witch's run, compiled, 10 to 12 ms a step in Firefox, its picture at the page's first redraw on two of four steps.)</span></li>
 </ul>
 
 <h3 id="next-track">4. Track the goal on dev</h3>
