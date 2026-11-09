@@ -308,8 +308,10 @@ TODAY_BUILDS = [
      "adds": "A livelit's cached view keyed on its own statics record, not the whole statics map and elaborated term (d35f2f2619, a1b43cba46): after an edit only the edited livelit is drawn again, not all 53; a probe's value check remembered per value (515813903a). Plotted: a run of a1b43cba46 with the autosave's parts timed (1da80a8022, nothing else changed), on a machine like build 13's (the worker's encode 56 to 72 ms, against 52). Its other run (a1b43cba46, run 42696123420) was on a machine like build 14's."},
     {"n": 16, "name": "the autosave on its own", "commit": "f4bcd64cf7", "run": "42699757678", "path": "051/data/runs/42699757678/jit.json",
      "adds": "The autosave writes the page's model without going through the update (Main.apply), so the very same model comes back and nothing is drawn again: after each autosave, no calculate, whole view or outline (about 60 ms on build 15's run). On a machine like build 14's (the worker's encode 73 to 109 ms), so its steps and drag read slower than build 15's run."},
+    {"n": 17, "name": "the comparison, only what changed", "commit": "b195b09088", "run": "42703776919", "path": "051/data/runs/42703776919/jit.json",
+     "adds": "The comparison after a step erases only what the step changed: erase remembered per node (c016370918, b195b09088), since the new program is the old one's very objects but for 36 to 49 nodes (b34491d761). The comparison 33 to 43 ms before (run 42701761078), 1 ms now; the run kept at every step as before (5 of 5). On a machine like build 14's (the worker's encode 82 to 102 ms)."},
 ]
-VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5), 13: (4.9, 3.9), 14: (7.5, 5.9), 15: (4.4, 3.4), 16: (7.4, 5.9)}  # from each run's log
+VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5), 13: (4.9, 3.9), 14: (7.5, 5.9), 15: (4.4, 3.4), 16: (7.4, 5.9), 17: (8.6, 6.8)}  # from each run's log
 for b in TODAY_BUILDS:
     w = next(x for x in json.load(open(os.path.join(ROOT, b["path"])))["slides"] if x["slide"] == "Witch")
     b["steps"] = [e["picture_changed_ms"] for e in w["edits"]["on"]]
@@ -325,7 +327,7 @@ def fig_today():
     xof = lambda ms: left + (math.log10(ms) - lo) / (hi - lo) * (mid_x - 40 - left)
     vx = lambda ms: mid_x + ms / 12 * (W - right - mid_x - 130)
     out = []
-    title(out, "The Witch, builds 8 to 16: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
+    title(out, "The Witch, builds 8 to 17: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
     y = 40
     for b in TODAY_BUILDS:
         out.append(f'<text x="{left - 10}" y="{y + 12}" font-size="11.5" text-anchor="end" fill="var(--ink)">{b["n"]} · {html.escape(b["name"])}</text>')
@@ -348,13 +350,13 @@ def fig_today():
         out.append(f'<line x1="{x:.1f}" y1="34" x2="{x:.1f}" y2="{y}" stroke="var(--line)" stroke-dasharray="2 3"/>')
         out.append(f'<text x="{x:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{v} ms</text>')
     return svg_fig(W, y + 34, out, "; ".join(f"build {b['n']}: steps {b['steps']} ms; a drag's view {b['view']} ms a frame, {b['drag']['fps']} fps" for b in TODAY_BUILDS),
-                   "<b class=\"build\">Builds 8 to 16</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
+                   "<b class=\"build\">Builds 8 to 17</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
                    "Firefox check on GitHub's machines. Left: each of the four steps of the neck and arms sliders, from the click to "
                    "the picture changing; from build 12 the page draws the compiled run's answers first and makes the edit after "
                    "the paint, and from build 13 the sidebar's outline is built after the paint, not in the view. Build 14's run "
                    "was on a slower machine (the worker's encode 70 to 82 ms, against 52 on build 13's), so its drag's view "
                    "(7.5 ms a frame) is to be read against build 13 on a machine like it: 7.7. Build 15's run plotted was on a machine "
-                   "like build 13's, and build 16's on one like build 14's. Right: a 3-second compiled drag of the neck slider, the page's view per frame (dark: the editors; "
+                   "like build 13's, and builds 16 and 17 on ones like build 14's. Right: a 3-second compiled drag of the neck slider, the page's view per frame (dark: the editors; "
                    "light: the rest), with the drag's frames a second. The frames a second vary from run to run more than the "
                    "builds differ (builds 9 to 11 changed nothing a drag does and gave 54.3, 47.8 and 56.3); the view's time per "
                    "frame is steadier.")

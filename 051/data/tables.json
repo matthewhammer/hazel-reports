@@ -21,7 +21,7 @@
    [
     "src/language/dynamics/HazelJitRun.re",
     "A slide's whole run, compiled, with each livelit's model a parameter (^report(49)).",
-    "654"
+    "760"
    ],
    [
     "src/haz3lcore/projectors/HazelJitDOM.re",
@@ -296,6 +296,12 @@
     "The autosave writes the page's model without going through the update (Main.apply), so the very same model comes back and nothing is drawn again: after each autosave, no calculate, whole view or outline (about 60 ms on build 15's run). On a machine like build 14's (the worker's encode 73 to 109 ms), so its steps and drag read slower than build 15's run.",
     "21 to 124 ms",
     "51.7 fpsview 7.4 ms a frame"
+   ],
+   [
+    "17 · the comparison, only what changedb195b09088, run 42703776919",
+    "The comparison after a step erases only what the step changed: erase remembered per node (c016370918, b195b09088), since the new program is the old one's very objects but for 36 to 49 nodes (b34491d761). The comparison 33 to 43 ms before (run 42701761078), 1 ms now; the run kept at every step as before (5 of 5). On a machine like build 14's (the worker's encode 82 to 102 ms).",
+    "28 to 132 ms",
+    "45.7 fpsview 8.6 ms a frame"
    ]
   ]
  },
@@ -325,7 +331,7 @@
     "3",
     "Compile the program once, not again after a step that changed only a livelit's model: keep the compiled program, and give it the new models.",
     "126 to 141 ms of the page's thread after each step (build 8).",
-    "done (7f5add1519, 3e51af567f; builds 9 and 10): kept at every step on the Witch, 5 of 5; 29 to 51 ms of comparing after the paint in place of 126 to 141 ms of compiling. Next: a cheaper comparison, since 22 to 39 ms of it copies the program."
+    "done (7f5add1519, 3e51af567f; builds 9 and 10): kept at every step on the Witch, 5 of 5; 29 to 51 ms of comparing after the paint in place of 126 to 141 ms of compiling. Next: a cheaper comparison, since 22 to 39 ms of it copies the program. The cheaper comparison: done (c016370918, b195b09088; build 17): 1 ms, from 33 to 43, by erasing only what a step changed."
    ],
    [
     "4",
