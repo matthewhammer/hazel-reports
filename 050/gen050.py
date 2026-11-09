@@ -18,6 +18,7 @@ EXTRA = """
   table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.88em; }
   table.vals th, table.vals td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
   table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; } table.vals th { font-weight: 600; }
+  table.next td:nth-child(2) { min-width: 30ch; } table.next td:nth-child(3) { min-width: 24ch; } table.next td:nth-child(4) { min-width: 12ch; }
   table.builds td:first-child { min-width: 14ch; } table.builds td:nth-child(2) { min-width: 28ch; }
   table.builds td:nth-child(3), table.builds td:nth-child(4) { min-width: 14ch; font-variant-numeric: tabular-nums; }
   table.vals tr.now td { background: color-mix(in srgb, var(--accent) 8%, transparent); }

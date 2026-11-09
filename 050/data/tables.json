@@ -60,6 +60,66 @@
   ]
  },
  {
+  "section": "What next",
+  "section_id": "next",
+  "columns": [
+   "",
+   "what to do next",
+   "what it would take away, as measured",
+   "status"
+  ],
+  "rows": [
+   [
+    "1",
+    "Draw only the livelits a drag changes. Make the editors' and projectors' views incremental, so a frame no longer rebuilds the view of the whole page.",
+    "Most of the page's view: 10.1 ms of a 17.1 ms median frame (where the time goes now).",
+    "not started"
+   ],
+   [
+    "2",
+    "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
+    "Most of a step: statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms.",
+    "not started (^ticket(721))"
+   ],
+   [
+    "3",
+    "Compile the program once, not again after a step that changed only a livelit's model: the compiled program already takes the model as a parameter.",
+    "126 ms of the page's thread after each step.",
+    "not started"
+   ],
+   [
+    "4",
+    "Leave the worker out when the compiled run has answered: don't run it, or don't draw again from its answer.",
+    "About a second of the worker's work a step (its answer at 1.08 s), and the page drawing every view again to the same picture.",
+    "not started (^ticket(720))"
+   ],
+   [
+    "5",
+    "Check a step's time and a drag's frames in Firefox on every PR to dev, so they cannot slip back (^report(48)).",
+    "Nothing by itself; it keeps the rest.",
+    "the check runs on this branch only (jit.yml); build 8 is hosted for the team by hazelgrove/hazel#2819"
+   ],
+   [
+    "6",
+    "Make hazel-jit's output more like ReScript's and Melange's: their layouts of records, constructors and lists, and fewer calls.",
+    "On the Petri rule, 1.59 µs a call against ReScript's 0.55 (^report(46)); on the Witch, the run is 2.2 ms of a frame, so little there.",
+    "not started"
+   ],
+   [
+    "7",
+    "Send values as data where they cross, when the worker does run: its answer and probe samples without ids or sharing.",
+    "The picture 3 times smaller and its trip 2.5 to 4.3 times quicker, measured outside the app (^report(47)).",
+    "measured, not built (^ticket(718))"
+   ],
+   [
+    "8",
+    "Merge the performance PRs open against dev.",
+    "Each PR's own measured gain (^report(48)).",
+    "open, waiting for review"
+   ]
+  ]
+ },
+ {
   "section": "The five reports",
   "section_id": "reports",
   "columns": [
