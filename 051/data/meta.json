@@ -1,0 +1,20 @@
+{
+ "title": "Hazel-JIT Status Report",
+ "date": "2026-11-09",
+ "kind": "status report for colleagues and their agents: a synthesis of reports 045 to 050, with measurements of its own; work in progress",
+ "status": "work in progress",
+ "question": "What does hazel-jit (Hazel compiled to JavaScript) gain and cost, how can a colleague use it in their own PR today, what has been added since its first version, and what are its limits and next steps? Matthew, 2026-11-09.",
+ "measurements": "Gains: report 045's medians in Node 22 on a laptop (not builds of the app), and, in Firefox, build 8 of report 050 (hazelgrove/hazel trial/694-view-jit at 61f3f01a15, run 42566328043 of jit.yml on GitHub's machines): each livelit view the Witch slide drew, timed again in the page compiled and on the interpreter (globalThis.hazelJit.bench, medians of 15 timings), and each polygon slide's load with Compiled views on and off (one load each). Costs: the slide's whole run compiled at four steps on build 8 ('hazel-jit: the run compiled' on the page's timeline, ms), and, from today's build, every compilation the page made (globalThis.hazelJit.compiles: hazel-jit's part, term to JS source, and the browser's, new Function and running a definition's module, ms; the JS source's characters; the elaborated term's nodes). History: git log of trial/694-view-jit from 8c5cd80a29.",
+ "builds": [
+  {
+   "build": "build 8 of report 050",
+   "branch": "trial/694-view-jit",
+   "commit": "61f3f01a15",
+   "run": "42566328043",
+   "data": "050/data/runs/42566328043/jit.json"
+  }
+ ],
+ "files": [
+  "numbers.json"
+ ]
+}

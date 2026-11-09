@@ -1,0 +1,266 @@
+[
+ {
+  "section": "What hazel-jit is",
+  "section_id": "what",
+  "columns": [
+   "Module",
+   "What it does",
+   "Lines"
+  ],
+  "rows": [
+   [
+    "src/language/dynamics/HazelJit.re",
+    "The compiler: a term to JS source (compile_full, try_compile), and its runtime, $R (structural equality, builtins, parameters and samples).",
+    "895"
+   ],
+   [
+    "src/language/dynamics/HazelJitValue.re",
+    "The boundary: Hazel values into JS (to_js) and back (of_js, read by the types the compiler recorded), a livelit definition compiled and its view and update called (view_of_def, call_view, call_update), and the counts and timings the Firefox check reads.",
+    "812"
+   ],
+   [
+    "src/language/dynamics/HazelJitRun.re",
+    "A slide's whole run, compiled, with each livelit's model a parameter (^report(49)).",
+    "626"
+   ],
+   [
+    "src/haz3lcore/projectors/HazelJitDOM.re",
+    "A view's answer drawn straight from its JS, without carrying it back into Hazel first.",
+    "471"
+   ]
+  ]
+ },
+ {
+  "section": "Expected costs",
+  "section_id": "costs",
+  "columns": [
+   "What was compiled",
+   "Where, which build",
+   "Time"
+  ],
+  "rows": [
+   [
+    "The Polygons livelit's definition",
+    "Node, not a build of the app (^report(45))",
+    "4.46 ms"
+   ],
+   [
+    "The Witch's whole program (2,222 lines, 53 livelits), at each of four steps",
+    "Firefox, build 8 (61f3f01a15)",
+    "126 to 141 ms"
+   ]
+  ]
+ },
+ {
+  "section": "From OCaml",
+  "section_id": "use-api",
+  "columns": [
+   "Call",
+   "What it does"
+  ],
+  "rows": [
+   [
+    "HazelJit.try_compile(~env, e)",
+    "An elaborated term to JS source, or the reason it does not compile. compile_full also gives the constructors' types and the functions, for the way back."
+   ],
+   [
+    "HazelJitValue.instantiate(src)",
+    "Runs the source as new Function(\"$R\", src) with the runtime: the term's value, in JS."
+   ],
+   [
+    "HazelJitValue.to_js(v), of_js(types, ty, js)",
+    "A Hazel value into JS, and a JS value back into Hazel, read by the type expected where it sits."
+   ],
+   [
+    "HazelJitValue.view_of_def(~env, def)",
+    "A livelit definition compiled once (cached by term), its view kept; then call_view(v, model) (the answer in JS), run_view (back in Hazel) and call_update(v, model, action)."
+   ],
+   [
+    "HazelJitDOM.go(mvu, types, answer)",
+    "A view's answer drawn straight from its JS, every form HazelDOM draws."
+   ],
+   [
+    "HazelJitValue.enabled",
+    "The setting, a ref(bool)."
+   ]
+  ]
+ },
+ {
+  "section": "What has been added since the first version",
+  "section_id": "features",
+  "columns": [
+   "What",
+   "Commit, day",
+   "Report"
+  ],
+  "rows": [
+   [
+    "The compiler",
+    "The compiler",
+    "The compiler"
+   ],
+   [
+    "Modules, to_fixed, and the Polygons slide's view compiled whole",
+    "79fe5bbebf, 11-06",
+    "045"
+   ],
+   [
+    "Cheaper ids; a number written with a minus",
+    "97ba46706b, 567c8d9620, 11-07",
+    "045"
+   ],
+   [
+    "A livelit's use and a splice compiled as what they hold, %splice_value in JS, and a survey mode: a form it does not compile becomes a stub that throws only if reached",
+    "0926a80c74, 11-08",
+    "045"
+   ],
+   [
+    "Livelits in the app",
+    "Livelits in the app",
+    "Livelits in the app"
+   ],
+   [
+    "Livelits' views run compiled, through a boundary that carries values both ways",
+    "7a7151443c, 11-06",
+    "045"
+   ],
+   [
+    "A view drawn straight from its JS (HazelJitDOM), every form HazelDOM draws",
+    "889271cfbb, 11-07",
+    "045"
+   ],
+   [
+    "An update compiled, its new model carried back as a diff",
+    "4c0ed173f1, 11-07",
+    "045"
+   ],
+   [
+    "A view's splice commands answered in JS; a model that cannot go into JS no longer gives up on its definition",
+    "bcec455abc, cb560ebb86, 11-07",
+    "046"
+   ],
+   [
+    "A slide's whole run, compiled",
+    "A slide's whole run, compiled",
+    "A slide's whole run, compiled"
+   ],
+   [
+    "The Witch's whole run compiled (command line), 76 to 127 times faster",
+    "0926a80c74, 11-08",
+    "045"
+   ],
+   [
+    "Each livelit's model a parameter, so a step is a call with a new argument, not new code",
+    "ab4a41e587, 11-08",
+    "045"
+   ],
+   [
+    "At a livelit's event, the run draws every livelit; each livelit's view folded into the run, a macro livelit's too",
+    "1d445a24cc, 932fbdcc63, 6d71c427bf, 11-08",
+    "049"
+   ],
+   [
+    "A step back to a slider's starting value keeps the run's answers",
+    "a51dc778dd, 11-08",
+    "049"
+   ],
+   [
+    "Compiled once, not again after a step; its answers kept when the worker catches up; the worker's request held",
+    "7f5add1519, 11-09",
+    "this one"
+   ],
+   [
+    "A drag's fast path (not the compiler, but what a compiled run made worth doing)",
+    "A drag's fast path (not the compiler, but what a compiled run made worth doing)",
+    "A drag's fast path (not the compiler, but what a compiled run made worth doing)"
+   ],
+   [
+    "Cut A: a drag's events redraw the page, with no edit of the program",
+    "9fca635226, 11-08",
+    "050"
+   ],
+   [
+    "Cut B: only the livelits whose answers changed are drawn again",
+    "38d4e4d0f8, 11-08",
+    "050"
+   ],
+   [
+    "Cut C: the projectors' data and finished views reused from frame to frame",
+    "bdecaec5d9, 61f3f01a15, 11-08",
+    "050"
+   ],
+   [
+    "Measuring it",
+    "Measuring it",
+    "Measuring it"
+   ],
+   [
+    "Timing tests against the interpreter, and beside hand-written JS on the Petri rule",
+    "14b006d008, 28fc073ed5",
+    "045"
+   ],
+   [
+    "The Firefox check: drawings compared, events and steps timed, each view timed both ways in the page",
+    "433a216bd7, 1362ff34d5, 2a5b2ffefa",
+    "045, 046"
+   ],
+   [
+    "The page's timeline, and the worker's own",
+    "f88bf0ae8b, a1b9cdfde4",
+    "046"
+   ],
+   [
+    "The frame-rate overlay (?hud), and a timed drag with screenshots",
+    "e1c5316cf9, bf6b2d6090",
+    "050"
+   ],
+   [
+    "Compile times in the page, each in two parts",
+    "(today), 11-09",
+    "this one"
+   ]
+  ]
+ },
+ {
+  "section": "Next steps, ongoing now",
+  "section_id": "next",
+  "columns": [
+   "",
+   "What",
+   "What it would take away, as measured on build 8",
+   "Status"
+  ],
+  "rows": [
+   [
+    "3",
+    "Compile the program once, not again after a step that changed only a livelit's model: keep the compiled program, and give it the new models.",
+    "126 to 141 ms of the page's thread after each step.",
+    "done today (7f5add1519); being measured"
+   ],
+   [
+    "4",
+    "Leave the worker out when the compiled run has answered: keep the run's answers when the worker catches up, and hold the worker's request until the steps stop.",
+    "The page drawing every livelit again from the worker's answer, to the same picture; the worker's run for each step of a quick series.",
+    "done today (7f5add1519); being measured"
+   ],
+   [
+    "7",
+    "Send values as data where they cross: the worker's answer and its probe samples without ids, holes or closures.",
+    "The answer is 590 KB, encoded in 70 ms in the worker and decoded in 13 ms in the page; the Witch's picture is 3 times smaller as data (^report(47)).",
+    "started: the first slice, the samples' values on the way to the page (^ticket(718))"
+   ],
+   [
+    "1",
+    "Draw only the livelits a drag changes: make the editors' and projectors' views incremental.",
+    "Most of the page's view, 10.1 ms of a 17.1 ms median frame of a drag.",
+    "next"
+   ],
+   [
+    "2",
+    "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
+    "Statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms.",
+    "next, after 1 (^ticket(721))"
+   ]
+  ]
+ }
+]
