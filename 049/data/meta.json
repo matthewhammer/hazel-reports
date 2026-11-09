@@ -1,0 +1,44 @@
+{
+ "title": "The Witch’s Run, Compiled, in the Page",
+ "date": "2026-11-08",
+ "kind": "measurement, work in progress",
+ "status": "work in progress",
+ "question": "What happens to one step of a slider on the Witch slide when the slide's whole program, compiled to JS by hazel-jit, runs in the page at the slider's event instead of waiting for Hazel's worker (^ticket(722); ^report(45)'s Node measurement, in the app)?",
+ "measurements": "Firefox on GitHub's machines (ubuntu-latest), .github/workflows/jit.yml running scripts/jit_slides.py on a release build of hazelgrove/hazel trial/694-view-jit: every polygon slide loaded with compiled views on and off and its drawings compared; on the Witch, four slider steps each way, timed from the slider's input event to the slider's and the picture's elements changing, with the page's and the worker's timelines (Util.BenchMarks). Four runs, one per commit; the report's numbers are the last run's (42551267058, 6d71c427bf). Times in ms. Counts are the page's own (globalThis.hazelJit).",
+ "builds": [
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "1d445a24cc",
+   "run": "42547578825"
+  },
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "06a3880c01",
+   "run": "42548426910"
+  },
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "932fbdcc63",
+   "run": "42549941977"
+  },
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "6d71c427bf",
+   "run": "42551267058"
+  }
+ ],
+ "files": [
+  "runs/42547578825/jit.json",
+  "runs/42547578825/jit.log",
+  "runs/42548426910/jit.json",
+  "runs/42548426910/jit.log",
+  "runs/42549941977/jit.json",
+  "runs/42549941977/jit.log",
+  "runs/42551267058/jit.json",
+  "runs/42551267058/jit.log"
+ ]
+}

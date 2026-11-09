@@ -1,0 +1,80 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 049 · hazel-jit · 2026-11-08, updated {{updated}} MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (report 042)</p>
+<h1>The Witch’s Run, Compiled, in the Page</h1>
+<p class="sub">What happens to one step of a slider when the slide's whole program, compiled to JavaScript by hazel-jit, runs in the page at the slider's event, instead of the page waiting for Hazel's worker to run it? ^report(45) measured the compiled run in Node: 2.3 to 2.5 ms a step on the Witch slide, against the interpreter's 684 ms (<a href="../045/#run">the whole run, compiled</a>). This report is the same idea in the app, in Firefox, on 2026-11-08 (^ticket(722)), toward Matthew's goal for small edits that morning: "a floor of 60FPS for small edits (sliders changing), just like in JS".</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#step">A step, run compiled</a>: the slide's run answers a step in {{first}} ms in Firefox, and the picture showed at the page's first redraw in {{n_early}} of {{n_steps}} steps.</li>
+<li><a href="#edit">Where a step's time goes now</a>: the page's own work, {{own}} ms to its first redraw; the worker still runs and redraws everything again.</li>
+<li><a href="#back">The steps back</a>: on a slider's return to its starting value the run answered as quickly, but its answers were drawn once and dropped; not yet explained.</li>
+<li><a href="#fold">What the Node numbers assumed</a>: a slide's program, as the page holds it, has no livelit views in it; the compiled run now folds them in itself.</li>
+<li><a href="#same">The same drawings</a>: on all {{n_slides}} polygon slides, compiled and not, no differences.</li>
+<li><a href="#cost">What it costs</a>: the edited program compiled again after every step, {{recompile}} ms on the page's thread.</li>
+<li><a href="#runs">Four runs</a>: what each change did, in order.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="step">A step, run compiled</h2>
+<p><b>On the Witch slide in Firefox, the slide's whole program, compiled, runs at a slider's event in {{first}} ms (about {{first_fps}} fps), all {{w_livelits}} of its livelits' views included, and in {{second}} ms for the next event of the same step. In {{n_early}} of {{n_steps}} steps the picture changed at the page's first redraw, {{pic_early}} ms after the event, from the compiled run's answers; with nothing compiled the same steps took {{pic_off}} s.</b> The run itself is now inside one 60 fps frame. What is not is the page around it: {{pic_early}} ms is {{frames_early}} frames, against {{off_frames}} with nothing compiled.</p>
+{{fig_step}}
+<p>A step of a slider is two events, its input and then its change, and the page calls the compiled run at each with the slider's new model as the run's argument. The run answers with every livelit's view, as JavaScript values, and each livelit is drawn straight from its answer (as compiled views are, ^report(45)) until the worker's run comes back. The steps, each event's run, and when the slider and the picture changed:</p>
+{{steps_table}}
+
+<h2 id="edit">Where a step's time goes now</h2>
+<p><b>The page first redraws {{own}} ms after the slider's event, and nearly all of that is its own work: the whole slide's view, twice ({{view_before}} ms), its layout ({{calc_before}} ms), and the program's syntax and statics ({{statics_before}} ms). The compiled run is the sliver at the start. Meanwhile the worker still runs the program ({{worker_slices}} s of work), and when its answer comes back the page draws every view again ({{views_after}} ms), to the same picture.</b></p>
+{{fig_edit}}
+<p>So the compiled run removes the wait for the worker, but not the work the page does for any edit: a slider's new model is a change to the program's text, and the page treats it as one, statics and the whole slide's view included. For a step that changes one livelit's model, under the conditions ^report(46) listed (<a href="../046/#witch-jit-run">compiling the run</a>), none of that is needed: the compiled run's answers say what every livelit shows.</p>
+
+<h2 id="back">The steps back</h2>
+<p><b>On the {{n_steps}} steps, the compiled run answered every event, {{late_first}} ms on the two steps back to a slider's starting value. But on those two, only {{drawn_late}} livelits were drawn from its answers (one redraw's worth), against {{drawn_early}} on the steps away, and the picture waited for the worker: {{pic_late}} s.</b> Not yet explained. A lead: the page treats the run's answers as current while the slider's optimistic entry lasts (the entry that holds the model the slider was just given, until the worker's run shows it), and that entry is retired when the program shows a model the slider has held before, which on a step back is its starting value. The next step is to keep the answers until the worker's answer for this step arrives, whatever value it holds.</p>
+
+<h2 id="fold">What the Node numbers assumed</h2>
+<p><b>The compiled run first never ran in the app: the page compiled the slide's program, but none of its livelit uses had a model to hand a new value to (0 of {{w_livelits}} on the Witch). A slide's program, as the page holds it, has no livelit views in it.</b> Statics folds a livelit's view into the run only for a use that is probed, and a slide is elaborated with only its cells' own probes (<code class="ml">Program.probe_ids</code>, then <code class="ml">DefStatics.calc_auto</code>); the page draws each livelit by running its view itself. ^report(45)'s measurement in Node elaborated the slide with every use probed (<code>hazel jit --views</code>), so its 2.3 to 2.5 ms ran a program the page never holds. The same assumption is in ^report(46)'s speculation (<a href="../046/#witch-jit-run">compiling the run</a>), which says the run samples every livelit's view today; on these slides it does not.</p>
+<div class="pair">
+<div><p class="cap">A slider's use, as a slide's program holds it (elaborated):</p>
+<pre><code>match Drawing.^slider("neck", 0, 60).expand {
+| Functional(f) =&gt; f(28)
+| Macro(_) =&gt; ?
+}</code></pre></div>
+<div><p class="cap">As the compiled run folds it, before compiling (in Hazel, with the two calls of hazel-jit's runtime written in):</p>
+<pre><code>let %model = $R.param(the 28's id, 28) in
+let _ = $R.sample(the use's id,
+          Drawing.^slider("neck", 0, 60).view(%model)) in
+match Drawing.^slider("neck", 0, 60).expand {
+| Functional(f) =&gt; f(%model)
+| Macro(_) =&gt; ?
+}</code></pre></div>
+</div>
+<p>The fold is the one Statics makes for a probed use (<code class="ml">UserLivelit.instrument_view</code>), made by the compiled run on its own copy of the program, so the worker's run is unchanged. A macro livelit, such as the Witch's <code class="hz">^picture</code>, is expanded when the program is elaborated and holds no definition to call <code class="hz">view</code> on; the page now notes each use's definition as it draws it, and the fold uses that. With both, every livelit use on every polygon slide is folded in ({{w_folded}} of {{w_livelits}} on the Witch).</p>
+
+<h2 id="same">The same drawings</h2>
+<p><b>Every polygon slide was loaded with compiled views on and off, events run on each, and every livelit's drawing compared: {{n_problems}} differences on {{n_slides}} slides. On the Witch, {{w_drawn}} livelit drawings came from the compiled run's answers.</b> The counts are the page's own (<code>globalThis.hazelJit</code>), over the load and the events the check runs on each slide, with compiled views on:</p>
+{{slides_table}}
+<p>"Views compiled" are the page's own runs of a livelit's compiled view, as before; "views on the interpreter" are views whose model hazel-jit cannot carry into JS yet (a model holding a splice's code, the <code class="hz">^picture</code>'s among them), which the compiled run now computes inside the run instead.</p>
+
+<h2 id="cost">What it costs</h2>
+<p><b>After each step the program's text has a new literal, so the page compiles the program again: {{recompile}} ms on the page's thread, once a step, between the first redraw and the worker's answer.</b> The new program differs from the old only in the literal that is already the run's parameter, so the old compiled code, given the new value, is the new program's. Keeping it would remove this cost.</p>
+
+<h2 id="runs">Four runs</h2>
+<p><b>Four pushes to the trial branch, each with its run of the Firefox check: from "never ran" to every livelit's view in the compiled run.</b></p>
+{{runs_table}}
+
+<h2 id="next">What next</h2>
+<ol>
+<li><b>Keep the compiled run's answers until the worker's answer for the same step arrives</b>, whatever value the slider returns to, so the steps back draw the picture as early as the steps away (<a href="#back">the steps back</a>).</li>
+<li><b>Do not compile again when only a parameter's literal changed</b>: {{recompile}} ms a step on the page's thread (<a href="#cost">what it costs</a>).</li>
+<li><b>For a step that changes only livelit models, skip the page's whole-program work</b>: statics, and the whole slide's view, most of the {{own}} ms before the first redraw; draw only the livelits whose answers changed.</li>
+<li><b>Do not run the worker, or do not redraw from its answer, when the compiled run has answered</b>: it spends {{worker_slices}} s and the page then draws every view again, to the same picture.</li>
+<li><b>Make <code>hazel jit --views</code> elaborate a slide as the page does</b>, so its numbers in Node measure the program the app compiles.</li>
+<li><b>Put a dated note in ^report(45) and ^report(46)</b> where they assume the run samples every view.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<ul>
+<li><b>The build:</b> a release build of <code>trial/694-view-jit</code> (hazelgrove/hazel, the livelits line with hazel-jit), at the four commits in <a href="#runs">four runs</a>; the numbers in the sections above are from the last run that fired, {{main_run}} at {{main_commit}}.</li>
+<li><b>The check:</b> <code>scripts/jit_slides.py</code> in Firefox on GitHub's machines (<code>.github/workflows/jit.yml</code>, ubuntu-latest): each polygon slide loaded with compiled views on and off, its events run and timed, the drawings compared; on the Witch, four slider steps each way (neck 28 to 30 and back, arms 55 to 65 and back) on a fresh load, each timed from the slider's input event by watching the page for the slider's and the picture's elements to change, with the page's own timeline and the worker's (<code>Util.BenchMarks</code>) for where the time went. One run of four steps each way: say so beside any comparison; GitHub's machines vary from run to run (the steps with nothing compiled took 1.15 to 1.66 s in one run and 1.90 to 2.24 s in the next), so compare within a run.</li>
+<li><b>The counts</b> are the page's own (<code>HazelJitValue.count</code>, read as <code>globalThis.hazelJit</code>), including each reason the compiled run was not used, added for this work after the first run showed nothing.</li>
+<li><b>The code:</b> <code>HazelJitRun</code> (the run compiled with the livelits' models as parameters, the fold, and the step), its call in <code>LivelitProj</code> at a livelit's event and in its view, and <code>ProjectorView</code> telling it the program; hazel-jit's parameters and samples in <code>HazelJit</code>.</li>
+</ul>
+</main></body>

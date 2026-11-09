@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Witch’s Run, Compiled, in the Page</title>
+<meta name="description" content="The Witch slide's whole program, compiled to JavaScript by hazel-jit and run in the page at a slider's step: 1 to 7 ms in Firefox, against the worker's second and more.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.88em; }
+  table.vals th, table.vals td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.vals th { font-weight: 600; } figure.f { margin: 1.2em 0; } figure.f svg { max-width: 100%; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 0.8em 0; }
+  .pair pre { margin: 0; font-size: 0.8em; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .pair .cap { font-size: 0.85em; color: var(--muted); margin: 0 0 4px; }
+  .big { font-size: 1.05em; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>49<b>)</b></code> · hazel-jit · 2026-11-08, updated 2026-11-08 19:47 MST · <span class="wip">work in progress</span> · for the meeting with Cyrus on Wednesday 2026-11-11 (<a href="../042/"><code class="ref"><b>^report(</b>42<b>)</b></code></a>)</p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>The Witch’s Run, Compiled, in the Page</h1>
+<p class="sub">What happens to one step of a slider when the slide's whole program, compiled to JavaScript by hazel-jit, runs in the page at the slider's event, instead of the page waiting for Hazel's worker to run it? <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> measured the compiled run in Node: 2.3 to 2.5 ms a step on the Witch slide, against the interpreter's 684 ms (<a href="../045/#run">the whole run, compiled</a>). This report is the same idea in the app, in Firefox, on 2026-11-08 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-722"><code class="ref"><b>^ticket(</b>722<b>)</b></code></a>), toward Matthew's goal for small edits that morning: "a floor of 60FPS for small edits (sliders changing), just like in JS".</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#step">A step, run compiled</a>: the slide's run answers a step in 10 to 12 ms in Firefox, and the picture showed at the page's first redraw in 2 of 4 steps.</li>
+<li><a href="#edit">Where a step's time goes now</a>: the page's own work, 318 to 469 ms to its first redraw; the worker still runs and redraws everything again.</li>
+<li><a href="#back">The steps back</a>: on a slider's return to its starting value the run answered as quickly, but its answers were drawn once and dropped; not yet explained.</li>
+<li><a href="#fold">What the Node numbers assumed</a>: a slide's program, as the page holds it, has no livelit views in it; the compiled run now folds them in itself.</li>
+<li><a href="#same">The same drawings</a>: on all 6 polygon slides, compiled and not, no differences.</li>
+<li><a href="#cost">What it costs</a>: the edited program compiled again after every step, 171 to 226 ms on the page's thread.</li>
+<li><a href="#runs">Four runs</a>: what each change did, in order.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="step">A step, run compiled<a class="anchor" href="#step" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="step" title="copy this section's address">copy link</button></h2>
+<p><b>On the Witch slide in Firefox, the slide's whole program, compiled, runs at a slider's event in 10 to 12 ms (about 83 to 100 fps), all 53 of its livelits' views included, and in 3 to 4 ms for the next event of the same step. In 2 of 4 steps the picture changed at the page's first redraw, 318 and 469 ms after the event, from the compiled run's answers; with nothing compiled the same steps took 1.90 to 2.24 s.</b> The run itself is now inside one 60 fps frame. What is not is the page around it: 318 and 469 ms is 19 and 28 frames, against 114 to 134 with nothing compiled.</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 940 244" role="img" aria-label="the slide&#x27;s run, compiled: a step&#x27;s first event: 10 to 12 ms; the same, the step&#x27;s next event (a drag): 3 to 4 ms; the picture, drawn from the compiled run: 318 to 469 ms; the slider&#x27;s own livelit redrawn: 318 to 469 ms; the picture, after the worker (steps back): 1659 to 1694 ms; the picture, nothing compiled: 1901 to 2240 ms" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">One step of a slider on the Witch slide, in Firefox: each part, from the slider's event (a log scale)</text><text x="350" y="54" font-size="11.5" text-anchor="end" fill="var(--ink)">the slide&#x27;s run, compiled: a step&#x27;s first event</text><rect x="538.9" y="43" width="10.9" height="14" fill="#0d9488" rx="2"><title>the slide&#x27;s run, compiled: a step&#x27;s first event: 10 to 12 ms (4 readings, run 42551267058)</title></rect><text x="557.8" y="54" font-size="11" fill="var(--ink)">10 to 12 ms, about 83 to 100 fps</text><text x="350" y="82" font-size="11.5" text-anchor="end" fill="var(--ink)">the same, the step&#x27;s next event (a drag)</text><rect x="467.0" y="71" width="17.2" height="14" fill="#0d9488" rx="2"><title>the same, the step&#x27;s next event (a drag): 3 to 4 ms (4 readings, run 42551267058)</title></rect><text x="492.2" y="82" font-size="11" fill="var(--ink)">3 to 4 ms, about 250 to 333 fps</text><text x="350" y="110" font-size="11.5" text-anchor="end" fill="var(--ink)">the picture, drawn from the compiled run</text><rect x="745.5" y="99" width="23.2" height="14" fill="#2563eb" rx="2"><title>the picture, drawn from the compiled run: 318 to 469 ms (2 readings, run 42551267058)</title></rect><text x="737.5" y="110" font-size="11" text-anchor="end" fill="var(--ink)">318 to 469 ms, 19 to 28 frames</text><text x="350" y="138" font-size="11.5" text-anchor="end" fill="var(--ink)">the slider&#x27;s own livelit redrawn</text><rect x="745.5" y="127" width="23.2" height="14" fill="#2563eb" rx="2"><title>the slider&#x27;s own livelit redrawn: 318 to 469 ms (4 readings, run 42551267058)</title></rect><text x="737.5" y="138" font-size="11" text-anchor="end" fill="var(--ink)">318 to 469 ms, 19 to 28 frames</text><text x="350" y="166" font-size="11.5" text-anchor="end" fill="var(--ink)">the picture, after the worker (steps back)</text><rect x="844.1" y="155" width="4.0" height="14" fill="#9ca3af" rx="2"><title>the picture, after the worker (steps back): 1659 to 1694 ms (2 readings, run 42551267058)</title></rect><text x="836.1" y="166" font-size="11" text-anchor="end" fill="var(--ink)">1.66 to 1.69 s, 100 to 102 frames</text><text x="350" y="194" font-size="11.5" text-anchor="end" fill="var(--ink)">the picture, nothing compiled</text><rect x="852.3" y="183" width="9.8" height="14" fill="#9ca3af" rx="2"><title>the picture, nothing compiled: 1901 to 2240 ms (4 readings, run 42551267058)</title></rect><text x="844.3" y="194" font-size="11" text-anchor="end" fill="var(--ink)">1.90 to 2.24 s, 114 to 134 frames</text><line x1="569.4" y1="32" x2="569.4" y2="208" stroke="#15803d" stroke-width="2.5"/><text x="574.4" y="221" font-size="11" fill="#15803d" font-weight="700">16.7 ms: 60 fps, the floor</text><line x1="401.4" y1="32" x2="401.4" y2="208" stroke="var(--line)" stroke-width="1"/><text x="401.4" y="236" font-size="10.5" text-anchor="middle" fill="var(--muted)">1 ms</text><line x1="538.9" y1="32" x2="538.9" y2="208" stroke="var(--line)" stroke-width="1"/><text x="538.9" y="236" font-size="10.5" text-anchor="middle" fill="var(--muted)">10 ms</text><line x1="676.4" y1="32" x2="676.4" y2="208" stroke="var(--line)" stroke-width="1"/><text x="676.4" y="236" font-size="10.5" text-anchor="middle" fill="var(--muted)">100 ms</text><line x1="813.9" y1="32" x2="813.9" y2="208" stroke="var(--line)" stroke-width="1"/><text x="813.9" y="236" font-size="10.5" text-anchor="middle" fill="var(--muted)">1000 ms</text></svg><figcaption>Four steps of two sliders (neck 28 to 30 and back, arms 55 to 65 and back), each bar from the fastest to the slowest of them; the grey bars with nothing compiled are the same four steps after a fresh load. Firefox on GitHub's machines, a release build of <code>trial/694-view-jit</code> at 6d71c427bf, run 42551267058. A step is two events (the slider's input, then its change), so the compiled run is called twice; the second is warm. The frames assume nothing else in the frame costs anything.</figcaption></figure></div>
+<p>A step of a slider is two events, its input and then its change, and the page calls the compiled run at each with the slider's new model as the run's argument. The run answers with every livelit's view, as JavaScript values, and each livelit is drawn straight from its answer (as compiled views are, <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>) until the worker's run comes back. The steps, each event's run, and when the slider and the picture changed:</p>
+<table class="vals"><tr><th>views compiled</th><th>the step</th><th>the compiled run, each event (ms)</th><th>compiled again after (ms)</th><th>the slider redrawn (ms)</th><th>the picture (ms)</th></tr><tr><td>on</td><td>neck 28 to 30</td><td class=n>11, 3</td><td class=n>226</td><td class=n>469</td><td class=n>469</td></tr><tr><td>on</td><td>neck 30 to 28</td><td class=n>10, 4</td><td class=n>201</td><td class=n>354</td><td class=n>1659</td></tr><tr><td>on</td><td>arms (up / down) 55 to 65</td><td class=n>10, 3</td><td class=n>177</td><td class=n>318</td><td class=n>318</td></tr><tr><td>on</td><td>arms (up / down) 65 to 55</td><td class=n>12, 3</td><td class=n>171</td><td class=n>326</td><td class=n>1694</td></tr><tr><td>off</td><td>neck 28 to 30</td><td class=n>-</td><td class=n>-</td><td class=n>537</td><td class=n>2240</td></tr><tr><td>off</td><td>neck 30 to 28</td><td class=n>-</td><td class=n>-</td><td class=n>358</td><td class=n>1901</td></tr><tr><td>off</td><td>arms (up / down) 55 to 65</td><td class=n>-</td><td class=n>-</td><td class=n>350</td><td class=n>2025</td></tr><tr><td>off</td><td>arms (up / down) 65 to 55</td><td class=n>-</td><td class=n>-</td><td class=n>510</td><td class=n>2002</td></tr></table>
+
+<h2 id="edit">Where a step's time goes now<a class="anchor" href="#edit" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="edit" title="copy this section's address">copy link</button></h2>
+<p><b>The page first redraws 318 to 469 ms after the slider's event, and nearly all of that is its own work: the whole slide's view, twice (206 to 283 ms), its layout (61 to 106 ms), and the program's syntax and statics (53 to 95 ms). The compiled run is the sliver at the start. Meanwhile the worker still runs the program (0.94 to 1.07 s of work), and when its answer comes back the page draws every view again (202 to 253 ms), to the same picture.</b></p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 940 219" role="img" aria-label="timeline of one slider step" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">One step (arms (up / down) 55 to 65, views compiled): the picture at 318 ms, the worker's answer at 1.66 s</text><text x="240" y="51" font-size="11.5" text-anchor="end" fill="var(--ink)">the slide&#x27;s run, compiled</text><rect x="250.4" y="40" width="3.9" height="14" fill="#0d9488"><title>hazel-jit: the run: 10 ms at 1 ms</title></rect><rect x="254.7" y="40" width="1.5" height="14" fill="#0d9488"><title>hazel-jit: the run: 3 ms at 12 ms</title></rect><text x="240" y="75" font-size="11.5" text-anchor="end" fill="var(--ink)">the page: update, statics, view</text><rect x="256.2" y="64" width="3.9" height="14" fill="#2563eb"><title>update: 10 ms at 16 ms</title></rect><rect x="260.1" y="64" width="6.6" height="14" fill="#2563eb"><title>calculate: 17 ms at 26 ms</title></rect><rect x="260.5" y="64" width="5.8" height="14" fill="#2563eb"><title>syntax: 15 ms at 27 ms</title></rect><rect x="266.7" y="64" width="1.5" height="14" fill="#2563eb"><title>cursor info: 0 ms at 43 ms</title></rect><rect x="266.7" y="64" width="1.5" height="14" fill="#2563eb"><title>color map: 0 ms at 43 ms</title></rect><rect x="266.7" y="64" width="37.4" height="14" fill="#2563eb"><title>view: 96 ms at 43 ms</title></rect><rect x="304.5" y="64" width="3.1" height="14" fill="#2563eb"><title>update: 8 ms at 140 ms</title></rect><rect x="307.6" y="64" width="9.7" height="14" fill="#2563eb"><title>statics: 25 ms at 148 ms</title></rect><rect x="307.6" y="64" width="17.1" height="14" fill="#2563eb"><title>calculate: 44 ms at 148 ms</title></rect><rect x="317.3" y="64" width="5.1" height="14" fill="#2563eb"><title>syntax: 13 ms at 173 ms</title></rect><rect x="324.7" y="64" width="1.5" height="14" fill="#2563eb"><title>cursor info: 0 ms at 192 ms</title></rect><rect x="324.7" y="64" width="1.5" height="14" fill="#2563eb"><title>color map: 0 ms at 192 ms</title></rect><rect x="324.7" y="64" width="42.8" height="14" fill="#2563eb"><title>view: 110 ms at 192 ms</title></rect><rect x="372.6" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 2 ms at 315 ms</title></rect><rect x="447.0" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 506 ms</title></rect><rect x="452.0" y="64" width="1.5" height="14" fill="#2563eb"><title>update: 0 ms at 519 ms</title></rect><rect x="452.0" y="64" width="3.5" height="14" fill="#2563eb"><title>syntax: 9 ms at 519 ms</title></rect><rect x="452.0" y="64" width="28.8" height="14" fill="#2563eb"><title>calculate: 74 ms at 519 ms</title></rect><rect x="475.4" y="64" width="5.1" height="14" fill="#2563eb"><title>syntax: 13 ms at 579 ms</title></rect><rect x="480.4" y="64" width="1.5" height="14" fill="#2563eb"><title>cursor info: 1 ms at 592 ms</title></rect><rect x="480.8" y="64" width="1.5" height="14" fill="#2563eb"><title>color map: 0 ms at 593 ms</title></rect><rect x="480.8" y="64" width="34.6" height="14" fill="#2563eb"><title>view: 89 ms at 593 ms</title></rect><rect x="520.1" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 694 ms</title></rect><rect x="523.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 703 ms</title></rect><rect x="529.9" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 719 ms</title></rect><rect x="536.5" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 736 ms</title></rect><rect x="542.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 752 ms</title></rect><rect x="549.3" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 769 ms</title></rect><rect x="555.2" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 784 ms</title></rect><rect x="562.2" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 802 ms</title></rect><rect x="568.8" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 819 ms</title></rect><rect x="575.0" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 835 ms</title></rect><rect x="581.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 852 ms</title></rect><rect x="587.9" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 868 ms</title></rect><rect x="594.5" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 885 ms</title></rect><rect x="600.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 901 ms</title></rect><rect x="607.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 919 ms</title></rect><rect x="614.0" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 935 ms</title></rect><rect x="620.6" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 952 ms</title></rect><rect x="627.2" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 969 ms</title></rect><rect x="633.4" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 985 ms</title></rect><rect x="640.0" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1002 ms</title></rect><rect x="646.3" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1018 ms</title></rect><rect x="652.9" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1035 ms</title></rect><rect x="659.1" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1051 ms</title></rect><rect x="666.1" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1069 ms</title></rect><rect x="672.0" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1084 ms</title></rect><rect x="678.6" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1101 ms</title></rect><rect x="685.6" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1119 ms</title></rect><rect x="691.8" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1135 ms</title></rect><rect x="698.0" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1151 ms</title></rect><rect x="704.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1168 ms</title></rect><rect x="711.3" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1185 ms</title></rect><rect x="717.9" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1202 ms</title></rect><rect x="724.1" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1218 ms</title></rect><rect x="731.1" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1236 ms</title></rect><rect x="737.0" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1251 ms</title></rect><rect x="743.6" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1268 ms</title></rect><rect x="750.2" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1285 ms</title></rect><rect x="756.8" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1302 ms</title></rect><rect x="763.4" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1319 ms</title></rect><rect x="769.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1335 ms</title></rect><rect x="776.3" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1352 ms</title></rect><rect x="782.5" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1368 ms</title></rect><rect x="789.1" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1385 ms</title></rect><rect x="795.7" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1402 ms</title></rect><rect x="802.4" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1419 ms</title></rect><rect x="808.6" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 1 ms at 1435 ms</title></rect><rect x="815.2" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1452 ms</title></rect><rect x="821.4" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1468 ms</title></rect><rect x="837.0" y="64" width="1.5" height="14" fill="#2563eb"><title>update: 0 ms at 1508 ms</title></rect><rect x="837.0" y="64" width="5.4" height="14" fill="#2563eb"><title>syntax: 14 ms at 1508 ms</title></rect><rect x="837.0" y="64" width="8.6" height="14" fill="#2563eb"><title>calculate: 22 ms at 1508 ms</title></rect><rect x="842.5" y="64" width="2.7" height="14" fill="#2563eb"><title>syntax: 7 ms at 1522 ms</title></rect><rect x="845.2" y="64" width="1.5" height="14" fill="#2563eb"><title>cursor info: 0 ms at 1529 ms</title></rect><rect x="845.2" y="64" width="1.5" height="14" fill="#2563eb"><title>color map: 0 ms at 1529 ms</title></rect><rect x="845.6" y="64" width="44.0" height="14" fill="#2563eb"><title>view: 113 ms at 1530 ms</title></rect><rect x="893.8" y="64" width="1.5" height="14" fill="#2563eb"><title>after display: 0 ms at 1654 ms</title></rect><text x="240" y="99" font-size="11.5" text-anchor="end" fill="var(--ink)">the edited program compiled again</text><rect x="377.3" y="88" width="68.9" height="14" fill="#ea580c"><title>hazel-jit: the run compiled: 177 ms at 327 ms</title></rect><text x="240" y="123" font-size="11.5" text-anchor="end" fill="var(--ink)">the worker: its run</text><rect x="324.0" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: request decoded: 0 ms at 190 ms</title></rect><rect x="324.3" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: request decoded: 2 ms at 191 ms</title></rect><rect x="325.1" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: encode ack: 1 ms at 193 ms</title></rect><rect x="325.5" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: post ack: 0 ms at 194 ms</title></rect><rect x="325.5" y="112" width="17.5" height="14" fill="#9ca3af"><title>worker: request composed: 45 ms at 194 ms</title></rect><rect x="343.0" y="112" width="7.0" height="14" fill="#9ca3af"><title>worker: reuse plan: 18 ms at 239 ms</title></rect><rect x="343.0" y="112" width="67.7" height="14" fill="#9ca3af"><title>worker: slices: 174 ms at 239 ms</title></rect><rect x="347.3" y="112" width="2.7" height="14" fill="#9ca3af"><title>worker: encode reuse plan: 7 ms at 250 ms</title></rect><rect x="350.0" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: post reuse plan: 0 ms at 257 ms</title></rect><rect x="410.8" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: encode stream: 0 ms at 413 ms</title></rect><rect x="410.8" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: post stream: 0 ms at 413 ms</title></rect><rect x="411.2" y="112" width="12.1" height="14" fill="#9ca3af"><title>worker: slices: 31 ms at 414 ms</title></rect><rect x="423.2" y="112" width="12.1" height="14" fill="#9ca3af"><title>worker: slices: 31 ms at 445 ms</title></rect><rect x="435.7" y="112" width="12.8" height="14" fill="#9ca3af"><title>worker: slices: 33 ms at 477 ms</title></rect><rect x="450.1" y="112" width="14.0" height="14" fill="#9ca3af"><title>worker: slices: 36 ms at 514 ms</title></rect><rect x="466.0" y="112" width="11.7" height="14" fill="#9ca3af"><title>worker: slices: 30 ms at 555 ms</title></rect><rect x="479.3" y="112" width="12.1" height="14" fill="#9ca3af"><title>worker: slices: 31 ms at 589 ms</title></rect><rect x="492.9" y="112" width="12.1" height="14" fill="#9ca3af"><title>worker: slices: 31 ms at 624 ms</title></rect><rect x="506.5" y="112" width="12.5" height="14" fill="#9ca3af"><title>worker: slices: 32 ms at 659 ms</title></rect><rect x="520.5" y="112" width="12.5" height="14" fill="#9ca3af"><title>worker: slices: 32 ms at 695 ms</title></rect><rect x="534.9" y="112" width="12.8" height="14" fill="#9ca3af"><title>worker: slices: 33 ms at 732 ms</title></rect><rect x="549.3" y="112" width="11.7" height="14" fill="#9ca3af"><title>worker: slices: 30 ms at 769 ms</title></rect><rect x="562.6" y="112" width="11.7" height="14" fill="#9ca3af"><title>worker: slices: 30 ms at 803 ms</title></rect><rect x="575.8" y="112" width="12.1" height="14" fill="#9ca3af"><title>worker: slices: 31 ms at 837 ms</title></rect><rect x="589.4" y="112" width="11.7" height="14" fill="#9ca3af"><title>worker: slices: 30 ms at 872 ms</title></rect><rect x="602.7" y="112" width="58.4" height="14" fill="#9ca3af"><title>worker: slices: 150 ms at 906 ms</title></rect><rect x="662.2" y="112" width="12.1" height="14" fill="#9ca3af"><title>worker: slices: 31 ms at 1059 ms</title></rect><rect x="675.9" y="112" width="12.1" height="14" fill="#9ca3af"><title>worker: slices: 31 ms at 1094 ms</title></rect><rect x="689.5" y="112" width="12.8" height="14" fill="#9ca3af"><title>worker: slices: 33 ms at 1129 ms</title></rect><rect x="703.5" y="112" width="12.5" height="14" fill="#9ca3af"><title>worker: slices: 32 ms at 1165 ms</title></rect><rect x="717.5" y="112" width="28.0" height="14" fill="#9ca3af"><title>worker: slices: 72 ms at 1201 ms</title></rect><rect x="747.1" y="112" width="38.1" height="14" fill="#9ca3af"><title>worker: slices: 98 ms at 1277 ms</title></rect><rect x="796.9" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: make result: 0 ms at 1405 ms</title></rect><rect x="827.7" y="112" width="1.5" height="14" fill="#9ca3af"><title>worker: post result: 0 ms at 1484 ms</title></rect><text x="240" y="147" font-size="11.5" text-anchor="end" fill="var(--ink)">the answer: encoded, decoded</text><rect x="448.5" y="136" width="1.5" height="14" fill="#f59e0b"><title>worker message decoded: 0 ms at 510 ms</title></rect><rect x="450.1" y="136" width="1.5" height="14" fill="#f59e0b"><title>worker message decoded: 1 ms at 514 ms</title></rect><rect x="450.9" y="136" width="1.5" height="14" fill="#f59e0b"><title>worker message decoded: 0 ms at 516 ms</title></rect><rect x="796.9" y="136" width="30.8" height="14" fill="#f59e0b"><title>worker: encode result: 79 ms at 1405 ms</title></rect><rect x="827.7" y="136" width="9.0" height="14" fill="#f59e0b"><title>worker message decoded: 23 ms at 1484 ms</title></rect><line x1="373.8" y1="32" x2="373.8" y2="158" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 3"/><text x="377.8" y="171" font-size="10.5" text-anchor="start" fill="var(--ink)">the slider and the picture redrawn, 318 ms</text><line x1="894.2" y1="32" x2="894.2" y2="158" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/><text x="890.2" y="184" font-size="10.5" text-anchor="end" fill="var(--muted)">the worker&#x27;s answer, 1655 ms</text><line x1="256.5" y1="32" x2="256.5" y2="158" stroke="#15803d" stroke-width="2" stroke-dasharray=""/><text x="260.5" y="197" font-size="10.5" text-anchor="start" fill="#15803d">16.7 ms</text></svg><figcaption>The quickest of the steps whose picture came from the compiled run, from the page's own timeline and the worker's (<code>Util.BenchMarks</code>), each block a measured piece of work at the time it started; the worker's pieces are on its own thread, the rest on the page's. The green line is one 60 fps frame. Run 42551267058.</figcaption></figure></div>
+<p>So the compiled run removes the wait for the worker, but not the work the page does for any edit: a slider's new model is a change to the program's text, and the page treats it as one, statics and the whole slide's view included. For a step that changes one livelit's model, under the conditions <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> listed (<a href="../046/#witch-jit-run">compiling the run</a>), none of that is needed: the compiled run's answers say what every livelit shows.</p>
+
+<h2 id="back">The steps back<a class="anchor" href="#back" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="back" title="copy this section's address">copy link</button></h2>
+<p><b>On the 4 steps, the compiled run answered every event, 10 to 12 ms on the two steps back to a slider's starting value. But on those two, only 57 to 62 livelits were drawn from its answers (one redraw's worth), against 208 on the steps away, and the picture waited for the worker: 1.66 to 1.69 s.</b> Not yet explained. A lead: the page treats the run's answers as current while the slider's optimistic entry lasts (the entry that holds the model the slider was just given, until the worker's run shows it), and that entry is retired when the program shows a model the slider has held before, which on a step back is its starting value. The next step is to keep the answers until the worker's answer for this step arrives, whatever value it holds.</p>
+
+<h2 id="fold">What the Node numbers assumed<a class="anchor" href="#fold" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fold" title="copy this section's address">copy link</button></h2>
+<p><b>The compiled run first never ran in the app: the page compiled the slide's program, but none of its livelit uses had a model to hand a new value to (0 of 53 on the Witch). A slide's program, as the page holds it, has no livelit views in it.</b> Statics folds a livelit's view into the run only for a use that is probed, and a slide is elaborated with only its cells' own probes (<code class="ml">Program.probe_ids</code>, then <code class="ml">DefStatics.calc_auto</code>); the page draws each livelit by running its view itself. <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>'s measurement in Node elaborated the slide with every use probed (<code>hazel jit --views</code>), so its 2.3 to 2.5 ms ran a program the page never holds. The same assumption is in <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>'s speculation (<a href="../046/#witch-jit-run">compiling the run</a>), which says the run samples every livelit's view today; on these slides it does not.</p>
+<div class="pair">
+<div><p class="cap">A slider's use, as a slide's program holds it (elaborated):</p>
+<pre><code>match Drawing.^slider("neck", 0, 60).expand {
+| Functional(f) =&gt; f(28)
+| Macro(_) =&gt; ?
+}</code></pre></div>
+<div><p class="cap">As the compiled run folds it, before compiling (in Hazel, with the two calls of hazel-jit's runtime written in):</p>
+<pre><code>let %model = $R.param(the 28's id, 28) in
+let _ = $R.sample(the use's id,
+          Drawing.^slider("neck", 0, 60).view(%model)) in
+match Drawing.^slider("neck", 0, 60).expand {
+| Functional(f) =&gt; f(%model)
+| Macro(_) =&gt; ?
+}</code></pre></div>
+</div>
+<p>The fold is the one Statics makes for a probed use (<code class="ml">UserLivelit.instrument_view</code>), made by the compiled run on its own copy of the program, so the worker's run is unchanged. A macro livelit, such as the Witch's <code class="hz">^picture</code>, is expanded when the program is elaborated and holds no definition to call <code class="hz">view</code> on; the page now notes each use's definition as it draws it, and the fold uses that. With both, every livelit use on every polygon slide is folded in (53 of 53 on the Witch).</p>
+
+<h2 id="same">The same drawings<a class="anchor" href="#same" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="same" title="copy this section's address">copy link</button></h2>
+<p><b>Every polygon slide was loaded with compiled views on and off, events run on each, and every livelit's drawing compared: 0 differences on 6 slides. On the Witch, 945 livelit drawings came from the compiled run's answers.</b> The counts are the page's own (<code>globalThis.hazelJit</code>), over the load and the events the check runs on each slide, with compiled views on:</p>
+<table class="vals"><tr><th>slide</th><th>livelits</th><th>events the compiled run answered</th><th>livelits drawn from its answers</th><th>views compiled (drawn by the page)</th><th>views on the interpreter</th></tr><tr><td>Polygons</td><td class=n>1</td><td class=n>15</td><td class=n>0</td><td class=n>20</td><td class=n>0</td></tr><tr><td>Polygon Viewer</td><td class=n>1</td><td class=n>0</td><td class=n>0</td><td class=n>2</td><td class=n>0</td></tr><tr><td>Full Body</td><td class=n>43</td><td class=n>5</td><td class=n>723</td><td class=n>63</td><td class=n>7</td></tr><tr><td>Witch</td><td class=n>53</td><td class=n>5</td><td class=n>945</td><td class=n>70</td><td class=n>8</td></tr><tr><td>Hands</td><td class=n>17</td><td class=n>5</td><td class=n>281</td><td class=n>28</td><td class=n>7</td></tr><tr><td>Scenes</td><td class=n>10</td><td class=n>6</td><td class=n>162</td><td class=n>25</td><td class=n>9</td></tr></table>
+<p>"Views compiled" are the page's own runs of a livelit's compiled view, as before; "views on the interpreter" are views whose model hazel-jit cannot carry into JS yet (a model holding a splice's code, the <code class="hz">^picture</code>'s among them), which the compiled run now computes inside the run instead.</p>
+
+<h2 id="cost">What it costs<a class="anchor" href="#cost" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="cost" title="copy this section's address">copy link</button></h2>
+<p><b>After each step the program's text has a new literal, so the page compiles the program again: 171 to 226 ms on the page's thread, once a step, between the first redraw and the worker's answer.</b> The new program differs from the old only in the literal that is already the run's parameter, so the old compiled code, given the new value, is the new program's. Keeping it would remove this cost.</p>
+
+<h2 id="runs">Four runs<a class="anchor" href="#runs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="runs" title="copy this section's address">copy link</button></h2>
+<p><b>Four pushes to the trial branch, each with its run of the Firefox check: from "never ran" to every livelit's view in the compiled run.</b></p>
+<table class="vals"><tr><th>commit</th><th>what it changed</th><th>Firefox run</th><th>the Witch's uses folded in</th><th>what the run showed</th></tr><tr><td>1d445a24cc</td><td>the app wired: at a livelit&#x27;s event, the slide&#x27;s compiled run is called with the new model</td><td><a href="https://github.com/hazelgrove/hazel/actions/runs/42547578825">42547578825</a></td><td class=n>0 of 53</td><td>never used: the page compiled the program after each edit, but no event ran it, and the reason went only to the console</td></tr><tr><td>06a3880c01</td><td>every event, answer and reason not to run counted in the page, for the check to read</td><td><a href="https://github.com/hazelgrove/hazel/actions/runs/42548426910">42548426910</a></td><td class=n>0 of 53</td><td>on every slide and event: none of the program&#x27;s livelit uses has a model parameter</td></tr><tr><td>932fbdcc63</td><td>each livelit use&#x27;s view folded into the compiled run, as Statics folds a probed use&#x27;s</td><td><a href="https://github.com/hazelgrove/hazel/actions/runs/42549941977">42549941977</a></td><td class=n>52 of 53</td><td>the run fires at every event, 1 to 7 ms; 52 of the Witch&#x27;s 53 uses folded; the picture, a macro livelit, not</td></tr><tr><td>6d71c427bf</td><td>a macro livelit&#x27;s view folded too, from the definition the page notes as it draws the use</td><td><a href="https://github.com/hazelgrove/hazel/actions/runs/42551267058">42551267058</a></td><td class=n>53 of 53</td><td>all 53 folded; the picture drawn from the compiled run at the page&#x27;s first redraw in 2 of 4 steps</td></tr></table>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li><b>Keep the compiled run's answers until the worker's answer for the same step arrives</b>, whatever value the slider returns to, so the steps back draw the picture as early as the steps away (<a href="#back">the steps back</a>).</li>
+<li><b>Do not compile again when only a parameter's literal changed</b>: 171 to 226 ms a step on the page's thread (<a href="#cost">what it costs</a>).</li>
+<li><b>For a step that changes only livelit models, skip the page's whole-program work</b>: statics, and the whole slide's view, most of the 318 to 469 ms before the first redraw; draw only the livelits whose answers changed.</li>
+<li><b>Do not run the worker, or do not redraw from its answer, when the compiled run has answered</b>: it spends 0.94 to 1.07 s and the page then draws every view again, to the same picture.</li>
+<li><b>Make <code>hazel jit --views</code> elaborate a slide as the page does</b>, so its numbers in Node measure the program the app compiles.</li>
+<li><b>Put a dated note in <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> and <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a></b> where they assume the run samples every view.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<ul>
+<li><b>The build:</b> a release build of <code>trial/694-view-jit</code> (hazelgrove/hazel, the livelits line with hazel-jit), at the four commits in <a href="#runs">four runs</a>; the numbers in the sections above are from the last run that fired, 42551267058 at 6d71c427bf.</li>
+<li><b>The check:</b> <code>scripts/jit_slides.py</code> in Firefox on GitHub's machines (<code>.github/workflows/jit.yml</code>, ubuntu-latest): each polygon slide loaded with compiled views on and off, its events run and timed, the drawings compared; on the Witch, four slider steps each way (neck 28 to 30 and back, arms 55 to 65 and back) on a fresh load, each timed from the slider's input event by watching the page for the slider's and the picture's elements to change, with the page's own timeline and the worker's (<code>Util.BenchMarks</code>) for where the time went. One run of four steps each way: say so beside any comparison; GitHub's machines vary from run to run (the steps with nothing compiled took 1.15 to 1.66 s in one run and 1.90 to 2.24 s in the next), so compare within a run.</li>
+<li><b>The counts</b> are the page's own (<code>HazelJitValue.count</code>, read as <code>globalThis.hazelJit</code>), including each reason the compiled run was not used, added for this work after the first run showed nothing.</li>
+<li><b>The code:</b> <code>HazelJitRun</code> (the run compiled with the livelits' models as parameters, the fold, and the step), its call in <code>LivelitProj</code> at a livelit's event and in its view, and <code>ProjectorView</code> telling it the program; hazel-jit's parameters and samples in <code>HazelJit</code>.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/049/data"><code>049/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 49,
+ "title": "The Witch’s Run, Compiled, in the Page",
+ "date": "2026-11-08",
+ "kind": "measurement, work in progress",
+ "status": "work in progress",
+ "question": "What happens to one step of a slider on the Witch slide when the slide's whole program, compiled to JS by hazel-jit, runs in the page at the slider's event instead of waiting for Hazel's worker (^ticket(722); ^report(45)'s Node measurement, in the app)?",
+ "measurements": "Firefox on GitHub's machines (ubuntu-latest), .github/workflows/jit.yml running scripts/jit_slides.py on a release build of hazelgrove/hazel trial/694-view-jit: every polygon slide loaded with compiled views on and off and its drawings compared; on the Witch, four slider steps each way, timed from the slider's input event to the slider's and the picture's elements changing, with the page's and the worker's timelines (Util.BenchMarks). Four runs, one per commit; the report's numbers are the last run's (42551267058, 6d71c427bf). Times in ms. Counts are the page's own (globalThis.hazelJit).",
+ "builds": [
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "1d445a24cc",
+   "run": "42547578825"
+  },
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "06a3880c01",
+   "run": "42548426910"
+  },
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "932fbdcc63",
+   "run": "42549941977"
+  },
+  {
+   "what": "hazel-jit in the app",
+   "branch": "trial/694-view-jit",
+   "commit": "6d71c427bf",
+   "run": "42551267058"
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/runs",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "A step, run compiled",
+   "section_id": "step",
+   "columns": [
+    "views compiled",
+    "the step",
+    "the compiled run, each event (ms)",
+    "compiled again after (ms)",
+    "the slider redrawn (ms)",
+    "the picture (ms)"
+   ],
+   "rows": [
+    [
+     "on",
+     "neck 28 to 30",
+     "11, 3",
+     "226",
+     "469",
+     "469"
+    ],
+    [
+     "on",
+     "neck 30 to 28",
+     "10, 4",
+     "201",
+     "354",
+     "1659"
+    ],
+    [
+     "on",
+     "arms (up / down) 55 to 65",
+     "10, 3",
+     "177",
+     "318",
+     "318"
+    ],
+    [
+     "on",
+     "arms (up / down) 65 to 55",
+     "12, 3",
+     "171",
+     "326",
+     "1694"
+    ],
+    [
+     "off",
+     "neck 28 to 30",
+     "-",
+     "-",
+     "537",
+     "2240"
+    ],
+    [
+     "off",
+     "neck 30 to 28",
+     "-",
+     "-",
+     "358",
+     "1901"
+    ],
+    [
+     "off",
+     "arms (up / down) 55 to 65",
+     "-",
+     "-",
+     "350",
+     "2025"
+    ],
+    [
+     "off",
+     "arms (up / down) 65 to 55",
+     "-",
+     "-",
+     "510",
+     "2002"
+    ]
+   ]
+  },
+  {
+   "section": "The same drawings",
+   "section_id": "same",
+   "columns": [
+    "slide",
+    "livelits",
+    "events the compiled run answered",
+    "livelits drawn from its answers",
+    "views compiled (drawn by the page)",
+    "views on the interpreter"
+   ],
+   "rows": [
+    [
+     "Polygons",
+     "1",
+     "15",
+     "0",
+     "20",
+     "0"
+    ],
+    [
+     "Polygon Viewer",
+     "1",
+     "0",
+     "0",
+     "2",
+     "0"
+    ],
+    [
+     "Full Body",
+     "43",
+     "5",
+     "723",
+     "63",
+     "7"
+    ],
+    [
+     "Witch",
+     "53",
+     "5",
+     "945",
+     "70",
+     "8"
+    ],
+    [
+     "Hands",
+     "17",
+     "5",
+     "281",
+     "28",
+     "7"
+    ],
+    [
+     "Scenes",
+     "10",
+     "6",
+     "162",
+     "25",
+     "9"
+    ]
+   ]
+  },
+  {
+   "section": "Four runs",
+   "section_id": "runs",
+   "columns": [
+    "commit",
+    "what it changed",
+    "Firefox run",
+    "the Witch's uses folded in",
+    "what the run showed"
+   ],
+   "rows": [
+    [
+     "1d445a24cc",
+     "the app wired: at a livelit's event, the slide's compiled run is called with the new model",
+     "42547578825",
+     "0 of 53",
+     "never used: the page compiled the program after each edit, but no event ran it, and the reason went only to the console"
+    ],
+    [
+     "06a3880c01",
+     "every event, answer and reason not to run counted in the page, for the check to read",
+     "42548426910",
+     "0 of 53",
+     "on every slide and event: none of the program's livelit uses has a model parameter"
+    ],
+    [
+     "932fbdcc63",
+     "each livelit use's view folded into the compiled run, as Statics folds a probed use's",
+     "42549941977",
+     "52 of 53",
+     "the run fires at every event, 1 to 7 ms; 52 of the Witch's 53 uses folded; the picture, a macro livelit, not"
+    ],
+    [
+     "6d71c427bf",
+     "a macro livelit's view folded too, from the definition the page notes as it draws the use",
+     "42551267058",
+     "53 of 53",
+     "all 53 folded; the picture drawn from the compiled run at the page's first redraw in 2 of 4 steps"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/049/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>

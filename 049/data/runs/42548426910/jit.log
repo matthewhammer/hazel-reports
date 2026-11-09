@@ -1,0 +1,156 @@
+  Polygons, compiled on: 1 livelits, loaded in 7.1 s, 14 events timed, counts {"drawn from JS": 36, "the slide's run not used": 16, "the slide's run: a livelit's event": 16, "update compiled": 17, "view compiled": 20}
+      16 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+  Polygons, compiled off: 1 livelits, loaded in 6.4 s, 14 events timed, counts {"drawn through Hazel": 29}
+  Polygon Viewer, compiled on: 1 livelits, loaded in 5.1 s, 1 events timed, counts {"drawn from JS": 6, "drawn from the run's sample": 15, "update compiled": 6, "view compiled": 2}
+  Polygon Viewer, compiled off: 1 livelits, loaded in 5.1 s, 1 events timed, counts {"drawn from the run's sample": 15}
+  Full Body, compiled on: 43 livelits, loaded in 12.2 s, 6 events timed, counts {"drawn from JS": 1257, "the slide's run not used": 6, "the slide's run: a livelit's event": 6, "update compiled": 6, "view compiled": 63, "view on the interpreter": 7}
+      7 x 'view on the interpreter: a value hazel-jit does not carry into JS: { term =\n  (Splice\n     { term =\n       (Ap (Forward,\n          { term = (Var "s...'
+      6 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+  Full Body, compiled off: 43 livelits, loaded in 15.7 s, 6 events timed, counts {"drawn through Hazel": 18}
+  Witch, compiled on: 53 livelits, loaded in 13.9 s, 6 events timed, counts {"drawn from JS": 1548, "the slide's run not used": 6, "the slide's run: a livelit's event": 6, "update compiled": 6, "view compiled": 70, "view on the interpreter": 7}
+      7 x 'view on the interpreter: a value hazel-jit does not carry into JS: { term =\n  (Splice\n     { term =\n       (Ap (Forward,\n          { term = (Var "s...'
+      6 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+  Witch, compiled off: 53 livelits, loaded in 15.1 s, 6 events timed, counts {"drawn through Hazel": 20}
+    bench 'Drawing.polygons d20f0100 (before the run)' (drawn 4x): as the app runs it 0.300 ms (3,333 fps, compiled); its view alone 0.048 ms (compiled); the interpreter 45.000 ms (22 fps, on the interpreter); 150x; 3 s
+    bench 'Drawing.polygons 21110100 (before the run)' (drawn 4x): as the app runs it 0.240 ms (4,167 fps, compiled); its view alone 0.021 ms (compiled); the interpreter 51.000 ms (20 fps, on the interpreter); 212x; 2 s
+    bench 'Drawing.polygons 0e130100 (before the run)' (drawn 4x): as the app runs it 0.200 ms (5,000 fps, compiled); its view alone 0.026 ms (compiled); the interpreter 43.000 ms (23 fps, on the interpreter); 215x; 2 s
+    bench 'Drawing.polygons df1c0100 (before the run)' (drawn 4x): as the app runs it 0.395 ms (2,533 fps, compiled); its view alone 0.147 ms (compiled); the interpreter 50.000 ms (20 fps, on the interpreter); 127x; 2 s
+    bench 'Drawing.picture 7e4b0100 (before the run)' (drawn 7x): as the app runs it 0.800 ms (1,250 fps, error: eval_splice: expected a SpliceRef); its view alone 0.240 ms (not compiled: a value hazel-jit does not carry into JS: { term =
+  (Splice
+     ); the interpreter 0.347 ms (2,885 fps, error: eval_splice: expected a SpliceRef); 0x; 1 s
+    bench 'Drawing.polygons d20f0100' (drawn 2x): as the app runs it 0.333 ms (3,000 fps, compiled); its view alone 0.058 ms (compiled); the interpreter 28.000 ms (36 fps, on the interpreter); 84x; 3 s
+    bench 'Drawing.polygons 21110100' (drawn 2x): as the app runs it 0.280 ms (3,571 fps, compiled); its view alone 0.023 ms (compiled); the interpreter 25.000 ms (40 fps, on the interpreter); 89x; 2 s
+    bench 'Drawing.polygons 0e130100' (drawn 2x): as the app runs it 0.202 ms (4,950 fps, compiled); its view alone 0.022 ms (compiled); the interpreter 24.000 ms (42 fps, on the interpreter); 119x; 9 s
+    bench 'Drawing.polygons df1c0100' (drawn 2x): as the app runs it 0.605 ms (1,652 fps, compiled); its view alone 0.131 ms (compiled); the interpreter 30.000 ms (33 fps, on the interpreter); 50x; 7 s
+    bench 'Drawing.picture 7e4b0100' (drawn 3x): as the app runs it 2.625 ms (381 fps, compiled); its view alone 1.667 ms (compiled); the interpreter 86.000 ms (12 fps, on the interpreter); 33x; 3 s
+      before the first redraw (476 ms): view 306 ms x2; worker: slices 152 ms x1; calculate 100 ms x2; syntax 56 ms x2; worker: request composed 43 ms x1; statics 33 ms x1; update 21 ms x2; worker: reuse plan 17 ms x1; worker: encode reuse plan 6 ms x1; after display 4 ms x1
+      until the picture (1714 ms): worker: slices 893 ms x20; view 578 ms x4; calculate 199 ms x4; syntax 98 ms x6; worker: encode result 66 ms x1; hazel-jit: the run compiled 54 ms x1; worker: request composed 43 ms x1; statics 33 ms x1; worker message decoded 32 ms x4; update 22 ms x4
+      ids minted: by the page 3109, by the worker's runs of slices 179004
+      the worker's own steps: slices 893 ms x20 (evaluator 867 ms); encode result 66 ms x1 (0.59 MB); request composed 43 ms x1; reuse plan 17 ms x1; encode reuse plan 6 ms x1 (0.04 MB); request decoded 1 ms x1 (0.01 MB); encode ack 1 ms x1 (0.00 MB); make result 1 ms x1; post ack 0 ms x1; post reuse plan 0 ms x1; encode stream 0 ms x1 (0.00 MB); post stream 0 ms x1; post result 0 ms x1
+      303 ms: post to worker {"bytes": 10020, "id": 2, "ms": 3}
+      1524 ms: worker message handled {"eval_ms": 979, "id": 2, "kind": "result", "ms": 0}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.67 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-18e2-e0a6f1da542c"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-18e2-e0a6f1da542c"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled on: 'neck' 28 -> 30: the slider's own livelit 476 ms; the picture 1714 ms (17 of 133 shapes changed); the run [[476, 'ok running'], [1714, 'ok']]
+      the slide's run, since load: {"the slide's run not used": 2, "the slide's run: a livelit's event": 2}
+        2 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+      before the first redraw (303 ms): worker: slices 326 ms x2; view 205 ms x2; calculate 58 ms x2; worker: request composed 33 ms x1; syntax 31 ms x2; statics 21 ms x1; update 17 ms x2; worker: reuse plan 15 ms x1; worker: encode reuse plan 6 ms x1; after display 3 ms x1
+      until the picture (1601 ms): worker: slices 1003 ms x22; view 446 ms x4; calculate 138 ms x4; worker: encode result 70 ms x1; syntax 67 ms x6; hazel-jit: the run compiled 46 ms x1; worker: request composed 33 ms x1; worker message decoded 23 ms x4; statics 21 ms x1; after display 21 ms x57
+      ids minted: by the page 3111, by the worker's runs of slices 179004
+      the worker's own steps: slices 1003 ms x22 (evaluator 916 ms); encode result 70 ms x1 (0.59 MB); request composed 33 ms x1; reuse plan 15 ms x1; encode reuse plan 6 ms x1 (0.04 MB); request decoded 1 ms x2 (0.01 MB); encode stream 1 ms x1 (0.00 MB); make result 1 ms x1; post result 1 ms x1; encode ack 0 ms x1 (0.00 MB); post ack 0 ms x1; post reuse plan 0 ms x1; post stream 0 ms x1
+      166 ms: post to worker {"bytes": 9798, "id": 3, "ms": 1}
+      1435 ms: worker message handled {"eval_ms": 916, "id": 3, "kind": "result", "ms": 0}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.67 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-18e2-e0a6f1da542c"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-18e2-e0a6f1da542c"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled on: 'neck' 30 -> 28: the slider's own livelit 303 ms; the picture 1601 ms (17 of 133 shapes changed); the run [[303, 'ok running'], [1601, 'ok']]
+      the slide's run, since load: {"the slide's run not used": 4, "the slide's run: a livelit's event": 4}
+        4 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+      before the first redraw (305 ms): worker: slices 331 ms x2; view 201 ms x2; calculate 59 ms x2; worker: request composed 35 ms x1; syntax 33 ms x2; statics 20 ms x1; update 18 ms x2; worker: reuse plan 18 ms x1; worker: encode reuse plan 8 ms x1; worker: request decoded 3 ms x2
+      until the picture (1468 ms): worker: slices 1099 ms x21; view 428 ms x4; calculate 147 ms x4; worker: encode result 68 ms x1; syntax 63 ms x6; worker: request composed 35 ms x1; hazel-jit: the run compiled 32 ms x1; worker message decoded 22 ms x4; statics 20 ms x1; update 19 ms x4
+      ids minted: by the page 3110, by the worker's runs of slices 188709
+      the worker's own steps: slices 1099 ms x21 (evaluator 1004 ms); encode result 68 ms x1 (0.59 MB); request composed 35 ms x1; reuse plan 18 ms x1; encode reuse plan 8 ms x1 (0.04 MB); request decoded 3 ms x2 (0.01 MB); encode ack 1 ms x1 (0.00 MB); post ack 0 ms x1; post reuse plan 0 ms x1; encode stream 0 ms x1 (0.00 MB); post stream 0 ms x1; make result 0 ms x1; post result 0 ms x1
+      182 ms: post to worker {"bytes": 10519, "id": 4, "ms": 2}
+      1320 ms: worker message handled {"eval_ms": 916, "id": 4, "kind": "result", "ms": 0}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.70 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-18e2-e0a6f1da542c"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-18e2-e0a6f1da542c"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled on: 'arms (up / down)' 55 -> 65: the slider's own livelit 305 ms; the picture 1468 ms (30 of 133 shapes changed); the run [[305, 'ok running'], [1468, 'ok']]
+      the slide's run, since load: {"the slide's run not used": 6, "the slide's run: a livelit's event": 6}
+        6 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+      before the first redraw (286 ms): worker: slices 226 ms x2; view 200 ms x2; calculate 51 ms x2; worker: request composed 34 ms x1; syntax 29 ms x2; statics 17 ms x1; update 16 ms x2; worker: reuse plan 14 ms x1; worker: encode reuse plan 7 ms x1; post to worker 2 ms x1
+      until the picture (1472 ms): worker: slices 1032 ms x21; view 430 ms x4; calculate 129 ms x4; worker: encode result 81 ms x1; syntax 63 ms x6; worker: request composed 34 ms x1; hazel-jit: the run compiled 27 ms x1; worker message decoded 19 ms x4; statics 17 ms x1; update 16 ms x4
+      ids minted: by the page 3110, by the worker's runs of slices 188709
+      the worker's own steps: slices 1032 ms x21 (evaluator 944 ms); encode result 81 ms x1 (0.59 MB); request composed 34 ms x1; reuse plan 14 ms x1; encode reuse plan 7 ms x1 (0.04 MB); request decoded 2 ms x2 (0.01 MB); encode ack 0 ms x1 (0.00 MB); post ack 0 ms x1; post reuse plan 0 ms x1; encode stream 0 ms x1 (0.00 MB); post stream 0 ms x1; make result 0 ms x1; post result 0 ms x1
+      163 ms: post to worker {"bytes": 9973, "id": 5, "ms": 2}
+      1323 ms: worker message handled {"eval_ms": 937, "id": 5, "kind": "result", "ms": 1}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.67 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-18e2-e0a6f1da542c"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-18e2-e0a6f1da542c"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-18e2-e0a6f1da542c"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled on: 'arms (up / down)' 65 -> 55: the slider's own livelit 286 ms; the picture 1472 ms (30 of 133 shapes changed); the run [[286, 'ok running'], [1472, 'ok']]
+      the slide's run, since load: {"the slide's run not used": 8, "the slide's run: a livelit's event": 8}
+        8 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+    data experiment: 108 samples, 108 convert to data
+      picture, more: an id 16.269 ns; printed as a term 51118 chars in 96.0 ms, as data 48308 chars in 3.1354 ms; into JS from the term 1.1905 ms, from data 1.0563 ms
+      picture, built: 5636 data nodes, 10948 term nodes; as terms with fresh ids 3.068 ms, as terms with no id minted 2.3154 ms, as data 0.5263 ms
+      picture: 5636 nodes; term 142.2 KB, data 48.0 KB, data with no sharing table 62.0 KB, JSON 66.3 KB; ms: term_encode 12.667, term_decode 4.167, of_term 0.962, data_encode 5.2, data_decode 2.455, data_noshare_encode 3.857, to_js 1.19, structured_clone 0.962, json_encode 0.481, json_decode 0.391
+      all_converted: 18851 nodes; term 275.9 KB, data 144.7 KB, data with no sharing table 204.1 KB, JSON 215.2 KB; ms: term_encode 29.667, term_decode 10.0, of_term 4.333, data_encode 21.333, data_decode 17.0, data_noshare_encode 15.333, to_js 3.375, structured_clone 3.25, json_encode 1.444, json_decode 1.3
+      before the first redraw (469 ms): view 315 ms x2; worker: slices 149 ms x1; calculate 91 ms x2; syntax 50 ms x2; worker: request composed 45 ms x1; statics 30 ms x1; update 20 ms x2; worker: reuse plan 19 ms x1; worker: encode reuse plan 8 ms x1; post to worker 4 ms x1
+      until the picture (1970 ms): worker: slices 888 ms x20; view 850 ms x4; calculate 188 ms x4; syntax 86 ms x6; worker: encode result 70 ms x1; worker: request composed 45 ms x1; statics 30 ms x1; worker message decoded 28 ms x4; update 21 ms x4; worker: reuse plan 19 ms x1
+      ids minted: by the page 37123, by the worker's runs of slices 179004
+      the worker's own steps: slices 888 ms x20 (evaluator 864 ms); encode result 70 ms x1 (0.59 MB); request composed 45 ms x1; reuse plan 19 ms x1; encode reuse plan 8 ms x1 (0.04 MB); request decoded 2 ms x1 (0.01 MB); make result 1 ms x1; encode ack 0 ms x1 (0.00 MB); post ack 0 ms x1; post reuse plan 0 ms x1; encode stream 0 ms x1 (0.00 MB); post stream 0 ms x1; post result 0 ms x1
+      300 ms: post to worker {"bytes": 10064, "id": 2, "ms": 4}
+      1537 ms: worker message handled {"eval_ms": 996, "id": 2, "kind": "result", "ms": 0}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.67 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-1cab-f191bcfa0ce0"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-1cab-f191bcfa0ce0"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled off: 'neck' 28 -> 30: the slider's own livelit 469 ms; the picture 1970 ms (17 of 133 shapes changed); the run [[469, 'ok running'], [1970, 'ok']]
+      the slide's run, since load: {}
+      before the first redraw (321 ms): worker: slices 353 ms x2; view 224 ms x2; calculate 53 ms x2; worker: request composed 33 ms x1; syntax 29 ms x2; update 18 ms x2; statics 17 ms x1; worker: reuse plan 15 ms x1; worker: encode reuse plan 7 ms x1; post to worker 3 ms x1
+      until the picture (1611 ms): worker: slices 1077 ms x21; view 540 ms x4; calculate 140 ms x4; worker: encode result 71 ms x1; syntax 65 ms x6; worker: request composed 33 ms x1; update 20 ms x4; worker message decoded 20 ms x4; statics 17 ms x1; worker: reuse plan 15 ms x1
+      ids minted: by the page 3787, by the worker's runs of slices 179004
+      the worker's own steps: slices 1077 ms x21 (evaluator 981 ms); encode result 71 ms x1 (0.59 MB); request composed 33 ms x1; reuse plan 15 ms x1; encode reuse plan 7 ms x1 (0.04 MB); request decoded 1 ms x2 (0.01 MB); encode ack 1 ms x1 (0.00 MB); post ack 0 ms x1; post reuse plan 0 ms x1; encode stream 0 ms x1 (0.00 MB); post stream 0 ms x1; make result 0 ms x1; post result 0 ms x1
+      183 ms: post to worker {"bytes": 9931, "id": 3, "ms": 3}
+      1368 ms: worker message handled {"eval_ms": 960, "id": 3, "kind": "result", "ms": 0}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.67 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-1cab-f191bcfa0ce0"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-1cab-f191bcfa0ce0"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled off: 'neck' 30 -> 28: the slider's own livelit 321 ms; the picture 1611 ms (17 of 133 shapes changed); the run [[321, 'ok running'], [1611, 'ok']]
+      the slide's run, since load: {}
+      before the first redraw (303 ms): worker: slices 324 ms x2; view 211 ms x2; calculate 50 ms x2; worker: request composed 34 ms x1; syntax 25 ms x2; update 20 ms x2; statics 17 ms x1; worker: reuse plan 15 ms x1; worker: encode reuse plan 6 ms x1; post to worker 2 ms x1
+      until the picture (1673 ms): worker: slices 1124 ms x21; view 635 ms x4; calculate 135 ms x4; worker: encode result 81 ms x1; syntax 57 ms x6; worker: request composed 34 ms x1; update 22 ms x4; worker message decoded 21 ms x4; after display 18 ms x52; statics 17 ms x1
+      ids minted: by the page 37124, by the worker's runs of slices 188709
+      the worker's own steps: slices 1124 ms x21 (evaluator 1030 ms); encode result 81 ms x1 (0.59 MB); request composed 34 ms x1; reuse plan 15 ms x1; encode reuse plan 6 ms x1 (0.04 MB); request decoded 2 ms x2 (0.01 MB); encode ack 2 ms x1 (0.00 MB); post ack 0 ms x1; post reuse plan 0 ms x1; encode stream 0 ms x1 (0.00 MB); post stream 0 ms x1; make result 0 ms x1; post result 0 ms x1
+      174 ms: post to worker {"bytes": 10448, "id": 4, "ms": 2}
+      1345 ms: worker message handled {"eval_ms": 936, "id": 4, "kind": "result", "ms": 0}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.70 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-1cab-f191bcfa0ce0"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-1cab-f191bcfa0ce0"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled off: 'arms (up / down)' 55 -> 65: the slider's own livelit 303 ms; the picture 1673 ms (30 of 133 shapes changed); the run [[303, 'ok running'], [1673, 'ok']]
+      the slide's run, since load: {}
+      before the first redraw (461 ms): view 290 ms x2; worker: slices 246 ms x2; calculate 101 ms x2; syntax 56 ms x2; worker: request composed 43 ms x1; statics 34 ms x1; update 26 ms x2; worker: reuse plan 14 ms x1; worker: encode reuse plan 6 ms x1; post to worker 4 ms x1
+      until the picture (1867 ms): worker: slices 1003 ms x22; view 657 ms x4; calculate 204 ms x4; syntax 93 ms x6; worker: encode result 70 ms x1; worker: request composed 43 ms x1; statics 34 ms x1; worker message decoded 31 ms x4; update 26 ms x4; after display 19 ms x56
+      ids minted: by the page 3786, by the worker's runs of slices 188709
+      the worker's own steps: slices 1003 ms x22 (evaluator 903 ms); encode result 70 ms x1 (0.59 MB); request composed 43 ms x1; reuse plan 14 ms x1; encode reuse plan 6 ms x1 (0.04 MB); request decoded 2 ms x2 (0.01 MB); encode ack 0 ms x1 (0.00 MB); post ack 0 ms x1; post reuse plan 0 ms x1; encode stream 0 ms x1 (0.00 MB); post stream 0 ms x1; make result 0 ms x1; post result 0 ms x1
+      299 ms: post to worker {"bytes": 9820, "id": 5, "ms": 4}
+      1585 ms: worker message handled {"eval_ms": 913, "id": 5, "kind": "result", "ms": 0}
+      answer result: 0.59 MB as it crossed, 0.59 MB unshared, 0 held references; final stream.completed entry.state.probes 79.67 MB x216; result.final_streams 0.59 MB; final stream 0.59 MB; final stream.completed 0.59 MB; result.state.probes 0.44 MB; final stream.completed entry.value 0.00 MB x216; final stream.completed entry.prev_elab 0.00 MB x216; result.value 0.00 MB
+        probes 108, samples 9099 (+0 held): value 0.30 MB, env 0.27 MB, call stack 0.04 MB, args 0.04 MB, frame 0.04 MB; trace: none; span close values 0.00 MB, envs 0.00 MB
+        probe lcore.Id.v("08ab0000-0000-0000-1cab-f191bcfa0ce0"): 213 samples; its first sample's value 0.13 MB, environment 0.15 MB in 1 bindings: drawn 0.15 MB
+        probe lcore.Id.v("edaa0000-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.00 MB, environment 0.15 MB in 4 bindings: drawn 0.15 MB; hy 0.00 MB; hx 0.00 MB; Drawing 0.00 MB (opaque)
+        probe lcore.Id.v("fbaa0000-0000-0000-1cab-f191bcfa0ce0"): 216 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+        probe lcore.Id.v("7e4b0100-0000-0000-1cab-f191bcfa0ce0"): 214 samples; its first sample's value 0.13 MB, environment 0.00 MB in 0 bindings: 
+    edit, compiled off: 'arms (up / down)' 65 -> 55: the slider's own livelit 461 ms; the picture 1867 ms (30 of 133 shapes changed); the run [[461, 'ok running'], [1867, 'ok']]
+      the slide's run, since load: {}
+  Hands, compiled on: 17 livelits, loaded in 8.5 s, 6 events timed, counts {"drawn from JS": 488, "the slide's run not used": 6, "the slide's run: a livelit's event": 6, "update compiled": 6, "view compiled": 28, "view on the interpreter": 6}
+      6 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+      6 x 'view on the interpreter: a value hazel-jit does not carry into JS: { term =\n  (Splice\n     { term = (Var "picture");\n       annotation =\n       { i...'
+  Hands, compiled off: 17 livelits, loaded in 9.7 s, 6 events timed, counts {"drawn through Hazel": 19}
+  Scenes, compiled on: 10 livelits, loaded in 11.6 s, 6 events timed, counts {"drawn from JS": 290, "the slide's run not used": 6, "the slide's run: a livelit's event": 6, "update compiled": 6, "view compiled": 27, "view on the interpreter": 9}
+      9 x 'view on the interpreter: a value hazel-jit does not carry into JS: { term =\n  (Splice\n     { term =\n       (ListConcat (\n          { term =\n       ...'
+      6 x "the slide's run not used: a livelit's model is not a parameter of the run (0 of the program's livelit uses have one)"
+  Scenes, compiled off: 10 livelits, loaded in 13.3 s, 6 events timed, counts {"drawn through Hazel": 19}
+
+6 slides, 0 differences
