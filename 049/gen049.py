@@ -41,6 +41,9 @@ RUNS = [
      "showed": "the run fires at every event, 1 to 7 ms; 52 of the Witch's 53 uses folded; the picture, a macro livelit, not"},
     {"run": "42551267058", "commit": "6d71c427bf", "only": "",
      "what": "a macro livelit's view folded too, from the definition the page notes as it draws the use",
+     "showed": "all 53 folded; the picture drawn from the compiled run at the page's first redraw in 2 of 4 steps, the steps away from a slider's starting value"},
+    {"run": "42554043524", "commit": "a51dc778dd", "only": "",
+     "what": "a step back to a slider's starting value no longer taken for an undo; the answers kept until the worker's sample of the model catches up",
      "showed": None},
 ]
 RUNS = [r for r in RUNS if os.path.exists(os.path.join(HERE, "data", "runs", r["run"], "jit.json"))]
@@ -234,7 +237,7 @@ NUMS = {
     "own": rng([x["own"] for x in ON]), "pic_on": srng([x["pic"] for x in ON]), "pic_off": srng([x["pic"] for x in OFF]),
     "recompile": rng([v for x in ON for v in x["recompile"]]), "main_run": MAIN["run"], "main_commit": MAIN["commit"],
     "n_steps": str(len(ON)),
-    "n_early": str(len(EARLY)), "pic_early": " and ".join(f"{v:g}" for v in sorted(PIC_FROM_RUN)) or "-",
+    "n_early": str(len(EARLY)), "pic_early": (" and ".join(f"{v:g}" for v in sorted(PIC_FROM_RUN)) if len(PIC_FROM_RUN) <= 2 else rng(PIC_FROM_RUN)) or "-",
     "pic_late": srng(PIC_LATE) if PIC_LATE else "-", "done_on": srng([x["done"] for x in ON]),
     "drawn_early": rng([x["drawn_from_run"] for x in EARLY]) if EARLY else "-",
     "drawn_late": rng([x["drawn_from_run"] for x in LATE]) if LATE else "-",
@@ -252,7 +255,8 @@ NUMS["worker_slices"] = srng([sum(m["ms"] for m in e["marks"] if m["what"] == "w
 NUMS["views_after"] = rng([sum(m["ms"] for m in e["marks"] if m["what"] == "view" and m["at"] >= e["picture_changed_ms"]) for e in _won if e["picture_changed_ms"] < [t for t, s in e["dynamics"] if s == "ok"][-1]])
 NUMS["first_fps"] = f"{fps(max(first))} to {fps(min(first))}"
 NUMS["second_fps"] = f"{fps(max(second))} to {fps(min(second))}"
-NUMS["frames_early"] = " and ".join(f"{v / GOAL:.0f}" for v in sorted(PIC_FROM_RUN))
+NUMS["frames_early"] = (" and ".join(f"{v / GOAL:.0f}" for v in sorted(PIC_FROM_RUN)) if len(PIC_FROM_RUN) <= 2
+                        else f"{min(PIC_FROM_RUN) / GOAL:.0f} to {max(PIC_FROM_RUN) / GOAL:.0f}")
 NUMS["off_frames"] = f"{min(x['pic'] for x in OFF) / GOAL:.0f} to {max(x['pic'] for x in OFF) / GOAL:.0f}"
 w = witch(MAIN["d"])
 NUMS["w_livelits"] = str(w["on"]["livelits"])
