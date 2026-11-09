@@ -7,7 +7,7 @@
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
-<li><a href="#what">What hazel-jit is</a>: a compiler from Hazel's elaborated terms to the source of a JavaScript function, about 2,000 lines of Reason in three modules.</li>
+<li><a href="#what">What hazel-jit is</a>: a compiler from Hazel's elaborated terms to the source of a JavaScript function, with what carries values across and draws its answers: {{l_total}} lines of Reason in four modules.</li>
 <li><a href="#gains">Expected gains</a>: compiled code runs {{g_lo}} to {{g_hi}} times faster than the interpreter; in the app, on today's build, a slider's step shows in the picture {{b12_step}} after the click (it was {{b1_step}} before hazel-jit ran the slide), and a drag runs at about 60 frames a second, {{b12_within}} frames within one.</li>
 <li><a href="#costs">Expected costs</a>: compiling a livelit's definition takes {{c_def}}, and a whole slide's program {{c_run}}, once; loading the slides with many livelits is no slower.</li>
 <li><a href="#use">How to use it in your own PR</a>: base your branch on <code>trial/694-view-jit</code>, and livelits compile with no change; the API, the command line, the tests and the Firefox check, for anything else.</li>

@@ -214,7 +214,10 @@ def todays():
 
 TODAY = todays()
 compiles = []
+_crun = (json.load(open(os.path.join(HERE, "data", "today.json"))).get("compile") or {}).get("run") if os.path.exists(os.path.join(HERE, "data", "today.json")) else None
 for r, d in TODAY.items():
+    if _crun and r != _crun:
+        continue
     for s in d["slides"]:
         for c in ((s.get("on") or {}).get("jit") or {}).get("compiles") or []:
             compiles.append(dict(c, slide=s["slide"], run=r))
@@ -390,6 +393,7 @@ NUMS = {
                     "closure with its own environment, <code>undefined</code>, and a few rarer shapes of patterns, labels "
                     "and module members"),
     **{k: f"{v:,}" for k, v in lines.items()},
+    "l_total": f"{sum(lines.values()):,}",
 }
 NEXT = meta_today.get("next_rows") or [
     ["3", "Compile the program once, not again after a step that changed only a livelit's model: keep the compiled program, and give it the new models.",
