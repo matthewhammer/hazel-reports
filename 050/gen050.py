@@ -238,7 +238,8 @@ def fig_drag():
 # (the drag fast path, 11-08 late: each cut's run, the same drag)
 CUTS = [("before (this report's run)", "42556616487", "bb88edfd12"),
         ("cut A: a drag's inputs, no editor action", "42560502616", "9fca635226"),
-        ("cut B: only the livelits that changed drawn", "42562102280", "38d4e4d0f8")]
+        ("cut B: only the livelits that changed drawn", "42562102280", "38d4e4d0f8"),
+        ("cut C: the projectors' data and views reused", "42566328043", "61f3f01a15")]
 CUT_DRAGS = []
 for _label, _run, _commit in CUTS:
     _p = os.path.join(HERE, "data", "runs", _run, "jit.json")
@@ -295,7 +296,7 @@ def fig_frame():
     parts.append(("the rest: the browser's diff, layout and paint (not timed)", rest, "#d1d5db"))
     W, left, right = 940, 16, 20
     sc = (W - left - right) / max(med, GOAL) * 0.95
-    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">After cut B, a compiled drag\'s median frame, {med:g} ms: '
+    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">After the latest cut, a compiled drag\'s median frame, {med:g} ms: '
            'where it goes (the page\'s own timeline, per frame)</text>']
     x = left
     for name, v, col in parts:
@@ -364,6 +365,8 @@ for _i, (_l, _r, _c, _d) in enumerate(CUT_DRAGS):
             NUMS[f"c{_i}_{_m}_fps"] = f"{_d[_m]['stats']['fps']:g}"
             NUMS[f"c{_i}_{_m}_med"] = f"{_d[_m]['stats']['median_ms']:g}"
 if CUT_DRAGS and CUT_DRAGS[-1][3].get("on"):
+    NUMS["c3_within"] = str(CUT_DRAGS[-1][3]["on"]["stats"]["within_16_7"])
+    NUMS["c3_frames"] = str(CUT_DRAGS[-1][3]["on"]["stats"]["frames"])
     _r = CUT_DRAGS[-1][3]["on"]
     _mk = _r.get("marks") or {}
     NUMS["cb_view"] = f"{_mk.get('view', {'ms': 0})['ms'] / _r['stats']['frames']:.1f}"
