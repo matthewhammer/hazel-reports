@@ -9,7 +9,7 @@ slide's run, and the held request; the counts of what the slide's run did; and e
 import json, os, statistics as st, sys
 
 TOP = ("view", "calculate", "hazel-jit: the run compiled", "worker message decoded", "update",
-       "samples' values made terms")
+       "samples' values made terms", "outline, on its own")  # the last from build 13: the outline out of the view
 
 
 def witch(p):

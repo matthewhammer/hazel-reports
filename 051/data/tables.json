@@ -272,6 +272,12 @@
     "A step's edit made after the paint, once the compiled run has drawn it (b37d2e6df1); each editor's decorations and probes' views reused across a drag's frames.",
     "19 to 124 ms",
     "57.6 fpsview 6.1 ms a frame"
+   ],
+   [
+    "13 · the outline on its own8bf44f23cf, run 42670654733",
+    "The sidebar's outline built on its own after the paint, not in the page's view (bfbd88a1ae, 8bf44f23cf; Matthew: \"no memoization, but isolation, instead\"). Also samples as data off again (22cd278106), as on the team's hosted build. Its other run (42668742255) landed on a machine 20 to 40% slower on work this change does not touch, and read slower throughout.",
+    "24 to 72 ms",
+    "57.6 fpsview 4.9 ms a frame"
    ]
   ]
  },
@@ -295,7 +301,7 @@
     "1",
     "Draw only the livelits a drag changes: make the editors' and projectors' views incremental.",
     "Most of the page's view: 10.1 ms of a 17.1 ms median frame of a drag (build 8); and the whole views after each worker message.",
-    "first part done (d9d63c13af, build 12): each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (8.2 to 10.1 on builds 8 to 11). Left: the projector layer (3.1 ms a frame), and the whole views after each worker message (95 to 143 ms each)."
+    "first part done (d9d63c13af, build 12): each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (8.2 to 10.1 on builds 8 to 11). Then the outline out of the view (bfbd88a1ae, 8bf44f23cf; build 13), built on its own after the paint: the whole views after each worker message 45 to 63 ms (88 to 130 on build 12), a drag's view 4.9 ms a frame. Left: the projector layer, and those whole views."
    ],
    [
     "3",
@@ -307,7 +313,7 @@
     "4",
     "Leave the worker out when the compiled run has answered: keep the run's answers when the worker catches up, and hold the worker's request until the steps stop.",
     "The page drawing every livelit again from the worker's answer, to the same picture; the worker's run for each step of a quick series.",
-    "partly done (7f5add1519, build 9): the answers are kept each time the worker catches up (10 on the Witch) and its request is held 400 ms. But each of the worker's two messages still costs the page a calculate and a whole view, 95 to 143 ms a view, now drawing every livelit from the kept answers. What is left is step 1's."
+    "partly done (7f5add1519, build 9): the answers are kept each time the worker catches up (10 on the Witch) and its request is held 400 ms. But each of the worker's two messages still costs the page a calculate and a whole view, 95 to 143 ms a view (45 to 63 since build 13 took the outline out), now drawing every livelit from the kept answers. What is left is step 1's."
    ],
    [
     "7",

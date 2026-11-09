@@ -300,8 +300,10 @@ TODAY_BUILDS = [
      "adds": "Probe samples' first-order values sent from the worker as data (step 7's first slice; it made the answer larger, and is off since 22cd278106)."},
     {"n": 12, "name": "steps 2 and 1", "commit": "d9d63c13af", "run": "42658981172", "path": "051/data/runs/42658981172/jit.json",
      "adds": "A step's edit made after the paint, once the compiled run has drawn it (b37d2e6df1); each editor's decorations and probes' views reused across a drag's frames."},
+    {"n": 13, "name": "the outline on its own", "commit": "8bf44f23cf", "run": "42670654733", "path": "051/data/runs/42670654733/jit.json",
+     "adds": "The sidebar's outline built on its own after the paint, not in the page's view (bfbd88a1ae, 8bf44f23cf; Matthew: \"no memoization, but isolation, instead\"). Also samples as data off again (22cd278106), as on the team's hosted build. Its other run (42668742255) landed on a machine 20 to 40% slower on work this change does not touch, and read slower throughout."},
 ]
-VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5)}  # from each run's log
+VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5), 13: (4.9, 3.9)}  # from each run's log
 for b in TODAY_BUILDS:
     w = next(x for x in json.load(open(os.path.join(ROOT, b["path"])))["slides"] if x["slide"] == "Witch")
     b["steps"] = [e["picture_changed_ms"] for e in w["edits"]["on"]]
@@ -317,7 +319,7 @@ def fig_today():
     xof = lambda ms: left + (math.log10(ms) - lo) / (hi - lo) * (mid_x - 40 - left)
     vx = lambda ms: mid_x + ms / 12 * (W - right - mid_x - 130)
     out = []
-    title(out, "The Witch, builds 8 to 12: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
+    title(out, "The Witch, builds 8 to 13: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
     y = 40
     for b in TODAY_BUILDS:
         out.append(f'<text x="{left - 10}" y="{y + 12}" font-size="11.5" text-anchor="end" fill="var(--ink)">{b["n"]} · {html.escape(b["name"])}</text>')
@@ -340,10 +342,10 @@ def fig_today():
         out.append(f'<line x1="{x:.1f}" y1="34" x2="{x:.1f}" y2="{y}" stroke="var(--line)" stroke-dasharray="2 3"/>')
         out.append(f'<text x="{x:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{v} ms</text>')
     return svg_fig(W, y + 34, out, "; ".join(f"build {b['n']}: steps {b['steps']} ms; a drag's view {b['view']} ms a frame, {b['drag']['fps']} fps" for b in TODAY_BUILDS),
-                   "<b class=\"build\">Builds 8 to 12</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
+                   "<b class=\"build\">Builds 8 to 13</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
                    "Firefox check on GitHub's machines. Left: each of the four steps of the neck and arms sliders, from the click to "
                    "the picture changing; from build 12 the page draws the compiled run's answers first and makes the edit after "
-                   "the paint. Right: a 3-second compiled drag of the neck slider, the page's view per frame (dark: the editors; "
+                   "the paint, and from build 13 the sidebar's outline is built after the paint, not in the view. Right: a 3-second compiled drag of the neck slider, the page's view per frame (dark: the editors; "
                    "light: the rest), with the drag's frames a second. The frames a second vary from run to run more than the "
                    "builds differ (builds 9 to 11 changed nothing a drag does and gave 54.3, 47.8 and 56.3); the view's time per "
                    "frame is steadier.")
@@ -375,6 +377,8 @@ NUMS = {
     "g_lo": f"{min(RATIOS):,.0f}", "g_hi": f"{max(RATIOS):,.0f}", "g_petri": f"{RATIOS[1]:,.0f}",
     "b1_step": "4.17 to 6.52 s", "b8_step": "176 to 290 ms", "b8_fps": "48.4", "b5_fps": "9.8",
     "b12_step": "19 to 24 ms", "b12_fps": "57.6", "b12_within": "171 of its 173", "b12_view": "6.1",
+    "b13_view": "4.9", "b13_fps": "57.6", "b13_msgview": "45 to 63 ms", "b12_msgview": "88 to 130 ms", "b13_outline": "36 to 60 ms",
+    "b12_after": "0.48 to 0.72 s", "b13_after": "0.43 to 0.60 s",
     "now_view": "10.1", "now_run": "2.2",
     "v_pic_i": f"{pic[0][1]:g}", "v_pic_c": f"{pic[0][2]:.1f}",
     "v_poly_i": f"{min(b[1] for b in polys):g} to {max(b[1] for b in polys):g}",
