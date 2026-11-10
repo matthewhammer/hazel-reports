@@ -61,6 +61,11 @@ def decided(it):
             if it.get("decided") else "")
 
 
+def guess(it):
+    # (Matthew 2026-11-10: "what's your best guess", then "Yes, add them"): the agent's guess at an item's questions, marked as its own
+    return (f'<p class="guess"><b>Best guess (the agent\'s, {esc(it["guess_at"])}):</b> {it["guess"]}</p>' if it.get("guess") else "")
+
+
 def item(n, it):
     assert it["tone"] in TONES, it["tone"]
     ticket = (f' · <code class="ref"><b>^ticket(</b>{it["ticket"]}<b>)</b></code>'
@@ -76,6 +81,7 @@ def item(n, it):
 {it["body"]}
 {prs}
 <p class="ask"><b>For the meeting:</b> {it["meeting"]}</p>
+{guess(it)}
 {decided(it)}</section>"""
 
 
@@ -170,6 +176,7 @@ page = f"""<!doctype html>
   .item h3 .n {{ color: var(--muted); }}
   .meta {{ color: var(--muted); font-size: 0.9em; margin: 0 0 8px; }}
   .ask {{ border-top: 1px dashed var(--line); padding-top: 8px; margin-bottom: 2px; }}
+  .guess {{ margin-top: 4px; padding-left: 10px; border-left: 3px solid var(--line); }}
   .decided {{ border-left: 4px solid var(--good); background: var(--paper); padding: 6px 12px; border-radius: 6px; margin: 8px 0 4px; }}
   details {{ margin: 6px 0 10px; }} summary {{ cursor: pointer; color: var(--muted); }}
   ul.prs {{ columns: 2 22em; margin: 6px 0; }}

@@ -4,7 +4,7 @@
  "meeting": "2026-11-13",
  "meeting_time": "10:00 MST (10 a.m. in Boulder, Colorado; moved from Wednesday 2026-11-11, same time)",
  "started": "2026-11-06",
- "updated": "2026-11-10 13:35",
+ "updated": "2026-11-10 14:15",
  "page_title": "Agenda for November 13",
  "title": "Agenda: Matthew and Cyrus, Friday 2026-11-13, 10:00 Mountain",
  "sub": "The topics Matthew brings to his meeting with Cyrus on Friday 2026-11-13 at 10:00 Mountain time (MST, Boulder; moved from Wednesday 11-11, the usual day and time), carrying over the work that continues from their meeting of 2026-11-05 (<a href=\"../037/\"><code class=\"ref\"><b>^report(</b>37<b>)</b></code></a>), in two parts: performance (undo, and Hazel compiled to JS) and hazeljs for other JavaScript developers. <b>A work in progress:</b> updated as items move until the meeting, so each item says where it stands, as of when, and what it needs from the meeting.",
@@ -25,9 +25,11 @@
      "ticket": 722,
      "status": "a click on a Witch slider shows in the picture in 19 to 24 ms, and a drag runs at 57.6 to 58.6 fps; build 45 (11-10) takes a step's statics to 12 to 18 ms, from 19 to 53",
      "tone": "accent",
-     "as_of": "2026-11-10 13:15",
+     "as_of": "2026-11-10 14:15",
      "body": "<p><b>Where it stands: on the Witch slide, a step shows in 19 to 24 ms and a drag runs at about 60 frames a second</b> (^report(51), the Hazel-JIT Status Report, for colleagues: twenty numbered builds of trial/694-view-jit, hazelgrove/hazel#2817, each measured in Firefox and named by every figure). A step took 4.17 to 6.52 s on build 1, nothing compiled in the run; 176 to 290 ms on build 8, the figures here (^report(50)); and 19 to 24 ms on build 12, which draws from the compiled run first and edits the program after the paint. A drag ran at 9.8 frames a second on build 5, 48.4 on build 8, 57.6 on build 12 (171 of its 173 frames within 16.7 ms) and 58.6 on build 15 (173 of 177).</p><p><b>What is left is the work after the paint.</b> The edit of the program is still made after each step: 126 to 193 ms of statics, syntax, the view and the outline on build 20 (^ticket(721), a choice below). <b>New, 11-10: build 45 patches the edited item's statics instead of analyzing it again</b>: a step's statics take 12 to 18 ms, from 19 to 53 on build 43, and the edited item's part 3 to 6 ms, from 13 to 42 (one run each). It passed CI and is on the branch since 11-10, 12:46 (^report(52)). It is also the kind of special case Matthew Keenan warns about (below, in \"Fewer, deeper fixes\"); ^report(53) proposes keeping it as a measurement of what finer-grained statics would buy, and landing per-item statics on dev first. The worker runs the whole program again for the probes, and its answer comes 1.4 to 2.0 s after the step; the page then spends 80 to 193 ms on it. Builds 13 to 20 took the page's work after a step from 0.56 to 0.92 s down to 0.21 to 0.32 s: the outline out of the view, the livelits an edit does not touch kept, the autosave out of the update, the projectors an answer does not change kept, and the worker's answer 198 KB, from 590 (no final stream the page dropped, and its first-order values sent as data, ^ticket(718)).</p><p><b>Try it</b> with the frame-rate overlay: <a href=\"https://build.hazel.org/trial/694-view-jit/?slide=livelit-playground-witch&amp;hud\">the Witch, compiled</a> (the branch's latest build); build 8, with every Livelit Playground slide linked, is hosted by hazelgrove/hazel#2819; the overlay alone for dev is hazelgrove/hazel#2818.</p>",
-     "meeting": "The edit after a step (^ticket(721)): build 45 shows a model-only patch saves 10 to 35 ms of statics a step. Keep it as that measurement and land per-item statics on dev first, as ^report(53) proposes, or take the patch further (syntax, outline) on the branch? Should the overlay go to dev now? Would the team try the build?"
+     "meeting": "The edit after a step (^ticket(721)): build 45 shows a model-only patch saves 10 to 35 ms of statics a step. Keep it as that measurement and land per-item statics on dev first, as ^report(53) proposes, or take the patch further (syntax, outline) on the branch? Should the overlay go to dev now? Would the team try the build?",
+     "guess": "Keep build 45 as the measurement, and do not extend the patch to syntax on the branch. Since build 12 the picture is drawn before the edit, so the 10 to 35 ms it saves is not what a person sees, and a drag already runs at about 58 fps. Per-item statics on dev would get most of it without a special case. One or two of the team would try the build, if the link opens one slide with the overlay on, as the link above does.",
+     "guess_at": "11-10 14:15"
     },
     {
      "id": "why-slow",
@@ -36,9 +38,11 @@
      "ticket": null,
      "status": "report 048: the 196 costs the series measured, from 33 reports, by the four design choices they come from",
      "tone": "accent",
-     "as_of": "2026-11-10 13:15",
+     "as_of": "2026-11-10 14:15",
      "body": "<p><b>New, 11-08: Cyrus asked why Hazel is slow; Matthew says death by a thousand cuts, and ^report(48) is the substance behind it</b> (<a href=\"../048/\">report 048</a>). The series has measured 196 separate costs in 33 reports; many are most of the workload they were found in, and many make one another larger, so removing the largest exposes the next. They come from four design choices, each applied everywhere: values held as terms (42 costs: ids on every node, environments substituted in, run-time type checks on values, probes writing values out); whole-program work on every edit (75); values moved as terms across boundaries (44); and an interpreter that pays for the editor at every step (27: per pass about 20 times a Fumola step). Most fixes are on the livelits and trial branches; of the PRs against dev the ledger names, two are merged and nine open. The Witch's small edit, change by change: 4.2 to 6.5 s, now 1.3 to 1.7 s, still 80 to 100 times a 60 fps floor. Matthew Keenan answered it on Slack on 11-09, the next item.</p>",
-     "meeting": "Which of the four families to change first? Is a 60 fps floor for small edits the right yardstick for Hazel?"
+     "meeting": "Which of the four families to change first? Is a 60 fps floor for small edits the right yardstick for Hazel?",
+     "guess": "Whole-program work on every edit first: the largest family, 75 costs, taken up by per-item statics (next item). A 60 fps floor is the right yardstick for small edits such as a slider step, where the series has shown it can be met; not for opening a program or a large edit, where a few hundred milliseconds is fairer.",
+     "guess_at": "11-10 14:15"
     },
     {
      "id": "fewer-fixes",
@@ -47,9 +51,11 @@
      "ticket": null,
      "status": "report 053: his message, Matthew's replies, and our response to each point; six fixes would address the causes of 116 of the 196 costs",
      "tone": "accent",
-     "as_of": "2026-11-10 13:15",
+     "as_of": "2026-11-10 14:15",
      "body": "<p><b>New, 11-10: Matthew Keenan's gut reaction to report 048 is to fix the costs together, in a few well-chosen changes, not one at a time</b>; an agent fixing them one by one would spread special-case logic through the codebase. ^report(53) quotes his message and Matthew's replies, and answers each point from the series' numbers: they bear out each point the series measured, with two refinements (a hash belongs on the node it describes; a probe's environments are large only on their way to the page).</p><p><b>Six fixes, all from his message, would address the causes of 116 of the 196 costs</b>: Merkle hashes in the grammar; cheap ids kept temporary inside the evaluator; a value's type checked once; the worker as a language server; per-item statics on dev; and Bonsai for derived state. Ids and per-item statics can start now; the others are design work first. The hazel-jit branch stays a prototype and a measurement; ^report(52) ranks its changes and orders a redo by hand. The report ends with the causes his message left out, the interpreter and the JS boundary the largest, each with a question for a gut opinion.</p>",
-     "meeting": "Do we agree on the six fixes, or a different short list, and in what order? Who takes ids and per-item statics, which can start now? A gut opinion on the interpreter and the JS boundary, the causes no fix here addresses."
+     "meeting": "Do we agree on the six fixes, or a different short list, and in what order? Who takes ids and per-item statics, which can start now? A gut opinion on the interpreter and the JS boundary, the causes no fix here addresses.",
+     "guess": "Per-item statics first (written, running on #2635, and aimed at the largest family), then cheap ids (written, one module), then a type checked once (after counting the checks), then Merkle hashes; the language server and Bonsai last, together, since both change how the page and the worker divide the work. The interpreter: hazel-jit stays a livelit's fast path for now, not a second way to run Hazel, since keeping two evaluators in step is a standing cost for a small team. The JS boundary: closed, first-order values get a representation of their own, ^ticket(718)'s data form, as a seventh fix. On the branch, with one other change, it took the worker's answer from 590 KB to 198 KB, and the Witch's picture is 48 KB as data against 142 KB as terms.",
+     "guess_at": "11-10 14:15"
     },
     {
      "id": "undo",
