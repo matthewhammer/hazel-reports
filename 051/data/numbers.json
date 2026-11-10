@@ -1765,6 +1765,31 @@
    "h": "f125a69a7b",
    "t": "1794263919",
    "s": "After a compilation, a run for the printed answers: the first step draws only what it changed (^report(51))"
+  },
+  {
+   "h": "1dc99165ba",
+   "t": "1794274761",
+   "s": "The outline keys a run's test results by each test's status, not the record's identity (^report(51))"
+  },
+  {
+   "h": "854b40ee7d",
+   "t": "1794274884",
+   "s": "Slot.get's on_miss without an annotation; the outline redraws the page only when it changed (^report(51))"
+  },
+  {
+   "h": "bd24b35aaa",
+   "t": "1794275218",
+   "s": "A livelit's cached view is kept across a run's new answer while what it read of the run is the same (^report(51))"
+  },
+  {
+   "h": "69459eafac",
+   "t": "1794275509",
+   "s": "The outline's miss diagnostic compares entries' own fields, only when the outlines differ (^report(51))"
+  },
+  {
+   "h": "f813da534d",
+   "t": "1794275677",
+   "s": "The outline diagnostic's entry shape is a flat list (^report(51))"
   }
  ],
  "next": [
@@ -1778,7 +1803,7 @@
    "1",
    "Draw only the livelits a drag changes: make the editors' and projectors' views incremental.",
    "Most of the page's view: 10.1 ms of a 17.1 ms median frame of a drag (build 8); and the whole views after each worker message.",
-   "<b>first part done</b> (d9d63c13af, build 12): each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (8.2 to 10.1 on builds 8 to 11). Then the outline out of the view (bfbd88a1ae, 8bf44f23cf; build 13), built on its own after the paint: the whole views after each worker message 45 to 63 ms (88 to 130 on build 12), a drag's view 4.9 ms a frame. Left: the projector layer, and those whole views. On build 14 the probe on the picture draws its row in 8 to 21 ms after each answer, not 44 to 91 (e1bb06d115). Left: every livelit drawn again when the dynamics are new (4 to 22 ms a view), and a probe's value check, which walks the whole value (4 to 14 ms). <b>Build 15</b> (a1b43cba46): a livelit keyed on its own statics record, so after an edit only the edited one is drawn again (2 to 3 ms, not 9 to 14); a probe's value check remembered per value (515813903a). Left: every livelit drawn again when the worker's answer brings new dynamics (6 to 15 ms)."
+   "<b>first part done</b> (d9d63c13af, build 12): each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (8.2 to 10.1 on builds 8 to 11). Then the outline out of the view (bfbd88a1ae, 8bf44f23cf; build 13), built on its own after the paint: the whole views after each worker message 45 to 63 ms (88 to 130 on build 12), a drag's view 4.9 ms a frame. Left: the projector layer, and those whole views. On build 14 the probe on the picture draws its row in 8 to 21 ms after each answer, not 44 to 91 (e1bb06d115). Left: every livelit drawn again when the dynamics are new (4 to 22 ms a view), and a probe's value check, which walks the whole value (4 to 14 ms). <b>Build 15</b> (a1b43cba46): a livelit keyed on its own statics record, so after an edit only the edited one is drawn again (2 to 3 ms, not 9 to 14); a probe's value check remembered per value (515813903a). Left: every livelit drawn again when the worker's answer brings new dynamics (6 to 15 ms). <b>Build 19</b> (bd24b35aaa, 1dc99165ba, 854b40ee7d): after each worker answer 4 projectors drawn, not 56 (a livelit kept while what it read of the run is the same by value), and the outline the one before (59 to 82 ms gone, and the page's redraw for it). Left: the outline built again after the edit (55 to 70 ms; its entries the same)."
   ],
   [
    "3",
