@@ -316,8 +316,16 @@ TODAY_BUILDS = [
      "adds": "What the worker's answer costs the page, cut where it redid work for nothing: the outline keys the run's test results by each test's status, not the results record, new at every answer (1dc99165ba), and redraws the page only when it drew a new outline (854b40ee7d); and a livelit is kept across an answer while what its drawing read of the run, its own samples and those it looked up, is the same by value (bd24b35aaa). After each answer 4 projectors are drawn, not 56; the outline's 59 to 82 ms are gone there, and its redraw of the page. The page's work after a step 0.31 to 0.40 s, against 0.34 to 0.55 s on build 18 (a machine a little slower than build 18's: the worker's encode 85 to 107 ms)."},
     {"n": 20, "name": "the answer as data", "commit": "f432751f99", "run": "42747955240", "path": "051/data/runs/42747955240/jit.json",
      "adds": "The worker's answer, weighed by part (7ca0646d5c to 9ae7706f93), was 590 KB: 112 KB of it the last item's final stream, the cache entries finished since the last stream (216 states, each with every probe so far), which the page decoded and merged only to drop, since a result sets the streamed outbox aside; the rest the result's own probes, 108 samples, the picture (about 140 KB as a term) reached from several. A result goes without that stream now (01a5e8ecb0: 475 KB), and its first-order sample values go as data (66b999aae3, with FirstOrder.of_term taking a record's labels as the survey does, f432751f99): 17 values a result, none different back. The answer 198 KB; the worker's encode 21 to 29 ms (72 to 107 on build 19), with 29 to 41 ms making the data; the page's decode 7 to 8 ms (24 to 31), with 6 to 17 ms making the values terms again (70 once). The page's work after a step 0.21 to 0.32 s."},
+    {"n": 21, "name": "the parts timed", "commit": "9f75f59261", "run": "42758371511", "path": "051/data/runs/42758371511/jit.json",
+     "adds": "Timers only (7c2d886de7, df047ef786, 9f75f59261). The worker's making data is FirstOrder.of_term, 16 to 50 ms, and a check of each value's way back, 13 to 64 ms, which runs only while the check records; build 20's 29 to 41 ms counted both. The page's making terms is to_term, 5 to 10 ms. The outline drawn after an edit, 42 to 53 ms, is 32 to 40 ms of finding which rows open no cell (ScratchFocus.refusals), the rows themselves about 8, the error rows 2 to 4. The autosave, 38 to 67 ms, is 25 to 48 ms of printing the program for the slide's text, 4 to 7 writing it, 5 to 14 the items."},
+    {"n": 22, "name": "refusals, paths when asked", "commit": "2b88bf18bf", "run": "42759149693", "path": "051/data/runs/42759149693/jit.json",
+     "adds": "Finding which rows open no cell searched from the program's root for the path to each of the Witch's 53 livelits, though a path is read only for a row inside one (none here). Made lazy, forced just where it was read: the same refusals, 25 to 29 ms (32 to 40)."},
+    {"n": 23, "name": "the autosave, only what changed", "commit": "d68bd6400b", "run": "42760087460", "path": "051/data/runs/42760087460/jit.json",
+     "adds": "The autosave prints again only the top-level pieces a step changed, each piece's text kept by its identity (263ecc3e84); the whole program when a probe wraps a top-level piece or the probes changed. A test checks the text is the whole print's (d68bd6400b). Printing 3 to 6 ms (25 to 48 on build 21), the autosave 21 to 31 ms (38 to 67)."},
+    {"n": 24, "name": "refusals, asked last", "commit": "a1ab2e52d4", "run": "42761046647", "path": "051/data/runs/42761046647/jit.json",
+     "adds": "Finding which rows open no cell asked whether each tile was a row, twice, a lookup in a map of ids, before its cheap tests; now only of a tile that is unfinished or a use (and of the pieces inside a livelit), the same answers: 6,753 asks of 43,171 pieces walked, 11 to 14 ms (25 to 29 on build 22); the outline drawn after an edit 29 to 32 ms (42 to 53 on build 21)."},
 ]
-VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5), 13: (4.9, 3.9), 14: (7.5, 5.9), 15: (4.4, 3.4), 16: (7.4, 5.9), 17: (8.6, 6.8), 18: (6.6, 5.2), 19: (7.6, 6.1), 20: (5.9, 4.5)}  # from each run's log
+VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5), 13: (4.9, 3.9), 14: (7.5, 5.9), 15: (4.4, 3.4), 16: (7.4, 5.9), 17: (8.6, 6.8), 18: (6.6, 5.2), 19: (7.6, 6.1), 20: (5.9, 4.5), 21: (6.4, 5.2), 22: (6.4, 4.9), 23: (8.0, 6.2), 24: (6.9, 5.5)}  # from each run's log
 for b in TODAY_BUILDS:
     w = next(x for x in json.load(open(os.path.join(ROOT, b["path"])))["slides"] if x["slide"] == "Witch")
     b["steps"] = [e["picture_changed_ms"] for e in w["edits"]["on"]]
@@ -333,7 +341,7 @@ def fig_today():
     xof = lambda ms: left + (math.log10(ms) - lo) / (hi - lo) * (mid_x - 40 - left)
     vx = lambda ms: mid_x + ms / 12 * (W - right - mid_x - 130)
     out = []
-    title(out, "The Witch, builds 8 to 20: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
+    title(out, f"The Witch, builds 8 to {TODAY_BUILDS[-1]['n']}: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
     y = 40
     for b in TODAY_BUILDS:
         out.append(f'<text x="{left - 10}" y="{y + 12}" font-size="11.5" text-anchor="end" fill="var(--ink)">{b["n"]} · {html.escape(b["name"])}</text>')
@@ -356,7 +364,7 @@ def fig_today():
         out.append(f'<line x1="{x:.1f}" y1="34" x2="{x:.1f}" y2="{y}" stroke="var(--line)" stroke-dasharray="2 3"/>')
         out.append(f'<text x="{x:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{v} ms</text>')
     return svg_fig(W, y + 34, out, "; ".join(f"build {b['n']}: steps {b['steps']} ms; a drag's view {b['view']} ms a frame, {b['drag']['fps']} fps" for b in TODAY_BUILDS),
-                   "<b class=\"build\">Builds 8 to 20</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
+                   f"<b class=\"build\">Builds 8 to {TODAY_BUILDS[-1]['n']}</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
                    "Firefox check on GitHub's machines. Left: each of the four steps of the neck and arms sliders, from the click to "
                    "the picture changing; from build 12 the page draws the compiled run's answers first and makes the edit after "
                    "the paint, and from build 13 the sidebar's outline is built after the paint, not in the view. Build 14's run "
