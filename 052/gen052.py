@@ -55,8 +55,8 @@ BUILDS[40] = dict(n=40, name="the outline mark timed", commit="f5b7a65cf2", run=
 BUILDS[41] = dict(n=41, name="the outline mark stands", commit="a02025f5dc", run="42822587416")
 BUILDS[42] = dict(n=42, name="the edit's parts timed", commit="cfcd82582f", run="42826692242")
 BUILDS[43] = dict(n=43, name="a projector's update walks only what holds it", commit="421e30a04b", run="42830234099")
-BUILDS[44] = dict(n=44, name="a model-only commit patched after DefStatics (on trial/694-view-jit-35)", commit="d90a8cf135", run="42838899176")
-BUILDS[45] = dict(n=45, name="the patch inside DefStatics: the edited item patched, not analyzed (on trial/694-view-jit-35)", commit="9ae518ffe7", run="42850343281")
+BUILDS[44] = dict(n=44, name="a model-only commit patched after DefStatics (checked on trial/694-view-jit-35; on trial/694-view-jit since 11-10)", commit="d90a8cf135", run="42838899176")
+BUILDS[45] = dict(n=45, name="the patch inside DefStatics: the edited item patched, not analyzed (checked on trial/694-view-jit-35; on trial/694-view-jit since 11-10, its test fixed in fc1103900d)", commit="9ae518ffe7", run="42850343281")
 # builds 1 to 3 waited for the worker: their steps are report 050's (from report 046's runs), click to picture
 PRE = {1: (4170, 6520), 2: (1850, 2380), 3: (1330, 1710)}
 

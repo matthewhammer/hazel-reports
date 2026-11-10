@@ -55,14 +55,14 @@
 </ol>
 
 <h2 id="builds">The builds</h2>
-<p><b>This report names three builds, numbered as in reports 050 to 052: each is the one before it plus one change, on <code>trial/694-view-jit</code> (hazelgrove/hazel#2817); builds 44 and 45 were checked on a side branch, <code>trial/694-view-jit-35</code>.</b> Their numbers are from one run each of the Firefox check on the Witch slide, steps 1 to 4 of its slider.</p>
+<p><b>This report names three builds, numbered as in reports 050 to 052: each is the one before it plus one change, on <code>trial/694-view-jit</code> (hazelgrove/hazel#2817); builds 44 and 45 were checked on a side branch, <code>trial/694-view-jit-35</code>, and are on <code>trial/694-view-jit</code> since 11-10.</b> Their numbers are from one run each of the Firefox check on the Witch slide, steps 1 to 4 of its slider.</p>
 <table class="vals">
 <tr><th>Build</th><th>Commit</th><th>Run</th><th>What it adds</th><th>Statics, a step</th><th>The edited item</th><th>The worker's request</th></tr>
 <tr><td>43</td><td><code>421e30a04b</code></td><td>42830234099</td><td>a projector's update walks only what holds it</td><td class="n">19 to 53 ms</td><td class="n">13 to 42 ms</td><td>the edited item, 10 KB</td></tr>
 <tr><td>44</td><td><code>d90a8cf135</code></td><td>42838899176</td><td>a model-only commit patched after DefStatics</td><td class="n">not timed</td><td class="n">not analyzed</td><td>the whole program on step 1, 894 KB</td></tr>
 <tr><td>45</td><td><code>9ae518ffe7</code></td><td>42850343281</td><td>the patch inside DefStatics: the edited item patched, not analyzed</td><td class="n">12 to 18 ms</td><td class="n">3 to 6 ms</td><td>the edited item, 9 to 10 KB</td></tr>
 </table>
-<p>Build 45's own test (<code>test/Test_ModelPatch.re</code>) did not compile on its first CI run; the fix is <code>fc1103900d</code>, and its CI is running.</p>
+<p>Build 45's own test (<code>test/Test_ModelPatch.re</code>) did not compile on its first CI run; the fix is <code>fc1103900d</code>. CI passed on it (run 42855280858; GitHub's runner lost contact during the first try of the full tests, and the re-run passed), and <code>trial/694-view-jit</code> moved up to it on 11-10 at 12:46 MST. Build 45 is on the prototype branch, not on dev.</p>
 
 <h2 id="method">How this was put together</h2>
 <p>Matthew Keenan's message and Matthew Hammer's replies are quoted from Slack as Matthew Hammer pasted them. The costs, their root causes and the numbers in the point-by-point table are report 048's ledger (<code>048/data/ledger.json</code>), each checked against the entry it cites; the figure counts that ledger's root causes. The six fixes, which cause each addresses, and the questions in the last table are our judgment. Build 45's numbers are from the marks of its run (<code>statics</code>, <code>statics: items</code>, <code>worker: request decoded</code>) kept in report 051's <code>data/runs/</code>. Everything the page shows is in <a href="data/numbers.json">data/numbers.json</a>.</p>
