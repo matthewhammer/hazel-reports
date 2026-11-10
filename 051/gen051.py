@@ -314,8 +314,10 @@ TODAY_BUILDS = [
      "adds": "A run of the slide's program right after each compilation, kept only as the printed answers (HazelJitRun.prime), the baseline the first step compares with: before it, every livelit counted as changed on the first step and all 53 were drawn again. The first step's first view 26 ms, from 65; its picture 92 ms, from 132 (build 17); 3 projectors drawn, not 54. A machine like build 14's (the worker's encode 71 to 88 ms)."},
     {"n": 19, "name": "the page after an answer", "commit": "f813da534d", "run": "42739071781", "path": "051/data/runs/42739071781/jit.json",
      "adds": "What the worker's answer costs the page, cut where it redid work for nothing: the outline keys the run's test results by each test's status, not the results record, new at every answer (1dc99165ba), and redraws the page only when it drew a new outline (854b40ee7d); and a livelit is kept across an answer while what its drawing read of the run, its own samples and those it looked up, is the same by value (bd24b35aaa). After each answer 4 projectors are drawn, not 56; the outline's 59 to 82 ms are gone there, and its redraw of the page. The page's work after a step 0.31 to 0.40 s, against 0.34 to 0.55 s on build 18 (a machine a little slower than build 18's: the worker's encode 85 to 107 ms)."},
+    {"n": 20, "name": "the answer as data", "commit": "f432751f99", "run": "42747955240", "path": "051/data/runs/42747955240/jit.json",
+     "adds": "The worker's answer, weighed by part (7ca0646d5c to 9ae7706f93), was 590 KB: 112 KB of it the last item's final stream, the cache entries finished since the last stream (216 states, each with every probe so far), which the page decoded and merged only to drop, since a result sets the streamed outbox aside; the rest the result's own probes, 108 samples, the picture (about 140 KB as a term) reached from several. A result goes without that stream now (01a5e8ecb0: 475 KB), and its first-order sample values go as data (66b999aae3, with FirstOrder.of_term taking a record's labels as the survey does, f432751f99): 17 values a result, none different back. The answer 198 KB; the worker's encode 21 to 29 ms (72 to 107 on build 19), with 29 to 41 ms making the data; the page's decode 7 to 8 ms (24 to 31), with 6 to 17 ms making the values terms again (70 once). The page's work after a step 0.21 to 0.32 s."},
 ]
-VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5), 13: (4.9, 3.9), 14: (7.5, 5.9), 15: (4.4, 3.4), 16: (7.4, 5.9), 17: (8.6, 6.8), 18: (6.6, 5.2), 19: (7.6, 6.1)}  # from each run's log
+VIEW_PER_FRAME = {8: (10.1, 8.3), 9: (8.6, 7.1), 10: (9.8, 7.9), 11: (8.2, 6.8), 12: (6.1, 4.5), 13: (4.9, 3.9), 14: (7.5, 5.9), 15: (4.4, 3.4), 16: (7.4, 5.9), 17: (8.6, 6.8), 18: (6.6, 5.2), 19: (7.6, 6.1), 20: (5.9, 4.5)}  # from each run's log
 for b in TODAY_BUILDS:
     w = next(x for x in json.load(open(os.path.join(ROOT, b["path"])))["slides"] if x["slide"] == "Witch")
     b["steps"] = [e["picture_changed_ms"] for e in w["edits"]["on"]]
@@ -331,7 +333,7 @@ def fig_today():
     xof = lambda ms: left + (math.log10(ms) - lo) / (hi - lo) * (mid_x - 40 - left)
     vx = lambda ms: mid_x + ms / 12 * (W - right - mid_x - 130)
     out = []
-    title(out, "The Witch, builds 8 to 19: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
+    title(out, "The Witch, builds 8 to 20: a step, from the click to the picture (left, log scale), and a drag's frame, the page's view (right)")
     y = 40
     for b in TODAY_BUILDS:
         out.append(f'<text x="{left - 10}" y="{y + 12}" font-size="11.5" text-anchor="end" fill="var(--ink)">{b["n"]} · {html.escape(b["name"])}</text>')
@@ -354,13 +356,13 @@ def fig_today():
         out.append(f'<line x1="{x:.1f}" y1="34" x2="{x:.1f}" y2="{y}" stroke="var(--line)" stroke-dasharray="2 3"/>')
         out.append(f'<text x="{x:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{v} ms</text>')
     return svg_fig(W, y + 34, out, "; ".join(f"build {b['n']}: steps {b['steps']} ms; a drag's view {b['view']} ms a frame, {b['drag']['fps']} fps" for b in TODAY_BUILDS),
-                   "<b class=\"build\">Builds 8 to 19</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
+                   "<b class=\"build\">Builds 8 to 20</b> of <code>trial/694-view-jit</code> (the table below), each one run of the "
                    "Firefox check on GitHub's machines. Left: each of the four steps of the neck and arms sliders, from the click to "
                    "the picture changing; from build 12 the page draws the compiled run's answers first and makes the edit after "
                    "the paint, and from build 13 the sidebar's outline is built after the paint, not in the view. Build 14's run "
                    "was on a slower machine (the worker's encode 70 to 82 ms, against 52 on build 13's), so its drag's view "
                    "(7.5 ms a frame) is to be read against build 13 on a machine like it: 7.7. Build 15's run plotted was on a machine "
-                   "like build 13's, and builds 16 to 19 on ones like build 14's. Right: a 3-second compiled drag of the neck slider, the page's view per frame (dark: the editors; "
+                   "like build 13's, and builds 16 to 20 on ones like build 14's. Right: a 3-second compiled drag of the neck slider, the page's view per frame (dark: the editors; "
                    "light: the rest), with the drag's frames a second. The frames a second vary from run to run more than the "
                    "builds differ (builds 9 to 11 changed nothing a drag does and gave 54.3, 47.8 and 56.3); the view's time per "
                    "frame is steadier.")
@@ -399,6 +401,8 @@ NUMS = {
     "b14_after": "0.37 to 0.52 s", "b13s_after": "0.56 to 0.92 s", "b14_row": "8 to 21 ms", "b13s_row": "44 to 91 ms",
     "b19_after": "0.31 to 0.40 s", "b18_after": "0.34 to 0.55 s", "b18_drawn": "56", "b19_drawn": "4", "b18_outline": "59 to 82 ms",
     "b19_edit_outline": "55 to 70 ms",
+    "b20_after": "0.21 to 0.32 s", "b19_bytes": "590 KB", "b20_cut1": "475 KB", "b20_bytes": "198 KB",
+    "b19_enc": "72 to 107 ms", "b20_enc": "21 to 29 ms", "b20_conv": "29 to 41 ms", "b19_dec": "24 to 31 ms", "b20_dec": "7 to 8 ms", "b20_terms": "6 to 17 ms",
     "now_view": "10.1", "now_run": "2.2",
     "v_pic_i": f"{pic[0][1]:g}", "v_pic_c": f"{pic[0][2]:.1f}",
     "v_poly_i": f"{min(b[1] for b in polys):g} to {max(b[1] for b in polys):g}",
