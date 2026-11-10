@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fewer, Deeper Fixes</title>
+<meta name="description" content="Matthew Keenan's read of the costs in report 048's ledger, in his words, Matthew Hammer's replies, and our response point by point: what the series measured, where we agree, and six fixes that would address the causes of most of the costs.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.88em; }
+  table.vals th, table.vals td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; } table.vals th { font-weight: 600; }
+  table.vals td:first-child { min-width: 16ch; } table.points td:nth-child(2) { min-width: 30ch; } table.points td:nth-child(3) { min-width: 30ch; }
+  blockquote.msg { margin: 1em 0; padding: 0.4em 1.1em; border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent); border-radius: 0 6px 6px 0; }
+  blockquote.msg li { margin: 0.45em 0; }
+  figure.f { margin: 1.2em 0; } figure.f svg { max-width: 100%; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  code { overflow-wrap: anywhere; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>53<b>)</b></code> · the team's review · 2026-11-10, revised 2026-11-10 09:36 MST · <span class="wip">work in progress</span> · for the Hazel team</p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Fewer, Deeper Fixes</h1>
+<p class="sub"><a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a> gathered every cost the series had measured in how Hazel runs a program and draws it, 196 of them, and called the whole "A Thousand Cuts". On 2026-11-09 Matthew Keenan answered it on Slack: fix them together, in a few well-chosen changes, not one at a time. Here are his message in full, Matthew Hammer's replies, and a response to each of his points from what the series measured. Matthew Hammer, 2026-11-10: "Let's write a report with this feedback, and our reasoned response to it."</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#short">In short</a>: we agree with his overall point. Six fixes, most of them his, would address the causes of 116 of the 196 costs. The agent's code is a prototype and a measurement, to be redone by hand.</li>
+<li><a href="#his">Matthew Keenan's message</a>, in full.</li>
+<li><a href="#replies">Matthew Hammer's replies</a>, on 11-09 and 11-10.</li>
+<li><a href="#points">Point by point</a>: what the series measured on each, and our read.</li>
+<li><a href="#fixes">Six fixes</a>, and the costs whose causes each addresses.</li>
+<li><a href="#prototype">What the prototype is for</a>: the hazel-jit branch as a measurement, and <a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a> as the special case he warns about.</li>
+<li><a href="#skipped">What the message left out</a>: the root causes no fix here addresses, each with a question for a gut opinion.</li>
+<li><a href="#next">What next</a>, <a href="#builds">the builds</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="short">In short<a class="anchor" href="#short" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="short" title="copy this section's address">copy link</button></h2>
+<p><b>We agree: a few well-chosen fixes, each written by hand and reviewed, are worth more than many separate ones, and our own record on the hazel-jit branch shows the risk he names.</b> <a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>'s ledger files each of its 196 costs under one of 19 root causes. Six fixes would address the causes of 116 of them: Merkle hashes in the grammar, ids made cheap and kept temporary inside the evaluator, a value's type checked once, the worker as a language server, per-item statics landed on dev, and derived state and rendering through Bonsai. All six come from his message.</p>
+<p>Wherever the series has numbers on one of his points, they bear out his gut reaction, with two refinements: a hash belongs on the node it describes, not in a side table, and a probe's environments are large only where they cross to the page, not in memory. The code the agent wrote stays a prototype. It answered fast whether a livelit's slider can show its step in tens of milliseconds, and which of the changes mattered; <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a> ranks them and orders a redo by hand in small increments.</p>
+
+<h2 id="his">Matthew Keenan's message<a class="anchor" href="#his" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="his" title="copy this section's address">copy link</button></h2>
+<p><b>His overall point: an agent fixing the costs it found one at a time would spread special-case logic through the codebase; a few well-chosen, well-implemented fixes and simplifications would do more in the long run.</b> He sent it on Slack on 2026-11-09, in reply to <a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>, as gut reactions rather than invariants, and asked to hear about any important facets he skipped (<a href="#skipped">below</a>). It is quoted as he wrote it.</p>
+<blockquote class="msg"><p>my thoughts on your cuts that you can feed into your agent in case you want to inject more prompting/data/opinions into it. lmk (or get your agent to lmk) if there’s any important facets I skipped over that need a gut opinion.</p><p><i>note these are all gut reactions, I haven’t spent too long thinking about any particular one, please don’t treat any of them as invariants</i></p><p>Overall: I’m really really really scared of having an agent fix a thousand cuts it’s found. Especially I’m scared that it’ll fix them all separately. A lot of these can be fixed together. I’d say agent-generated prs, at least in 2026 still generally decrease the quality of the codebase rather than increasing it; a thousand independent fixes could go a long way to making the codebase harder to use; and I would think we could get more out in the long term if we do a few well-chosen well-implemented fixes and simplifications instead of a thousand things that only fix certain cases and plaster on special-case logic throughout the codebase</p><p><b>Ids-on-every-term:</b></p><ul><li>Heavily in favor of any changes that are fully internal to Id.mk or id equality. The string thing sounds like it could be an easy, clean win. I’m pretty sure we’re still even using an old and possibly deprecated id library on ocaml.</li><li>Evaluation already doesn’t (or shouldn’t) mint new ids during evaluation. Evaluation does give new ids to output expressions, this is to make sure that output expressions don’t mess up tylr because tylr needs unique ids. Any changes to that need to be really careful not to re-introduce weird selection bugs when the ids are no longer uniqified coming out of evaluation. My preference would be to not let the temp ids escape evaluation, otherwise we have to think harder..</li><li>Ascriptions’ run-time checks look like they need a think-through. They shouldn’t be taking this long and if they are I worry Merklizaiton is just going to hide the problem, we probably want to make sure they’re not doing more checks than they should?.</li><li>List walking being quadratic sounds familiar - I’m pretty sure I’ve fixed that before, curious to know why it’s back - are those different scenarios or is it the same one back again? I don’t get why it should be quadratic in the length of the list..</li><li>ok after having seen a bunch of these being due to pushing list types, I’m thinking we should think seriously about bringing back something resembling the cast calculus, or at least find a way to remove casts/ascriptions in places where we know the types are safe. Could be a bit of a research question though. We removed casts originally because they were too confusing for maintainers; I suspect we can come up with something better..</li><li>variable lookups don’t need to mint new ids; in fact the evaluator ids really don’t matter because they’re replaced once the evaluator is finished. We should make sure there’s no new minting and everything new is Id.temp. That feels like it would be a pretty easy and principled change.</li><li>The evaluator shouldn’t be re-traversing anything that’s final and I’m not clear from your report where that’s coming from? It sounds like there could possibly be an issue where things coming out of the environment are getting evaluated - they shouldn’t (unless they’re a fixpoint), it should treat them as value, that’s what the final flag in transition is for.</li><li>The worker-editor transition is a massive problem, which I’m seeing in a load of different problems, but I don’t see the correct full fix. We either need to be able to send stuff over quickly, or just leave more information on the webworker and treat it as a language server. Any attempts to make what we’re sending over smaller I think are putting the cart before the horse..</li><li>Environments in probes is an interesting one: I kinda assumed that structure-sharing between environments would save most of the memory issues here, but I guess it doesn’t, worth now asking the quesiton then whether it’s fundamental: i.e. we are just storing that much memory because we want it on probes, or whether there’s a specific place hwere we’re leaking in terms of ocaml’s structure sharing..</li><li>Iirc Andrew had a branch where he was incrementalizing or memoizing all the statics and maketerm and everything for big programs - idk how it works or how well it went.</li><li>For lets, I wonder whether there’s a simpler version where we just always assume lets can be recursive, without having to do any of the fancy function checking or anything, might be more intuitive for the user to know they’re always recursive too. (Perhaps a warning if you just do let x = x, similar to the new type x = x warning).</li><li>Re-running the whole of statics is the incrementalizing statics issue. I think we’re letting perfect be the enemy of the good here, like we don’t have to make implementing Thomas’s statics as part of the global world tree be the first pass here..</li><li>Merkle hashing feels like a decently well-contained project (if engineered well) within grammar (or even just a ppx?) that could go a long way; especially on things like the expression comparisons in incremental, or type comparisons..</li><li>Incremental evaluation doesn’t do anything inside functions - I think that’s what the ‘incremental evaluation doesn’t work on sliders’ on is complaining about. With incremental evaluation we have to decide on some limit for what we’re caching. I was thinking we could do something with caching values by callstack ids, not just top-level id, and that’s what I described and proved in my paper - I think a names-based approach could be simpler here too though. I was hoping whatever we do we can still make it intuitive to the user what’s being cached and what’s not..</li><li>Undo keeping whole editor state is a known issue, I’d love to go bigger on using Bonsai to separate out the non-derived from derived information and only undoing non-derived information. I had a bonsaification branch a while ago which is probably archived now..</li><li>Rendering is again something I think can be fixed with better bonsaification, I think it has ways to make stuff render-on-demand and a better fine-grained system for re-rendering only parts that have changed.</li></ul></blockquote>
+
+<h2 id="replies">Matthew Hammer's replies<a class="anchor" href="#replies" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="replies" title="copy this section's address">copy link</button></h2>
+<p><b>Matthew Hammer agreed that the agent's code lacks quality, and named what it is for: cheap prototypes, and quick answers to questions that would otherwise take days or weeks.</b> He also apologized for the agent's wording. "Death by a thousand cuts" was his phrase for how expensive Hazel's operation is overall; the agent took to calling each cost a "cut", and then each improvement too. From this report on, a cost is a cost and an improvement is a change, and the earlier reports are being revised to match.</p>
+<p class="muted">On Slack, 2026-11-09, to the team and to Matthew Keenan:</p><blockquote class="msg"><p>Thanks for the detailed feedback!</p><p>Point taken about the relatively low quality of machine-generated, machine-architected code.  The way the machine talks about the code is also sub-par, in my opinion.  It started calling everything a “cut” when I originally meant “death by a thousand cuts”to refer to the relatively expensive way that Hazel operates.  It started calling each improvement a “cut”, which definitely isn’t “my voice” for writing anything to the agent.  I apologize for that.</p><p>I’m not sure which PR you’re thinking about most, or maybe just in general, but I generally agree.</p><p>I think of the main benefit of the agent-based code generation to be cheap prototyping, to check the viability or actual experience of an idea, and quick scientific inquiry into questions that would take days or weeks to answer otherwise.</p><p>To be sure, I agree that the code it generates still lacks quality, generally.  I never meant to suggest otherwise.</p></blockquote><p class="muted">And on 2026-11-10, with a link to <a href="../052/#now"><code class="ref"><b>^report(</b>52<b>)</b></code>, where it stands</a>:</p><blockquote class="msg"><p>In the expectation that we want to polish or even totally redo some agentic codegen in my PRs, I’m asking the agent to review the prototype JIT system and other performance stuff for livelits, and rank the components/changes in order of what helped most.</p><p>The code quality may be low, but I can now get a redrawn picture in 31ms instead of several seconds later.  Seems like there’s a lot of value here, regardless of the code structure.</p></blockquote>
+
+<h2 id="points">Point by point<a class="anchor" href="#points" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="points" title="copy this section's address">copy link</button></h2>
+<p><b>Each of his points that the series measured is borne out by the numbers; the table gives them, with our read and the fix that takes the point up.</b> Each row cites the report that measured it. Nothing here is a new run: the numbers are the ones those reports give, for the builds they name.</p>
+<table class="vals points"><tr><th>His point</th><th>What the series measured</th><th>Our read</th><th>Fix</th></tr><tr><td><b>Overall: a few well-chosen fixes, not a thousand separate ones</b></td><td>Our own last five days on hazel-jit (<a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>): 120 commits on one branch, 9,200 lines added to src/, 6 of its 10 ingredients with no test of their own, 7 commits that only fixed the one before (and 3 more since), and caches keyed on object identity, two of which made a drag slower before they were fixed (builds 31 and 33).</td><td>Agreed, and our record shows the risk he names. The 196 costs in <a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>&#x27;s ledger come down to 19 root causes; six fixes would address the causes of 116 of them (the figure below).</td><td>all six</td></tr><tr><td><b>Ids: changes internal to Id.mk or id equality; the old id library</b></td><td>Id.t is Uuidm.t (uuidm 0.9.8). On dev, Id.mk makes each id through Uuidm.v4&#x27;s byte copy, about 20% of all time in a profile of a JS call into Hazel (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>); on the hazel-jit line it builds the same 16 bytes from a counter by one string concatenation (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>: 906 ids in 0.044 ms, from 0.29). The interpreter minted 461,422 ids for a 33,847-node picture (<a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a>).</td><td>Agreed: the trial line&#x27;s Id.mk is the internal change he describes, and can go to dev as it is. Replacing uuidm is possible behind Id&#x27;s interface too, keeping the serialized form.</td><td>2 · Ids: cheap to make, and temporary inside the evaluator</td></tr><tr><td><b>Evaluation&#x27;s ids: don&#x27;t let temp ids escape</b></td><td>Variable lookups make 38% of the ids the evaluator mints, environment frames 20%, ascriptions about 30% (<a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a>); fresh ids make the worker&#x27;s requests 1.99 times larger and its results 11% (<a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a>). A local experiment with content-derived names removed 92 to 97% of them, at 11 to 31% more time.</td><td>Agreed, and simpler than our content-derived names: Id.temp inside the evaluator, real ids only for what leaves it, so the editor (tylr) still sees unique ids.</td><td>2 · Ids: cheap to make, and temporary inside the evaluator</td></tr><tr><td><b>Ascriptions&#x27; run-time checks: more checks than they should?</b></td><td>Ascribing a constructor application compared two copies of the Html type at every node of a view: 88% of a 15 to 17 s Polygons click (<a href="../017/"><code class="ref"><b>^report(</b>17<b>)</b></code></a>). The same ascription re-checks inside the woods picture&#x27;s view (14 to 16%, <a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>).</td><td>Agreed that the count is the problem: <a href="https://github.com/hazelgrove/hazel/pull/2661">#2661</a> (Merkle-hashed types) and <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> (a memo) make each check cheap but leave them repeating. Counting checks per value comes first.</td><td>3 · Check a value&#x27;s type once</td></tr><tr><td><b>Quadratic list walking: the same one back again?</b></td><td>This one comes from an annotation: a recursive function whose list parameter is annotated checks the whole rest of the list at every call, n calls over n cells: 205 ms at 400 elements (<a href="../017/"><code class="ref"><b>^report(</b>17<b>)</b></code></a>), the World rule 144 ms at 16x16 against 18 ms unannotated (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>).</td><td>We cannot tell whether it is the case he fixed before; this one is quadratic because each recursive call re-checks its argument against its annotation, not because of how the list is walked.</td><td>3 · Check a value&#x27;s type once</td></tr><tr><td><b>Something resembling the cast calculus</b></td><td>Ten of the 196 costs are run-time type checks (ascriptions, casts), the quadratic one among them.</td><td>Agreed as a direction, and a research question, as he says; it is the fix that removes the checks rather than caching them.</td><td>3 · Check a value&#x27;s type once</td></tr><tr><td><b>Variable lookups needn&#x27;t mint ids</b></td><td>38% of the evaluator&#x27;s ids (<a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a>).</td><td>Agreed: Id.temp there is the cheapest principled change on the list.</td><td>2 · Ids: cheap to make, and temporary inside the evaluator</td></tr><tr><td><b>The evaluator re-traversing what is final</b></td><td>Three costs: the evaluator visits values that are already final (a third of a loop&#x27;s passes take no step, <a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>); a value held in a closure is re-stepped when substituted into each call (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>); a function Hazel&#x27;s JS library returns has its environment substituted into its body, so a held list is re-evaluated at every call (<a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>; fixed on trials, <a href="https://github.com/hazelgrove/hazel/pull/2808">#2808</a> open).</td><td>Consistent with his diagnosis: the cases we found come through substitution, on the library path, rather than through environment lookups. Checking that the final flag is set on those paths is the next step, before any fast path.</td><td>—</td></tr><tr><td><b>The worker-editor transition: send it fast, or a language server</b></td><td>25 of the costs are the worker trip or the serialization across it. The answer went 5.4 MB, 0.42 MB, 198 KB (reports 046, 051); the request went whole whenever the page&#x27;s statics did not match the per-item analysis (build 44, <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>).</td><td>Agreed that shrinking is the cart before the horse. hazel-jit has taken the worker off the path to the picture for livelits, which makes the language-server design easier to try: the page asks for what it shows.</td><td>4 · The worker as a language server</td></tr><tr><td><b>Environments in probes: fundamental, or a sharing leak?</b></td><td>A probe&#x27;s environment was written out whole: the Drawing module in the sample of a probe whose value is a few bytes, 4.14 MB of a 5.4 MB answer (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>).</td><td>Not fundamental: in memory the environments share, but each sample&#x27;s environment was serialized on its own across the worker boundary, and the worker&#x27;s sharing pass found almost nothing to share (1.4 to 1.6 s a result, dropped in build 3 of <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a>). The leak is at the boundary.</td><td>4 · The worker as a language server</td></tr><tr><td><b>Andrew&#x27;s branch incrementalizing statics and MakeTerm</b></td><td>That is <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a> (modular editors): per-item statics (DefStatics) and incremental MakeTerm. It works: <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a>, without it, re-ran statics on the whole program at every livelit commit, 3.5 s of a 5.8 s profiled release; a release took 3.76 s there against about 0.35 s on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, which has it (<a href="../001/"><code class="ref"><b>^report(</b>1<b>)</b></code></a>).</td><td>It is the base of everything in <a href="../049/"><code class="ref"><b>^report(</b>49<b>)</b></code></a> to <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>, and not yet on dev.</td><td>5 · Incremental statics, landed as it is</td></tr><tr><td><b>Lets always recursive</b></td><td>Every let-bound function takes statics&#x27; recursive path, and the passes multiply with nesting, up to 4 to the depth: nested lets took 400 s (<a href="../001/"><code class="ref"><b>^report(</b>1<b>)</b></code></a>; <a href="https://github.com/hazelgrove/hazel/pull/2603">#2603</a>, open, takes it to 0.6 s).</td><td>Worth trying: always-recursive lets remove the multiplier at its source rather than special-casing it. A language decision for the team; we can measure it.</td><td>5 · Incremental statics, landed as it is</td></tr><tr><td><b>Incremental statics: don&#x27;t let perfect be the enemy of the good</b></td><td>Re-analysis per edit is the largest family, 28 of the 196 costs.</td><td>Agreed: land per-item statics first. <a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a>&#x27;s literal patch (build 45) is not that, and should wait for it.</td><td>5 · Incremental statics, landed as it is</td></tr><tr><td><b>Merkle hashing in the grammar, or a ppx</b></td><td>Reuse checks with a Merkle hash: 283 to 26 ms on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>, 2,743 to 410 ms on dev (<a href="https://github.com/hazelgrove/hazel/pull/2673">#2673</a>, open). Types: 15 to 17 s to 2.0 to 2.2 s (<a href="https://github.com/hazelgrove/hazel/pull/2661">#2661</a>, open). But ValueHash keeps its hashes in a WeakMap side table that slowed as it grew (2.3, 5.5, 6.3 s; 98 MB of what four edits kept, reports 009, 014).</td><td>Strongly agreed, with one lesson from the measurements: the hash belongs on the node, not in a side table.</td><td>1 · Merkle hashes in the grammar</td></tr><tr><td><b>Incremental evaluation inside functions</b></td><td>Incremental evaluation saves nothing on a slider edit (Witch 754 against 701 ms from scratch, <a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a>); every slider edit re-evaluates 85 to 95% of the figure (<a href="../011/"><code class="ref"><b>^report(</b>11<b>)</b></code></a>).</td><td>Agreed that this is the root of &#x27;it doesn&#x27;t work on sliders&#x27;. hazel-jit sidesteps it for livelits by compiling the run (a step in 2 to 3 ms), but the worker still re-evaluates; caching by call-stack ids or names is the real fix.</td><td>—</td></tr><tr><td><b>Undo keeping whole editor state; Bonsai</b></td><td>About 92 MB kept per edit, uncapped (<a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>). Andrew Blinn&#x27;s compaction held <a href="https://github.com/hazelgrove/hazel/pull/2597">#2597</a> to 159 MB (<a href="../020/"><code class="ref"><b>^report(</b>20<b>)</b></code></a>), but restoring a compacted entry rebuilds what is derived: a redo took 6.0 to 6.5 s there, against 2.7 to 3.1 s before (<a href="../014/"><code class="ref"><b>^report(</b>14<b>)</b></code></a>).</td><td>Agreed: undo should keep only what is not derived.</td><td>6 · Derived state and rendering through Bonsai</td></tr><tr><td><b>Rendering through Bonsai</b></td><td>The page&#x27;s view and redraw are the second-largest family, 25 of the 196 costs.</td><td>Agreed; our own caches this week are hand-written incrementality.</td><td>6 · Derived state and rendering through Bonsai</td></tr></table>
+<p>The two refinements, where the measurements add something to his reaction. A hash belongs on the node: ValueHash keeps its hashes in a WeakMap beside the values, and three identical evaluations took 2.3, 5.5 and 6.3 s as the table grew, while an experiment that kept the hashes on the values held at 2.2, 2.5 and 2.2 s (<a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a>). And a probe's environments share in memory; what made them large was each sample's environment written out on its own for the trip to the page, where the worker's sharing pass found almost nothing to share (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>).</p>
+
+<h2 id="fixes">Six fixes<a class="anchor" href="#fixes" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fixes" title="copy this section's address">copy link</button></h2>
+<p><b>Six fixes would address the causes of 116 of the 196 costs; the largest families they leave are the interpreter itself and the JS boundary.</b> The figure files each cost under its root cause, as <a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>'s ledger does, and colors it by the fix that addresses that cause. "Addresses" is a judgment, not a measurement: a fix aimed at a cause need not remove every cost filed under it, and some costs are already fixed on one branch or another.</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 900 485" role="img" aria-label="Bars of the 196 costs by root cause, colored by proposed fix" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The 196 costs in report 048's ledger, by root cause</text><text x="16" y="34" font-size="11" fill="var(--muted)">colored by the fix proposed here that addresses the cause; grey: no single fix</text><text x="292" y="60" font-size="10.5" text-anchor="end" fill="var(--ink)">re-analysis per edit (statics, parsing)</text><rect x="300" y="50" width="540.0" height="13" rx="2" fill="#15803d" opacity="0.85"/><text x="846.0" y="60" font-size="10" fill="var(--muted)">28 · fix 5</text><text x="292" y="81" font-size="10.5" text-anchor="end" fill="var(--ink)">the page&#x27;s view and redraw</text><rect x="300" y="71" width="482.1" height="13" rx="2" fill="#b91c1c" opacity="0.85"/><text x="788.1" y="81" font-size="10" fill="var(--muted)">25 · fix 6</text><text x="292" y="102" font-size="10.5" text-anchor="end" fill="var(--ink)">serialization (Marshal, sharing)</text><rect x="300" y="92" width="289.3" height="13" rx="2" fill="#b45309" opacity="0.85"/><text x="595.3" y="102" font-size="10" fill="var(--muted)">15 · fix 4</text><text x="292" y="123" font-size="10.5" text-anchor="end" fill="var(--ink)">the JS boundary (js_of_ocaml)</text><rect x="300" y="113" width="289.3" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="595.3" y="123" font-size="10" fill="var(--muted)">15</text><text x="292" y="144" font-size="10.5" text-anchor="end" fill="var(--ink)">incremental reuse checks</text><rect x="300" y="134" width="231.4" height="13" rx="2" fill="#0d9488" opacity="0.85"/><text x="537.4" y="144" font-size="10" fill="var(--muted)">12 · fix 1</text><text x="292" y="165" font-size="10.5" text-anchor="end" fill="var(--ink)">interpretation itself</text><rect x="300" y="155" width="231.4" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="537.4" y="165" font-size="10" fill="var(--muted)">12</text><text x="292" y="186" font-size="10.5" text-anchor="end" fill="var(--ink)">ids on every term</text><rect x="300" y="176" width="212.1" height="13" rx="2" fill="#2563eb" opacity="0.85"/><text x="518.1" y="186" font-size="10" fill="var(--muted)">11 · fix 2</text><text x="292" y="207" font-size="10.5" text-anchor="end" fill="var(--ink)">the worker trip</text><rect x="300" y="197" width="192.9" height="13" rx="2" fill="#b45309" opacity="0.85"/><text x="498.9" y="207" font-size="10" fill="var(--muted)">10 · fix 4</text><text x="292" y="228" font-size="10.5" text-anchor="end" fill="var(--ink)">run-time type checks (ascriptions, casts)</text><rect x="300" y="218" width="192.9" height="13" rx="2" fill="#7c3aed" opacity="0.85"/><text x="498.9" y="228" font-size="10" fill="var(--muted)">10 · fix 3</text><text x="292" y="249" font-size="10.5" text-anchor="end" fill="var(--ink)">other</text><rect x="300" y="239" width="154.3" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="460.3" y="249" font-size="10" fill="var(--muted)">8</text><text x="292" y="270" font-size="10.5" text-anchor="end" fill="var(--ink)">environments and substitution</text><rect x="300" y="260" width="154.3" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="460.3" y="270" font-size="10" fill="var(--muted)">8</text><text x="292" y="291" font-size="10.5" text-anchor="end" fill="var(--ink)">persistent maps and allocation (GC)</text><rect x="300" y="281" width="135.0" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="441.0" y="291" font-size="10" fill="var(--muted)">7</text><text x="292" y="312" font-size="10.5" text-anchor="end" fill="var(--ink)">values are terms (open terms, holes, closures)</text><rect x="300" y="302" width="135.0" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="441.0" y="312" font-size="10" fill="var(--muted)">7</text><text x="292" y="333" font-size="10.5" text-anchor="end" fill="var(--ink)">probes and samples</text><rect x="300" y="323" width="115.7" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="421.7" y="333" font-size="10" fill="var(--muted)">6</text><text x="292" y="354" font-size="10.5" text-anchor="end" fill="var(--ink)">parsing on load</text><rect x="300" y="344" width="96.4" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="402.4" y="354" font-size="10" fill="var(--muted)">5</text><text x="292" y="375" font-size="10.5" text-anchor="end" fill="var(--ink)">undo and history</text><rect x="300" y="365" width="96.4" height="13" rx="2" fill="#b91c1c" opacity="0.85"/><text x="402.4" y="375" font-size="10" fill="var(--muted)">5 · fix 6</text><text x="292" y="396" font-size="10.5" text-anchor="end" fill="var(--ink)">trampolines and stack safety</text><rect x="300" y="386" width="77.1" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="383.1" y="396" font-size="10" fill="var(--muted)">4</text><text x="292" y="417" font-size="10.5" text-anchor="end" fill="var(--ink)">scheduling (worker slices, message cadence)</text><rect x="300" y="407" width="77.1" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="383.1" y="417" font-size="10" fill="var(--muted)">4</text><text x="292" y="438" font-size="10.5" text-anchor="end" fill="var(--ink)">data representation (flat lists, no maps)</text><rect x="300" y="428" width="77.1" height="13" rx="2" fill="#9ca3af" opacity="0.85"/><text x="383.1" y="438" font-size="10" fill="var(--muted)">4</text></svg><figcaption>Not a build of the app: <a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>'s ledger of the costs the series measured from <a href="../001/"><code class="ref"><b>^report(</b>1<b>)</b></code></a> to 047, each filed under one root cause. The six fixes proposed here address the causes of 116 of the 196 costs; the rest (the interpreter itself, the JS boundary, environments and substitution, values held as terms, and others) have no single fix on this list.</figcaption></figure></div>
+<table class="vals"><tr><th>Fix</th><th>What it is</th><th>Costs whose cause it addresses</th><th>First step</th><th>From our own work</th></tr><tr id="fix-merkle"><td><b>1. Merkle hashes in the grammar</b></td><td>A hash on every term, type and value, kept on the node itself (in Grammar, or by a ppx), so that equality is a hash compare and a cache key is cheap. It retires the family of compares that walk two equal copies node by node.</td><td class="n">12 (incremental reuse checks)</td><td>Hashes on the node, not in a side table: the experiment of <a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a> put them on values and the slowdown with the heap went away (2.3, 5.5, 6.3 s to 2.2, 2.5, 2.2 s).</td><td>Our week on hazel-jit met the same family again and again: build 31&#x27;s check, keyed on a livelit&#x27;s definition, found a new copy at each lookup (a drag 15.1 ms a frame, from 8.2); build 33&#x27;s shape cache compared a model&#x27;s value at every frame (16.1 ms); and the view cache compares 104 sample values by value at each answer, 2 to 8 ms (<a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>). Each got its own cache; a hash on each value would serve them all.</td></tr><tr id="fix-ids"><td><b>2. Ids: cheap to make, and temporary inside the evaluator</b></td><td>Id.mk made cheap inside Id, its interface unchanged; and every id the evaluator makes an Id.temp, real ids given only to what leaves the evaluator, as Matthew Keenan proposes.</td><td class="n">11 (ids on every term)</td><td>Port the trial line&#x27;s Id.mk (one string concatenation an id, <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>) to dev; then audit the evaluator&#x27;s mints (variable lookups 38%, environment frames 20%, ascriptions about 30%, <a href="../009/"><code class="ref"><b>^report(</b>9<b>)</b></code></a>).</td><td>hazel-jit&#x27;s compiled run works on JavaScript values and makes ids only for what it gives back to Hazel as terms; making those took almost half of the way back until Id.mk was made cheap (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>).</td></tr><tr id="fix-checks"><td><b>3. Check a value&#x27;s type once</b></td><td>An ascription or annotation checks a value once, and a value known to have a type is not checked against it again: something resembling the cast calculus, or a mark on checked values. It retires the repeated checks, including the quadratic walk of an annotated recursive helper over the rest of its list.</td><td class="n">10 (run-time type checks (ascriptions, casts))</td><td>Count the checks before caching them: for the World rule, how many times each list cell is checked against [Square] per move.</td><td>Two of the open fixes cache the checks (<a href="https://github.com/hazelgrove/hazel/pull/2661">#2661</a> hashes the types, <a href="https://github.com/hazelgrove/hazel/pull/2681">#2681</a> memoizes them); as Matthew Keenan says, a cache can hide that the checks repeat.</td></tr><tr id="fix-server"><td><b>4. The worker as a language server</b></td><td>The worker keeps the program, its statics and its run, and the page asks it for what it shows (a probe&#x27;s samples, a livelit&#x27;s answer) rather than receiving a whole answer after every run.</td><td class="n">25 (the worker trip, serialization (Marshal, sharing))</td><td>Write down which of the page&#x27;s readers need the worker&#x27;s answer at all, now that hazel-jit draws livelits from the page&#x27;s own compiled run.</td><td>Our changes to the answer (5.4 MB to 198 KB, <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> and <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>) were the cart before the horse, in his words; with hazel-jit the picture no longer waits for the worker, and what is left of the trip is the page taking the answer in, 50 to 60 ms (<a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>).</td></tr><tr id="fix-statics"><td><b>5. Incremental statics, landed as it is</b></td><td>Per-item statics (Andrew Blinn&#x27;s DefStatics, on <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>) to dev first, as the good-enough first pass; finer grain later, by measurement.</td><td class="n">28 (re-analysis per edit (statics, parsing))</td><td>Land <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>&#x27;s per-item statics on dev.</td><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a>&#x27;s patch for a livelit&#x27;s literal (build 45) is the special case Matthew Keenan warns about: one kind of edit, patched by hand inside DefStatics. It measures what finer-grained statics would buy (12 to 28 ms a slider step on the Witch), but it should not land ahead of the general version.</td></tr><tr id="fix-bonsai"><td><b>6. Derived state and rendering through Bonsai</b></td><td>Separate what is derived (syntax, statics, layout, views) from what is not, so undo keeps only the latter and rendering recomputes only what changed.</td><td class="n">30 (the page&#x27;s view and redraw, undo and history)</td><td>Find Matthew Keenan&#x27;s bonsaification branch and measure it on one slide.</td><td>Most of our week&#x27;s caches (projector data, the view cache, the outline&#x27;s memos) are hand-written incrementality of the kind Bonsai&#x27;s model provides; each is one more place a key can go stale.</td></tr></table>
+<p>Two of the six can start at once and touch little else: Id.mk's cheaper ids are already written (one module, its interface unchanged), and per-item statics are written and running on <a href="https://github.com/hazelgrove/hazel/pull/2635">#2635</a>. Merkle hashes in the grammar and checking a type once are design work first; the language server and Bonsai are the largest, and would change how the page and the worker divide the work.</p>
+
+<h2 id="prototype">What the prototype is for<a class="anchor" href="#prototype" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="prototype" title="copy this section's address">copy link</button></h2>
+<p><b>The hazel-jit branch answered, in five days, whether a livelit's slider can show its step in the picture in tens of milliseconds. It can: 20 to 30 ms on the Witch slide, from 4.2 to 6.5 s. Its code measures what each change is worth; it is not code to land.</b> That is the use Matthew Hammer names for agent-written code. <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a> ranks the ten changes that mattered by how much each helped and orders a redo by hand in nine increments, each its own pull request with its own tests. Our own record there is the risk Matthew Keenan describes: 120 commits on one branch, 6 of its 10 ingredients without a test of their own, 10 commits that only fixed the one before, and caches keyed on object identity, two of which made a drag slower before they were fixed.</p>
+<p><a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a>, finished this morning as build 45, shows both sides. When a slider's step changes only the literals in a livelit's model, the item it edited is patched rather than analyzed again: a step's statics went from 19 to 53 ms on build 43 to 12 to 18 ms on build 45, and the edited item's part from 13 to 42 ms to 3 to 6 (one run each, on the Witch slide, <a href="#builds">below</a>). That answers a question: finer-grained incremental statics would buy 10 to 35 ms on a slider step. It is also special-case logic: one kind of edit, patched by hand inside DefStatics, and a first attempt (build 44) sent the worker the whole program instead of the edited item. We propose keeping it as that measurement, and not landing it ahead of per-item statics on dev (fix 5).</p>
+
+<h2 id="skipped">What the message left out<a class="anchor" href="#skipped" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="skipped" title="copy this section's address">copy link</button></h2>
+<p><b>The root causes no fix here addresses: the interpreter itself and the JS boundary are the largest, 12 and 15 costs.</b> Matthew Keenan asked to hear about facets he skipped that need a gut opinion; these are the ones the ledger has, each with what the series measured and the question we would put to him.</p>
+<table class="vals"><tr><th>Root cause</th><th>Costs</th><th>What the series measured</th><th>The question</th></tr><tr><td><b>interpretation itself</b></td><td class="n">12</td><td>The interpreter is slow at what any interpreter is slow at: a livelit&#x27;s render 40 times slower than compiled with the trip in and out, a recursive sum of 1,000 1,152 times (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>).</td><td>Should a compiler like hazel-jit become a second way to run Hazel programs, beside the interpreter, and if so who keeps the two in step? Or should it stay a livelit&#x27;s fast path?</td></tr><tr><td><b>the JS boundary (js_of_ocaml)</b></td><td class="n">15</td><td>js_of_ocaml&#x27;s generic calls (11.6% of self time), values converted from JS as syntax the evaluator steps back into a value (56% of a call&#x27;s floor), Uuidm&#x27;s byte copy (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>).</td><td>Is there a representation of values that crosses the boundary cheaply, so that a JS call into Hazel does not rebuild what it was given?</td></tr><tr><td><b>environments and substitution</b></td><td class="n">8</td><td>A value held in a closure is substituted into each call and stepped again (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>); environment lookups 7.2% of a loop (<a href="../035/"><code class="ref"><b>^report(</b>35<b>)</b></code></a>).</td><td>Substitution or environments for the evaluator&#x27;s own steps: is the final flag he mentions enough, or is it time to evaluate with environments throughout?</td></tr><tr><td><b>values are terms (open terms, holes, closures)</b></td><td class="n">7</td><td>The Witch&#x27;s picture sent as terms: 142.2 KB and 24.0 ms to encode and decode, against 48.0 KB and 6.09 ms as plain data (<a href="../047/"><code class="ref"><b>^report(</b>47<b>)</b></code></a>).</td><td>Should closed, first-order values (numbers, strings, lists, records of them) have a representation of their own, apart from terms?</td></tr><tr><td><b>persistent maps and allocation (GC)</b></td><td class="n">7</td><td>Garbage collection 18% of a JS call&#x27;s floor, 19.8% of a plain walk&#x27;s self time (<a href="../025/"><code class="ref"><b>^report(</b>25<b>)</b></code></a>); a pause of 20 to 35 ms once a slider step (<a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>).</td><td>Which of the evaluator&#x27;s maps and copies could be mutable and local, or shared?</td></tr><tr><td><b>data representation (flat lists, no maps)</b></td><td class="n">4</td><td>Hazel has no map, so a rule walks a list to find a square: 254 ms at 64x64, against 0.54 ms for Fumola&#x27;s HashMap (<a href="../027/"><code class="ref"><b>^report(</b>27<b>)</b></code></a>).</td><td>A map in Hazel&#x27;s library, or in the language?</td></tr><tr><td><b>parsing on load</b></td><td class="n">5</td><td>Opening a program parses it whole (<a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>&#x27;s five costs).</td><td>Worth incremental parsing, or only a cache of parsed programs?</td></tr><tr><td><b>trampolines and stack safety</b></td><td class="n">4</td><td>The evaluator&#x27;s trampolines are part of a loop&#x27;s per-pass cost (<a href="../029/"><code class="ref"><b>^report(</b>29<b>)</b></code></a>).</td><td>Is stack depth still the constraint that made them necessary?</td></tr><tr><td><b>scheduling (worker slices, message cadence)</b></td><td class="n">4</td><td>How often the worker yields and sends (<a href="../004/"><code class="ref"><b>^report(</b>4<b>)</b></code></a>: 5.8 to 6.2 s of a 10 s change idle between slices, fixed).</td><td>Folded into the language-server design (fix 4)?</td></tr></table>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>Agree as a team on the six fixes, or a different short list, and their order. Ids and per-item statics can start now.</li>
+<li>For ascriptions, count the checks per value on the World rule before caching anything, as he suggests.</li>
+<li>Find Matthew Keenan's bonsaification branch, and Andrew Blinn's notes on <a href="https://github.com/hazelgrove/hazel/pull/2469">#2469</a>, and measure each on one slide.</li>
+<li>Keep the hazel-jit branch as the measurement it is; redo its changes by hand in <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>'s order, each only where it still helps once the deeper fixes land.</li>
+</ol>
+
+<h2 id="builds">The builds<a class="anchor" href="#builds" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="builds" title="copy this section's address">copy link</button></h2>
+<p><b>This report names three builds, numbered as in <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> to <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>: each is the one before it plus one change, on <code>trial/694-view-jit</code> (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>); builds 44 and 45 were checked on a side branch, <code>trial/694-view-jit-35</code>.</b> Their numbers are from one run each of the Firefox check on the Witch slide, steps 1 to 4 of its slider.</p>
+<table class="vals">
+<tr><th>Build</th><th>Commit</th><th>Run</th><th>What it adds</th><th>Statics, a step</th><th>The edited item</th><th>The worker's request</th></tr>
+<tr><td>43</td><td><code>421e30a04b</code></td><td>42830234099</td><td>a projector's update walks only what holds it</td><td class="n">19 to 53 ms</td><td class="n">13 to 42 ms</td><td>the edited item, 10 KB</td></tr>
+<tr><td>44</td><td><code>d90a8cf135</code></td><td>42838899176</td><td>a model-only commit patched after DefStatics</td><td class="n">not timed</td><td class="n">not analyzed</td><td>the whole program on step 1, 894 KB</td></tr>
+<tr><td>45</td><td><code>9ae518ffe7</code></td><td>42850343281</td><td>the patch inside DefStatics: the edited item patched, not analyzed</td><td class="n">12 to 18 ms</td><td class="n">3 to 6 ms</td><td>the edited item, 9 to 10 KB</td></tr>
+</table>
+<p>Build 45's own test (<code>test/Test_ModelPatch.re</code>) did not compile on its first CI run; the fix is <code>fc1103900d</code>, and its CI is running.</p>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>Matthew Keenan's message and Matthew Hammer's replies are quoted from Slack as Matthew Hammer pasted them. The costs, their root causes and the numbers in the point-by-point table are <a href="../048/"><code class="ref"><b>^report(</b>48<b>)</b></code></a>'s ledger (<code>048/data/ledger.json</code>), each checked against the entry it cites; the figure counts that ledger's root causes. The six fixes, which cause each addresses, and the questions in the last table are our judgment. Build 45's numbers are from the marks of its run (<code>statics</code>, <code>statics: items</code>, <code>worker: request decoded</code>) kept in <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>'s <code>data/runs/</code>. Everything the page shows is in <a href="data/numbers.json">data/numbers.json</a>.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/053/data"><code>053/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-11-10T04:57:00Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2603": {"author": "matthewhammer", "comments": 1, "created": "2026-09-26T21:10:09Z", "kind": "pull", "state": "open", "title": "Statics: a let is analyzed once unless it refers to itself, plus three smaller speedups", "updated": "2026-09-26T21:30:11Z", "base": "dev"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2661": {"author": "matthewhammer", "comments": 2, "created": "2026-10-10T01:18:55Z", "kind": "pull", "state": "open", "title": "Types get a Merkle hash; the evaluator asks is_consistent once per pair", "updated": "2026-10-29T15:57:44Z", "base": "dev"}, "hazelgrove/hazel#2673": {"author": "matthewhammer", "comments": 1, "created": "2026-10-10T17:19:02Z", "kind": "pull", "state": "open", "title": "Incremental evaluation recognizes an unchanged expression by its Merkle hash", "updated": "2026-10-20T20:32:20Z", "base": "dev"}, "hazelgrove/hazel#2681": {"author": "matthewhammer", "comments": 4, "created": "2026-10-13T13:04:35Z", "kind": "pull", "state": "open", "title": "A value known to have a type is not walked again for it", "updated": "2026-10-29T15:57:47Z", "base": "dev"}, "hazelgrove/hazel#2808": {"author": "matthewhammer", "comments": 0, "created": "2026-11-04T17:11:28Z", "kind": "pull", "state": "open", "title": "non-`dev` (`lib-floor`): A function the library hands back keeps its closure, and a test holds a call's cost to what it does", "updated": "2026-11-04T17:11:42Z", "base": "lib-floor"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-10T15:17:15Z", "base": "integration/livelits-modular-editors"}}, BUILT = "2026-11-10";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 53,
+ "title": "Fewer, Deeper Fixes",
+ "date": "2026-11-10",
+ "kind": "the team's review: Matthew Keenan's reply to report 048, Matthew Hammer's replies, and a response point by point; work in progress",
+ "status": "work in progress",
+ "question": "Matthew Keenan, on Slack 2026-11-09, read report 048's ledger of costs and asked for a few well-chosen fixes rather than many separate ones. Where does the series' evidence agree with each of his points, and which few fixes would address the most costs? Matthew Hammer, 2026-11-10: \"Let's write a report with this feedback, and our reasoned response to it.\"",
+ "measurements": "No new measurement of the app, except build 45's marks: the point-by-point numbers are report 048's ledger (048/data/ledger.json), each checked against the report it cites. Build 45's statics are from one run of the Firefox check (scripts/jit_slides.py in jit.yml, hazelgrove/hazel, GitHub's machines) on the Witch slide, steps 1 to 4, against build 43's run.",
+ "builds": "Numbered as in reports 050 to 052: build N is the build before it plus one change, on trial/694-view-jit; builds 44 and 45 were checked on trial/694-view-jit-35. The builds table names commit and run.",
+ "files": [
+  "data/meta.json",
+  "data/numbers.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Point by point",
+   "section_id": "points",
+   "columns": [
+    "His point",
+    "What the series measured",
+    "Our read",
+    "Fix"
+   ],
+   "rows": [
+    [
+     "Overall: a few well-chosen fixes, not a thousand separate ones",
+     "Our own last five days on hazel-jit (^report(52)): 120 commits on one branch, 9,200 lines added to src/, 6 of its 10 ingredients with no test of their own, 7 commits that only fixed the one before (and 3 more since), and caches keyed on object identity, two of which made a drag slower before they were fixed (builds 31 and 33).",
+     "Agreed, and our record shows the risk he names. The 196 costs in ^report(48)'s ledger come down to 19 root causes; six fixes would address the causes of 116 of them (the figure below).",
+     "all six"
+    ],
+    [
+     "Ids: changes internal to Id.mk or id equality; the old id library",
+     "Id.t is Uuidm.t (uuidm 0.9.8). On dev, Id.mk makes each id through Uuidm.v4's byte copy, about 20% of all time in a profile of a JS call into Hazel (^report(25)); on the hazel-jit line it builds the same 16 bytes from a counter by one string concatenation (^report(45): 906 ids in 0.044 ms, from 0.29). The interpreter minted 461,422 ids for a 33,847-node picture (^report(9)).",
+     "Agreed: the trial line's Id.mk is the internal change he describes, and can go to dev as it is. Replacing uuidm is possible behind Id's interface too, keeping the serialized form.",
+     "2 · Ids: cheap to make, and temporary inside the evaluator"
+    ],
+    [
+     "Evaluation's ids: don't let temp ids escape",
+     "Variable lookups make 38% of the ids the evaluator mints, environment frames 20%, ascriptions about 30% (^report(9)); fresh ids make the worker's requests 1.99 times larger and its results 11% (^report(9)). A local experiment with content-derived names removed 92 to 97% of them, at 11 to 31% more time.",
+     "Agreed, and simpler than our content-derived names: Id.temp inside the evaluator, real ids only for what leaves it, so the editor (tylr) still sees unique ids.",
+     "2 · Ids: cheap to make, and temporary inside the evaluator"
+    ],
+    [
+     "Ascriptions' run-time checks: more checks than they should?",
+     "Ascribing a constructor application compared two copies of the Html type at every node of a view: 88% of a 15 to 17 s Polygons click (^report(17)). The same ascription re-checks inside the woods picture's view (14 to 16%, ^report(25)).",
+     "Agreed that the count is the problem: #2661 (Merkle-hashed types) and #2681 (a memo) make each check cheap but leave them repeating. Counting checks per value comes first.",
+     "3 · Check a value's type once"
+    ],
+    [
+     "Quadratic list walking: the same one back again?",
+     "This one comes from an annotation: a recursive function whose list parameter is annotated checks the whole rest of the list at every call, n calls over n cells: 205 ms at 400 elements (^report(17)), the World rule 144 ms at 16x16 against 18 ms unannotated (^report(25)).",
+     "We cannot tell whether it is the case he fixed before; this one is quadratic because each recursive call re-checks its argument against its annotation, not because of how the list is walked.",
+     "3 · Check a value's type once"
+    ],
+    [
+     "Something resembling the cast calculus",
+     "Ten of the 196 costs are run-time type checks (ascriptions, casts), the quadratic one among them.",
+     "Agreed as a direction, and a research question, as he says; it is the fix that removes the checks rather than caching them.",
+     "3 · Check a value's type once"
+    ],
+    [
+     "Variable lookups needn't mint ids",
+     "38% of the evaluator's ids (^report(9)).",
+     "Agreed: Id.temp there is the cheapest principled change on the list.",
+     "2 · Ids: cheap to make, and temporary inside the evaluator"
+    ],
+    [
+     "The evaluator re-traversing what is final",
+     "Three costs: the evaluator visits values that are already final (a third of a loop's passes take no step, ^report(29)); a value held in a closure is re-stepped when substituted into each call (^report(25)); a function Hazel's JS library returns has its environment substituted into its body, so a held list is re-evaluated at every call (^report(29); fixed on trials, #2808 open).",
+     "Consistent with his diagnosis: the cases we found come through substitution, on the library path, rather than through environment lookups. Checking that the final flag is set on those paths is the next step, before any fast path.",
+     "—"
+    ],
+    [
+     "The worker-editor transition: send it fast, or a language server",
+     "25 of the costs are the worker trip or the serialization across it. The answer went 5.4 MB, 0.42 MB, 198 KB (reports 046, 051); the request went whole whenever the page's statics did not match the per-item analysis (build 44, ^report(52)).",
+     "Agreed that shrinking is the cart before the horse. hazel-jit has taken the worker off the path to the picture for livelits, which makes the language-server design easier to try: the page asks for what it shows.",
+     "4 · The worker as a language server"
+    ],
+    [
+     "Environments in probes: fundamental, or a sharing leak?",
+     "A probe's environment was written out whole: the Drawing module in the sample of a probe whose value is a few bytes, 4.14 MB of a 5.4 MB answer (^report(46)).",
+     "Not fundamental: in memory the environments share, but each sample's environment was serialized on its own across the worker boundary, and the worker's sharing pass found almost nothing to share (1.4 to 1.6 s a result, dropped in build 3 of ^report(50)). The leak is at the boundary.",
+     "4 · The worker as a language server"
+    ],
+    [
+     "Andrew's branch incrementalizing statics and MakeTerm",
+     "That is #2469 (modular editors): per-item statics (DefStatics) and incremental MakeTerm. It works: #2597, without it, re-ran statics on the whole program at every livelit commit, 3.5 s of a 5.8 s profiled release; a release took 3.76 s there against about 0.35 s on #2635, which has it (^report(1)).",
+     "It is the base of everything in ^report(49) to ^report(52), and not yet on dev.",
+     "5 · Incremental statics, landed as it is"
+    ],
+    [
+     "Lets always recursive",
+     "Every let-bound function takes statics' recursive path, and the passes multiply with nesting, up to 4 to the depth: nested lets took 400 s (^report(1); #2603, open, takes it to 0.6 s).",
+     "Worth trying: always-recursive lets remove the multiplier at its source rather than special-casing it. A language decision for the team; we can measure it.",
+     "5 · Incremental statics, landed as it is"
+    ],
+    [
+     "Incremental statics: don't let perfect be the enemy of the good",
+     "Re-analysis per edit is the largest family, 28 of the 196 costs.",
+     "Agreed: land per-item statics first. ^ticket(721)'s literal patch (build 45) is not that, and should wait for it.",
+     "5 · Incremental statics, landed as it is"
+    ],
+    [
+     "Merkle hashing in the grammar, or a ppx",
+     "Reuse checks with a Merkle hash: 283 to 26 ms on #2635, 2,743 to 410 ms on dev (#2673, open). Types: 15 to 17 s to 2.0 to 2.2 s (#2661, open). But ValueHash keeps its hashes in a WeakMap side table that slowed as it grew (2.3, 5.5, 6.3 s; 98 MB of what four edits kept, reports 009, 014).",
+     "Strongly agreed, with one lesson from the measurements: the hash belongs on the node, not in a side table.",
+     "1 · Merkle hashes in the grammar"
+    ],
+    [
+     "Incremental evaluation inside functions",
+     "Incremental evaluation saves nothing on a slider edit (Witch 754 against 701 ms from scratch, ^report(9)); every slider edit re-evaluates 85 to 95% of the figure (^report(11)).",
+     "Agreed that this is the root of 'it doesn't work on sliders'. hazel-jit sidesteps it for livelits by compiling the run (a step in 2 to 3 ms), but the worker still re-evaluates; caching by call-stack ids or names is the real fix.",
+     "—"
+    ],
+    [
+     "Undo keeping whole editor state; Bonsai",
+     "About 92 MB kept per edit, uncapped (^report(14)). Andrew Blinn's compaction held #2597 to 159 MB (^report(20)), but restoring a compacted entry rebuilds what is derived: a redo took 6.0 to 6.5 s there, against 2.7 to 3.1 s before (^report(14)).",
+     "Agreed: undo should keep only what is not derived.",
+     "6 · Derived state and rendering through Bonsai"
+    ],
+    [
+     "Rendering through Bonsai",
+     "The page's view and redraw are the second-largest family, 25 of the 196 costs.",
+     "Agreed; our own caches this week are hand-written incrementality.",
+     "6 · Derived state and rendering through Bonsai"
+    ]
+   ]
+  },
+  {
+   "section": "Six fixes",
+   "section_id": "fixes",
+   "columns": [
+    "Fix",
+    "What it is",
+    "Costs whose cause it addresses",
+    "First step",
+    "From our own work"
+   ],
+   "rows": [
+    [
+     "1. Merkle hashes in the grammar",
+     "A hash on every term, type and value, kept on the node itself (in Grammar, or by a ppx), so that equality is a hash compare and a cache key is cheap. It retires the family of compares that walk two equal copies node by node.",
+     "12 (incremental reuse checks)",
+     "Hashes on the node, not in a side table: the experiment of ^report(9) put them on values and the slowdown with the heap went away (2.3, 5.5, 6.3 s to 2.2, 2.5, 2.2 s).",
+     "Our week on hazel-jit met the same family again and again: build 31's check, keyed on a livelit's definition, found a new copy at each lookup (a drag 15.1 ms a frame, from 8.2); build 33's shape cache compared a model's value at every frame (16.1 ms); and the view cache compares 104 sample values by value at each answer, 2 to 8 ms (^report(51)). Each got its own cache; a hash on each value would serve them all."
+    ],
+    [
+     "2. Ids: cheap to make, and temporary inside the evaluator",
+     "Id.mk made cheap inside Id, its interface unchanged; and every id the evaluator makes an Id.temp, real ids given only to what leaves the evaluator, as Matthew Keenan proposes.",
+     "11 (ids on every term)",
+     "Port the trial line's Id.mk (one string concatenation an id, ^report(45)) to dev; then audit the evaluator's mints (variable lookups 38%, environment frames 20%, ascriptions about 30%, ^report(9)).",
+     "hazel-jit's compiled run works on JavaScript values and makes ids only for what it gives back to Hazel as terms; making those took almost half of the way back until Id.mk was made cheap (^report(45))."
+    ],
+    [
+     "3. Check a value's type once",
+     "An ascription or annotation checks a value once, and a value known to have a type is not checked against it again: something resembling the cast calculus, or a mark on checked values. It retires the repeated checks, including the quadratic walk of an annotated recursive helper over the rest of its list.",
+     "10 (run-time type checks (ascriptions, casts))",
+     "Count the checks before caching them: for the World rule, how many times each list cell is checked against [Square] per move.",
+     "Two of the open fixes cache the checks (#2661 hashes the types, #2681 memoizes them); as Matthew Keenan says, a cache can hide that the checks repeat."
+    ],
+    [
+     "4. The worker as a language server",
+     "The worker keeps the program, its statics and its run, and the page asks it for what it shows (a probe's samples, a livelit's answer) rather than receiving a whole answer after every run.",
+     "25 (the worker trip, serialization (Marshal, sharing))",
+     "Write down which of the page's readers need the worker's answer at all, now that hazel-jit draws livelits from the page's own compiled run.",
+     "Our changes to the answer (5.4 MB to 198 KB, ^report(46) and ^report(51)) were the cart before the horse, in his words; with hazel-jit the picture no longer waits for the worker, and what is left of the trip is the page taking the answer in, 50 to 60 ms (^report(52))."
+    ],
+    [
+     "5. Incremental statics, landed as it is",
+     "Per-item statics (Andrew Blinn's DefStatics, on #2469) to dev first, as the good-enough first pass; finer grain later, by measurement.",
+     "28 (re-analysis per edit (statics, parsing))",
+     "Land #2469's per-item statics on dev.",
+     "^ticket(721)'s patch for a livelit's literal (build 45) is the special case Matthew Keenan warns about: one kind of edit, patched by hand inside DefStatics. It measures what finer-grained statics would buy (12 to 28 ms a slider step on the Witch), but it should not land ahead of the general version."
+    ],
+    [
+     "6. Derived state and rendering through Bonsai",
+     "Separate what is derived (syntax, statics, layout, views) from what is not, so undo keeps only the latter and rendering recomputes only what changed.",
+     "30 (the page's view and redraw, undo and history)",
+     "Find Matthew Keenan's bonsaification branch and measure it on one slide.",
+     "Most of our week's caches (projector data, the view cache, the outline's memos) are hand-written incrementality of the kind Bonsai's model provides; each is one more place a key can go stale."
+    ]
+   ]
+  },
+  {
+   "section": "What the message left out",
+   "section_id": "skipped",
+   "columns": [
+    "Root cause",
+    "Costs",
+    "What the series measured",
+    "The question"
+   ],
+   "rows": [
+    [
+     "interpretation itself",
+     "12",
+     "The interpreter is slow at what any interpreter is slow at: a livelit's render 40 times slower than compiled with the trip in and out, a recursive sum of 1,000 1,152 times (^report(45)).",
+     "Should a compiler like hazel-jit become a second way to run Hazel programs, beside the interpreter, and if so who keeps the two in step? Or should it stay a livelit's fast path?"
+    ],
+    [
+     "the JS boundary (js_of_ocaml)",
+     "15",
+     "js_of_ocaml's generic calls (11.6% of self time), values converted from JS as syntax the evaluator steps back into a value (56% of a call's floor), Uuidm's byte copy (^report(25)).",
+     "Is there a representation of values that crosses the boundary cheaply, so that a JS call into Hazel does not rebuild what it was given?"
+    ],
+    [
+     "environments and substitution",
+     "8",
+     "A value held in a closure is substituted into each call and stepped again (^report(25)); environment lookups 7.2% of a loop (^report(35)).",
+     "Substitution or environments for the evaluator's own steps: is the final flag he mentions enough, or is it time to evaluate with environments throughout?"
+    ],
+    [
+     "values are terms (open terms, holes, closures)",
+     "7",
+     "The Witch's picture sent as terms: 142.2 KB and 24.0 ms to encode and decode, against 48.0 KB and 6.09 ms as plain data (^report(47)).",
+     "Should closed, first-order values (numbers, strings, lists, records of them) have a representation of their own, apart from terms?"
+    ],
+    [
+     "persistent maps and allocation (GC)",
+     "7",
+     "Garbage collection 18% of a JS call's floor, 19.8% of a plain walk's self time (^report(25)); a pause of 20 to 35 ms once a slider step (^report(52)).",
+     "Which of the evaluator's maps and copies could be mutable and local, or shared?"
+    ],
+    [
+     "data representation (flat lists, no maps)",
+     "4",
+     "Hazel has no map, so a rule walks a list to find a square: 254 ms at 64x64, against 0.54 ms for Fumola's HashMap (^report(27)).",
+     "A map in Hazel's library, or in the language?"
+    ],
+    [
+     "parsing on load",
+     "5",
+     "Opening a program parses it whole (^report(48)'s five costs).",
+     "Worth incremental parsing, or only a cache of parsed programs?"
+    ],
+    [
+     "trampolines and stack safety",
+     "4",
+     "The evaluator's trampolines are part of a loop's per-pass cost (^report(29)).",
+     "Is stack depth still the constraint that made them necessary?"
+    ],
+    [
+     "scheduling (worker slices, message cadence)",
+     "4",
+     "How often the worker yields and sends (^report(4): 5.8 to 6.2 s of a 10 s change idle between slices, fixed).",
+     "Folded into the language-server design (fix 4)?"
+    ]
+   ]
+  },
+  {
+   "section": "The builds",
+   "section_id": "builds",
+   "columns": [
+    "Build",
+    "Commit",
+    "Run",
+    "What it adds",
+    "Statics, a step",
+    "The edited item",
+    "The worker's request"
+   ],
+   "rows": [
+    [
+     "43",
+     "421e30a04b",
+     "42830234099",
+     "a projector's update walks only what holds it",
+     "19 to 53 ms",
+     "13 to 42 ms",
+     "the edited item, 10 KB"
+    ],
+    [
+     "44",
+     "d90a8cf135",
+     "42838899176",
+     "a model-only commit patched after DefStatics",
+     "not timed",
+     "not analyzed",
+     "the whole program on step 1, 894 KB"
+    ],
+    [
+     "45",
+     "9ae518ffe7",
+     "42850343281",
+     "the patch inside DefStatics: the edited item patched, not analyzed",
+     "12 to 18 ms",
+     "3 to 6 ms",
+     "the edited item, 9 to 10 KB"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/053/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>

@@ -1,0 +1,279 @@
+[
+ {
+  "section": "Point by point",
+  "section_id": "points",
+  "columns": [
+   "His point",
+   "What the series measured",
+   "Our read",
+   "Fix"
+  ],
+  "rows": [
+   [
+    "Overall: a few well-chosen fixes, not a thousand separate ones",
+    "Our own last five days on hazel-jit (^report(52)): 120 commits on one branch, 9,200 lines added to src/, 6 of its 10 ingredients with no test of their own, 7 commits that only fixed the one before (and 3 more since), and caches keyed on object identity, two of which made a drag slower before they were fixed (builds 31 and 33).",
+    "Agreed, and our record shows the risk he names. The 196 costs in ^report(48)'s ledger come down to 19 root causes; six fixes would address the causes of 116 of them (the figure below).",
+    "all six"
+   ],
+   [
+    "Ids: changes internal to Id.mk or id equality; the old id library",
+    "Id.t is Uuidm.t (uuidm 0.9.8). On dev, Id.mk makes each id through Uuidm.v4's byte copy, about 20% of all time in a profile of a JS call into Hazel (^report(25)); on the hazel-jit line it builds the same 16 bytes from a counter by one string concatenation (^report(45): 906 ids in 0.044 ms, from 0.29). The interpreter minted 461,422 ids for a 33,847-node picture (^report(9)).",
+    "Agreed: the trial line's Id.mk is the internal change he describes, and can go to dev as it is. Replacing uuidm is possible behind Id's interface too, keeping the serialized form.",
+    "2 · Ids: cheap to make, and temporary inside the evaluator"
+   ],
+   [
+    "Evaluation's ids: don't let temp ids escape",
+    "Variable lookups make 38% of the ids the evaluator mints, environment frames 20%, ascriptions about 30% (^report(9)); fresh ids make the worker's requests 1.99 times larger and its results 11% (^report(9)). A local experiment with content-derived names removed 92 to 97% of them, at 11 to 31% more time.",
+    "Agreed, and simpler than our content-derived names: Id.temp inside the evaluator, real ids only for what leaves it, so the editor (tylr) still sees unique ids.",
+    "2 · Ids: cheap to make, and temporary inside the evaluator"
+   ],
+   [
+    "Ascriptions' run-time checks: more checks than they should?",
+    "Ascribing a constructor application compared two copies of the Html type at every node of a view: 88% of a 15 to 17 s Polygons click (^report(17)). The same ascription re-checks inside the woods picture's view (14 to 16%, ^report(25)).",
+    "Agreed that the count is the problem: #2661 (Merkle-hashed types) and #2681 (a memo) make each check cheap but leave them repeating. Counting checks per value comes first.",
+    "3 · Check a value's type once"
+   ],
+   [
+    "Quadratic list walking: the same one back again?",
+    "This one comes from an annotation: a recursive function whose list parameter is annotated checks the whole rest of the list at every call, n calls over n cells: 205 ms at 400 elements (^report(17)), the World rule 144 ms at 16x16 against 18 ms unannotated (^report(25)).",
+    "We cannot tell whether it is the case he fixed before; this one is quadratic because each recursive call re-checks its argument against its annotation, not because of how the list is walked.",
+    "3 · Check a value's type once"
+   ],
+   [
+    "Something resembling the cast calculus",
+    "Ten of the 196 costs are run-time type checks (ascriptions, casts), the quadratic one among them.",
+    "Agreed as a direction, and a research question, as he says; it is the fix that removes the checks rather than caching them.",
+    "3 · Check a value's type once"
+   ],
+   [
+    "Variable lookups needn't mint ids",
+    "38% of the evaluator's ids (^report(9)).",
+    "Agreed: Id.temp there is the cheapest principled change on the list.",
+    "2 · Ids: cheap to make, and temporary inside the evaluator"
+   ],
+   [
+    "The evaluator re-traversing what is final",
+    "Three costs: the evaluator visits values that are already final (a third of a loop's passes take no step, ^report(29)); a value held in a closure is re-stepped when substituted into each call (^report(25)); a function Hazel's JS library returns has its environment substituted into its body, so a held list is re-evaluated at every call (^report(29); fixed on trials, #2808 open).",
+    "Consistent with his diagnosis: the cases we found come through substitution, on the library path, rather than through environment lookups. Checking that the final flag is set on those paths is the next step, before any fast path.",
+    "—"
+   ],
+   [
+    "The worker-editor transition: send it fast, or a language server",
+    "25 of the costs are the worker trip or the serialization across it. The answer went 5.4 MB, 0.42 MB, 198 KB (reports 046, 051); the request went whole whenever the page's statics did not match the per-item analysis (build 44, ^report(52)).",
+    "Agreed that shrinking is the cart before the horse. hazel-jit has taken the worker off the path to the picture for livelits, which makes the language-server design easier to try: the page asks for what it shows.",
+    "4 · The worker as a language server"
+   ],
+   [
+    "Environments in probes: fundamental, or a sharing leak?",
+    "A probe's environment was written out whole: the Drawing module in the sample of a probe whose value is a few bytes, 4.14 MB of a 5.4 MB answer (^report(46)).",
+    "Not fundamental: in memory the environments share, but each sample's environment was serialized on its own across the worker boundary, and the worker's sharing pass found almost nothing to share (1.4 to 1.6 s a result, dropped in build 3 of ^report(50)). The leak is at the boundary.",
+    "4 · The worker as a language server"
+   ],
+   [
+    "Andrew's branch incrementalizing statics and MakeTerm",
+    "That is #2469 (modular editors): per-item statics (DefStatics) and incremental MakeTerm. It works: #2597, without it, re-ran statics on the whole program at every livelit commit, 3.5 s of a 5.8 s profiled release; a release took 3.76 s there against about 0.35 s on #2635, which has it (^report(1)).",
+    "It is the base of everything in ^report(49) to ^report(52), and not yet on dev.",
+    "5 · Incremental statics, landed as it is"
+   ],
+   [
+    "Lets always recursive",
+    "Every let-bound function takes statics' recursive path, and the passes multiply with nesting, up to 4 to the depth: nested lets took 400 s (^report(1); #2603, open, takes it to 0.6 s).",
+    "Worth trying: always-recursive lets remove the multiplier at its source rather than special-casing it. A language decision for the team; we can measure it.",
+    "5 · Incremental statics, landed as it is"
+   ],
+   [
+    "Incremental statics: don't let perfect be the enemy of the good",
+    "Re-analysis per edit is the largest family, 28 of the 196 costs.",
+    "Agreed: land per-item statics first. ^ticket(721)'s literal patch (build 45) is not that, and should wait for it.",
+    "5 · Incremental statics, landed as it is"
+   ],
+   [
+    "Merkle hashing in the grammar, or a ppx",
+    "Reuse checks with a Merkle hash: 283 to 26 ms on #2635, 2,743 to 410 ms on dev (#2673, open). Types: 15 to 17 s to 2.0 to 2.2 s (#2661, open). But ValueHash keeps its hashes in a WeakMap side table that slowed as it grew (2.3, 5.5, 6.3 s; 98 MB of what four edits kept, reports 009, 014).",
+    "Strongly agreed, with one lesson from the measurements: the hash belongs on the node, not in a side table.",
+    "1 · Merkle hashes in the grammar"
+   ],
+   [
+    "Incremental evaluation inside functions",
+    "Incremental evaluation saves nothing on a slider edit (Witch 754 against 701 ms from scratch, ^report(9)); every slider edit re-evaluates 85 to 95% of the figure (^report(11)).",
+    "Agreed that this is the root of 'it doesn't work on sliders'. hazel-jit sidesteps it for livelits by compiling the run (a step in 2 to 3 ms), but the worker still re-evaluates; caching by call-stack ids or names is the real fix.",
+    "—"
+   ],
+   [
+    "Undo keeping whole editor state; Bonsai",
+    "About 92 MB kept per edit, uncapped (^report(14)). Andrew Blinn's compaction held #2597 to 159 MB (^report(20)), but restoring a compacted entry rebuilds what is derived: a redo took 6.0 to 6.5 s there, against 2.7 to 3.1 s before (^report(14)).",
+    "Agreed: undo should keep only what is not derived.",
+    "6 · Derived state and rendering through Bonsai"
+   ],
+   [
+    "Rendering through Bonsai",
+    "The page's view and redraw are the second-largest family, 25 of the 196 costs.",
+    "Agreed; our own caches this week are hand-written incrementality.",
+    "6 · Derived state and rendering through Bonsai"
+   ]
+  ]
+ },
+ {
+  "section": "Six fixes",
+  "section_id": "fixes",
+  "columns": [
+   "Fix",
+   "What it is",
+   "Costs whose cause it addresses",
+   "First step",
+   "From our own work"
+  ],
+  "rows": [
+   [
+    "1. Merkle hashes in the grammar",
+    "A hash on every term, type and value, kept on the node itself (in Grammar, or by a ppx), so that equality is a hash compare and a cache key is cheap. It retires the family of compares that walk two equal copies node by node.",
+    "12 (incremental reuse checks)",
+    "Hashes on the node, not in a side table: the experiment of ^report(9) put them on values and the slowdown with the heap went away (2.3, 5.5, 6.3 s to 2.2, 2.5, 2.2 s).",
+    "Our week on hazel-jit met the same family again and again: build 31's check, keyed on a livelit's definition, found a new copy at each lookup (a drag 15.1 ms a frame, from 8.2); build 33's shape cache compared a model's value at every frame (16.1 ms); and the view cache compares 104 sample values by value at each answer, 2 to 8 ms (^report(51)). Each got its own cache; a hash on each value would serve them all."
+   ],
+   [
+    "2. Ids: cheap to make, and temporary inside the evaluator",
+    "Id.mk made cheap inside Id, its interface unchanged; and every id the evaluator makes an Id.temp, real ids given only to what leaves the evaluator, as Matthew Keenan proposes.",
+    "11 (ids on every term)",
+    "Port the trial line's Id.mk (one string concatenation an id, ^report(45)) to dev; then audit the evaluator's mints (variable lookups 38%, environment frames 20%, ascriptions about 30%, ^report(9)).",
+    "hazel-jit's compiled run works on JavaScript values and makes ids only for what it gives back to Hazel as terms; making those took almost half of the way back until Id.mk was made cheap (^report(45))."
+   ],
+   [
+    "3. Check a value's type once",
+    "An ascription or annotation checks a value once, and a value known to have a type is not checked against it again: something resembling the cast calculus, or a mark on checked values. It retires the repeated checks, including the quadratic walk of an annotated recursive helper over the rest of its list.",
+    "10 (run-time type checks (ascriptions, casts))",
+    "Count the checks before caching them: for the World rule, how many times each list cell is checked against [Square] per move.",
+    "Two of the open fixes cache the checks (#2661 hashes the types, #2681 memoizes them); as Matthew Keenan says, a cache can hide that the checks repeat."
+   ],
+   [
+    "4. The worker as a language server",
+    "The worker keeps the program, its statics and its run, and the page asks it for what it shows (a probe's samples, a livelit's answer) rather than receiving a whole answer after every run.",
+    "25 (the worker trip, serialization (Marshal, sharing))",
+    "Write down which of the page's readers need the worker's answer at all, now that hazel-jit draws livelits from the page's own compiled run.",
+    "Our changes to the answer (5.4 MB to 198 KB, ^report(46) and ^report(51)) were the cart before the horse, in his words; with hazel-jit the picture no longer waits for the worker, and what is left of the trip is the page taking the answer in, 50 to 60 ms (^report(52))."
+   ],
+   [
+    "5. Incremental statics, landed as it is",
+    "Per-item statics (Andrew Blinn's DefStatics, on #2469) to dev first, as the good-enough first pass; finer grain later, by measurement.",
+    "28 (re-analysis per edit (statics, parsing))",
+    "Land #2469's per-item statics on dev.",
+    "^ticket(721)'s patch for a livelit's literal (build 45) is the special case Matthew Keenan warns about: one kind of edit, patched by hand inside DefStatics. It measures what finer-grained statics would buy (12 to 28 ms a slider step on the Witch), but it should not land ahead of the general version."
+   ],
+   [
+    "6. Derived state and rendering through Bonsai",
+    "Separate what is derived (syntax, statics, layout, views) from what is not, so undo keeps only the latter and rendering recomputes only what changed.",
+    "30 (the page's view and redraw, undo and history)",
+    "Find Matthew Keenan's bonsaification branch and measure it on one slide.",
+    "Most of our week's caches (projector data, the view cache, the outline's memos) are hand-written incrementality of the kind Bonsai's model provides; each is one more place a key can go stale."
+   ]
+  ]
+ },
+ {
+  "section": "What the message left out",
+  "section_id": "skipped",
+  "columns": [
+   "Root cause",
+   "Costs",
+   "What the series measured",
+   "The question"
+  ],
+  "rows": [
+   [
+    "interpretation itself",
+    "12",
+    "The interpreter is slow at what any interpreter is slow at: a livelit's render 40 times slower than compiled with the trip in and out, a recursive sum of 1,000 1,152 times (^report(45)).",
+    "Should a compiler like hazel-jit become a second way to run Hazel programs, beside the interpreter, and if so who keeps the two in step? Or should it stay a livelit's fast path?"
+   ],
+   [
+    "the JS boundary (js_of_ocaml)",
+    "15",
+    "js_of_ocaml's generic calls (11.6% of self time), values converted from JS as syntax the evaluator steps back into a value (56% of a call's floor), Uuidm's byte copy (^report(25)).",
+    "Is there a representation of values that crosses the boundary cheaply, so that a JS call into Hazel does not rebuild what it was given?"
+   ],
+   [
+    "environments and substitution",
+    "8",
+    "A value held in a closure is substituted into each call and stepped again (^report(25)); environment lookups 7.2% of a loop (^report(35)).",
+    "Substitution or environments for the evaluator's own steps: is the final flag he mentions enough, or is it time to evaluate with environments throughout?"
+   ],
+   [
+    "values are terms (open terms, holes, closures)",
+    "7",
+    "The Witch's picture sent as terms: 142.2 KB and 24.0 ms to encode and decode, against 48.0 KB and 6.09 ms as plain data (^report(47)).",
+    "Should closed, first-order values (numbers, strings, lists, records of them) have a representation of their own, apart from terms?"
+   ],
+   [
+    "persistent maps and allocation (GC)",
+    "7",
+    "Garbage collection 18% of a JS call's floor, 19.8% of a plain walk's self time (^report(25)); a pause of 20 to 35 ms once a slider step (^report(52)).",
+    "Which of the evaluator's maps and copies could be mutable and local, or shared?"
+   ],
+   [
+    "data representation (flat lists, no maps)",
+    "4",
+    "Hazel has no map, so a rule walks a list to find a square: 254 ms at 64x64, against 0.54 ms for Fumola's HashMap (^report(27)).",
+    "A map in Hazel's library, or in the language?"
+   ],
+   [
+    "parsing on load",
+    "5",
+    "Opening a program parses it whole (^report(48)'s five costs).",
+    "Worth incremental parsing, or only a cache of parsed programs?"
+   ],
+   [
+    "trampolines and stack safety",
+    "4",
+    "The evaluator's trampolines are part of a loop's per-pass cost (^report(29)).",
+    "Is stack depth still the constraint that made them necessary?"
+   ],
+   [
+    "scheduling (worker slices, message cadence)",
+    "4",
+    "How often the worker yields and sends (^report(4): 5.8 to 6.2 s of a 10 s change idle between slices, fixed).",
+    "Folded into the language-server design (fix 4)?"
+   ]
+  ]
+ },
+ {
+  "section": "The builds",
+  "section_id": "builds",
+  "columns": [
+   "Build",
+   "Commit",
+   "Run",
+   "What it adds",
+   "Statics, a step",
+   "The edited item",
+   "The worker's request"
+  ],
+  "rows": [
+   [
+    "43",
+    "421e30a04b",
+    "42830234099",
+    "a projector's update walks only what holds it",
+    "19 to 53 ms",
+    "13 to 42 ms",
+    "the edited item, 10 KB"
+   ],
+   [
+    "44",
+    "d90a8cf135",
+    "42838899176",
+    "a model-only commit patched after DefStatics",
+    "not timed",
+    "not analyzed",
+    "the whole program on step 1, 894 KB"
+   ],
+   [
+    "45",
+    "9ae518ffe7",
+    "42850343281",
+    "the patch inside DefStatics: the edited item patched, not analyzed",
+    "12 to 18 ms",
+    "3 to 6 ms",
+    "the edited item, 9 to 10 KB"
+   ]
+  ]
+ }
+]

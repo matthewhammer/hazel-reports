@@ -1,0 +1,69 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 053 · the team's review · 2026-11-10, revised {{updated}} MST · <span class="wip">work in progress</span> · for the Hazel team</p>
+<h1>Fewer, Deeper Fixes</h1>
+<p class="sub">Report 048 gathered every cost the series had measured in how Hazel runs a program and draws it, 196 of them, and called the whole "A Thousand Cuts". On 2026-11-09 Matthew Keenan answered it on Slack: fix them together, in a few well-chosen changes, not one at a time. Here are his message in full, Matthew Hammer's replies, and a response to each of his points from what the series measured. Matthew Hammer, 2026-11-10: "Let's write a report with this feedback, and our reasoned response to it."</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#short">In short</a>: we agree with his overall point. Six fixes, most of them his, would address the causes of {{covered}} of the 196 costs. The agent's code is a prototype and a measurement, to be redone by hand.</li>
+<li><a href="#his">Matthew Keenan's message</a>, in full.</li>
+<li><a href="#replies">Matthew Hammer's replies</a>, on 11-09 and 11-10.</li>
+<li><a href="#points">Point by point</a>: what the series measured on each, and our read.</li>
+<li><a href="#fixes">Six fixes</a>, and the costs whose causes each addresses.</li>
+<li><a href="#prototype">What the prototype is for</a>: the hazel-jit branch as a measurement, and ticket 721 as the special case he warns about.</li>
+<li><a href="#skipped">What the message left out</a>: the root causes no fix here addresses, each with a question for a gut opinion.</li>
+<li><a href="#next">What next</a>, <a href="#builds">the builds</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="short">In short</h2>
+<p><b>We agree: a few well-chosen fixes, each written by hand and reviewed, are worth more than many separate ones, and our own record on the hazel-jit branch shows the risk he names.</b> Report 048's ledger files each of its 196 costs under one of {{n_causes}} root causes. Six fixes would address the causes of {{covered}} of them: Merkle hashes in the grammar, ids made cheap and kept temporary inside the evaluator, a value's type checked once, the worker as a language server, per-item statics landed on dev, and derived state and rendering through Bonsai. All six come from his message.</p>
+<p>Wherever the series has numbers on one of his points, they bear out his gut reaction, with two refinements: a hash belongs on the node it describes, not in a side table, and a probe's environments are large only where they cross to the page, not in memory. The code the agent wrote stays a prototype. It answered fast whether a livelit's slider can show its step in tens of milliseconds, and which of the changes mattered; report 052 ranks them and orders a redo by hand in small increments.</p>
+
+<h2 id="his">Matthew Keenan's message</h2>
+<p><b>His overall point: an agent fixing the costs it found one at a time would spread special-case logic through the codebase; a few well-chosen, well-implemented fixes and simplifications would do more in the long run.</b> He sent it on Slack on 2026-11-09, in reply to report 048, as gut reactions rather than invariants, and asked to hear about any important facets he skipped (<a href="#skipped">below</a>). It is quoted as he wrote it.</p>
+{{msg}}
+
+<h2 id="replies">Matthew Hammer's replies</h2>
+<p><b>Matthew Hammer agreed that the agent's code lacks quality, and named what it is for: cheap prototypes, and quick answers to questions that would otherwise take days or weeks.</b> He also apologized for the agent's wording. "Death by a thousand cuts" was his phrase for how expensive Hazel's operation is overall; the agent took to calling each cost a "cut", and then each improvement too. From this report on, a cost is a cost and an improvement is a change, and the earlier reports are being revised to match.</p>
+{{replies}}
+
+<h2 id="points">Point by point</h2>
+<p><b>Each of his points that the series measured is borne out by the numbers; the table gives them, with our read and the fix that takes the point up.</b> Each row cites the report that measured it. Nothing here is a new run: the numbers are the ones those reports give, for the builds they name.</p>
+{{tab_points}}
+<p>The two refinements, where the measurements add something to his reaction. A hash belongs on the node: ValueHash keeps its hashes in a WeakMap beside the values, and three identical evaluations took 2.3, 5.5 and 6.3 s as the table grew, while an experiment that kept the hashes on the values held at 2.2, 2.5 and 2.2 s (report 009). And a probe's environments share in memory; what made them large was each sample's environment written out on its own for the trip to the page, where the worker's sharing pass found almost nothing to share (report 046).</p>
+
+<h2 id="fixes">Six fixes</h2>
+<p><b>Six fixes would address the causes of {{covered}} of the 196 costs; the largest families they leave are the interpreter itself and the JS boundary.</b> The figure files each cost under its root cause, as report 048's ledger does, and colors it by the fix that addresses that cause. "Addresses" is a judgment, not a measurement: a fix aimed at a cause need not remove every cost filed under it, and some costs are already fixed on one branch or another.</p>
+{{fig_causes}}
+{{tab_fixes}}
+<p>Two of the six can start at once and touch little else: Id.mk's cheaper ids are already written (one module, its interface unchanged), and per-item statics are written and running on #2635. Merkle hashes in the grammar and checking a type once are design work first; the language server and Bonsai are the largest, and would change how the page and the worker divide the work.</p>
+
+<h2 id="prototype">What the prototype is for</h2>
+<p><b>The hazel-jit branch answered, in five days, whether a livelit's slider can show its step in the picture in tens of milliseconds. It can: 20 to 30 ms on the Witch slide, from 4.2 to 6.5 s. Its code measures what each change is worth; it is not code to land.</b> That is the use Matthew Hammer names for agent-written code. Report 052 ranks the ten changes that mattered by how much each helped and orders a redo by hand in nine increments, each its own pull request with its own tests. Our own record there is the risk Matthew Keenan describes: 120 commits on one branch, 6 of its 10 ingredients without a test of their own, 10 commits that only fixed the one before, and caches keyed on object identity, two of which made a drag slower before they were fixed.</p>
+<p>Ticket 721, finished this morning as build 45, shows both sides. When a slider's step changes only the literals in a livelit's model, the item it edited is patched rather than analyzed again: a step's statics went from 19 to 53 ms on build 43 to 12 to 18 ms on build 45, and the edited item's part from 13 to 42 ms to 3 to 6 (one run each, on the Witch slide, <a href="#builds">below</a>). That answers a question: finer-grained incremental statics would buy 10 to 35 ms on a slider step. It is also special-case logic: one kind of edit, patched by hand inside DefStatics, and a first attempt (build 44) sent the worker the whole program instead of the edited item. We propose keeping it as that measurement, and not landing it ahead of per-item statics on dev (fix 5).</p>
+
+<h2 id="skipped">What the message left out</h2>
+<p><b>The root causes no fix here addresses: the interpreter itself and the JS boundary are the largest, 12 and 15 costs.</b> Matthew Keenan asked to hear about facets he skipped that need a gut opinion; these are the ones the ledger has, each with what the series measured and the question we would put to him.</p>
+{{tab_skipped}}
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Agree as a team on the six fixes, or a different short list, and their order. Ids and per-item statics can start now.</li>
+<li>For ascriptions, count the checks per value on the World rule before caching anything, as he suggests.</li>
+<li>Find Matthew Keenan's bonsaification branch, and Andrew Blinn's notes on #2469, and measure each on one slide.</li>
+<li>Keep the hazel-jit branch as the measurement it is; redo its changes by hand in report 052's order, each only where it still helps once the deeper fixes land.</li>
+</ol>
+
+<h2 id="builds">The builds</h2>
+<p><b>This report names three builds, numbered as in reports 050 to 052: each is the one before it plus one change, on <code>trial/694-view-jit</code> (hazelgrove/hazel#2817); builds 44 and 45 were checked on a side branch, <code>trial/694-view-jit-35</code>.</b> Their numbers are from one run each of the Firefox check on the Witch slide, steps 1 to 4 of its slider.</p>
+<table class="vals">
+<tr><th>Build</th><th>Commit</th><th>Run</th><th>What it adds</th><th>Statics, a step</th><th>The edited item</th><th>The worker's request</th></tr>
+<tr><td>43</td><td><code>421e30a04b</code></td><td>42830234099</td><td>a projector's update walks only what holds it</td><td class="n">19 to 53 ms</td><td class="n">13 to 42 ms</td><td>the edited item, 10 KB</td></tr>
+<tr><td>44</td><td><code>d90a8cf135</code></td><td>42838899176</td><td>a model-only commit patched after DefStatics</td><td class="n">not timed</td><td class="n">not analyzed</td><td>the whole program on step 1, 894 KB</td></tr>
+<tr><td>45</td><td><code>9ae518ffe7</code></td><td>42850343281</td><td>the patch inside DefStatics: the edited item patched, not analyzed</td><td class="n">12 to 18 ms</td><td class="n">3 to 6 ms</td><td>the edited item, 9 to 10 KB</td></tr>
+</table>
+<p>Build 45's own test (<code>test/Test_ModelPatch.re</code>) did not compile on its first CI run; the fix is <code>fc1103900d</code>, and its CI is running.</p>
+
+<h2 id="method">How this was put together</h2>
+<p>Matthew Keenan's message and Matthew Hammer's replies are quoted from Slack as Matthew Hammer pasted them. The costs, their root causes and the numbers in the point-by-point table are report 048's ledger (<code>048/data/ledger.json</code>), each checked against the entry it cites; the figure counts that ledger's root causes. The six fixes, which cause each addresses, and the questions in the last table are our judgment. Build 45's numbers are from the marks of its run (<code>statics</code>, <code>statics: items</code>, <code>worker: request decoded</code>) kept in report 051's <code>data/runs/</code>. Everything the page shows is in <a href="data/numbers.json">data/numbers.json</a>.</p>
+</main></body>
