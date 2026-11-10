@@ -23,7 +23,7 @@
    ],
    [
     "A1",
-    "Send the worker's answer without what the page does not read. The worker ran the whole program on the interpreter and sent back every probe sample with its environment, closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two cuts (no function-holding values in the samples' environments, no trace), then no sharing between answers. Later the answer went without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).",
+    "Send the worker's answer without what the page does not read. The worker ran the whole program on the interpreter and sent back every probe sample with its environment, closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two changes (no function-holding values in the samples' environments, no trace), then no sharing between answers. Later the answer went without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).",
     "A step's picture 4.17 to 6.52 s on build 1, 1.85 to 2.38 s on build 2, 1.33 to 1.71 s on build 3 (^report(46)). The answer 590 KB to 198 KB on build 20; the worker's encode 72 to 107 ms to 21 to 29, the page's decode 24 to 31 ms to 7 to 8. 2.84 s to 4.81 s off a step.",
     "The picture no longer waits for the worker. Its answer still comes 1.5 to 2.4 s after a step, and costs the page 7 to 10 ms to decode.",
     "2, 3, 20",
@@ -59,8 +59,8 @@
    ],
    [
     "A5",
-    "A drag redraws only what changed. Four cuts to a drag's frame: its input goes to the page as a request to draw again, not to the editor as an edit (cut A); only the livelits whose answers changed are drawn again (cut B); the projectors' data and finished views are kept while nothing they read changed (cut C); and each editor's decorations and probes' views are kept across frames.",
-    "A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (cut A), 26.4 on build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (^report(50) and ^report(51)). 80 ms to 85 ms off each frame of a drag.",
+    "A drag redraws only what changed. Four changes to a drag's frame: its input goes to the page as a request to draw again, not to the editor as an edit (change A); only the livelits whose answers changed are drawn again (change B); the projectors' data and finished views are kept while nothing they read changed (change C); and each editor's decorations and probes' views are kept across frames.",
+    "A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (change A), 26.4 on build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (^report(50) and ^report(51)). 80 ms to 85 ms off each frame of a drag.",
     "A drag runs at 55 to 58 fps, its view 5 to 7 ms a frame.",
     "6, 7, 8, 12",
     "+326 / −51 in 8; and +46 in hazel-jit's own modules",
@@ -192,7 +192,7 @@
    [
     "8",
     "The drag fast path",
-    "Ingredient A5: four cuts, each its own PR.",
+    "Ingredient A5: four changes, each its own PR.",
     "326",
     "6"
    ]
@@ -219,7 +219,7 @@
     "not measured"
    ],
    [
-    "2 · the answer cut",
+    "2 · the answer trimmed",
     "20a3067c18",
     "42490487136",
     "1.85 to 2.38 s (all steps)",
@@ -251,7 +251,7 @@
     "340 to 405 ms"
    ],
    [
-    "6 · cut A",
+    "6 · change A",
     "9fca635226",
     "42560502616",
     "223 to 271 ms",
@@ -259,7 +259,7 @@
     "513 to 675 ms"
    ],
    [
-    "7 · cut B",
+    "7 · change B",
     "38d4e4d0f8",
     "42562102280",
     "245 to 284 ms",
@@ -267,7 +267,7 @@
     "526 to 673 ms"
    ],
    [
-    "8 · cut C",
+    "8 · change C",
     "61f3f01a15",
     "42566328043",
     "176 to 222 ms",
@@ -505,6 +505,22 @@
     "21 to 28 ms",
     "55.3 fps",
     "192 to 211 ms"
+   ],
+   [
+    "44 · a model-only commit patched after DefStatics (on trial/694-view-jit-35)",
+    "d90a8cf135",
+    "42838899176",
+    "17 to 41 ms",
+    "58.0 fps",
+    "215 to 252 ms"
+   ],
+   [
+    "45 · the patch inside DefStatics: the edited item patched, not analyzed (on trial/694-view-jit-35)",
+    "9ae518ffe7",
+    "42850343281",
+    "21 to 23 ms",
+    "58.3 fps",
+    "145 to 262 ms"
    ]
   ]
  }

@@ -187,17 +187,17 @@
     "A drag's fast path (not the compiler, but what a compiled run made worth doing)"
    ],
    [
-    "Cut A: a drag's events redraw the page, with no edit of the program",
+    "Change A: a drag's events redraw the page, with no edit of the program",
     "9fca635226, 11-08",
     "050"
    ],
    [
-    "Cut B: only the livelits whose answers changed are drawn again",
+    "Change B: only the livelits whose answers changed are drawn again",
     "38d4e4d0f8, 11-08",
     "050"
    ],
    [
-    "Cut C: the projectors' data and finished views reused from frame to frame",
+    "Change C: the projectors' data and finished views reused from frame to frame",
     "bdecaec5d9, 61f3f01a15, 11-08",
     "050"
    ],
@@ -244,7 +244,7 @@
   ],
   "rows": [
    [
-    "8 · cut C (^report(50)'s last)61f3f01a15, run 42566328043",
+    "8 · change C (^report(50)'s last)61f3f01a15, run 42566328043",
     "^report(50)'s build 8, for comparison.",
     "176 to 290 ms",
     "48.4 fpsview 10.1 ms a frame"
@@ -311,7 +311,7 @@
    ],
    [
     "19 · the page after an answerf813da534d, run 42739071781",
-    "What the worker's answer costs the page, cut where it redid work for nothing: the outline keys the run's test results by each test's status, not the results record, new at every answer (1dc99165ba), and redraws the page only when it drew a new outline (854b40ee7d); and a livelit is kept across an answer while what its drawing read of the run, its own samples and those it looked up, is the same by value (bd24b35aaa). After each answer 4 projectors are drawn, not 56; the outline's 59 to 82 ms are gone there, and its redraw of the page. The page's work after a step 0.31 to 0.40 s, against 0.34 to 0.55 s on build 18 (a machine a little slower than build 18's: the worker's encode 85 to 107 ms).",
+    "What the worker's answer costs the page, trimmed where it redid work for nothing: the outline keys the run's test results by each test's status, not the results record, new at every answer (1dc99165ba), and redraws the page only when it drew a new outline (854b40ee7d); and a livelit is kept across an answer while what its drawing read of the run, its own samples and those it looked up, is the same by value (bd24b35aaa). After each answer 4 projectors are drawn, not 56; the outline's 59 to 82 ms are gone there, and its redraw of the page. The page's work after a step 0.31 to 0.40 s, against 0.34 to 0.55 s on build 18 (a machine a little slower than build 18's: the worker's encode 85 to 107 ms).",
     "26 to 98 ms",
     "51.0 fpsview 7.6 ms a frame"
    ],
@@ -344,6 +344,96 @@
     "Finding which rows open no cell asked whether each tile was a row, twice, a lookup in a map of ids, before its cheap tests; now only of a tile that is unfinished or a use (and of the pieces inside a livelit), the same answers: 6,753 asks of 43,171 pieces walked, 11 to 14 ms (25 to 29 on build 22); the outline drawn after an edit 29 to 32 ms (42 to 53 on build 21).",
     "25 to 88 ms",
     "54.3 fpsview 6.9 ms a frame"
+   ],
+   [
+    "25 · the answer's syntax timed585feb6b51, run 42770858700",
+    "Timers only. When the worker's answer arrives, the cell's editor works out its syntax twice, before and after it takes the answer's samples: the syntax cache 9 to 26 ms the first time and 9 to 16 the second, the probe effects, autoprobe, tail and proofs 0 to 1 ms.",
+    "22 to 120 ms",
+    "56.0 fpsview 7.1 ms a frame"
+   ],
+   [
+    "26 · plain data is a value0ddf3b9efe, run 42771757499",
+    "A probe's row asks whether each sample is a value, to grey out one that is not; it ran the evaluator's step rules over the whole value, and the picture's took 9 to 31 ms at each answer on build 24. Plain data (literals, labels, constructors, and lists, tuples and constructor applications of plain data) is a value exactly when its parts are, so it is now answered by its shape, with the step rules for anything else (3615e5ebb6; its test, which did not compile until build 30, passes there). The check 0 to 1 ms; the picture's probe row 3 to 6 ms (15 to 35); the page's view at the answer 31 to 64 ms (50 to 75). A new mark (0ddf3b9efe) shows the projectors' views made again for all 53 livelits at each answer, 16 to 41 ms, though 2 are drawn.",
+    "23 to 85 ms",
+    "51.0 fpsview 8.8 ms a frame"
+   ],
+   [
+    "27 · the syntax cache's path named20bf41c334, run 42772671441",
+    "Marks only: each calculate's syntax cache names why it refreshed the shapes. At the answer the first pass refreshed because the probes' list was a new object (\"manuals\"), though no probe had changed; the second for the answer's dynamics and the same. The refresh is the projectors' shapes, 5 to 14 ms (52 once), and the splice map, 2 to 4.",
+    "25 to 59 ms",
+    "56.7 fpsview 6.0 ms a frame"
+   ],
+   [
+    "28 · the kept livelits counted0363043a53, run 42773608842",
+    "Counters only. At each answer the 53 livelits' views made again took 16 to 22 ms: the view cache 4 to 12 of it, mostly comparing 104 sample values by value (2 to 8 ms), and 10 to 12 wrapping the views the cache gave back. The same happens once more after a step, before the answer (16 to 28 ms).",
+    "21 to 92 ms",
+    "56.4 fpsview 6.5 ms a frame"
+   ],
+   [
+    "29 · the probes' list kept5fdb0d3004, run 42774510803",
+    "Each calculate asks to remove the probes that collide on a row, mostly none, and the removal made a new list each time, so the next calculate's syntax cache refreshed the shapes as if the probes had changed. Removing none now keeps the very list (its test first ran on build 30, and passes). At the answer the first pass takes 0 ms (8 to 19 on build 27), the second, for the answer's dynamics, 8 to 13; the cell's calculate there 10 to 15 ms (15 to 43 on build 26).",
+    "22 to 58 ms",
+    "58.0 fpsview 5.7 ms a frame"
+   ],
+   [
+    "30 · kept livelits keep their wrappers96a5031217, run 42775688527",
+    "A projector's finished views were reused only while its data was the very same object, and a worker's answer makes new data for every projector. Now one whose view comes back from the cache the very same, for the same projector, place, status and shape, keeps them (a3ba9f6474); and the same shapes keep the splice map, as they keep the layout (1d485cc0ad). The first try at this did not compile, and builds 26 to 29's tests did not either (96a5031217 fixes both; CI passes). At each answer 51 of the 53 livelits keep their finished views, and the splice map is not made again; but the views still take 13 to 37 ms, as working out the livelits' shapes takes 3 to 29 of them. After an edit no livelit kept its views: the projector list was new, though its ids were the same.",
+    "21 to 93 ms",
+    "51.7 fpsview 8.2 ms a frame"
+   ],
+   [
+    "31 · shapes by value, an equal projector list3f8ccae8b6, run 42783064879",
+    "A livelit's shape was kept by its sample's number, which each run of the worker counts afresh; now by its definition and its model's value. And a projector list equal to the one an editor last drew with stands for it. At the answer, and in the redraw after the edit, 51 of the 53 livelits keep their finished views; no shape function is evaluated at all (a new mark counts them); the projectors' views at the answer take 11 to 16 ms (13 to 37 on build 30). But a drag got slower: its projectors' views take 12.0 ms a frame, against 3.9 on build 30, and after an edit one projector's shape took 12 ms. The new check compares something node by node; build 32 times its parts.",
+    "21 to 123 ms",
+    "39.2 fpsview 15.1 ms a frame"
+   ],
+   [
+    "32 · a use's applied livelit kept285968fd06, run 42793713877",
+    "A use with arguments, like ^slider(..), had its livelit applied to them anew at each lookup, a new copy of the definition each time, so build 31's shape check, keyed on the definition, compared two equal copies node by node. Now a use's applied livelit is kept while its livelit, type and arguments are the same, and the check's parts are timed. A drag's view is 5.4 ms a frame (15.1 on build 31, 8.2 on build 30), its projectors' views 2.6 (12.0); over the whole drag the definition compares take 1 ms. But that drag did less than the others: with the compiled run off it was as fast, 5.5 ms a frame, where builds 30 and 34 take 15.3 and 15.0 (the interpreter drawing each livelit, 4.6 ms), and it compared no model value at all, so its 5.4 is not a mark to hold other builds to. At the answer the projectors' views take 8 to 20 ms (11 to 16); the whole view 25 to 98, as one probe's drawer took 40 ms once, at the first step (1 to 2 on builds 30 and 31). The memo held 16 uses of a livelit and emptied itself when full; the Witch uses ^slider 29 times and ^choice 18, so each pass over all 53 still applied 38 to 43 anew. CI's full tests ran out their 100 minutes (57 to 90 on builds 30 and 31); build 34's, with this code and more, passed in 57, so it was a slow run, not a hang.",
+    "22 to 41 ms",
+    "58.3 fpsview 5.4 ms a frame"
+   ],
+   [
+    "33 · the memo holds 64, the sidebar's problems kept1d53e66e27, run 42808401120",
+    "The applied livelits' memo holds 64 uses of a livelit and drops only its oldest: none is applied anew, at the answer or in a drag (38 to 43 of 53 at each pass on build 32). The sidebar's problem list is kept at an answer, by the five parts of the syntax it reads: 2 to 3 ms (3 to 29 on build 31). The decorations (1 ms) and the probes' views (6 to 7) are timed apart, at the first step 41 and 26. The whole view at the answer is 28 to 31 ms at steps 2 to 4 (36 to 60 on build 31), 100 at the first. But a drag got slower again, its view 16.1 ms a frame (5.4 on build 32), 38 fps: the shape cache now compared a livelit's model value at each frame, one of them 8 to 13 ms a walk, and the syntax pass's shapes at the answer took 17 to 50 ms (8 to 20). Build 32's drag walked no value; why is not yet known. Its CI's tests were cancelled by build 34's push; its static checks pass.",
+    "21 to 70 ms",
+    "38.1 fpsview 16.1 ms a frame"
+   ],
+   [
+    "34 · a shape kept by its definition when it does not read the modelc1476f1244, run 42809664205",
+    "Only a shape that is a function of the model reads it, and none of the Witch's livelits has one, so the shape cache now notes whether a shape read the model and keeps one that did not by its definition alone; a value walked and found equal stands for the old. A drag's view is 7.0 ms a frame (8.2 on build 30, 16.1 on build 33), 55 fps, with no value walked. At the answer the cell's calculate takes 7 to 8 ms and its shapes 5 to 6 (17 to 50 on build 33), once 35 and 31; the whole view 30 to 65 ms. The projectors' shapes there take 3 to 5 ms at two answers and 31 to 32 at the other two, with nothing evaluated or walked: one 31 ms cost a step, in the syntax pass or the view, which build 35 times per call. CI passes, its full tests in 57 minutes.",
+    "21 to 96 ms",
+    "55.0 fpsview 7.0 ms a frame"
+   ],
+   [
+    "35 · the shapes timed per calld8c2bbb671, run 42811452787",
+    "Marks, and a use's newest arguments kept in the memo (0ba9f99b37; d8c2bbb671 declares a timer the first try read before it was made, which did not compile). At the four answers the projectors' shapes take 3 to 9 ms, the longest single call 1 to 6, on a different livelit each time: build 34's 31 ms was not a shape. A cost of 20 to 35 ms still comes once a step after the answer, each time somewhere else: in the syntax pass's shapes (24 ms, step 1), in one livelit drawn (33 ms, where it takes 2), in the decorations (28, where they take 1 to 2); in the drags, one shape call of 50 ms and one of 141. It looks like the browser's collection of the answer's garbage, which the page cannot time. Without it the view at the answer is about 35 ms: the projectors' views 8 to 15 (the view cache comparing 104 values by value, 1 to 6), the probes' views 7 to 9, the projector data 4 to 5, the sidebar 3 to 4. The page's work after the picture is 206 to 215 ms at steps 2 to 4 (236 to 300 on builds 25 to 34).",
+    "18 to 77 ms",
+    "52.7 fpsview 8.1 ms a frame"
+   ],
+   [
+    "36 · the outline's refusals kept per top-level tile62a517d8b4, run 42813221124",
+    "After each edit the outline is drawn again, its entries the same but the statics new, and finding which rows open no cell walked all 43,171 of the Witch's pieces, 10 to 11 ms. An edit leaves nearly every top-level tile the very same object, so each one's part of that walk is now kept by the tile while the rows wanted are the same: 226 tiles kept, 887 pieces walked, 0 to 2 ms. The outline after an edit takes 18 ms at steps 2 to 4 (25 to 27 on build 35), its rows drawn 10 to 14. A drag's view is 6.6 ms a frame.",
+    "21 to 99 ms",
+    "55.0 fpsview 6.6 ms a frame"
+   ],
+   [
+    "37 · a probe kept by its own statics3e3118f380, run 42814828261",
+    "After an edit of a livelit's model both probes were drawn again, 4 to 13 ms a view, though their own statics records were the very same objects: their views were keyed on the whole statics map and the elaboration. ProbeProj reads neither its elaborated subterm nor another id's statics, so a probe is now keyed on its own record, as a livelit is; its run is still keyed on the whole map, as a probe's samples carry call stacks and steps. After an edit no probe is drawn, the probes' views 1 to 3 ms, and the whole view 31 to 43 ms at steps 2 to 4 (37 to 62 on build 35). The page's work after the picture is 175 to 182 ms at steps 2 to 4 (206 to 215 on build 35). A drag's view is 5.2 ms a frame, 168 of 173 frames within 60 fps.",
+    "19 to 75 ms",
+    "57.6 fpsview 5.2 ms a frame"
+   ],
+   [
+    "38 · a cache hit on equal reads takes the new map19ecb75694, run 42817304210",
+    "A view cache hit whose reads are equal by value now takes the new map and its samples, so the next look at the same map is a pointer: after each edit the livelits' 100 to 102 sample values, read against the map each was drawn with, are not compared again (2 to 5 ms). The page's work after the picture is 167 to 183 ms at steps 2 to 4; a drag's view 6.3 ms a frame, 160 of 167 frames within 60 fps. Its first run (42816040542) landed on a slower machine (the worker's encode 32 to 36 ms against 25 to 31, the slide's run 260 ms against 176, the compiled run in a drag 2.8 ms a frame against 1.1 to 1.5) and read slower throughout: 213 to 230 ms, and a drag 10.8 ms a frame.",
+    "20 to 78 ms",
+    "55.7 fpsview 6.3 ms a frame"
+   ],
+   [
+    "39 · a projector's hidden-syntax error check kept9a5a3e7a64, run 42818821410",
+    "Making the projectors' data walked each projector's own syntax and looked up every tile in it for a statics error, on each pass that made the data again, at each worker's answer too, with the statics the same. Its answer is now kept by the projector's very syntax and statics map, and its tile ids by the syntax: at the answer the projectors' data takes 0 to 1 ms (4 on build 38); after an edit, with the statics new, 3 to 6, the check 3 to 4 of it. On a machine between build 37's and build 38's first (the worker's encode 30 to 34 ms, the slide's run 217), the page's work after the picture is 202 to 208 ms at steps 2 to 4, and a drag's view 6.2 ms a frame. After an edit the main view spends 7 to 10 ms with no mark between the editors and the sample focus bar, which build 40 times.",
+    "22 to 96 ms",
+    "56.7 fpsview 6.2 ms a frame"
    ]
   ]
  },
@@ -359,7 +449,7 @@
   "rows": [
    [
     "2",
-    "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
+    "Handle a slider's change event without an edit of the program, as change A did for its input events, or do the edit's work after the paint.",
     "Statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms (build 8).",
     "done (b37d2e6df1, build 12): when the compiled run has answered, the page draws first and makes the edit after the paint. A step shows in 19 to 24 ms (the first of four, 124). The edit itself is still made, after the paint (^ticket(721))."
    ],
@@ -367,7 +457,7 @@
     "1",
     "Draw only the livelits a drag changes: make the editors' and projectors' views incremental.",
     "Most of the page's view: 10.1 ms of a 17.1 ms median frame of a drag (build 8); and the whole views after each worker message.",
-    "first part done (d9d63c13af, build 12): each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (8.2 to 10.1 on builds 8 to 11). Then the outline out of the view (bfbd88a1ae, 8bf44f23cf; build 13), built on its own after the paint: the whole views after each worker message 45 to 63 ms (88 to 130 on build 12), a drag's view 4.9 ms a frame. Left: the projector layer, and those whole views. On build 14 the probe on the picture draws its row in 8 to 21 ms after each answer, not 44 to 91 (e1bb06d115). Left: every livelit drawn again when the dynamics are new (4 to 22 ms a view), and a probe's value check, which walks the whole value (4 to 14 ms). Build 15 (a1b43cba46): a livelit keyed on its own statics record, so after an edit only the edited one is drawn again (2 to 3 ms, not 9 to 14); a probe's value check remembered per value (515813903a). Left: every livelit drawn again when the worker's answer brings new dynamics (6 to 15 ms). Build 19 (bd24b35aaa, 1dc99165ba, 854b40ee7d): after each worker answer 4 projectors drawn, not 56 (a livelit kept while what it read of the run is the same by value), and the outline the one before (59 to 82 ms gone, and the page's redraw for it). Left: the outline built again after the edit (55 to 70 ms; its entries the same). Builds 22 and 24 (2b88bf18bf, a1ab2e52d4): the outline drawn after the edit was mostly finding which rows open no cell (32 to 40 ms of 42 to 53, build 21); with a livelit's path found only when a row is inside it, and a tile asked about only when unfinished or a use, that is 11 to 14 ms, and the outline 29 to 32. Left: the rest of that walk, the rows themselves (about 8 ms), and the outline built at all when its entries are the same."
+    "first part done (d9d63c13af, build 12): each editor's decorations and probes' views reused across a drag's frames, the view 6.1 ms a frame (8.2 to 10.1 on builds 8 to 11). Then the outline out of the view (bfbd88a1ae, 8bf44f23cf; build 13), built on its own after the paint: the whole views after each worker message 45 to 63 ms (88 to 130 on build 12), a drag's view 4.9 ms a frame. Left: the projector layer, and those whole views. On build 14 the probe on the picture draws its row in 8 to 21 ms after each answer, not 44 to 91 (e1bb06d115). Left: every livelit drawn again when the dynamics are new (4 to 22 ms a view), and a probe's value check, which walks the whole value (4 to 14 ms). Build 15 (a1b43cba46): a livelit keyed on its own statics record, so after an edit only the edited one is drawn again (2 to 3 ms, not 9 to 14); a probe's value check remembered per value (515813903a). Left: every livelit drawn again when the worker's answer brings new dynamics (6 to 15 ms). Build 19 (bd24b35aaa, 1dc99165ba, 854b40ee7d): after each worker answer 4 projectors drawn, not 56 (a livelit kept while what it read of the run is the same by value), and the outline the one before (59 to 82 ms gone, and the page's redraw for it). Left: the outline built again after the edit (55 to 70 ms; its entries the same). Builds 22 and 24 (2b88bf18bf, a1ab2e52d4): the outline drawn after the edit was mostly finding which rows open no cell (32 to 40 ms of 42 to 53, build 21); with a livelit's path found only when a row is inside it, and a tile asked about only when unfinished or a use, that is 11 to 14 ms, and the outline 29 to 32. Left: the rest of that walk, the rows themselves (about 8 ms), and the outline built at all when its entries are the same. Build 26 (3615e5ebb6): the probe's value check answers plain data by its shape, not the step rules: the picture's row after each answer 3 to 6 ms (15 to 35 on build 24), the page's view then 31 to 64 ms (50 to 75). Left: all 53 livelits' views made again at each answer, 2 of them drawn (16 to 41 ms), and the cell's syntax worked out twice there (9 to 26 ms and 9 to 16). Builds 29 to 38 (5fdb0d3004 to 19ecb75694): at the answer the cell's syntax is worked out once; 51 of the 53 livelits keep their finished views, at the answer and after the edit; a use's applied livelit, a shape that does not read the model, the sidebar's problem list and the probes after an edit are all kept; the outline's walk after an edit is kept per top-level tile. The whole view at the answer about 30 to 35 ms (36 to 60 on build 31), the page's work after the picture 167 to 183 ms a step (236 to 300 on builds 25 to 34), a drag's view 6.3 ms a frame (8.2 on build 30). Left: at the answer the projectors' views (8 to 15 ms), the probes (7 to 9), a 20 to 35 ms pause once a step, likely the browser's garbage collection; after an edit the update, statics and syntax cache (16, 16 to 20, 11 to 12), the view (31 to 43) and the outline (18)."
    ],
    [
     "3",

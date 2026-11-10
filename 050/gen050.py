@@ -67,21 +67,21 @@ def drag_of(w, mode):
 BUILDS = [
     {"n": 1, "name": "the branch as it was", "commit": "dfa3fcdffe", "run": "42486001354", "at": "06:39", "rep": "046",
      "adds": "Livelit views compiled (^report(45)). The picture waits for the worker's answer: the whole program run on the interpreter, its result sent back as 5 MB of terms."},
-    {"n": 2, "name": "the answer cut", "commit": "20a3067c18", "run": "42490487136", "at": "07:34", "rep": "046",
-     "adds": "Two cuts to the worker's answer: no function-holding values in the samples' environments, and no trace (^report(46))."},
+    {"n": 2, "name": "the answer trimmed", "commit": "20a3067c18", "run": "42490487136", "at": "07:34", "rep": "046",
+     "adds": "Two changes to the worker's answer: no function-holding values in the samples' environments, and no trace (^report(46))."},
     {"n": 3, "name": "the answer unshared", "commit": "4747a4120d", "run": "42492117212", "at": "07:54", "rep": "046",
      "adds": "The worker's answers no longer shared (^report(46))."},
     {"n": 4, "name": "the run compiled", "commit": "6d71c427bf", "run": "42551267058", "at": "19:29", "rep": "049",
      "adds": "The slide's whole run compiled to JavaScript in the page, each livelit's model a parameter, and called at a livelit's event, so every livelit draws from its answers (^report(49)). A step back to a slider's starting value is still taken for an undo, and waits for the worker."},
     {"n": 5, "name": "steps back kept", "commit": "bb88edfd12", "run": "42556616487", "at": "20:28", "rep": "050",
      "adds": "A step back keeps the run's answers (a51dc778dd, ^report(49)); and the frame-rate overlay, and the timed drag in the check, which change nothing else in the app."},
-    {"n": 6, "name": "cut A", "commit": "9fca635226", "run": "42560502616", "at": "21:12", "rep": "050",
+    {"n": 6, "name": "change A", "commit": "9fca635226", "run": "42560502616", "at": "21:12", "rep": "050",
      "adds": "A drag's input events go to the page as a request to draw again, not to the editor as an edit of the program."},
-    {"n": 7, "name": "cut B", "commit": "38d4e4d0f8", "run": "42562102280", "at": "21:29", "rep": "050",
+    {"n": 7, "name": "change B", "commit": "38d4e4d0f8", "run": "42562102280", "at": "21:29", "rep": "050",
      "repeats": [("42563736665", "fa2614e1f6", "the same app with the page's view timed part by part"),
-                 ("42564711121", "bdecaec5d9", "the same app with a first try at cut C whose memo missed every frame")],
+                 ("42564711121", "bdecaec5d9", "the same app with a first try at change C whose memo missed every frame")],
      "adds": "Each livelit has its own version in the views' cache, so a frame draws again only the livelits whose answers changed, not all 53."},
-    {"n": 8, "name": "cut C", "commit": "61f3f01a15", "run": "42566328043", "at": "22:16", "rep": "050",
+    {"n": 8, "name": "change C", "commit": "61f3f01a15", "run": "42566328043", "at": "22:16", "rep": "050",
      "adds": "The projectors' data and finished views kept from frame to frame while nothing they read has changed (bdecaec5d9, 61f3f01a15)."},
 ]
 for b in BUILDS[:3]:
@@ -243,7 +243,7 @@ def fig_drag():
     out.append(f'<line x1="{gx:.1f}" y1="32" x2="{gx:.1f}" y2="{y}" stroke="{GREEN}" stroke-width="2"/>')
     log_axis(out, xof, 32, y, [(10, "10 ms"), (16.7, "16.7"), (100, "100 ms"), (1000, "1 s")])
     return svg_fig(W, y + 30, out, "; ".join(f"{m}: {NOW['drag'][m]['stats']['fps']} fps" for m in ("on", "off")),
-                   f"<b class=\"build\">Build 8</b> (cut C, {NOW['commit']}), run {NOW['run']}. Green: one display frame; amber: two; "
+                   f"<b class=\"build\">Build 8</b> (change C, {NOW['commit']}), run {NOW['run']}. Green: one display frame; amber: two; "
                    "red: three or more. A frame of about 16 or 17 ms is the display's own pace, 60 a second; nothing can be quicker.")
 
 
@@ -456,7 +456,7 @@ REPORTS = [
     ("045", "hazel-jit: Livelit Views Compiled to JavaScript",
      "A livelit's view compiled to JS runs 40 to 1,150 times faster than on the interpreter; in Firefox, compiled views draw what the interpreter draws; the Witch's whole run, compiled, 4.2 to 5.0 ms in Node."),
     ("046", "BuckleScript, ReScript and Melange, beside hazel-jit",
-     "hazel-jit's code is about 2.9 times ReScript's and 1.8 times hand-written JS on the Petri rule; on the Witch's picture all five are within 15%; builds 1 to 3 here: a small edit took 5.3 to 8.8 s, and two cuts brought it to 1.3 to 1.7 s."),
+     "hazel-jit's code is about 2.9 times ReScript's and 1.8 times hand-written JS on the Petri rule; on the Witch's picture all five are within 15%; builds 1 to 3 here: a small edit took 5.3 to 8.8 s, and two changes brought it to 1.3 to 1.7 s."),
     ("047", "First-Order Data in a Form of Its Own",
      "As data, the Witch's picture is 3 times smaller and 2.5 to 4.3 times quicker to send; building values as data saves the evaluator a couple of percent at most, so the run itself has to be compiled."),
     ("048", "Why Hazel Is Slow: A Thousand Cuts",
@@ -516,7 +516,7 @@ for name, fig in FIGS.items():
         open(os.path.join(HERE, "figs", name + ".html"), "w").write(m.group(0) + "\n")
 for k, v in FIGS.items():
     body = body.replace("{{fig_" + k + "}}", v)
-body = body.replace("{{fig_cuts48}}", kept_fig("048", "cuts", "Not a build of the app: every cost the series has measured in Hazel, one rectangle each, grouped by the design choice it comes from and coloured by where it stands (^report(48)). Hover a rectangle for the cut."))
+body = body.replace("{{fig_cuts48}}", kept_fig("048", "cuts", "Not a build of the app: every cost the series has measured in Hazel, one rectangle each, grouped by the design choice it comes from and coloured by where it stands (^report(48)). Hover a rectangle for the cost."))
 body = body.replace("{{builds_table}}", builds_table())
 body = body.replace("{{reports_table}}", reports_table())
 for k, v in NUMS.items():

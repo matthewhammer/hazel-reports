@@ -55,6 +55,8 @@ BUILDS[40] = dict(n=40, name="the outline mark timed", commit="f5b7a65cf2", run=
 BUILDS[41] = dict(n=41, name="the outline mark stands", commit="a02025f5dc", run="42822587416")
 BUILDS[42] = dict(n=42, name="the edit's parts timed", commit="cfcd82582f", run="42826692242")
 BUILDS[43] = dict(n=43, name="a projector's update walks only what holds it", commit="421e30a04b", run="42830234099")
+BUILDS[44] = dict(n=44, name="a model-only commit patched after DefStatics (on trial/694-view-jit-35)", commit="d90a8cf135", run="42838899176")
+BUILDS[45] = dict(n=45, name="the patch inside DefStatics: the edited item patched, not analyzed (on trial/694-view-jit-35)", commit="9ae518ffe7", run="42850343281")
 # builds 1 to 3 waited for the worker: their steps are report 050's (from report 046's runs), click to picture
 PRE = {1: (4170, 6520), 2: (1850, 2380), 3: (1330, 1710)}
 
@@ -106,7 +108,7 @@ ING = [
     dict(key="answer", kind="A", lo=2840, hi=4810, per="a step",
          name="Send the worker's answer without what the page does not read",
          what="The worker ran the whole program on the interpreter and sent back every probe sample with its environment, "
-              "closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two cuts (no function-holding "
+              "closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two changes (no function-holding "
               "values in the samples' environments, no trace), then no sharing between answers. Later the answer went "
               "without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).",
          measured="A step's picture 4.17 to 6.52 s on build 1, 1.85 to 2.38 s on build 2, 1.33 to 1.71 s on build 3 "
@@ -137,11 +139,11 @@ ING = [
          builds=[12], commits=["b37d2e6df1"], needs="the compiled run"),
     dict(key="drag", kind="A", lo=80, hi=85, per="each frame of a drag",
          name="A drag redraws only what changed",
-         what="Four cuts to a drag's frame: its input goes to the page as a request to draw again, not to the editor as "
-              "an edit (cut A); only the livelits whose answers changed are drawn again (cut B); the projectors' data "
-              "and finished views are kept while nothing they read changed (cut C); and each editor's decorations and "
+         what="Four changes to a drag's frame: its input goes to the page as a request to draw again, not to the editor as "
+              "an edit (change A); only the livelits whose answers changed are drawn again (change B); the projectors' data "
+              "and finished views are kept while nothing they read changed (change C); and each editor's decorations and "
               "probes' views are kept across frames.",
-         measured="A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (cut A), 26.4 on "
+         measured="A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (change A), 26.4 on "
                   "build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (reports 050 and 051).",
          today="A drag runs at 55 to 58 fps, its view 5 to 7 ms a frame.",
          builds=[6, 7, 8, 12], commits=["9fca635226", "38d4e4d0f8", "bdecaec5d9", "61f3f01a15", "d9d63c13af"],
@@ -459,8 +461,8 @@ def fig_trend(key, title_, unit, floor, logy, caption, ylabel):
 
 
 MILESTONES = {
-    "pics": [(2, "the answer cut"), (5, "the run compiled"), (12, "the edit after the paint")],
-    "fps": [(6, "cut A"), (8, "cut C"), (31, "a regression, fixed by build 32")],
+    "pics": [(2, "the answer trimmed"), (5, "the run compiled"), (12, "the edit after the paint")],
+    "fps": [(6, "change A"), (8, "change C"), (31, "a regression, fixed by build 32")],
     "after": [(15, "livelits kept"), (20, "the answer as data"), (37, "probes kept")],
 }
 
@@ -580,7 +582,7 @@ REDO = [
     ("6", "The run compiled in the page", f"Ingredients {I['run']['label']} and {I['once']['label']}: the slide's run, compiled once, called at a slider's event, "
      "kept while only models change.", f'{n_("run")} and {n_("once")}', "4, 5"),
     ("7", "Draw first, edit after the paint", f"Ingredient {I['paint']['label']}.", n_("paint"), "6"),
-    ("8", "The drag fast path", f"Ingredient {I['drag']['label']}: four cuts, each its own PR.", n_("drag"), "6"),
+    ("8", "The drag fast path", f"Ingredient {I['drag']['label']}: four changes, each its own PR.", n_("drag"), "6"),
 ]
 
 
@@ -592,7 +594,7 @@ def redo_table():
 
 
 def builds_table():
-    cited = sorted({n for i in ING for n in i["builds"]} | {1, 3, 5, 8, 11, 12, 13, 38, 41, 42, 43})
+    cited = sorted({n for i in ING for n in i["builds"]} | {1, 3, 5, 8, 11, 12, 13, 38, 41, 42, 43, 44, 45})
     rows = ["<tr><th>Build</th><th>Commit</th><th>Firefox run</th><th>A step: click to picture, steps 2 to 4</th>"
             "<th>A drag</th><th>The page's work after the picture</th></tr>"]
     for n in cited:

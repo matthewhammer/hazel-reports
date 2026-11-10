@@ -290,7 +290,7 @@ def costs_table():
 
 # --- today's builds, numbered on from report 050's eight (each the one before plus one change) ---
 TODAY_BUILDS = [
-    {"n": 8, "name": "cut C (report 050's last)", "commit": "61f3f01a15", "run": "42566328043", "path": "050/data/runs/42566328043/jit.json",
+    {"n": 8, "name": "change C (report 050's last)", "commit": "61f3f01a15", "run": "42566328043", "path": "050/data/runs/42566328043/jit.json",
      "adds": "Report 050's build 8, for comparison."},
     {"n": 9, "name": "steps 3 and 4", "commit": "7f5add1519", "run": "42651798712", "path": "051/data/runs/42651798712/jit.json",
      "adds": "The slide's run compiled once and kept when only models change; its answers kept when the worker catches up; the worker's request held after a compiled step."},
@@ -313,7 +313,7 @@ TODAY_BUILDS = [
     {"n": 18, "name": "the first step like the others", "commit": "f125a69a7b", "run": "42713728065", "path": "051/data/runs/42713728065/jit.json",
      "adds": "A run of the slide's program right after each compilation, kept only as the printed answers (HazelJitRun.prime), the baseline the first step compares with: before it, every livelit counted as changed on the first step and all 53 were drawn again. The first step's first view 26 ms, from 65; its picture 92 ms, from 132 (build 17); 3 projectors drawn, not 54. A machine like build 14's (the worker's encode 71 to 88 ms)."},
     {"n": 19, "name": "the page after an answer", "commit": "f813da534d", "run": "42739071781", "path": "051/data/runs/42739071781/jit.json",
-     "adds": "What the worker's answer costs the page, cut where it redid work for nothing: the outline keys the run's test results by each test's status, not the results record, new at every answer (1dc99165ba), and redraws the page only when it drew a new outline (854b40ee7d); and a livelit is kept across an answer while what its drawing read of the run, its own samples and those it looked up, is the same by value (bd24b35aaa). After each answer 4 projectors are drawn, not 56; the outline's 59 to 82 ms are gone there, and its redraw of the page. The page's work after a step 0.31 to 0.40 s, against 0.34 to 0.55 s on build 18 (a machine a little slower than build 18's: the worker's encode 85 to 107 ms)."},
+     "adds": "What the worker's answer costs the page, trimmed where it redid work for nothing: the outline keys the run's test results by each test's status, not the results record, new at every answer (1dc99165ba), and redraws the page only when it drew a new outline (854b40ee7d); and a livelit is kept across an answer while what its drawing read of the run, its own samples and those it looked up, is the same by value (bd24b35aaa). After each answer 4 projectors are drawn, not 56; the outline's 59 to 82 ms are gone there, and its redraw of the page. The page's work after a step 0.31 to 0.40 s, against 0.34 to 0.55 s on build 18 (a machine a little slower than build 18's: the worker's encode 85 to 107 ms)."},
     {"n": 20, "name": "the answer as data", "commit": "f432751f99", "run": "42747955240", "path": "051/data/runs/42747955240/jit.json",
      "adds": "The worker's answer, weighed by part (7ca0646d5c to 9ae7706f93), was 590 KB: 112 KB of it the last item's final stream, the cache entries finished since the last stream (216 states, each with every probe so far), which the page decoded and merged only to drop, since a result sets the streamed outbox aside; the rest the result's own probes, 108 samples, the picture (about 140 KB as a term) reached from several. A result goes without that stream now (01a5e8ecb0: 475 KB), and its first-order sample values go as data (66b999aae3, with FirstOrder.of_term taking a record's labels as the survey does, f432751f99): 17 values a result, none different back. The answer 198 KB; the worker's encode 21 to 29 ms (72 to 107 on build 19), with 29 to 41 ms making the data; the page's decode 7 to 8 ms (24 to 31), with 6 to 17 ms making the values terms again (70 once). The page's work after a step 0.21 to 0.32 s."},
     {"n": 21, "name": "the parts timed", "commit": "9f75f59261", "run": "42758371511", "path": "051/data/runs/42758371511/jit.json",
@@ -470,7 +470,7 @@ NEXT = meta_today.get("next_rows") or [
      "The answer is 590 KB, encoded in 70 ms in the worker and decoded in 13 ms in the page; the Witch's picture is 3 times smaller as data (report 047).", "started: the first slice, the samples' values on the way to the page (^ticket(718))"],
     ["1", "Draw only the livelits a drag changes: make the editors' and projectors' views incremental.",
      "Most of the page's view, 10.1 ms of a 17.1 ms median frame of a drag.", "next"],
-    ["2", "Handle a slider's change event without an edit of the program, as cut A did for its input events, or do the edit's work after the paint.",
+    ["2", "Handle a slider's change event without an edit of the program, as change A did for its input events, or do the edit's work after the paint.",
      "Statics and syntax (32 ms) and the whole slide's view (91 ms), all before the paint at 176 ms.", "next, after 1 (^ticket(721))"],
 ]
 NUMS["next_rows"] = "\n".join(f"<tr><td>{a}</td><td>{b}</td><td>{c}</td><td>{d}</td></tr>" for a, b, c, d in NEXT)

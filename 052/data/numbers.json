@@ -8,7 +8,7 @@
   },
   "2": {
    "n": 2,
-   "name": "the answer cut",
+   "name": "the answer trimmed",
    "commit": "20a3067c18",
    "run": "42490487136"
   },
@@ -66,7 +66,7 @@
   },
   "6": {
    "n": 6,
-   "name": "cut A",
+   "name": "change A",
    "commit": "9fca635226",
    "run": "42560502616",
    "measured": {
@@ -89,7 +89,7 @@
   },
   "7": {
    "n": 7,
-   "name": "cut B",
+   "name": "change B",
    "commit": "38d4e4d0f8",
    "run": "42562102280",
    "measured": {
@@ -112,7 +112,7 @@
   },
   "8": {
    "n": 8,
-   "name": "cut C",
+   "name": "change C",
    "commit": "61f3f01a15",
    "run": "42566328043",
    "measured": {
@@ -938,6 +938,52 @@
     "view": 7.1,
     "slide_run": null
    }
+  },
+  "44": {
+   "n": 44,
+   "name": "a model-only commit patched after DefStatics (on trial/694-view-jit-35)",
+   "commit": "d90a8cf135",
+   "run": "42838899176",
+   "measured": {
+    "pics": [
+     37,
+     41,
+     18,
+     17
+    ],
+    "after": [
+     256,
+     252,
+     218,
+     215
+    ],
+    "fps": 58.0,
+    "view": 5.6,
+    "slide_run": null
+   }
+  },
+  "45": {
+   "n": 45,
+   "name": "the patch inside DefStatics: the edited item patched, not analyzed (on trial/694-view-jit-35)",
+   "commit": "9ae518ffe7",
+   "run": "42850343281",
+   "measured": {
+    "pics": [
+     73,
+     22,
+     21,
+     23
+    ],
+    "after": [
+     229,
+     262,
+     145,
+     149
+    ],
+    "fps": 58.3,
+    "view": 5.2,
+    "slide_run": null
+   }
   }
  },
  "pre_builds_step_ms": {
@@ -962,7 +1008,7 @@
    "hi": 4810,
    "per": "a step",
    "name": "Send the worker's answer without what the page does not read",
-   "what": "The worker ran the whole program on the interpreter and sent back every probe sample with its environment, closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two cuts (no function-holding values in the samples' environments, no trace), then no sharing between answers. Later the answer went without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).",
+   "what": "The worker ran the whole program on the interpreter and sent back every probe sample with its environment, closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two changes (no function-holding values in the samples' environments, no trace), then no sharing between answers. Later the answer went without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).",
    "measured": "A step's picture 4.17 to 6.52 s on build 1, 1.85 to 2.38 s on build 2, 1.33 to 1.71 s on build 3 (report 046). The answer 590 KB to 198 KB on build 20; the worker's encode 72 to 107 ms to 21 to 29, the page's decode 24 to 31 ms to 7 to 8.",
    "today": "The picture no longer waits for the worker. Its answer still comes 1.5 to 2.4 s after a step, and costs the page 7 to 10 ms to decode.",
    "builds": [
@@ -1053,8 +1099,8 @@
    "hi": 85,
    "per": "each frame of a drag",
    "name": "A drag redraws only what changed",
-   "what": "Four cuts to a drag's frame: its input goes to the page as a request to draw again, not to the editor as an edit (cut A); only the livelits whose answers changed are drawn again (cut B); the projectors' data and finished views are kept while nothing they read changed (cut C); and each editor's decorations and probes' views are kept across frames.",
-   "measured": "A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (cut A), 26.4 on build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (reports 050 and 051).",
+   "what": "Four changes to a drag's frame: its input goes to the page as a request to draw again, not to the editor as an edit (change A); only the livelits whose answers changed are drawn again (change B); the projectors' data and finished views are kept while nothing they read changed (change C); and each editor's decorations and probes' views are kept across frames.",
+   "measured": "A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (change A), 26.4 on build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (reports 050 and 051).",
    "today": "A drag runs at 55 to 58 fps, its view 5 to 7 ms a frame.",
    "builds": [
     6,

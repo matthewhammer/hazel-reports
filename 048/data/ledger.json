@@ -616,7 +616,7 @@
   "cost": "667 of Full Body's 111,462 nodes renamed, changing 692 hashes; 6,055-18,637 ids a slider edit; the reuse check falls back to comparing structure (105 parts vs 46)",
   "workload": "5 Playground slides analyzed twice, Node, #2635",
   "report": "009#statics",
-  "status": "open; naming two sites cut 667 -> 85 renames (local)",
+  "status": "open; naming two sites took renames from 667 to 85 (local)",
   "root_cause": "ids on every term",
   "quote": "Analyzing the same program again renames what statics adds: 667 of Full Body's 111,462 nodes, and through the program's chain of lets, that changes the hash of 692 expressions"
  },
@@ -667,7 +667,7 @@
  },
  {
   "cut": "Walks over the picture's lists rerun down to the last changed shape",
-  "cost": "lists as named cells would cut the update 10.1% (to 1,509,299 steps over 63 edits); 0.6 points median, at most 5.1",
+  "cost": "lists as named cells would take 10.1% off the update (to 1,509,299 steps over 63 edits); 0.6 points median, at most 5.1",
   "workload": "63 slider edits, Node oracle",
   "report": "011#cells",
   "status": "open",
@@ -1657,7 +1657,7 @@
  },
  {
   "cut": "The program's run on the evaluator in the worker",
-  "cost": "1.2-2.6 s of a 5.3-8.8 s small edit (18-20%, 1.1-1.3 s on the neck edits); after two cuts 1.0-1.1 s (44-56%); with sharing dropped 0.81-0.92 s (50-64%), now the largest cost",
+  "cost": "1.2-2.6 s of a 5.3-8.8 s small edit (18-20%, 1.1-1.3 s on the neck edits); after two changes 1.0-1.1 s (44-56%); with sharing dropped 0.81-0.92 s (50-64%), now the largest cost",
   "workload": "Witch slide small edits, Firefox on GitHub, release build, trial/694-view-jit",
   "report": "046#witch-edit-parts (also 046#witch-trip, 046#witch-cuts, 047#goal)",
   "status": "open",
@@ -1666,7 +1666,7 @@
  },
  {
   "cut": "The worker's sharing pass hashes every value of its answer and finds almost nothing to share",
-  "cost": "1.4-1.6 s a result (2.0-3.4 s on an arms edit with its stream); 0 references found on the arms edits, 242 on the neck; after two cuts 154-255 ms to save 0.46 -> 0.42 MB, more than encoding and decoding",
+  "cost": "1.4-1.6 s a result (2.0-3.4 s on an arms edit with its stream); 0 references found on the arms edits, 242 on the neck; after two changes 154-255 ms to save 0.46 -> 0.42 MB, more than encoding and decoding",
   "workload": "Witch neck and arms edits, Firefox on GitHub, release build",
   "report": "046#witch-trip (also 046#witch-cuts)",
   "status": "fixed: dropped from the worker's answers (4747a4120d): edit 1.3-1.7 s, the trip 79-102 ms (5-8%); requests keep sharing",
@@ -1687,7 +1687,7 @@
   "cost": "1.4-2.0 s for the 5.4 MB result (trip run); 1.9-3.1 s (timeline run), at least 116 frames frozen; 1.3-1.5 s for a 4.4 MB stream; ~0.32 s a MB",
   "workload": "Witch small edits, Firefox on GitHub, release build",
   "report": "046#witch-edit-parts (also 046#witch-trip)",
-  "status": "mitigated: 113-159 ms after two cuts; 16-24 ms unshared",
+  "status": "mitigated: 113-159 ms after two changes; 16-24 ms unshared",
   "root_cause": "serialization (Marshal, sharing)",
   "quote": "The main thread then decodes the result in 1.9 to 3.1 s, one long task during which the page cannot draw: at least 116 frames at 60 fps."
  },
@@ -1711,8 +1711,8 @@
  },
  {
   "cut": "The picture written out afresh in each of four samples (substitution makes each copy new, so even the encoding cannot share them)",
-  "cost": "probes 0.34-0.35 MB of the 0.42 MB answer after the cuts",
-  "workload": "Witch edits after two cuts, Firefox on GitHub",
+  "cost": "probes 0.34-0.35 MB of the 0.42 MB answer after the changes",
+  "workload": "Witch edits after two changes, Firefox on GitHub",
   "report": "046#witch-cuts",
   "status": "open (^ticket(718), 047)",
   "root_cause": "environments and substitution",

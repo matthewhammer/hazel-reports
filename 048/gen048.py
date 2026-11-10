@@ -83,7 +83,7 @@ SHORT_CAUSE = {"environments and substitution": "environments", "trampolines and
 def fig_cuts():
     """every measured cut, one equal rectangle each, grouped by family and then by root cause; coloured by status"""
     W, H = 940, 520
-    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">' + f"{len(L)} measured cuts, from {len(REPORTS)} reports: "
+    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">' + f"{len(L)} measured costs, from {len(REPORTS)} reports: "
            'one rectangle each, grouped by what they come from, coloured by where they stand</text>']
     fams = sorted([(f, FCOUNT[f]) for f, _, _, _ in FAMILIES if FCOUNT[f]], key=lambda kv: -kv[1])
     for f, fx, fy, fw, fh in TM.squarify(fams, 16, 30, W - 32, H):
@@ -109,12 +109,12 @@ def fig_cuts():
         out.append(f'<text x="{x + 16}" y="{ly}" font-size="11" fill="var(--muted)">{label}: {COUNT[k]}</text>')
         x += 16 + 6.0 * len(label) + 52
     h = ly + 12
-    alt = "; ".join(f"{n}: {FCOUNT[f]} cuts" for f, n, _, _ in FAMILIES) + "; " + "; ".join(f"{l}: {COUNT[k]}" for k, l, _ in STATUS)
+    alt = "; ".join(f"{n}: {FCOUNT[f]} costs" for f, n, _, _ in FAMILIES) + "; " + "; ".join(f"{l}: {COUNT[k]}" for k, l, _ in STATUS)
     return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{html.escape(alt)}" '
             f'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>A treemap (Ben Shneiderman's; laid out as in "
-            "^report(47)): every rectangle is one cost a report measured, all the same size, so the area of a group is how many cuts it "
-            "holds. Hover a rectangle for the cut, its number and its report. The measurements differ in workload and units, so the "
-            "rectangles count cuts; they do not weigh them.</figcaption></figure></div>")
+            "^report(47)): every rectangle is one cost a report measured, all the same size, so the area of a group is how many costs it "
+            "holds. Hover a rectangle for the cost, its number and its report. The measurements differ in workload and units, so the "
+            "rectangles count costs; they do not weigh them.</figcaption></figure></div>")
 
 
 # (the Witch's small edit, cut by cut: ^report(46)'s readings)
@@ -123,7 +123,7 @@ _cwd = os.getcwd()
 os.chdir(os.path.join(ROOT, "046"))
 import witch046 as W46
 os.chdir(_cwd)
-STEPS = [("before the cuts", [r["pic"] for r in W46.TR], W46.FA["run"]),
+STEPS = [("before the changes", [r["pic"] for r in W46.TR], W46.FA["run"]),
          ("a module kept out of a probe's environment, the trace cleared", [r["pic"] for r in W46.TC], W46.FC["run"]),
          ("the worker's answers unshared", [r["pic"] for r in W46.TN], W46.FN["run"])]
 # (^report(49), 11-08 evening: the slide's run compiled and run in the page at the slider's event; the steps whose
@@ -142,7 +142,7 @@ def fig_witch():
     lo, hi = math.log10(10), math.log10(10000)
     xof = lambda ms: left + (math.log10(ms) - lo) / (hi - lo) * (W - left - right)
     out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A slider\'s step on the Witch slide, from the edit '
-           'to the picture showing it, in Firefox: each cut so far, and the goal (a log scale)</text>']
+           'to the picture showing it, in Firefox: each change so far, and the goal (a log scale)</text>']
     y = 40
     for label, xs, run in STEPS + STEPS49 + [("the goal: 60 fps", [GOAL_MS], None)]:
         a, b = min(xs), max(xs)
@@ -161,7 +161,7 @@ def fig_witch():
         out.append(f'<line x1="{x:.1f}" y1="34" x2="{x:.1f}" y2="{y}" stroke="var(--line)" stroke-width="1"/>')
         out.append(f'<text x="{x:.1f}" y="{y + 14}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{ms / 1000:g} s</text>')
     h = y + 22
-    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="the Witch\'s small edit at each cut, and the goal" '
+    return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="the Witch\'s small edit at each change, and the goal" '
             f'style="width:100%;height:auto;display:block">' + "".join(out) + "</svg><figcaption>The same eight edits each time (two sliders, "
             "both ways, compiled views on and off), Firefox on GitHub's machines, ^report(46)'s runs: "
             + ", ".join(str(r) for _, _, r in STEPS) + ". The last bar (added 11-08 evening) is report 049's run "
@@ -200,7 +200,7 @@ def fig_now():
     alt = "; ".join(f"{n}: {v:.0f} ms" for n, v, _ in parts)
     return (f'<div class="figrow"><figure class="f wide"><svg viewBox="0 0 {W} {h}" role="img" aria-label="{html.escape(alt)}" '
             f'style="width:100%;height:auto;display:block">' + "".join(out) + f"</svg><figcaption>The median of the eight edits after the "
-            f"cuts (run {W46.FN['run']}), laid end to end as ^report(46) does (the page's and the worker's timelines), drawn as a treemap: "
+            f"changes (run {W46.FN['run']}), laid end to end as ^report(46) does (the page's and the worker's timelines), drawn as a treemap: "
             "each rectangle's area is its time, and the green square is the goal's 16.7 ms on the same scale.</figcaption></figure></div>")
 
 
@@ -214,7 +214,7 @@ def ledger_tables():
             rows = "".join(f"<tr><td>{html.escape(x['cut'])}</td><td>{html.escape(x['cost'])}</td><td>{html.escape(x['workload'])}</td>"
                            f"<td>{link(x['report'])}</td><td>{html.escape(x['status'])}</td></tr>" for x in cuts)
             out.append(f'<details class="ledger"><summary>{html.escape(name)}: {html.escape(c)} ({len(cuts)})</summary>'
-                       '<table class="vals"><tr><th>the cut</th><th>what it costs</th><th>measured on</th><th>report</th><th>where it stands</th></tr>'
+                       '<table class="vals"><tr><th>the cost</th><th>what it costs</th><th>measured on</th><th>report</th><th>where it stands</th></tr>'
                        + rows + "</table></details>")
     return "\n".join(out)
 
