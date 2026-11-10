@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""^report(42)'s page, the agenda for Wednesday 2026-11-11 (copied from ^report(37)'s gen037.py, 2026-11-06), with its sections (Matthew,
+"""^report(42)'s page, the agenda for Friday 2026-11-13, moved from Wednesday 2026-11-11 (copied from ^report(37)'s gen037.py, 2026-11-06), with its sections (Matthew,
 2026-11-02, "let's create sections for report agenda items"): reads 042/data/agenda.json and writes
 042/index.html. Kept as a work in progress until the meeting: edit the JSON (an item, its status and as_of, the updated line), run this from the
 repository's root, then the series tools (report_refs, link_prs, add_theme).
