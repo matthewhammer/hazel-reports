@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Mattered, Ranked</title>
+<meta name="description" content="Five days of making a livelit's slider in Hazel fast, summarized: where a slider step and a drag stand now, the ten changes that mattered ranked by how much each helped, and an order for redoing them by hand in small increments.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.88em; }
+  table.vals th, table.vals td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; } table.vals th { font-weight: 600; }
+  table.vals td.rank { font-weight: 700; text-align: right; }
+  table.vals tr.group td { background: color-mix(in srgb, var(--accent) 8%, transparent); font-weight: 600; }
+  figure.f { margin: 1.2em 0; } figure.f svg { max-width: 100%; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  figcaption b.build { color: var(--ink); }
+  code { overflow-wrap: anywhere; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>52<b>)</b></code> · hazel-jit · 2026-11-10, revised 2026-11-10 06:54 MST · <span class="wip">work in progress</span> · for the Hazel team</p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>What Mattered, Ranked</h1>
+<p class="sub">From 2026-11-06 to 2026-11-10 we made a livelit's slider in Hazel fast enough to drag. Of everything we changed, what made the difference, how much did each change help, and in what order could the team redo it by hand, in small steps? Matthew, 2026-11-10: "a new report that summarizes our work over the last several days, with plots of the current status, and the more significant ingredients, not every single thing we tried in order. Rank them by how much they ended up helping." The full record, build by build, is in <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> and <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>; this report keeps only what mattered.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#now">Where it stands</a>: a slider's step on the Witch slide shows in the picture in about 20 to 30 ms, a drag runs at 55 to 58 frames a second, and the page still does 170 to 180 ms of its own work after each step.</li>
+<li><a href="#ranked">The ingredients, ranked</a>: ten changes, ranked by the time each took off when it landed, in two groups: what a user waits for, and the page's own work after the picture.</li>
+<li><a href="#left">What is left</a>: the edit made after the paint, the worker's answer two seconds later, and a pause once a step.</li>
+<li><a href="#redo">Redoing it by hand</a>: an order of increments, each small enough to review, with its size, its tests and what it needs first.</li>
+<li><a href="#builds">The builds</a> this report cites, <a href="#next">what next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="now">Where it stands<a class="anchor" href="#now" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="now" title="copy this section's address">copy link</button></h2>
+<p><b>On build 38, a step of the Witch's neck slider shows in the picture 20 to 31 ms after the click (78 ms for a slide's first step), a 3-second drag runs at 55.7 frames a second, its view 6.3 ms a frame, and the page's own work after each step's picture adds up to 167 to 183 ms.</b> On 11-08, before any of this, a step took 4.2 to 6.5 s to show, and a drag could not move the picture at all. The Witch slide is the Livelit Playground's largest: 2,222 lines of Hazel and 53 livelits, a picture of a witch drawn from polygons and posed by sliders. Every number here is from the same check in Firefox on GitHub's machines, one run per build. Build 41, the newest, ran on a slower machine: 28 to 75 ms, 49.0 fps, 234 to 273 ms.</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 900 308" role="img" aria-label="A timeline of one slider step on build 38: the picture changes at 31 ms, then the edit, outline, autosave and the worker&#x27;s answer" style="width:100%;height:auto;display:block"><text x="16.0" y="18.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">Build 38: one step of the Witch&#x27;s neck slider, from the click, on the page&#x27;s thread</text><text x="16.0" y="34.0" font-size="11" text-anchor="start" fill="var(--muted)" font-weight="400">the picture changes at 31 ms; the worker&#x27;s answer arrives at 1.38 s</text><line x1="168.0" y1="62" x2="168.0" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="192.7" y1="62" x2="192.7" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="217.3" y1="62" x2="217.3" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="242.0" y1="62" x2="242.0" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="266.6" y1="62" x2="266.6" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="291.3" y1="62" x2="291.3" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="316.0" y1="62" x2="316.0" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="340.6" y1="62" x2="340.6" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="365.3" y1="62" x2="365.3" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="389.9" y1="62" x2="389.9" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="414.6" y1="62" x2="414.6" y2="246" stroke="var(--line)" stroke-width="0.6"/><line x1="433.4" y1="60" x2="441.4" y2="252" stroke="var(--muted)" stroke-width="1.2"/><line x1="437.4" y1="60" x2="445.4" y2="252" stroke="var(--muted)" stroke-width="1.2"/><text x="160.0" y="85.0" font-size="11" text-anchor="end" fill="var(--ink)" font-weight="400">the compiled run</text><rect x="168.0" y="72" width="17.8" height="18" rx="2" fill="#0d9488" opacity="0.85"/><rect x="188.7" y="72" width="7.4" height="18" rx="2" fill="#0d9488" opacity="0.85"/><text x="160.0" y="115.0" font-size="11" text-anchor="end" fill="var(--ink)" font-weight="400">drawing the picture</text><rect x="200.6" y="102" width="5.9" height="18" rx="2" fill="#15803d" opacity="0.85"/><rect x="206.5" y="102" width="4.4" height="18" rx="2" fill="#15803d" opacity="0.85"/><text x="160.0" y="145.0" font-size="11" text-anchor="end" fill="var(--ink)" font-weight="400">the edit, after the paint</text><rect x="222.7" y="132" width="17.8" height="18" rx="2" fill="#b45309" opacity="0.85"/><rect x="240.5" y="132" width="23.7" height="18" rx="2" fill="#b45309" opacity="0.85"/><rect x="264.2" y="132" width="16.3" height="18" rx="2" fill="#b45309" opacity="0.85"/><rect x="286.4" y="132" width="50.3" height="18" rx="2" fill="#b45309" opacity="0.85"/><text x="311.5" y="145.0" font-size="9.5" text-anchor="middle" fill="#fff" font-weight="600">view 34</text><rect x="407.7" y="132" width="1.6" height="18" rx="2" fill="#b45309" opacity="0.85"/><text x="160.0" y="175.0" font-size="11" text-anchor="end" fill="var(--ink)" font-weight="400">the outline, on its own</text><rect x="387.0" y="162" width="20.7" height="18" rx="2" fill="#7c3aed" opacity="0.85"/><text x="160.0" y="205.0" font-size="11" text-anchor="end" fill="var(--ink)" font-weight="400">the autosave</text><rect x="475.6" y="192" width="23.7" height="18" rx="2" fill="#64748b" opacity="0.85"/><text x="160.0" y="235.0" font-size="11" text-anchor="end" fill="var(--ink)" font-weight="400">the worker&#x27;s answer</text><rect x="731.6" y="222" width="14.8" height="18" rx="2" fill="#2563eb" opacity="0.85"/><rect x="746.4" y="222" width="10.4" height="18" rx="2" fill="#2563eb" opacity="0.85"/><rect x="759.7" y="222" width="4.4" height="18" rx="2" fill="#2563eb" opacity="0.85"/><rect x="765.6" y="222" width="88.8" height="18" rx="2" fill="#2563eb" opacity="0.85"/><text x="810.0" y="235.0" font-size="9.5" text-anchor="middle" fill="#fff" font-weight="600">view 60</text><rect x="866.2" y="222" width="1.6" height="18" rx="2" fill="#2563eb" opacity="0.85"/><line x1="213.9" y1="58" x2="213.9" y2="250" stroke="#b91c1c" stroke-width="1.6"/><text x="217.9" y="56.0" font-size="10.5" text-anchor="start" fill="#b91c1c" font-weight="600">the picture changes, 31 ms</text><text x="168.0" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">0</text><text x="242.0" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">50</text><text x="316.0" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">100</text><text x="389.9" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">150</text><text x="484.5" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">1.20 s</text><text x="558.5" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">1.25 s</text><text x="632.5" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">1.30 s</text><text x="706.5" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">1.35 s</text><text x="780.4" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">1.40 s</text><text x="854.4" y="264.0" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-weight="400">1.45 s</text><text x="168.0" y="282.0" font-size="10" text-anchor="start" fill="var(--muted)" font-weight="400">ms after the click; thin lines are 60 fps frames (16.7 ms); the break hides about a second in which the worker runs and the page is idle</text></svg><figcaption><b class="build">Build 38</b> (19ecb75694, run 42817304210; Firefox on GitHub's machines): the second of the check's four steps, the neck slider from 30 to 28. Each bar is one piece of the page's work, timed on its own timeline; the page is idle between them. Before the picture: the compiled run and two small draws. After it: the edit (update, statics, syntax and the view), the outline, the autosave, and the worker's answer, 183 ms in all. The answer's view of 60 ms (about 17 fps, as if the update were free) includes a pause that lands somewhere else at every step, most likely the browser collecting the answer's garbage.</figcaption></figure></div>
+<p>A step is now four kinds of work. Before the picture, the slide's compiled run answers the slider's event in a few milliseconds and the page draws the livelits whose answers changed. After it, in the frames that follow, the page writes the new model into the program, the edit (73 ms here: the update, the statics, the syntax and a view), and builds the sidebar's outline (14 ms). About a second later the slide autosaves. And at 1.38 s the worker's answer arrives, the whole program run on Hazel's interpreter, and the page checks it against what it has drawn (80 ms).</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 900 300" role="img" aria-label="A slider&#x27;s step, build by build: click to picture (steps 2 to 4)" style="width:100%;height:auto;display:block"><text x="16.0" y="18.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">A slider&#x27;s step, build by build: click to picture (steps 2 to 4)</text><line x1="64" y1="256.0" x2="884" y2="256.0" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="259.5" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">10</text><line x1="64" y1="233.6" x2="884" y2="233.6" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="237.1" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">20</text><line x1="64" y1="204.0" x2="884" y2="204.0" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="207.5" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">50</text><line x1="64" y1="181.6" x2="884" y2="181.6" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="185.1" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">100</text><line x1="64" y1="159.2" x2="884" y2="159.2" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="162.7" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">200</text><line x1="64" y1="129.6" x2="884" y2="129.6" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="133.1" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">500</text><line x1="64" y1="107.2" x2="884" y2="107.2" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="110.7" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">1 s</text><line x1="64" y1="84.8" x2="884" y2="84.8" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="88.3" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">2 s</text><line x1="64" y1="55.2" x2="884" y2="55.2" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="58.7" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">5 s</text><text x="14.0" y="32.0" font-size="10" text-anchor="start" fill="var(--muted)" font-weight="400">ms, log scale</text><line x1="64" y1="239.5" x2="884" y2="239.5" stroke="#b91c1c" stroke-width="1.4" stroke-dasharray="5 4"/><text x="70.0" y="252.5" font-size="10.5" text-anchor="start" fill="#b91c1c" font-weight="600">16.7 ms, one 60 fps frame</text><line x1="74.0" y1="61.1" x2="74.0" y2="46.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="74.0" cy="53.0" r="3.2" fill="#9ca3af"/><line x1="94.0" y1="87.3" x2="94.0" y2="79.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="94.0" cy="83.0" r="3.2" fill="#9ca3af"/><line x1="114.0" y1="98.0" x2="114.0" y2="89.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="114.0" cy="93.7" r="3.2" fill="#9ca3af"/><line x1="134.0" y1="144.2" x2="134.0" y2="90.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="134.0" cy="90.8" r="3.2" fill="#0d9488"/><line x1="154.0" y1="157.9" x2="154.0" y2="153.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="154.0" cy="154.4" r="3.2" fill="#0d9488"/><line x1="174.0" y1="155.7" x2="174.0" y2="149.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="174.0" cy="151.1" r="3.2" fill="#0d9488"/><line x1="194.0" y1="152.6" x2="194.0" y2="147.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="194.0" cy="148.0" r="3.2" fill="#0d9488"/><line x1="214.0" y1="163.3" x2="214.0" y2="155.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="214.0" cy="162.2" r="3.2" fill="#0d9488"/><line x1="234.0" y1="158.6" x2="234.0" y2="154.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="234.0" cy="157.6" r="3.2" fill="#0d9488"/><line x1="254.0" y1="162.1" x2="254.0" y2="156.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="254.0" cy="157.9" r="3.2" fill="#0d9488"/><line x1="274.0" y1="168.1" x2="274.0" y2="160.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="274.0" cy="166.6" r="3.2" fill="#0d9488"/><line x1="294.0" y1="235.3" x2="294.0" y2="227.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="294.0" cy="233.6" r="3.2" fill="#0d9488"/><line x1="314.0" y1="227.7" x2="314.0" y2="203.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="314.0" cy="227.7" r="3.2" fill="#0d9488"/><line x1="334.0" y1="226.4" x2="334.0" y2="191.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="334.0" cy="222.7" r="3.2" fill="#0d9488"/><line x1="354.0" y1="240.8" x2="354.0" y2="233.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="354.0" cy="238.9" r="3.2" fill="#0d9488"/><line x1="374.0" y1="232.0" x2="374.0" y2="213.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="374.0" cy="221.6" r="3.2" fill="#0d9488"/><line x1="394.0" y1="222.7" x2="394.0" y2="209.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="394.0" cy="215.5" r="3.2" fill="#0d9488"/><line x1="414.0" y1="233.6" x2="414.0" y2="213.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="414.0" cy="217.4" r="3.2" fill="#0d9488"/><line x1="434.0" y1="225.1" x2="434.0" y2="222.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="434.0" cy="223.9" r="3.2" fill="#0d9488"/><line x1="454.0" y1="233.6" x2="454.0" y2="230.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="454.0" cy="233.6" r="3.2" fill="#0d9488"/><line x1="474.0" y1="238.9" x2="474.0" y2="221.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="474.0" cy="227.7" r="3.2" fill="#0d9488"/><line x1="494.0" y1="226.4" x2="494.0" y2="220.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="494.0" cy="225.1" r="3.2" fill="#0d9488"/><line x1="514.0" y1="229.1" x2="514.0" y2="204.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="514.0" cy="220.5" r="3.2" fill="#0d9488"/><line x1="534.0" y1="226.4" x2="534.0" y2="225.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="534.0" cy="226.4" r="3.2" fill="#0d9488"/><line x1="554.0" y1="230.5" x2="554.0" y2="226.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="554.0" cy="226.4" r="3.2" fill="#0d9488"/><line x1="574.0" y1="229.1" x2="574.0" y2="221.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="574.0" cy="226.4" r="3.2" fill="#0d9488"/><line x1="594.0" y1="226.4" x2="594.0" y2="216.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="594.0" cy="222.7" r="3.2" fill="#0d9488"/><line x1="614.0" y1="232.0" x2="614.0" y2="226.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="614.0" cy="227.7" r="3.2" fill="#0d9488"/><line x1="634.0" y1="230.5" x2="634.0" y2="199.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="634.0" cy="222.7" r="3.2" fill="#0d9488"/><line x1="654.0" y1="232.0" x2="654.0" y2="223.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="654.0" cy="226.4" r="3.2" fill="#0d9488"/><line x1="674.0" y1="232.0" x2="674.0" y2="221.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="674.0" cy="227.7" r="3.2" fill="#0d9488"/><line x1="694.0" y1="230.5" x2="694.0" y2="212.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="694.0" cy="219.4" r="3.2" fill="#0d9488"/><line x1="714.0" y1="232.0" x2="714.0" y2="221.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="714.0" cy="226.4" r="3.2" fill="#0d9488"/><line x1="734.0" y1="232.0" x2="734.0" y2="225.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="734.0" cy="229.1" r="3.2" fill="#0d9488"/><line x1="754.0" y1="237.0" x2="754.0" y2="226.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="754.0" cy="232.0" r="3.2" fill="#0d9488"/><line x1="774.0" y1="232.0" x2="774.0" y2="226.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="774.0" cy="232.0" r="3.2" fill="#0d9488"/><line x1="794.0" y1="235.3" x2="794.0" y2="225.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="794.0" cy="235.3" r="3.2" fill="#0d9488"/><line x1="814.0" y1="233.6" x2="814.0" y2="219.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="814.0" cy="233.6" r="3.2" fill="#0d9488"/><line x1="834.0" y1="230.5" x2="834.0" y2="226.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="834.0" cy="227.7" r="3.2" fill="#0d9488"/><line x1="854.0" y1="232.0" x2="854.0" y2="217.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="854.0" cy="222.7" r="3.2" fill="#0d9488"/><line x1="874.0" y1="222.7" x2="874.0" y2="190.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="874.0" cy="217.4" r="3.2" fill="#0d9488"/><text x="74.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">1</text><text x="154.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">5</text><text x="254.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">10</text><text x="354.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">15</text><text x="454.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">20</text><text x="554.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">25</text><text x="654.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">30</text><text x="754.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">35</text><text x="854.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">40</text><text x="874.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">41</text><text x="474.0" y="292.0" font-size="10.5" text-anchor="middle" fill="var(--muted)" font-weight="400">build</text><text x="100.0" y="76.0" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">the answer cut</text><text x="160.0" y="147.4" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">the run compiled</text><text x="300.0" y="226.6" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">the edit after the paint</text></svg><figcaption><b class="build">Builds 1 to 41</b> of <code>trial/694-view-jit</code> (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> and <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>), one run each, Firefox on GitHub's machines: the Witch's steps 2 to 4 (the first step of a slide pays first-call costs), a dot at the median, a line over the range. Builds 1 to 3 (grey) waited for the worker's answer; their ranges are over all four steps. Machines differ by up to a third from run to run, so neighbouring builds' small differences are noise.</figcaption></figure></div>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 900 300" role="img" aria-label="A drag, build by build: frames a second, compiled" style="width:100%;height:auto;display:block"><text x="16.0" y="18.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">A drag, build by build: frames a second, compiled</text><line x1="64" y1="256.0" x2="884" y2="256.0" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="259.5" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">0</text><line x1="64" y1="224.7" x2="884" y2="224.7" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="228.2" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">10</text><line x1="64" y1="193.4" x2="884" y2="193.4" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="196.9" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">20</text><line x1="64" y1="162.1" x2="884" y2="162.1" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="165.6" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">30</text><line x1="64" y1="130.8" x2="884" y2="130.8" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="134.3" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">40</text><line x1="64" y1="99.5" x2="884" y2="99.5" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="103.0" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">50</text><line x1="64" y1="68.2" x2="884" y2="68.2" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="71.7" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">60</text><text x="14.0" y="32.0" font-size="10" text-anchor="start" fill="var(--muted)" font-weight="400">frames a second</text><line x1="64" y1="68.2" x2="884" y2="68.2" stroke="#b91c1c" stroke-width="1.4" stroke-dasharray="5 4"/><text x="880.0" y="63.2" font-size="10.5" text-anchor="end" fill="#b91c1c" font-weight="600">60 fps</text><line x1="154.0" y1="225.3" x2="154.0" y2="225.3" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="154.0" cy="225.3" r="3.2" fill="#0d9488"/><line x1="174.0" y1="185.6" x2="174.0" y2="185.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="174.0" cy="185.6" r="3.2" fill="#0d9488"/><line x1="194.0" y1="173.4" x2="194.0" y2="173.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="194.0" cy="173.4" r="3.2" fill="#0d9488"/><line x1="214.0" y1="104.5" x2="214.0" y2="104.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="214.0" cy="104.5" r="3.2" fill="#0d9488"/><line x1="234.0" y1="86.0" x2="234.0" y2="86.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="234.0" cy="86.0" r="3.2" fill="#0d9488"/><line x1="254.0" y1="106.4" x2="254.0" y2="106.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="254.0" cy="106.4" r="3.2" fill="#0d9488"/><line x1="274.0" y1="79.8" x2="274.0" y2="79.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="274.0" cy="79.8" r="3.2" fill="#0d9488"/><line x1="294.0" y1="75.7" x2="294.0" y2="75.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="294.0" cy="75.7" r="3.2" fill="#0d9488"/><line x1="314.0" y1="75.7" x2="314.0" y2="75.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="314.0" cy="75.7" r="3.2" fill="#0d9488"/><line x1="334.0" y1="93.2" x2="334.0" y2="93.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="334.0" cy="93.2" r="3.2" fill="#0d9488"/><line x1="354.0" y1="72.6" x2="354.0" y2="72.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="354.0" cy="72.6" r="3.2" fill="#0d9488"/><line x1="374.0" y1="94.2" x2="374.0" y2="94.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="374.0" cy="94.2" r="3.2" fill="#0d9488"/><line x1="394.0" y1="112.9" x2="394.0" y2="112.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="394.0" cy="112.9" r="3.2" fill="#0d9488"/><line x1="414.0" y1="81.6" x2="414.0" y2="81.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="414.0" cy="81.6" r="3.2" fill="#0d9488"/><line x1="434.0" y1="96.3" x2="434.0" y2="96.3" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="434.0" cy="96.3" r="3.2" fill="#0d9488"/><line x1="454.0" y1="81.9" x2="454.0" y2="81.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="454.0" cy="81.9" r="3.2" fill="#0d9488"/><line x1="474.0" y1="79.8" x2="474.0" y2="79.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="474.0" cy="79.8" r="3.2" fill="#0d9488"/><line x1="494.0" y1="82.6" x2="494.0" y2="82.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="494.0" cy="82.6" r="3.2" fill="#0d9488"/><line x1="514.0" y1="109.5" x2="514.0" y2="109.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="514.0" cy="109.5" r="3.2" fill="#0d9488"/><line x1="534.0" y1="86.0" x2="534.0" y2="86.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="534.0" cy="86.0" r="3.2" fill="#0d9488"/><line x1="554.0" y1="80.7" x2="554.0" y2="80.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="554.0" cy="80.7" r="3.2" fill="#0d9488"/><line x1="574.0" y1="96.3" x2="574.0" y2="96.3" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="574.0" cy="96.3" r="3.2" fill="#0d9488"/><line x1="594.0" y1="78.5" x2="594.0" y2="78.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="594.0" cy="78.5" r="3.2" fill="#0d9488"/><line x1="614.0" y1="79.4" x2="614.0" y2="79.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="614.0" cy="79.4" r="3.2" fill="#0d9488"/><line x1="634.0" y1="74.4" x2="634.0" y2="74.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="634.0" cy="74.4" r="3.2" fill="#0d9488"/><line x1="654.0" y1="94.2" x2="654.0" y2="94.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="654.0" cy="94.2" r="3.2" fill="#0d9488"/><line x1="674.0" y1="133.3" x2="674.0" y2="133.3" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="674.0" cy="133.3" r="3.2" fill="#0d9488"/><line x1="694.0" y1="73.5" x2="694.0" y2="73.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="694.0" cy="73.5" r="3.2" fill="#0d9488"/><line x1="714.0" y1="136.7" x2="714.0" y2="136.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="714.0" cy="136.7" r="3.2" fill="#0d9488"/><line x1="734.0" y1="83.8" x2="734.0" y2="83.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="734.0" cy="83.8" r="3.2" fill="#0d9488"/><line x1="754.0" y1="91.0" x2="754.0" y2="91.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="754.0" cy="91.0" r="3.2" fill="#0d9488"/><line x1="774.0" y1="83.8" x2="774.0" y2="83.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="774.0" cy="83.8" r="3.2" fill="#0d9488"/><line x1="794.0" y1="75.7" x2="794.0" y2="75.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="794.0" cy="75.7" r="3.2" fill="#0d9488"/><line x1="814.0" y1="81.6" x2="814.0" y2="81.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="814.0" cy="81.6" r="3.2" fill="#0d9488"/><line x1="834.0" y1="78.5" x2="834.0" y2="78.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="834.0" cy="78.5" r="3.2" fill="#0d9488"/><line x1="854.0" y1="94.2" x2="854.0" y2="94.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="854.0" cy="94.2" r="3.2" fill="#0d9488"/><line x1="874.0" y1="102.6" x2="874.0" y2="102.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="874.0" cy="102.6" r="3.2" fill="#0d9488"/><text x="74.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">1</text><text x="154.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">5</text><text x="254.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">10</text><text x="354.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">15</text><text x="454.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">20</text><text x="554.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">25</text><text x="654.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">30</text><text x="754.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">35</text><text x="854.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">40</text><text x="874.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">41</text><text x="474.0" y="292.0" font-size="10.5" text-anchor="middle" fill="var(--muted)" font-weight="400">build</text><text x="180.0" y="178.6" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">cut A</text><text x="220.0" y="97.5" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">cut C</text><text x="680.0" y="126.3" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">a regression, fixed by build 32</text></svg><figcaption><b class="build">Builds 5 to 41</b>: a 3-second drag of the Witch's neck slider in the Firefox check, one run each. Builds 31 and 33 slowed the drag (a shape check compared equal copies, then model values, at every frame); builds 32 and 34 fixed them (<a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>).</figcaption></figure></div>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 900 300" role="img" aria-label="The page&#x27;s own work after a step&#x27;s picture, build by build" style="width:100%;height:auto;display:block"><text x="16.0" y="18.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">The page&#x27;s own work after a step&#x27;s picture, build by build</text><line x1="64" y1="256.0" x2="884" y2="256.0" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="259.5" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">0</text><line x1="64" y1="226.9" x2="884" y2="226.9" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="230.4" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">100</text><line x1="64" y1="197.8" x2="884" y2="197.8" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="201.3" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">200</text><line x1="64" y1="168.7" x2="884" y2="168.7" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="172.2" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">300</text><line x1="64" y1="139.6" x2="884" y2="139.6" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="143.1" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">400</text><line x1="64" y1="110.5" x2="884" y2="110.5" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="114.0" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">500</text><line x1="64" y1="81.5" x2="884" y2="81.5" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="85.0" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">600</text><line x1="64" y1="52.4" x2="884" y2="52.4" stroke="var(--line)" stroke-width="1"/><text x="58.0" y="55.9" font-size="10" text-anchor="end" fill="var(--muted)" font-weight="400">700</text><text x="14.0" y="32.0" font-size="10" text-anchor="start" fill="var(--muted)" font-weight="400">ms</text><line x1="154.0" y1="157.1" x2="154.0" y2="138.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="154.0" cy="148.1" r="3.2" fill="#0d9488"/><line x1="174.0" y1="106.8" x2="174.0" y2="59.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="174.0" cy="99.8" r="3.2" fill="#0d9488"/><line x1="194.0" y1="103.0" x2="194.0" y2="60.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="194.0" cy="87.6" r="3.2" fill="#0d9488"/><line x1="214.0" y1="149.2" x2="214.0" y2="138.2" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="214.0" cy="148.4" r="3.2" fill="#0d9488"/><line x1="234.0" y1="164.4" x2="234.0" y2="92.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="234.0" cy="163.2" r="3.2" fill="#0d9488"/><line x1="254.0" y1="138.8" x2="254.0" y2="98.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="254.0" cy="132.9" r="3.2" fill="#0d9488"/><line x1="274.0" y1="165.2" x2="274.0" y2="159.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="274.0" cy="160.9" r="3.2" fill="#0d9488"/><line x1="294.0" y1="117.8" x2="294.0" y2="102.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="294.0" cy="111.1" r="3.2" fill="#0d9488"/><line x1="314.0" y1="130.9" x2="314.0" y2="82.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="314.0" cy="128.3" r="3.2" fill="#0d9488"/><line x1="334.0" y1="130.6" x2="334.0" y2="87.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="334.0" cy="113.2" r="3.2" fill="#0d9488"/><line x1="354.0" y1="174.5" x2="354.0" y2="158.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="354.0" cy="170.2" r="3.2" fill="#0d9488"/><line x1="374.0" y1="156.2" x2="374.0" y2="133.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="374.0" cy="138.2" r="3.2" fill="#0d9488"/><line x1="394.0" y1="169.0" x2="394.0" y2="134.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="394.0" cy="153.9" r="3.2" fill="#0d9488"/><line x1="414.0" y1="156.2" x2="414.0" y2="126.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="414.0" cy="143.4" r="3.2" fill="#0d9488"/><line x1="434.0" y1="166.7" x2="434.0" y2="146.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="434.0" cy="163.2" r="3.2" fill="#0d9488"/><line x1="454.0" y1="194.9" x2="454.0" y2="162.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="454.0" cy="187.1" r="3.2" fill="#0d9488"/><line x1="474.0" y1="189.4" x2="474.0" y2="183.9" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="474.0" cy="187.6" r="3.2" fill="#0d9488"/><line x1="494.0" y1="181.8" x2="494.0" y2="175.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="494.0" cy="181.5" r="3.2" fill="#0d9488"/><line x1="514.0" y1="169.0" x2="514.0" y2="162.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="514.0" cy="165.8" r="3.2" fill="#0d9488"/><line x1="534.0" y1="188.8" x2="534.0" y2="175.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="534.0" cy="183.3" r="3.2" fill="#0d9488"/><line x1="554.0" y1="173.1" x2="554.0" y2="168.4" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="554.0" cy="169.9" r="3.2" fill="#0d9488"/><line x1="574.0" y1="186.5" x2="574.0" y2="183.3" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="574.0" cy="184.1" r="3.2" fill="#0d9488"/><line x1="594.0" y1="181.8" x2="594.0" y2="172.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="594.0" cy="177.7" r="3.2" fill="#0d9488"/><line x1="614.0" y1="179.5" x2="614.0" y2="176.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="614.0" cy="178.9" r="3.2" fill="#0d9488"/><line x1="634.0" y1="187.3" x2="634.0" y2="173.7" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="634.0" cy="187.1" r="3.2" fill="#0d9488"/><line x1="654.0" y1="185.6" x2="654.0" y2="181.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="654.0" cy="185.0" r="3.2" fill="#0d9488"/><line x1="674.0" y1="190.5" x2="674.0" y2="185.0" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="674.0" cy="186.5" r="3.2" fill="#0d9488"/><line x1="694.0" y1="199.0" x2="694.0" y2="178.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="694.0" cy="184.7" r="3.2" fill="#0d9488"/><line x1="714.0" y1="186.2" x2="714.0" y2="176.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="714.0" cy="180.7" r="3.2" fill="#0d9488"/><line x1="734.0" y1="188.8" x2="734.0" y2="185.3" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="734.0" cy="186.5" r="3.2" fill="#0d9488"/><line x1="754.0" y1="196.1" x2="754.0" y2="193.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="754.0" cy="195.8" r="3.2" fill="#0d9488"/><line x1="774.0" y1="190.0" x2="774.0" y2="187.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="774.0" cy="190.0" r="3.2" fill="#0d9488"/><line x1="794.0" y1="205.1" x2="794.0" y2="203.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="794.0" cy="204.5" r="3.2" fill="#0d9488"/><line x1="814.0" y1="207.4" x2="814.0" y2="202.8" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="814.0" cy="204.5" r="3.2" fill="#0d9488"/><line x1="834.0" y1="197.2" x2="834.0" y2="195.5" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="834.0" cy="196.1" r="3.2" fill="#0d9488"/><line x1="854.0" y1="195.8" x2="854.0" y2="182.1" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="854.0" cy="190.3" r="3.2" fill="#0d9488"/><line x1="874.0" y1="187.9" x2="874.0" y2="176.6" stroke="#0d9488" stroke-width="2" opacity="0.55"/><circle cx="874.0" cy="177.7" r="3.2" fill="#0d9488"/><text x="74.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">1</text><text x="154.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">5</text><text x="254.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">10</text><text x="354.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">15</text><text x="454.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">20</text><text x="554.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">25</text><text x="654.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">30</text><text x="754.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">35</text><text x="854.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">40</text><text x="874.0" y="272.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">41</text><text x="474.0" y="292.0" font-size="10.5" text-anchor="middle" fill="var(--muted)" font-weight="400">build</text><text x="360.0" y="163.2" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">livelits kept</text><text x="460.0" y="180.1" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">the answer as data</text><text x="800.0" y="197.5" font-size="10" text-anchor="start" fill="var(--ink)" font-weight="400">probes kept</text></svg><figcaption><b class="build">Builds 5 to 41</b>: the page's top-level work from the picture to half a second after the worker's answer (the edit, the outline, the comparison, the answer's decode and view), steps 2 to 4. Machines differ: build 13's run read 20 to 40% slow throughout, build 38's first run too (its second, on a machine like build 37's, is plotted).</figcaption></figure></div>
+
+<h2 id="ranked">The ingredients, ranked<a class="anchor" href="#ranked" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="ranked" title="copy this section's address">copy link</button></h2>
+<p><b>Two changes did most of it: sending the worker's answer without what the page did not read (2.8 to 4.8 s off a step, when it landed), and compiling the slide's whole run to JavaScript (1.1 to 1.5 s more, and the reason a step shows in about 20 ms today). Of the page's own work after the picture, keeping the livelits a change did not touch helped most, 0.19 to 0.40 s a step.</b> The ranking is by the time each change took off when it landed, on the measure it changed, as <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> to <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a> measured it. The measures differ: a step's picture is what a user waits for after a click; a drag's frame is what they see while dragging, 60 times a second; the page's work after the picture is what can make the next frame late. So the ranking is in two groups, and a gain in one is not added to a gain in the other.</p>
+<div class="figrow"><figure class="f wide"><svg viewBox="0 0 900 400" role="img" aria-label="Ranked bars: the ten ingredients by time saved, in two groups" style="width:100%;height:auto;display:block"><text x="16.0" y="18.0" font-size="12.5" text-anchor="start" fill="var(--ink)" font-weight="700">The ingredients, ranked by the time each took off when it landed</text><text x="16.0" y="34.0" font-size="11" text-anchor="start" fill="var(--muted)" font-weight="400">log scale; a bar runs from the low to the high end of what was measured, a dot at the middle</text><line x1="330.0" y1="46" x2="330.0" y2="364" stroke="var(--line)" stroke-width="1"/><text x="330.0" y="378.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">10 ms</text><line x1="401.6" y1="46" x2="401.6" y2="364" stroke="var(--line)" stroke-width="1"/><text x="401.6" y="378.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">30 ms</text><line x1="480.0" y1="46" x2="480.0" y2="364" stroke="var(--line)" stroke-width="1"/><text x="480.0" y="378.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">100 ms</text><line x1="551.6" y1="46" x2="551.6" y2="364" stroke="var(--line)" stroke-width="1"/><text x="551.6" y="378.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">300 ms</text><line x1="630.0" y1="46" x2="630.0" y2="364" stroke="var(--line)" stroke-width="1"/><text x="630.0" y="378.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">1 s</text><line x1="701.6" y1="46" x2="701.6" y2="364" stroke="var(--line)" stroke-width="1"/><text x="701.6" y="378.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">3 s</text><line x1="780.0" y1="46" x2="780.0" y2="364" stroke="var(--line)" stroke-width="1"/><text x="780.0" y="378.0" font-size="10" text-anchor="middle" fill="var(--muted)" font-weight="400">10 s</text><text x="16.0" y="69.0" font-size="11.5" text-anchor="start" fill="#0d9488" font-weight="700">What you wait for: a step&#x27;s picture, a drag&#x27;s frame</text><text x="16.0" y="95.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">A1. Send the worker&#x27;s answer without what the page does not read</text><rect x="698.0" y="86" width="34.3" height="11" rx="3" fill="#0d9488" opacity="0.35"/><circle cx="717.4" cy="91.5" r="4" fill="#0d9488"/><text x="738.3" y="95.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">2.84 s to 4.81 s a step</text><text x="16.0" y="121.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">A2. Compile the slide&#x27;s whole run to JavaScript, each livelit&#x27;s model a parameter</text><rect x="635.6" y="112" width="20.8" height="11" rx="3" fill="#0d9488" opacity="0.35"/><circle cx="646.8" cy="117.5" r="4" fill="#0d9488"/><text x="662.4" y="121.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">1.09 s to 1.50 s a step</text><text x="16.0" y="147.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">A3. Draw first; make the edit after the paint</text><rect x="498.6" y="138" width="16.4" height="11" rx="3" fill="#0d9488" opacity="0.35"/><circle cx="507.3" cy="143.5" r="4" fill="#0d9488"/><text x="520.9" y="147.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">133 ms to 171 ms a step</text><text x="16.0" y="173.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">A4. Compile each livelit&#x27;s view</text><rect x="468.6" y="164" width="3.0" height="11" rx="3" fill="#0d9488" opacity="0.35"/><circle cx="468.6" cy="169.5" r="4" fill="#0d9488"/><text x="474.6" y="173.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">84 ms each render of the picture</text><text x="16.0" y="199.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">A5. A drag redraws only what changed</text><rect x="465.5" y="190" width="3.9" height="11" rx="3" fill="#0d9488" opacity="0.35"/><circle cx="467.5" cy="195.5" r="4" fill="#0d9488"/><text x="475.4" y="199.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">80 ms to 85 ms each frame of a drag</text><text x="16.0" y="225.0" font-size="11.5" text-anchor="start" fill="#b45309" font-weight="700">The page&#x27;s own work after the picture: what can make a frame late</text><text x="16.0" y="251.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">B1. Keep the livelits a change did not touch</text><rect x="521.8" y="242" width="48.5" height="11" rx="3" fill="#b45309" opacity="0.35"/><circle cx="550.5" cy="247.5" r="4" fill="#b45309"/><text x="576.3" y="251.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">190 ms to 400 ms a step</text><text x="16.0" y="277.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">B2. Build the outline on its own, and only what changed</text><rect x="496.1" y="268" width="29.4" height="11" rx="3" fill="#b45309" opacity="0.35"/><circle cx="512.4" cy="273.5" r="4" fill="#b45309"/><text x="531.5" y="277.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">128 ms to 201 ms a step</text><text x="16.0" y="303.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">B3. Compile the run once; compare only what changed</text><rect x="494.5" y="294" width="7.4" height="11" rx="3" fill="#b45309" opacity="0.35"/><circle cx="498.3" cy="299.5" r="4" fill="#b45309"/><text x="507.9" y="303.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">125 ms to 140 ms a step</text><text x="16.0" y="329.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">B4. Save without a redraw, printing only what changed</text><rect x="463.0" y="320" width="14.4" height="11" rx="3" fill="#b45309" opacity="0.35"/><circle cx="470.6" cy="325.5" r="4" fill="#b45309"/><text x="483.3" y="329.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">77 ms to 96 ms a step</text><text x="16.0" y="355.0" font-size="10.5" text-anchor="start" fill="var(--ink)" font-weight="400">B5. Draw the picture&#x27;s probe row without rewriting its value</text><rect x="417.0" y="346" width="52.4" height="11" rx="3" fill="#b45309" opacity="0.35"/><circle cx="448.3" cy="351.5" r="4" fill="#b45309"/><text x="475.4" y="355.0" font-size="9.5" text-anchor="start" fill="var(--muted)" font-weight="400">38 ms to 85 ms each answer</text></svg><figcaption>Each ingredient's gain as <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> to <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a> measured it when it landed, in Firefox on GitHub's machines unless the table says Node, on the builds the table names. Teal: the time a user waits for, a slider step's picture or a drag's frame. Amber: the page's work after the picture is up, which delays the next frame when it runs long. The two are not added together, and a gain measured in one place can shrink once another lands: the first, the worker's answer, no longer stands between a step and its picture.</figcaption></figure></div>
+<p>Three things to keep in mind when reading it. First, a gain can shrink once another lands: the worker's answer was the step's whole wait until the run was compiled, and now it arrives in the background. Second, the ranges are over a build's steps and over one run each; machines differ by up to a third from run to run (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> ran build 7 three times: 26.2, 26.4 and 34.3 fps). Third, the drag's 80 to 85 ms is per frame, at up to 60 frames a second, so for a drag it matters more than its place in the list.</p>
+<table class="vals ranked"><tr><th>#</th><th>Ingredient</th><th>Measured</th><th>What it does today</th><th>Builds</th><th>Code (src, lines added / removed, files)</th><th>Tests</th></tr><tr class="group"><td colspan="7">What you wait for</td></tr><tr id="ing-answer"><td class="rank">A1</td><td><b>Send the worker&#x27;s answer without what the page does not read</b>. The worker ran the whole program on the interpreter and sent back every probe sample with its environment, closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two cuts (no function-holding values in the samples&#x27; environments, no trace), then no sharing between answers. Later the answer went without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).</td><td>A step&#x27;s picture 4.17 to 6.52 s on build 1, 1.85 to 2.38 s on build 2, 1.33 to 1.71 s on build 3 (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>). The answer 590 KB to 198 KB on build 20; the worker&#x27;s encode 72 to 107 ms to 21 to 29, the page&#x27;s decode 24 to 31 ms to 7 to 8. <b>2.84 s to 4.81 s off a step.</b></td><td>The picture no longer waits for the worker. Its answer still comes 1.5 to 2.4 s after a step, and costs the page 7 to 10 ms to decode.</td><td>2, 3, 20</td><td class="n">+92 / −31 in 3</td><td class="n">none</td></tr><tr id="ing-run"><td class="rank">A2</td><td><b>Compile the slide&#x27;s whole run to JavaScript, each livelit&#x27;s model a parameter</b>. hazel-jit compiles the slide&#x27;s elaborated program once into a JavaScript function whose parameters are the livelits&#x27; models. A slider&#x27;s event calls it with the new model, and every livelit draws from its answers at the page&#x27;s next redraw, before the worker has answered.</td><td>A step&#x27;s picture 1.33 to 1.71 s on build 3, 208 to 236 ms on build 5 (steps 2 to 4; <a href="../049/"><code class="ref"><b>^report(</b>49<b>)</b></code></a>). In Node, a slider&#x27;s step 684 ms on the interpreter, 2.3 to 2.5 ms compiled (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>). <b>1.09 s to 1.50 s off a step.</b></td><td>It is why a step shows in about 20 ms: the run answers in 2 to 3 ms (5 to 12 for a step&#x27;s first event).</td><td>4, 5, 18</td><td class="n">+1,307 / −12 in 6; and +506 in hazel-jit's own modules</td><td class="n">none</td></tr><tr id="ing-paint"><td class="rank">A3</td><td><b>Draw first; make the edit after the paint</b>. When the compiled run has answered a slider&#x27;s event, the page draws at once and writes the new model into the program (the edit: update, statics, syntax and the whole view) only after the browser has painted, at the next animation frame.</td><td>A step&#x27;s picture 152 to 195 ms on build 11, 19 to 24 ms on build 12 (steps 2 to 4; <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>). <b>133 ms to 171 ms off a step.</b></td><td>The edit still runs after the paint: 75 to 90 ms, the largest single piece of a step&#x27;s work left. <a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a> takes on most of it.</td><td>12</td><td class="n">+35 / −1 in 1; and +5 in hazel-jit's own modules</td><td class="n">none</td></tr><tr id="ing-views"><td class="rank">A4</td><td><b>Compile each livelit&#x27;s view</b>. A livelit&#x27;s view, a Hazel function from its model to HTML, compiled by hazel-jit and drawn straight from its JavaScript, not stepped through by the interpreter.</td><td>The Witch&#x27;s picture view in the app, in Firefox: 87 ms a render on the interpreter, 3.0 ms compiled (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>). A Polygons render in Node, 14.1 ms to 0.38 (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>). <b>84 ms off each render of the picture.</b></td><td>In a drag, a livelit drawn from JS takes about 1 ms, against 4.6 ms with nothing compiled (builds 30 to 39).</td><td>before build 1</td><td class="n">+606 / −333 in 4; and +4,328 in hazel-jit's own modules</td><td class="n">+2,289</td></tr><tr id="ing-drag"><td class="rank">A5</td><td><b>A drag redraws only what changed</b>. Four cuts to a drag&#x27;s frame: its input goes to the page as a request to draw again, not to the editor as an edit (cut A); only the livelits whose answers changed are drawn again (cut B); the projectors&#x27; data and finished views are kept while nothing they read changed (cut C); and each editor&#x27;s decorations and probes&#x27; views are kept across frames.</td><td>A 3-second drag of the Witch&#x27;s neck slider: 9.8 fps on build 5, 22.5 on build 6 (cut A), 26.4 on build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> and <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>). <b>80 ms to 85 ms off each frame of a drag.</b></td><td>A drag runs at 55 to 58 fps, its view 5 to 7 ms a frame.</td><td>6, 7, 8, 12</td><td class="n">+326 / −51 in 8; and +46 in hazel-jit's own modules</td><td class="n">none</td></tr><tr class="group"><td colspan="7">The page's own work after the picture</td></tr><tr id="ing-kept"><td class="rank">B1</td><td><b>Keep the livelits a change did not touch</b>. A livelit&#x27;s finished view is kept, keyed on what it reads (its own statics record, its own samples and those it looked up, compared by value) rather than on the whole statics map and the whole run. So after an edit only the edited livelit is drawn again, and after the worker&#x27;s answer only those whose samples changed. The same for its shape, its applied definition and its wrapper, for the probes and the sidebar&#x27;s problem list.</td><td>The page&#x27;s work after a step 0.43 to 0.60 s on build 13, 0.24 to 0.30 s on build 15 (machines alike; <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>). After an answer 4 projectors drawn, not 56 (build 19); at the answer the projectors&#x27; views 16 to 41 ms on build 26, 11 to 16 on build 31; after an edit the probes&#x27; views 4 to 13 ms on build 35, 1 to 3 on build 37. <b>190 ms to 400 ms off a step.</b></td><td>Of the 53 livelits, 51 keep their views at each answer and after each edit.</td><td>15, 19, 29, 30, 31, 32, 33, 34, 37, 38, 39</td><td class="n">+715 / −194 in 8</td><td class="n">+32</td></tr><tr id="ing-outline"><td class="rank">B2</td><td><b>Build the outline on its own, and only what changed</b>. The sidebar&#x27;s outline of the slide&#x27;s program was built inside the page&#x27;s view, after every edit and every message from the worker. It is now built on its own after the paint; it redraws the page only when it changed; it keys the run&#x27;s test results by each test&#x27;s status; and its search for rows that open no cell walks only the top-level tiles an edit changed.</td><td>The views after each worker message 88 to 130 ms on build 12, 45 to 63 on build 13 (two messages a step); after an answer the outline&#x27;s 59 to 82 ms gone (build 19); the outline after an edit 42 to 53 ms on build 21, 18 on build 36; its mark in the view 5 to 14 ms on build 40, 0 on build 41. <b>128 ms to 201 ms off a step.</b></td><td>The outline after an edit, 18 to 42 ms, runs as a task of its own.</td><td>13, 19, 22, 24, 36, 41</td><td class="n">+379 / −81 in 7</td><td class="n">none</td></tr><tr id="ing-once"><td class="rank">B3</td><td><b>Compile the run once; compare only what changed</b>. The slide&#x27;s run was compiled again after every step. Now it is kept while only models change: the new program is compared with the compiled one, models left out, and the comparison erases only the nodes a step changed.</td><td>126 to 141 ms of compiling after each step on build 8; 29 to 51 ms of comparing on build 9; 1 ms on build 17 (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> and <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>). <b>125 ms to 140 ms off a step.</b></td><td>The comparison takes about 1 ms a step; the run is kept at every step.</td><td>9, 10, 17</td><td class="n">+172 / −122 in 3; and +492 in hazel-jit's own modules</td><td class="n">none</td></tr><tr id="ing-autosave"><td class="rank">B4</td><td><b>Save without a redraw, printing only what changed</b>. The autosave went through the page&#x27;s update, so each save was followed by a calculate, a whole view and an outline. It now writes the model directly, and prints again only the top-level pieces a step changed.</td><td>About 60 ms gone after each autosave (build 16); the autosave itself 38 to 67 ms on build 21, 21 to 31 on build 23. <b>77 ms to 96 ms off a step.</b></td><td>The autosave takes 16 to 31 ms, about a second after a step.</td><td>16, 23</td><td class="n">+82 / −2 in 2</td><td class="n">+62</td></tr><tr id="ing-probe"><td class="rank">B5</td><td><b>Draw the picture&#x27;s probe row without rewriting its value</b>. The probe on the picture abbreviated its value by rewriting all of it first, and checked whether each sample was a value by running the evaluator&#x27;s step rules over the whole value. It now abbreviates in one pass, and answers plain data by its shape.</td><td>The probe row after each answer 44 to 91 ms on build 13, 8 to 21 on build 14; 15 to 35 ms on build 24, 3 to 6 on build 26. <b>38 ms to 85 ms off each answer.</b></td><td>The probe row takes 3 to 6 ms at each answer.</td><td>14, 26</td><td class="n">+62 / −11 in 4</td><td class="n">+52</td></tr></table>
+<p>Left out of the ranking, because each helped by a few milliseconds or less: the run's first step drawing only what it changed (build 18), the probes' list kept when no probe is removed (build 29), a cache hit taking the new map (build 38), and the outline's mark (build 41) are in the table under the ingredient they belong to; timers that only measured (builds 21, 25, 27, 28, 35 and 40) changed nothing, and are not counted.</p>
+
+<h2 id="left">What is left<a class="anchor" href="#left" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="left" title="copy this section's address">copy link</button></h2>
+<p><b>The largest piece of a step's work left is the edit made after the paint, 75 to 90 ms on a fast machine, and it is under way as <a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a>: when only a livelit's model changes, keep the statics the program had.</b> Build 42 timed the edit's parts: the zipper's own action (writing the model's text into the program) 11 to 20 ms; the statics 14 to 35 ms, of which re-analyzing the edited top-level item is 12 to 28 and parsing 2 to 8; the syntax cache 11 to 29; and the view after it 25 to 38. A model can change the program's values but not its types or its outline, so the statics and the outline need not be worked out again; the elaboration the worker runs must still carry the new model.</p>
+<p>After that: the worker's answer, which still runs the whole program on the interpreter 1.5 to 2.4 s after a step and costs the page 50 to 60 ms to take in, though the compiled run already answered (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> step 4, partly done); a pause of 20 to 35 ms once a step after the answer, landing somewhere else each time, most likely the browser collecting the answer's garbage; and the step itself, 20 to 30 ms, a frame or so above 60 fps's 16.7.</p>
+
+<h2 id="redo">Redoing it by hand, in small increments<a class="anchor" href="#redo" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="redo" title="copy this section's address">copy link</button></h2>
+<p><b>The work can be redone in nine increments, ruler first, each a pull request small enough to read, and five of the ten ingredients need neither hazel-jit nor each other.</b> There is a feeling on the team that some of this work should be redone by hand, to avoid the debt of machine-written code, in small increments. Some facts about what there is to redo: the branch, <code>trial/694-view-jit</code>, has 116 commits from 11-06 to 11-10, adding 8,995 lines to <code>src/</code> and removing 1,066, in 49 files, with 2,422 lines of tests and 672 of scripts and CI. The compiler is 2,975 of those lines, in four modules, and 2,063 of the test lines check that each compiled program agrees with the interpreter. Of the ten ingredients, 6 came with no test of their own; the Firefox check, which drives the app and times it, was their only check. And 5 commits only fixed the one before, which did not compile, since nothing was compiled on the laptop and every type check ran on GitHub.</p>
+<p>The order below puts the measuring first, then what helps any branch, then hazel-jit's pieces in the order they depend on each other. Each increment names the ingredient it carries; its size is the lines that ingredient's commits added to <code>src/</code>, a ceiling, since they include the timers each change was measured with.</p>
+<table class="vals"><tr><th>Order</th><th>Increment</th><th>What it holds</th><th>Size (lines)</th><th>Needs first</th></tr><tr><td class="rank">0</td><td><b>The ruler</b></td><td>The Firefox check that drives the Witch slide and times each step and drag (<code>scripts/jit_slides.py</code>, <code>.github/workflows/jit.yml</code>), the page's timeline of marks (<code>Util.BenchMarks</code>) and the worker's answer weighed by part (<code>AnswerParts</code>). It changes nothing a user sees; with it, each later increment is measured the way this report's builds were.</td><td class="n">672 in scripts and CI; 91 and 531 in the two modules</td><td>nothing</td></tr><tr><td class="rank">1</td><td><b>The worker's answer, smaller</b></td><td>Ingredient A1. The worker and its messages only; it helps <code>dev</code> as much as the livelits branch.</td><td class="n">92</td><td>nothing</td></tr><tr><td class="rank">2</td><td><b>Page work every edit pays</b></td><td>The ingredients that need no hazel-jit: the outline on its own (B2), the autosave without a redraw (B4), the probe row (B5). Each its own small PR.</td><td class="n">379, 82 and 62</td><td>the outline and autosave: the livelits branch; the probe row: dev</td></tr><tr><td class="rank">3</td><td><b>Livelits kept</b></td><td>Ingredient B1: a livelit's view, shape and applied definition keyed on what it reads. Several small PRs, one cache each, each with a test that the cache gives the same view.</td><td class="n">715</td><td>livelits</td></tr><tr><td class="rank">4</td><td><b>The compiler</b></td><td>hazel-jit itself: 2,975 lines in four modules (the values' bridge, the compiler, the DOM, the run), with 2,063 lines of tests that each compiled program agrees with the interpreter. The largest piece, and the one that most needs review by hand; it can land a module at a time.</td><td class="n">2,975, and 2,063 of tests</td><td>nothing</td></tr><tr><td class="rank">5</td><td><b>Compiled views</b></td><td>Ingredient A4: livelit views drawn from compiled JS.</td><td class="n">606 outside the compiler</td><td>4, livelits</td></tr><tr><td class="rank">6</td><td><b>The run compiled in the page</b></td><td>Ingredients A2 and B3: the slide's run, compiled once, called at a slider's event, kept while only models change.</td><td class="n">1,307 and 172</td><td>4, 5</td></tr><tr><td class="rank">7</td><td><b>Draw first, edit after the paint</b></td><td>Ingredient A3.</td><td class="n">35</td><td>6</td></tr><tr><td class="rank">8</td><td><b>The drag fast path</b></td><td>Ingredient A5: four cuts, each its own PR.</td><td class="n">326</td><td>6</td></tr></table>
+<p>Two things make a hand redo cheaper than the first time. The ruler already exists, so each increment can be measured the way the builds here were, and kept only if it helps. And the dead ends are known: samples sent as data made the answer larger and were turned off (build 11, <a href="../047/"><code class="ref"><b>^report(</b>47<b>)</b></code></a>); two caches regressed the drag before they were fixed (builds 31 to 34). Neither needs to be tried again.</p>
+
+<h2 id="builds">The builds<a class="anchor" href="#builds" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="builds" title="copy this section's address">copy link</button></h2>
+<p><b>Every figure and table here names its build, numbered as in <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> and <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>: each build is the one before it plus one change, all on <code>trial/694-view-jit</code> (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>).</b> The table lists the builds this report cites, with each one's three measures; <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> and <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a> list all 41, with what each added.</p>
+<table class="vals"><tr><th>Build</th><th>Commit</th><th>Firefox run</th><th>A step: click to picture, steps 2 to 4</th><th>A drag</th><th>The page's work after the picture</th></tr><tr><td>1 · the branch as it was</td><td>dfa3fcdffe</td><td>42486001354</td><td class="n">4.17 to 6.52 s (all steps)</td><td class="n">not measured</td><td class="n">not measured</td></tr><tr><td>2 · the answer cut</td><td>20a3067c18</td><td>42490487136</td><td class="n">1.85 to 2.38 s (all steps)</td><td class="n">not measured</td><td class="n">not measured</td></tr><tr><td>3 · the answer unshared</td><td>4747a4120d</td><td>42492117212</td><td class="n">1.33 to 1.71 s (all steps)</td><td class="n">not measured</td><td class="n">not measured</td></tr><tr><td>4 · the run compiled</td><td>6d71c427bf</td><td>42551267058</td><td class="n">318 to 1694 ms</td><td class="n">not measured</td><td class="n">0 to 499 ms</td></tr><tr><td>5 · steps back kept</td><td>bb88edfd12</td><td>42556616487</td><td class="n">208 to 236 ms</td><td class="n">9.8 fps</td><td class="n">340 to 405 ms</td></tr><tr><td>6 · cut A</td><td>9fca635226</td><td>42560502616</td><td class="n">223 to 271 ms</td><td class="n">22.5 fps</td><td class="n">513 to 675 ms</td></tr><tr><td>7 · cut B</td><td>38d4e4d0f8</td><td>42562102280</td><td class="n">245 to 284 ms</td><td class="n">26.4 fps</td><td class="n">526 to 673 ms</td></tr><tr><td>8 · cut C</td><td>61f3f01a15</td><td>42566328043</td><td class="n">176 to 222 ms</td><td class="n">48.4 fps</td><td class="n">367 to 405 ms</td></tr><tr><td>9 · steps 3 and 4</td><td>7f5add1519</td><td>42651798712</td><td class="n">204 to 234 ms</td><td class="n">54.3 fps</td><td class="n">315 to 562 ms</td></tr><tr><td>10 · the comparison after the paint</td><td>3e51af567f</td><td>42654708022</td><td class="n">183 to 216 ms</td><td class="n">47.8 fps</td><td class="n">403 to 543 ms</td></tr><tr><td>11 · samples as data</td><td>1524e96da3</td><td>42657604986</td><td class="n">152 to 195 ms</td><td class="n">56.3 fps</td><td class="n">312 to 332 ms</td></tr><tr><td>12 · steps 2 and 1</td><td>d9d63c13af</td><td>42658981172</td><td class="n">19 to 24 ms</td><td class="n">57.6 fps</td><td class="n">475 to 529 ms</td></tr><tr><td>13 · the outline on its own</td><td>8bf44f23cf</td><td>42670654733</td><td class="n">24 to 51 ms</td><td class="n">57.6 fps</td><td class="n">430 to 596 ms</td></tr><tr><td>14 · the page after a step</td><td>b310a58b67</td><td>42690151014</td><td class="n">25 to 73 ms</td><td class="n">52.0 fps</td><td class="n">431 to 578 ms</td></tr><tr><td>15 · livelits kept across an edit</td><td>1da80a8022</td><td>42697957029</td><td class="n">16 to 20 ms</td><td class="n">58.6 fps</td><td class="n">280 to 334 ms</td></tr><tr><td>16 · the autosave on its own</td><td>f4bcd64cf7</td><td>42699757678</td><td class="n">21 to 37 ms</td><td class="n">51.7 fps</td><td class="n">343 to 420 ms</td></tr><tr><td>17 · the comparison, only what changed</td><td>b195b09088</td><td>42703776919</td><td class="n">28 to 42 ms</td><td class="n">45.7 fps</td><td class="n">299 to 418 ms</td></tr><tr><td>18 · the first step like the others</td><td>f125a69a7b</td><td>42713728065</td><td class="n">20 to 37 ms</td><td class="n">55.7 fps</td><td class="n">343 to 445 ms</td></tr><tr><td>19 · the page after an answer</td><td>f813da534d</td><td>42739071781</td><td class="n">26 to 28 ms</td><td class="n">51.0 fps</td><td class="n">307 to 375 ms</td></tr><tr><td>20 · the answer as data</td><td>f432751f99</td><td>42747955240</td><td class="n">20 to 22 ms</td><td class="n">55.6 fps</td><td class="n">210 to 321 ms</td></tr><tr><td>22 · refusals, paths when asked</td><td>2b88bf18bf</td><td>42759149693</td><td class="n">25 to 30 ms</td><td class="n">55.4 fps</td><td class="n">255 to 276 ms</td></tr><tr><td>23 · the autosave, only what changed</td><td>d68bd6400b</td><td>42760087460</td><td class="n">23 to 50 ms</td><td class="n">46.8 fps</td><td class="n">299 to 323 ms</td></tr><tr><td>24 · refusals, asked last</td><td>a1ab2e52d4</td><td>42761046647</td><td class="n">25 to 26 ms</td><td class="n">54.3 fps</td><td class="n">231 to 276 ms</td></tr><tr><td>26 · plain data is a value</td><td>0ddf3b9efe</td><td>42771757499</td><td class="n">23 to 29 ms</td><td class="n">51.0 fps</td><td class="n">239 to 250 ms</td></tr><tr><td>29 · the probes&#x27; list kept</td><td>5fdb0d3004</td><td>42774510803</td><td class="n">22 to 58 ms</td><td class="n">58.0 fps</td><td class="n">236 to 283 ms</td></tr><tr><td>30 · kept livelits keep their wrappers</td><td>96a5031217</td><td>42775688527</td><td class="n">21 to 27 ms</td><td class="n">51.7 fps</td><td class="n">242 to 256 ms</td></tr><tr><td>31 · shapes by value, an equal projector list</td><td>3f8ccae8b6</td><td>42783064879</td><td class="n">21 to 29 ms</td><td class="n">39.2 fps</td><td class="n">225 to 244 ms</td></tr><tr><td>32 · a use&#x27;s applied livelit kept</td><td>285968fd06</td><td>42793713877</td><td class="n">22 to 38 ms</td><td class="n">58.3 fps</td><td class="n">196 to 266 ms</td></tr><tr><td>33 · the memo holds 64, the sidebar&#x27;s problems kept</td><td>1d53e66e27</td><td>42808401120</td><td class="n">21 to 29 ms</td><td class="n">38.1 fps</td><td class="n">240 to 273 ms</td></tr><tr><td>34 · a shape kept by its definition when it does not read the model</td><td>c1476f1244</td><td>42809664205</td><td class="n">21 to 26 ms</td><td class="n">55.0 fps</td><td class="n">231 to 243 ms</td></tr><tr><td>36 · the outline&#x27;s refusals kept per top-level tile</td><td>62a517d8b4</td><td>42813221124</td><td class="n">21 to 25 ms</td><td class="n">55.0 fps</td><td class="n">227 to 237 ms</td></tr><tr><td>37 · a probe kept by its own statics</td><td>3e3118f380</td><td>42814828261</td><td class="n">19 to 26 ms</td><td class="n">57.6 fps</td><td class="n">175 to 182 ms</td></tr><tr><td>38 · a cache hit on equal reads takes the new map</td><td>19ecb75694</td><td>42817304210</td><td class="n">20 to 31 ms</td><td class="n">55.7 fps</td><td class="n">167 to 183 ms</td></tr><tr><td>39 · a projector&#x27;s hidden-syntax error check kept</td><td>9a5a3e7a64</td><td>42818821410</td><td class="n">22 to 25 ms</td><td class="n">56.7 fps</td><td class="n">202 to 208 ms</td></tr><tr><td>41 · the outline mark stands</td><td>a02025f5dc</td><td>42822587416</td><td class="n">28 to 75 ms</td><td class="n">49.0 fps</td><td class="n">234 to 273 ms</td></tr></table>
+<p>Build 38's figures use its second run (42817304210); its first (42816040542) landed on a machine 20 to 45% slower on work the build did not touch (the worker's encode, the slide's whole run), and read slower throughout.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li><a href="https://matthewhammer.org/hazel/dashboard/#ticket-721"><code class="ref"><b>^ticket(</b>721<b>)</b></code></a>: when only a livelit's model changes, keep the statics and the outline the program had, and give the elaboration the new model. Build 42 measured what that could take away: 14 to 35 ms of statics and the outline's 18 to 42.</li>
+<li>Skip the worker's run when the compiled run has answered, or take its answer in without a whole view.</li>
+<li>Agree with the team on the order of the hand redo, and which increments go to <code>dev</code> first.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>The numbers are the ones <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> to <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a> measured, cited by build. The figures are drawn from each build's run of the Firefox check (<code>scripts/jit_slides.py</code> in <code>jit.yml</code> on GitHub's machines): its <code>jit.json</code> and <code>jit.log</code>, kept in <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a>'s and 051's <code>data/runs/</code>. A step's time is from the slider's click to the picture changing, steps 2 to 4 of the four (the first step of a slide pays first-call costs); the page's work after the picture is the sum of its top-level marks (view, calculate, update, decode, the outline, the comparison) from the picture to half a second after the worker's answer; a drag is 3 seconds of the neck slider. Each ingredient's code size is <code>git show --numstat</code> over the commits the ranked table names, in <code>~/hazel-694-jit</code>, counting <code>src/</code> without hazel-jit's own four modules (counted apart), and <code>test/</code>. The generator is <code>052/gen052.py</code>; the numbers are in <code>052/data/numbers.json</code> and in the page.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/052/data"><code>052/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-10T12:40:01Z", "base": "integration/livelits-modular-editors"}}, BUILT = "2026-11-10";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 52,
+ "title": "What Mattered, Ranked",
+ "date": "2026-11-10",
+ "kind": "summary for the Hazel team: reports 045 to 051 gathered, the ingredients ranked, an order for a hand redo; work in progress",
+ "status": "work in progress",
+ "question": "Of everything changed from 2026-11-06 to 2026-11-10 to make a livelit's slider in Hazel fast, what made the difference, how much did each change help, and in what order could the team redo it by hand in small increments? Matthew, 2026-11-10.",
+ "measurements": "No new measurement of the app: each ingredient's before and after are the numbers reports 045 to 051 measured, cited by build. The figures come from each build's run of the Firefox check (scripts/jit_slides.py in jit.yml, hazelgrove/hazel, GitHub's machines, one run per build): the Witch slide's four slider steps (ms from the click to the picture changing; steps 2 to 4 plotted), a 3-second drag of the neck slider (frames a second), and the page's top-level marks from the picture to half a second after the worker's answer (ms). Builds 1 to 3's steps are report 050's, from report 046's runs. Code sizes: git show --numstat over the commits each ingredient names, in hazelgrove/hazel trial/694-view-jit.",
+ "builds": "Numbered as in reports 050 and 051: build N is the build before it plus one change, all on trial/694-view-jit; the builds table in the page lists the ones cited, with commit and run. Build 38's figures use its second run, 42817304210.",
+ "files": [
+  "data/meta.json",
+  "data/numbers.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "The ingredients, ranked",
+   "section_id": "ranked",
+   "columns": [
+    "#",
+    "Ingredient",
+    "Measured",
+    "What it does today",
+    "Builds",
+    "Code (src, lines added / removed, files)",
+    "Tests"
+   ],
+   "rows": [
+    [
+     "What you wait for",
+     "What you wait for",
+     "What you wait for",
+     "What you wait for",
+     "What you wait for",
+     "What you wait for",
+     "What you wait for"
+    ],
+    [
+     "A1",
+     "Send the worker's answer without what the page does not read. The worker ran the whole program on the interpreter and sent back every probe sample with its environment, closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two cuts (no function-holding values in the samples' environments, no trace), then no sharing between answers. Later the answer went without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).",
+     "A step's picture 4.17 to 6.52 s on build 1, 1.85 to 2.38 s on build 2, 1.33 to 1.71 s on build 3 (^report(46)). The answer 590 KB to 198 KB on build 20; the worker's encode 72 to 107 ms to 21 to 29, the page's decode 24 to 31 ms to 7 to 8. 2.84 s to 4.81 s off a step.",
+     "The picture no longer waits for the worker. Its answer still comes 1.5 to 2.4 s after a step, and costs the page 7 to 10 ms to decode.",
+     "2, 3, 20",
+     "+92 / −31 in 3",
+     "none"
+    ],
+    [
+     "A2",
+     "Compile the slide's whole run to JavaScript, each livelit's model a parameter. hazel-jit compiles the slide's elaborated program once into a JavaScript function whose parameters are the livelits' models. A slider's event calls it with the new model, and every livelit draws from its answers at the page's next redraw, before the worker has answered.",
+     "A step's picture 1.33 to 1.71 s on build 3, 208 to 236 ms on build 5 (steps 2 to 4; ^report(49)). In Node, a slider's step 684 ms on the interpreter, 2.3 to 2.5 ms compiled (^report(45)). 1.09 s to 1.50 s off a step.",
+     "It is why a step shows in about 20 ms: the run answers in 2 to 3 ms (5 to 12 for a step's first event).",
+     "4, 5, 18",
+     "+1,307 / −12 in 6; and +506 in hazel-jit's own modules",
+     "none"
+    ],
+    [
+     "A3",
+     "Draw first; make the edit after the paint. When the compiled run has answered a slider's event, the page draws at once and writes the new model into the program (the edit: update, statics, syntax and the whole view) only after the browser has painted, at the next animation frame.",
+     "A step's picture 152 to 195 ms on build 11, 19 to 24 ms on build 12 (steps 2 to 4; ^report(51)). 133 ms to 171 ms off a step.",
+     "The edit still runs after the paint: 75 to 90 ms, the largest single piece of a step's work left. ^ticket(721) takes on most of it.",
+     "12",
+     "+35 / −1 in 1; and +5 in hazel-jit's own modules",
+     "none"
+    ],
+    [
+     "A4",
+     "Compile each livelit's view. A livelit's view, a Hazel function from its model to HTML, compiled by hazel-jit and drawn straight from its JavaScript, not stepped through by the interpreter.",
+     "The Witch's picture view in the app, in Firefox: 87 ms a render on the interpreter, 3.0 ms compiled (^report(46)). A Polygons render in Node, 14.1 ms to 0.38 (^report(45)). 84 ms off each render of the picture.",
+     "In a drag, a livelit drawn from JS takes about 1 ms, against 4.6 ms with nothing compiled (builds 30 to 39).",
+     "before build 1",
+     "+606 / −333 in 4; and +4,328 in hazel-jit's own modules",
+     "+2,289"
+    ],
+    [
+     "A5",
+     "A drag redraws only what changed. Four cuts to a drag's frame: its input goes to the page as a request to draw again, not to the editor as an edit (cut A); only the livelits whose answers changed are drawn again (cut B); the projectors' data and finished views are kept while nothing they read changed (cut C); and each editor's decorations and probes' views are kept across frames.",
+     "A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (cut A), 26.4 on build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (^report(50) and ^report(51)). 80 ms to 85 ms off each frame of a drag.",
+     "A drag runs at 55 to 58 fps, its view 5 to 7 ms a frame.",
+     "6, 7, 8, 12",
+     "+326 / −51 in 8; and +46 in hazel-jit's own modules",
+     "none"
+    ],
+    [
+     "The page's own work after the picture",
+     "The page's own work after the picture",
+     "The page's own work after the picture",
+     "The page's own work after the picture",
+     "The page's own work after the picture",
+     "The page's own work after the picture",
+     "The page's own work after the picture"
+    ],
+    [
+     "B1",
+     "Keep the livelits a change did not touch. A livelit's finished view is kept, keyed on what it reads (its own statics record, its own samples and those it looked up, compared by value) rather than on the whole statics map and the whole run. So after an edit only the edited livelit is drawn again, and after the worker's answer only those whose samples changed. The same for its shape, its applied definition and its wrapper, for the probes and the sidebar's problem list.",
+     "The page's work after a step 0.43 to 0.60 s on build 13, 0.24 to 0.30 s on build 15 (machines alike; ^report(51)). After an answer 4 projectors drawn, not 56 (build 19); at the answer the projectors' views 16 to 41 ms on build 26, 11 to 16 on build 31; after an edit the probes' views 4 to 13 ms on build 35, 1 to 3 on build 37. 190 ms to 400 ms off a step.",
+     "Of the 53 livelits, 51 keep their views at each answer and after each edit.",
+     "15, 19, 29, 30, 31, 32, 33, 34, 37, 38, 39",
+     "+715 / −194 in 8",
+     "+32"
+    ],
+    [
+     "B2",
+     "Build the outline on its own, and only what changed. The sidebar's outline of the slide's program was built inside the page's view, after every edit and every message from the worker. It is now built on its own after the paint; it redraws the page only when it changed; it keys the run's test results by each test's status; and its search for rows that open no cell walks only the top-level tiles an edit changed.",
+     "The views after each worker message 88 to 130 ms on build 12, 45 to 63 on build 13 (two messages a step); after an answer the outline's 59 to 82 ms gone (build 19); the outline after an edit 42 to 53 ms on build 21, 18 on build 36; its mark in the view 5 to 14 ms on build 40, 0 on build 41. 128 ms to 201 ms off a step.",
+     "The outline after an edit, 18 to 42 ms, runs as a task of its own.",
+     "13, 19, 22, 24, 36, 41",
+     "+379 / −81 in 7",
+     "none"
+    ],
+    [
+     "B3",
+     "Compile the run once; compare only what changed. The slide's run was compiled again after every step. Now it is kept while only models change: the new program is compared with the compiled one, models left out, and the comparison erases only the nodes a step changed.",
+     "126 to 141 ms of compiling after each step on build 8; 29 to 51 ms of comparing on build 9; 1 ms on build 17 (^report(50) and ^report(51)). 125 ms to 140 ms off a step.",
+     "The comparison takes about 1 ms a step; the run is kept at every step.",
+     "9, 10, 17",
+     "+172 / −122 in 3; and +492 in hazel-jit's own modules",
+     "none"
+    ],
+    [
+     "B4",
+     "Save without a redraw, printing only what changed. The autosave went through the page's update, so each save was followed by a calculate, a whole view and an outline. It now writes the model directly, and prints again only the top-level pieces a step changed.",
+     "About 60 ms gone after each autosave (build 16); the autosave itself 38 to 67 ms on build 21, 21 to 31 on build 23. 77 ms to 96 ms off a step.",
+     "The autosave takes 16 to 31 ms, about a second after a step.",
+     "16, 23",
+     "+82 / −2 in 2",
+     "+62"
+    ],
+    [
+     "B5",
+     "Draw the picture's probe row without rewriting its value. The probe on the picture abbreviated its value by rewriting all of it first, and checked whether each sample was a value by running the evaluator's step rules over the whole value. It now abbreviates in one pass, and answers plain data by its shape.",
+     "The probe row after each answer 44 to 91 ms on build 13, 8 to 21 on build 14; 15 to 35 ms on build 24, 3 to 6 on build 26. 38 ms to 85 ms off each answer.",
+     "The probe row takes 3 to 6 ms at each answer.",
+     "14, 26",
+     "+62 / −11 in 4",
+     "+52"
+    ]
+   ]
+  },
+  {
+   "section": "Redoing it by hand, in small increments",
+   "section_id": "redo",
+   "columns": [
+    "Order",
+    "Increment",
+    "What it holds",
+    "Size (lines)",
+    "Needs first"
+   ],
+   "rows": [
+    [
+     "0",
+     "The ruler",
+     "The Firefox check that drives the Witch slide and times each step and drag (scripts/jit_slides.py, .github/workflows/jit.yml), the page's timeline of marks (Util.BenchMarks) and the worker's answer weighed by part (AnswerParts). It changes nothing a user sees; with it, each later increment is measured the way this report's builds were.",
+     "672 in scripts and CI; 91 and 531 in the two modules",
+     "nothing"
+    ],
+    [
+     "1",
+     "The worker's answer, smaller",
+     "Ingredient A1. The worker and its messages only; it helps dev as much as the livelits branch.",
+     "92",
+     "nothing"
+    ],
+    [
+     "2",
+     "Page work every edit pays",
+     "The ingredients that need no hazel-jit: the outline on its own (B2), the autosave without a redraw (B4), the probe row (B5). Each its own small PR.",
+     "379, 82 and 62",
+     "the outline and autosave: the livelits branch; the probe row: dev"
+    ],
+    [
+     "3",
+     "Livelits kept",
+     "Ingredient B1: a livelit's view, shape and applied definition keyed on what it reads. Several small PRs, one cache each, each with a test that the cache gives the same view.",
+     "715",
+     "livelits"
+    ],
+    [
+     "4",
+     "The compiler",
+     "hazel-jit itself: 2,975 lines in four modules (the values' bridge, the compiler, the DOM, the run), with 2,063 lines of tests that each compiled program agrees with the interpreter. The largest piece, and the one that most needs review by hand; it can land a module at a time.",
+     "2,975, and 2,063 of tests",
+     "nothing"
+    ],
+    [
+     "5",
+     "Compiled views",
+     "Ingredient A4: livelit views drawn from compiled JS.",
+     "606 outside the compiler",
+     "4, livelits"
+    ],
+    [
+     "6",
+     "The run compiled in the page",
+     "Ingredients A2 and B3: the slide's run, compiled once, called at a slider's event, kept while only models change.",
+     "1,307 and 172",
+     "4, 5"
+    ],
+    [
+     "7",
+     "Draw first, edit after the paint",
+     "Ingredient A3.",
+     "35",
+     "6"
+    ],
+    [
+     "8",
+     "The drag fast path",
+     "Ingredient A5: four cuts, each its own PR.",
+     "326",
+     "6"
+    ]
+   ]
+  },
+  {
+   "section": "The builds",
+   "section_id": "builds",
+   "columns": [
+    "Build",
+    "Commit",
+    "Firefox run",
+    "A step: click to picture, steps 2 to 4",
+    "A drag",
+    "The page's work after the picture"
+   ],
+   "rows": [
+    [
+     "1 · the branch as it was",
+     "dfa3fcdffe",
+     "42486001354",
+     "4.17 to 6.52 s (all steps)",
+     "not measured",
+     "not measured"
+    ],
+    [
+     "2 · the answer cut",
+     "20a3067c18",
+     "42490487136",
+     "1.85 to 2.38 s (all steps)",
+     "not measured",
+     "not measured"
+    ],
+    [
+     "3 · the answer unshared",
+     "4747a4120d",
+     "42492117212",
+     "1.33 to 1.71 s (all steps)",
+     "not measured",
+     "not measured"
+    ],
+    [
+     "4 · the run compiled",
+     "6d71c427bf",
+     "42551267058",
+     "318 to 1694 ms",
+     "not measured",
+     "0 to 499 ms"
+    ],
+    [
+     "5 · steps back kept",
+     "bb88edfd12",
+     "42556616487",
+     "208 to 236 ms",
+     "9.8 fps",
+     "340 to 405 ms"
+    ],
+    [
+     "6 · cut A",
+     "9fca635226",
+     "42560502616",
+     "223 to 271 ms",
+     "22.5 fps",
+     "513 to 675 ms"
+    ],
+    [
+     "7 · cut B",
+     "38d4e4d0f8",
+     "42562102280",
+     "245 to 284 ms",
+     "26.4 fps",
+     "526 to 673 ms"
+    ],
+    [
+     "8 · cut C",
+     "61f3f01a15",
+     "42566328043",
+     "176 to 222 ms",
+     "48.4 fps",
+     "367 to 405 ms"
+    ],
+    [
+     "9 · steps 3 and 4",
+     "7f5add1519",
+     "42651798712",
+     "204 to 234 ms",
+     "54.3 fps",
+     "315 to 562 ms"
+    ],
+    [
+     "10 · the comparison after the paint",
+     "3e51af567f",
+     "42654708022",
+     "183 to 216 ms",
+     "47.8 fps",
+     "403 to 543 ms"
+    ],
+    [
+     "11 · samples as data",
+     "1524e96da3",
+     "42657604986",
+     "152 to 195 ms",
+     "56.3 fps",
+     "312 to 332 ms"
+    ],
+    [
+     "12 · steps 2 and 1",
+     "d9d63c13af",
+     "42658981172",
+     "19 to 24 ms",
+     "57.6 fps",
+     "475 to 529 ms"
+    ],
+    [
+     "13 · the outline on its own",
+     "8bf44f23cf",
+     "42670654733",
+     "24 to 51 ms",
+     "57.6 fps",
+     "430 to 596 ms"
+    ],
+    [
+     "14 · the page after a step",
+     "b310a58b67",
+     "42690151014",
+     "25 to 73 ms",
+     "52.0 fps",
+     "431 to 578 ms"
+    ],
+    [
+     "15 · livelits kept across an edit",
+     "1da80a8022",
+     "42697957029",
+     "16 to 20 ms",
+     "58.6 fps",
+     "280 to 334 ms"
+    ],
+    [
+     "16 · the autosave on its own",
+     "f4bcd64cf7",
+     "42699757678",
+     "21 to 37 ms",
+     "51.7 fps",
+     "343 to 420 ms"
+    ],
+    [
+     "17 · the comparison, only what changed",
+     "b195b09088",
+     "42703776919",
+     "28 to 42 ms",
+     "45.7 fps",
+     "299 to 418 ms"
+    ],
+    [
+     "18 · the first step like the others",
+     "f125a69a7b",
+     "42713728065",
+     "20 to 37 ms",
+     "55.7 fps",
+     "343 to 445 ms"
+    ],
+    [
+     "19 · the page after an answer",
+     "f813da534d",
+     "42739071781",
+     "26 to 28 ms",
+     "51.0 fps",
+     "307 to 375 ms"
+    ],
+    [
+     "20 · the answer as data",
+     "f432751f99",
+     "42747955240",
+     "20 to 22 ms",
+     "55.6 fps",
+     "210 to 321 ms"
+    ],
+    [
+     "22 · refusals, paths when asked",
+     "2b88bf18bf",
+     "42759149693",
+     "25 to 30 ms",
+     "55.4 fps",
+     "255 to 276 ms"
+    ],
+    [
+     "23 · the autosave, only what changed",
+     "d68bd6400b",
+     "42760087460",
+     "23 to 50 ms",
+     "46.8 fps",
+     "299 to 323 ms"
+    ],
+    [
+     "24 · refusals, asked last",
+     "a1ab2e52d4",
+     "42761046647",
+     "25 to 26 ms",
+     "54.3 fps",
+     "231 to 276 ms"
+    ],
+    [
+     "26 · plain data is a value",
+     "0ddf3b9efe",
+     "42771757499",
+     "23 to 29 ms",
+     "51.0 fps",
+     "239 to 250 ms"
+    ],
+    [
+     "29 · the probes' list kept",
+     "5fdb0d3004",
+     "42774510803",
+     "22 to 58 ms",
+     "58.0 fps",
+     "236 to 283 ms"
+    ],
+    [
+     "30 · kept livelits keep their wrappers",
+     "96a5031217",
+     "42775688527",
+     "21 to 27 ms",
+     "51.7 fps",
+     "242 to 256 ms"
+    ],
+    [
+     "31 · shapes by value, an equal projector list",
+     "3f8ccae8b6",
+     "42783064879",
+     "21 to 29 ms",
+     "39.2 fps",
+     "225 to 244 ms"
+    ],
+    [
+     "32 · a use's applied livelit kept",
+     "285968fd06",
+     "42793713877",
+     "22 to 38 ms",
+     "58.3 fps",
+     "196 to 266 ms"
+    ],
+    [
+     "33 · the memo holds 64, the sidebar's problems kept",
+     "1d53e66e27",
+     "42808401120",
+     "21 to 29 ms",
+     "38.1 fps",
+     "240 to 273 ms"
+    ],
+    [
+     "34 · a shape kept by its definition when it does not read the model",
+     "c1476f1244",
+     "42809664205",
+     "21 to 26 ms",
+     "55.0 fps",
+     "231 to 243 ms"
+    ],
+    [
+     "36 · the outline's refusals kept per top-level tile",
+     "62a517d8b4",
+     "42813221124",
+     "21 to 25 ms",
+     "55.0 fps",
+     "227 to 237 ms"
+    ],
+    [
+     "37 · a probe kept by its own statics",
+     "3e3118f380",
+     "42814828261",
+     "19 to 26 ms",
+     "57.6 fps",
+     "175 to 182 ms"
+    ],
+    [
+     "38 · a cache hit on equal reads takes the new map",
+     "19ecb75694",
+     "42817304210",
+     "20 to 31 ms",
+     "55.7 fps",
+     "167 to 183 ms"
+    ],
+    [
+     "39 · a projector's hidden-syntax error check kept",
+     "9a5a3e7a64",
+     "42818821410",
+     "22 to 25 ms",
+     "56.7 fps",
+     "202 to 208 ms"
+    ],
+    [
+     "41 · the outline mark stands",
+     "a02025f5dc",
+     "42822587416",
+     "28 to 75 ms",
+     "49.0 fps",
+     "234 to 273 ms"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/052/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>

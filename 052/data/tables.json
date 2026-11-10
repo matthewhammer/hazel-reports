@@ -1,0 +1,495 @@
+[
+ {
+  "section": "The ingredients, ranked",
+  "section_id": "ranked",
+  "columns": [
+   "#",
+   "Ingredient",
+   "Measured",
+   "What it does today",
+   "Builds",
+   "Code (src, lines added / removed, files)",
+   "Tests"
+  ],
+  "rows": [
+   [
+    "What you wait for",
+    "What you wait for",
+    "What you wait for",
+    "What you wait for",
+    "What you wait for",
+    "What you wait for",
+    "What you wait for"
+   ],
+   [
+    "A1",
+    "Send the worker's answer without what the page does not read. The worker ran the whole program on the interpreter and sent back every probe sample with its environment, closures and all, and a trace, about 5 MB of terms; the picture waited for it. Two cuts (no function-holding values in the samples' environments, no trace), then no sharing between answers. Later the answer went without a stream the page dropped on arrival, and its first-order values as data (590 KB to 198 KB).",
+    "A step's picture 4.17 to 6.52 s on build 1, 1.85 to 2.38 s on build 2, 1.33 to 1.71 s on build 3 (^report(46)). The answer 590 KB to 198 KB on build 20; the worker's encode 72 to 107 ms to 21 to 29, the page's decode 24 to 31 ms to 7 to 8. 2.84 s to 4.81 s off a step.",
+    "The picture no longer waits for the worker. Its answer still comes 1.5 to 2.4 s after a step, and costs the page 7 to 10 ms to decode.",
+    "2, 3, 20",
+    "+92 / −31 in 3",
+    "none"
+   ],
+   [
+    "A2",
+    "Compile the slide's whole run to JavaScript, each livelit's model a parameter. hazel-jit compiles the slide's elaborated program once into a JavaScript function whose parameters are the livelits' models. A slider's event calls it with the new model, and every livelit draws from its answers at the page's next redraw, before the worker has answered.",
+    "A step's picture 1.33 to 1.71 s on build 3, 208 to 236 ms on build 5 (steps 2 to 4; ^report(49)). In Node, a slider's step 684 ms on the interpreter, 2.3 to 2.5 ms compiled (^report(45)). 1.09 s to 1.50 s off a step.",
+    "It is why a step shows in about 20 ms: the run answers in 2 to 3 ms (5 to 12 for a step's first event).",
+    "4, 5, 18",
+    "+1,307 / −12 in 6; and +506 in hazel-jit's own modules",
+    "none"
+   ],
+   [
+    "A3",
+    "Draw first; make the edit after the paint. When the compiled run has answered a slider's event, the page draws at once and writes the new model into the program (the edit: update, statics, syntax and the whole view) only after the browser has painted, at the next animation frame.",
+    "A step's picture 152 to 195 ms on build 11, 19 to 24 ms on build 12 (steps 2 to 4; ^report(51)). 133 ms to 171 ms off a step.",
+    "The edit still runs after the paint: 75 to 90 ms, the largest single piece of a step's work left. ^ticket(721) takes on most of it.",
+    "12",
+    "+35 / −1 in 1; and +5 in hazel-jit's own modules",
+    "none"
+   ],
+   [
+    "A4",
+    "Compile each livelit's view. A livelit's view, a Hazel function from its model to HTML, compiled by hazel-jit and drawn straight from its JavaScript, not stepped through by the interpreter.",
+    "The Witch's picture view in the app, in Firefox: 87 ms a render on the interpreter, 3.0 ms compiled (^report(46)). A Polygons render in Node, 14.1 ms to 0.38 (^report(45)). 84 ms off each render of the picture.",
+    "In a drag, a livelit drawn from JS takes about 1 ms, against 4.6 ms with nothing compiled (builds 30 to 39).",
+    "before build 1",
+    "+606 / −333 in 4; and +4,328 in hazel-jit's own modules",
+    "+2,289"
+   ],
+   [
+    "A5",
+    "A drag redraws only what changed. Four cuts to a drag's frame: its input goes to the page as a request to draw again, not to the editor as an edit (cut A); only the livelits whose answers changed are drawn again (cut B); the projectors' data and finished views are kept while nothing they read changed (cut C); and each editor's decorations and probes' views are kept across frames.",
+    "A 3-second drag of the Witch's neck slider: 9.8 fps on build 5, 22.5 on build 6 (cut A), 26.4 on build 7, 48.4 on build 8, 57.6 on build 12: a frame from 102 ms to 17.4 (^report(50) and ^report(51)). 80 ms to 85 ms off each frame of a drag.",
+    "A drag runs at 55 to 58 fps, its view 5 to 7 ms a frame.",
+    "6, 7, 8, 12",
+    "+326 / −51 in 8; and +46 in hazel-jit's own modules",
+    "none"
+   ],
+   [
+    "The page's own work after the picture",
+    "The page's own work after the picture",
+    "The page's own work after the picture",
+    "The page's own work after the picture",
+    "The page's own work after the picture",
+    "The page's own work after the picture",
+    "The page's own work after the picture"
+   ],
+   [
+    "B1",
+    "Keep the livelits a change did not touch. A livelit's finished view is kept, keyed on what it reads (its own statics record, its own samples and those it looked up, compared by value) rather than on the whole statics map and the whole run. So after an edit only the edited livelit is drawn again, and after the worker's answer only those whose samples changed. The same for its shape, its applied definition and its wrapper, for the probes and the sidebar's problem list.",
+    "The page's work after a step 0.43 to 0.60 s on build 13, 0.24 to 0.30 s on build 15 (machines alike; ^report(51)). After an answer 4 projectors drawn, not 56 (build 19); at the answer the projectors' views 16 to 41 ms on build 26, 11 to 16 on build 31; after an edit the probes' views 4 to 13 ms on build 35, 1 to 3 on build 37. 190 ms to 400 ms off a step.",
+    "Of the 53 livelits, 51 keep their views at each answer and after each edit.",
+    "15, 19, 29, 30, 31, 32, 33, 34, 37, 38, 39",
+    "+715 / −194 in 8",
+    "+32"
+   ],
+   [
+    "B2",
+    "Build the outline on its own, and only what changed. The sidebar's outline of the slide's program was built inside the page's view, after every edit and every message from the worker. It is now built on its own after the paint; it redraws the page only when it changed; it keys the run's test results by each test's status; and its search for rows that open no cell walks only the top-level tiles an edit changed.",
+    "The views after each worker message 88 to 130 ms on build 12, 45 to 63 on build 13 (two messages a step); after an answer the outline's 59 to 82 ms gone (build 19); the outline after an edit 42 to 53 ms on build 21, 18 on build 36; its mark in the view 5 to 14 ms on build 40, 0 on build 41. 128 ms to 201 ms off a step.",
+    "The outline after an edit, 18 to 42 ms, runs as a task of its own.",
+    "13, 19, 22, 24, 36, 41",
+    "+379 / −81 in 7",
+    "none"
+   ],
+   [
+    "B3",
+    "Compile the run once; compare only what changed. The slide's run was compiled again after every step. Now it is kept while only models change: the new program is compared with the compiled one, models left out, and the comparison erases only the nodes a step changed.",
+    "126 to 141 ms of compiling after each step on build 8; 29 to 51 ms of comparing on build 9; 1 ms on build 17 (^report(50) and ^report(51)). 125 ms to 140 ms off a step.",
+    "The comparison takes about 1 ms a step; the run is kept at every step.",
+    "9, 10, 17",
+    "+172 / −122 in 3; and +492 in hazel-jit's own modules",
+    "none"
+   ],
+   [
+    "B4",
+    "Save without a redraw, printing only what changed. The autosave went through the page's update, so each save was followed by a calculate, a whole view and an outline. It now writes the model directly, and prints again only the top-level pieces a step changed.",
+    "About 60 ms gone after each autosave (build 16); the autosave itself 38 to 67 ms on build 21, 21 to 31 on build 23. 77 ms to 96 ms off a step.",
+    "The autosave takes 16 to 31 ms, about a second after a step.",
+    "16, 23",
+    "+82 / −2 in 2",
+    "+62"
+   ],
+   [
+    "B5",
+    "Draw the picture's probe row without rewriting its value. The probe on the picture abbreviated its value by rewriting all of it first, and checked whether each sample was a value by running the evaluator's step rules over the whole value. It now abbreviates in one pass, and answers plain data by its shape.",
+    "The probe row after each answer 44 to 91 ms on build 13, 8 to 21 on build 14; 15 to 35 ms on build 24, 3 to 6 on build 26. 38 ms to 85 ms off each answer.",
+    "The probe row takes 3 to 6 ms at each answer.",
+    "14, 26",
+    "+62 / −11 in 4",
+    "+52"
+   ]
+  ]
+ },
+ {
+  "section": "Redoing it by hand, in small increments",
+  "section_id": "redo",
+  "columns": [
+   "Order",
+   "Increment",
+   "What it holds",
+   "Size (lines)",
+   "Needs first"
+  ],
+  "rows": [
+   [
+    "0",
+    "The ruler",
+    "The Firefox check that drives the Witch slide and times each step and drag (scripts/jit_slides.py, .github/workflows/jit.yml), the page's timeline of marks (Util.BenchMarks) and the worker's answer weighed by part (AnswerParts). It changes nothing a user sees; with it, each later increment is measured the way this report's builds were.",
+    "672 in scripts and CI; 91 and 531 in the two modules",
+    "nothing"
+   ],
+   [
+    "1",
+    "The worker's answer, smaller",
+    "Ingredient A1. The worker and its messages only; it helps dev as much as the livelits branch.",
+    "92",
+    "nothing"
+   ],
+   [
+    "2",
+    "Page work every edit pays",
+    "The ingredients that need no hazel-jit: the outline on its own (B2), the autosave without a redraw (B4), the probe row (B5). Each its own small PR.",
+    "379, 82 and 62",
+    "the outline and autosave: the livelits branch; the probe row: dev"
+   ],
+   [
+    "3",
+    "Livelits kept",
+    "Ingredient B1: a livelit's view, shape and applied definition keyed on what it reads. Several small PRs, one cache each, each with a test that the cache gives the same view.",
+    "715",
+    "livelits"
+   ],
+   [
+    "4",
+    "The compiler",
+    "hazel-jit itself: 2,975 lines in four modules (the values' bridge, the compiler, the DOM, the run), with 2,063 lines of tests that each compiled program agrees with the interpreter. The largest piece, and the one that most needs review by hand; it can land a module at a time.",
+    "2,975, and 2,063 of tests",
+    "nothing"
+   ],
+   [
+    "5",
+    "Compiled views",
+    "Ingredient A4: livelit views drawn from compiled JS.",
+    "606 outside the compiler",
+    "4, livelits"
+   ],
+   [
+    "6",
+    "The run compiled in the page",
+    "Ingredients A2 and B3: the slide's run, compiled once, called at a slider's event, kept while only models change.",
+    "1,307 and 172",
+    "4, 5"
+   ],
+   [
+    "7",
+    "Draw first, edit after the paint",
+    "Ingredient A3.",
+    "35",
+    "6"
+   ],
+   [
+    "8",
+    "The drag fast path",
+    "Ingredient A5: four cuts, each its own PR.",
+    "326",
+    "6"
+   ]
+  ]
+ },
+ {
+  "section": "The builds",
+  "section_id": "builds",
+  "columns": [
+   "Build",
+   "Commit",
+   "Firefox run",
+   "A step: click to picture, steps 2 to 4",
+   "A drag",
+   "The page's work after the picture"
+  ],
+  "rows": [
+   [
+    "1 · the branch as it was",
+    "dfa3fcdffe",
+    "42486001354",
+    "4.17 to 6.52 s (all steps)",
+    "not measured",
+    "not measured"
+   ],
+   [
+    "2 · the answer cut",
+    "20a3067c18",
+    "42490487136",
+    "1.85 to 2.38 s (all steps)",
+    "not measured",
+    "not measured"
+   ],
+   [
+    "3 · the answer unshared",
+    "4747a4120d",
+    "42492117212",
+    "1.33 to 1.71 s (all steps)",
+    "not measured",
+    "not measured"
+   ],
+   [
+    "4 · the run compiled",
+    "6d71c427bf",
+    "42551267058",
+    "318 to 1694 ms",
+    "not measured",
+    "0 to 499 ms"
+   ],
+   [
+    "5 · steps back kept",
+    "bb88edfd12",
+    "42556616487",
+    "208 to 236 ms",
+    "9.8 fps",
+    "340 to 405 ms"
+   ],
+   [
+    "6 · cut A",
+    "9fca635226",
+    "42560502616",
+    "223 to 271 ms",
+    "22.5 fps",
+    "513 to 675 ms"
+   ],
+   [
+    "7 · cut B",
+    "38d4e4d0f8",
+    "42562102280",
+    "245 to 284 ms",
+    "26.4 fps",
+    "526 to 673 ms"
+   ],
+   [
+    "8 · cut C",
+    "61f3f01a15",
+    "42566328043",
+    "176 to 222 ms",
+    "48.4 fps",
+    "367 to 405 ms"
+   ],
+   [
+    "9 · steps 3 and 4",
+    "7f5add1519",
+    "42651798712",
+    "204 to 234 ms",
+    "54.3 fps",
+    "315 to 562 ms"
+   ],
+   [
+    "10 · the comparison after the paint",
+    "3e51af567f",
+    "42654708022",
+    "183 to 216 ms",
+    "47.8 fps",
+    "403 to 543 ms"
+   ],
+   [
+    "11 · samples as data",
+    "1524e96da3",
+    "42657604986",
+    "152 to 195 ms",
+    "56.3 fps",
+    "312 to 332 ms"
+   ],
+   [
+    "12 · steps 2 and 1",
+    "d9d63c13af",
+    "42658981172",
+    "19 to 24 ms",
+    "57.6 fps",
+    "475 to 529 ms"
+   ],
+   [
+    "13 · the outline on its own",
+    "8bf44f23cf",
+    "42670654733",
+    "24 to 51 ms",
+    "57.6 fps",
+    "430 to 596 ms"
+   ],
+   [
+    "14 · the page after a step",
+    "b310a58b67",
+    "42690151014",
+    "25 to 73 ms",
+    "52.0 fps",
+    "431 to 578 ms"
+   ],
+   [
+    "15 · livelits kept across an edit",
+    "1da80a8022",
+    "42697957029",
+    "16 to 20 ms",
+    "58.6 fps",
+    "280 to 334 ms"
+   ],
+   [
+    "16 · the autosave on its own",
+    "f4bcd64cf7",
+    "42699757678",
+    "21 to 37 ms",
+    "51.7 fps",
+    "343 to 420 ms"
+   ],
+   [
+    "17 · the comparison, only what changed",
+    "b195b09088",
+    "42703776919",
+    "28 to 42 ms",
+    "45.7 fps",
+    "299 to 418 ms"
+   ],
+   [
+    "18 · the first step like the others",
+    "f125a69a7b",
+    "42713728065",
+    "20 to 37 ms",
+    "55.7 fps",
+    "343 to 445 ms"
+   ],
+   [
+    "19 · the page after an answer",
+    "f813da534d",
+    "42739071781",
+    "26 to 28 ms",
+    "51.0 fps",
+    "307 to 375 ms"
+   ],
+   [
+    "20 · the answer as data",
+    "f432751f99",
+    "42747955240",
+    "20 to 22 ms",
+    "55.6 fps",
+    "210 to 321 ms"
+   ],
+   [
+    "22 · refusals, paths when asked",
+    "2b88bf18bf",
+    "42759149693",
+    "25 to 30 ms",
+    "55.4 fps",
+    "255 to 276 ms"
+   ],
+   [
+    "23 · the autosave, only what changed",
+    "d68bd6400b",
+    "42760087460",
+    "23 to 50 ms",
+    "46.8 fps",
+    "299 to 323 ms"
+   ],
+   [
+    "24 · refusals, asked last",
+    "a1ab2e52d4",
+    "42761046647",
+    "25 to 26 ms",
+    "54.3 fps",
+    "231 to 276 ms"
+   ],
+   [
+    "26 · plain data is a value",
+    "0ddf3b9efe",
+    "42771757499",
+    "23 to 29 ms",
+    "51.0 fps",
+    "239 to 250 ms"
+   ],
+   [
+    "29 · the probes' list kept",
+    "5fdb0d3004",
+    "42774510803",
+    "22 to 58 ms",
+    "58.0 fps",
+    "236 to 283 ms"
+   ],
+   [
+    "30 · kept livelits keep their wrappers",
+    "96a5031217",
+    "42775688527",
+    "21 to 27 ms",
+    "51.7 fps",
+    "242 to 256 ms"
+   ],
+   [
+    "31 · shapes by value, an equal projector list",
+    "3f8ccae8b6",
+    "42783064879",
+    "21 to 29 ms",
+    "39.2 fps",
+    "225 to 244 ms"
+   ],
+   [
+    "32 · a use's applied livelit kept",
+    "285968fd06",
+    "42793713877",
+    "22 to 38 ms",
+    "58.3 fps",
+    "196 to 266 ms"
+   ],
+   [
+    "33 · the memo holds 64, the sidebar's problems kept",
+    "1d53e66e27",
+    "42808401120",
+    "21 to 29 ms",
+    "38.1 fps",
+    "240 to 273 ms"
+   ],
+   [
+    "34 · a shape kept by its definition when it does not read the model",
+    "c1476f1244",
+    "42809664205",
+    "21 to 26 ms",
+    "55.0 fps",
+    "231 to 243 ms"
+   ],
+   [
+    "36 · the outline's refusals kept per top-level tile",
+    "62a517d8b4",
+    "42813221124",
+    "21 to 25 ms",
+    "55.0 fps",
+    "227 to 237 ms"
+   ],
+   [
+    "37 · a probe kept by its own statics",
+    "3e3118f380",
+    "42814828261",
+    "19 to 26 ms",
+    "57.6 fps",
+    "175 to 182 ms"
+   ],
+   [
+    "38 · a cache hit on equal reads takes the new map",
+    "19ecb75694",
+    "42817304210",
+    "20 to 31 ms",
+    "55.7 fps",
+    "167 to 183 ms"
+   ],
+   [
+    "39 · a projector's hidden-syntax error check kept",
+    "9a5a3e7a64",
+    "42818821410",
+    "22 to 25 ms",
+    "56.7 fps",
+    "202 to 208 ms"
+   ],
+   [
+    "41 · the outline mark stands",
+    "a02025f5dc",
+    "42822587416",
+    "28 to 75 ms",
+    "49.0 fps",
+    "234 to 273 ms"
+   ]
+  ]
+ }
+]

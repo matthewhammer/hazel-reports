@@ -1,0 +1,54 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 052 · hazel-jit · 2026-11-10, revised {{updated}} MST · <span class="wip">work in progress</span> · for the Hazel team</p>
+<h1>What Mattered, Ranked</h1>
+<p class="sub">From 2026-11-06 to 2026-11-10 we made a livelit's slider in Hazel fast enough to drag. Of everything we changed, what made the difference, how much did each change help, and in what order could the team redo it by hand, in small steps? Matthew, 2026-11-10: "a new report that summarizes our work over the last several days, with plots of the current status, and the more significant ingredients, not every single thing we tried in order. Rank them by how much they ended up helping." The full record, build by build, is in reports 050 and 051; this report keeps only what mattered.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#now">Where it stands</a>: a slider's step on the Witch slide shows in the picture in about 20 to 30 ms, a drag runs at 55 to 58 frames a second, and the page still does 170 to 180 ms of its own work after each step.</li>
+<li><a href="#ranked">The ingredients, ranked</a>: ten changes, ranked by the time each took off when it landed, in two groups: what a user waits for, and the page's own work after the picture.</li>
+<li><a href="#left">What is left</a>: the edit made after the paint, the worker's answer two seconds later, and a pause once a step.</li>
+<li><a href="#redo">Redoing it by hand</a>: an order of increments, each small enough to review, with its size, its tests and what it needs first.</li>
+<li><a href="#builds">The builds</a> this report cites, <a href="#next">what next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="now">Where it stands</h2>
+<p><b>On build 38, a step of the Witch's neck slider shows in the picture {{now_pic}} ms after the click ({{now_first}} ms for a slide's first step), a 3-second drag runs at {{now_fps}} frames a second, its view {{now_view}} ms a frame, and the page's own work after each step's picture adds up to {{now_after}} ms.</b> On 11-08, before any of this, a step took 4.2 to 6.5 s to show, and a drag could not move the picture at all. The Witch slide is the Livelit Playground's largest: 2,222 lines of Hazel and 53 livelits, a picture of a witch drawn from polygons and posed by sliders. Every number here is from the same check in Firefox on GitHub's machines, one run per build. Build 41, the newest, ran on a slower machine: {{b41_pic}} ms, {{b41_fps}} fps, {{b41_after}} ms.</p>
+{{fig_now}}
+<p>A step is now four kinds of work. Before the picture, the slide's compiled run answers the slider's event in a few milliseconds and the page draws the livelits whose answers changed. After it, in the frames that follow, the page writes the new model into the program, the edit ({{edit_ms}} ms here: the update, the statics, the syntax and a view), and builds the sidebar's outline ({{outline_ms}} ms). About a second later the slide autosaves. And at {{res_s}} s the worker's answer arrives, the whole program run on Hazel's interpreter, and the page checks it against what it has drawn ({{answer_ms}} ms).</p>
+{{fig_steps}}
+{{fig_drags}}
+{{fig_after}}
+
+<h2 id="ranked">The ingredients, ranked</h2>
+<p><b>Two changes did most of it: sending the worker's answer without what the page did not read (2.8 to 4.8 s off a step, when it landed), and compiling the slide's whole run to JavaScript (1.1 to 1.5 s more, and the reason a step shows in about 20 ms today). Of the page's own work after the picture, keeping the livelits a change did not touch helped most, 0.19 to 0.40 s a step.</b> The ranking is by the time each change took off when it landed, on the measure it changed, as reports 045 to 051 measured it. The measures differ: a step's picture is what a user waits for after a click; a drag's frame is what they see while dragging, 60 times a second; the page's work after the picture is what can make the next frame late. So the ranking is in two groups, and a gain in one is not added to a gain in the other.</p>
+{{fig_ranked}}
+<p>Three things to keep in mind when reading it. First, a gain can shrink once another lands: the worker's answer was the step's whole wait until the run was compiled, and now it arrives in the background. Second, the ranges are over a build's steps and over one run each; machines differ by up to a third from run to run (report 050 ran build 7 three times: 26.2, 26.4 and 34.3 fps). Third, the drag's 80 to 85 ms is per frame, at up to 60 frames a second, so for a drag it matters more than its place in the list.</p>
+{{tab_ranked}}
+<p>Left out of the ranking, because each helped by a few milliseconds or less: the run's first step drawing only what it changed (build 18), the probes' list kept when no probe is removed (build 29), a cache hit taking the new map (build 38), and the outline's mark (build 41) are in the table under the ingredient they belong to; timers that only measured (builds 21, 25, 27, 28, 35 and 40) changed nothing, and are not counted.</p>
+
+<h2 id="left">What is left</h2>
+<p><b>The largest piece of a step's work left is the edit made after the paint, 75 to 90 ms on a fast machine, and it is under way as ticket 721: when only a livelit's model changes, keep the statics the program had.</b> Build 42 timed the edit's parts: the zipper's own action (writing the model's text into the program) 11 to 20 ms; the statics 14 to 35 ms, of which re-analyzing the edited top-level item is 12 to 28 and parsing 2 to 8; the syntax cache 11 to 29; and the view after it 25 to 38. A model can change the program's values but not its types or its outline, so the statics and the outline need not be worked out again; the elaboration the worker runs must still carry the new model.</p>
+<p>After that: the worker's answer, which still runs the whole program on the interpreter 1.5 to 2.4 s after a step and costs the page 50 to 60 ms to take in, though the compiled run already answered (report 050 step 4, partly done); a pause of 20 to 35 ms once a step after the answer, landing somewhere else each time, most likely the browser collecting the answer's garbage; and the step itself, 20 to 30 ms, a frame or so above 60 fps's 16.7.</p>
+
+<h2 id="redo">Redoing it by hand, in small increments</h2>
+<p><b>The work can be redone in nine increments, ruler first, each a pull request small enough to read, and five of the ten ingredients need neither hazel-jit nor each other.</b> There is a feeling on the team that some of this work should be redone by hand, to avoid the debt of machine-written code, in small increments. Some facts about what there is to redo: the branch, <code>trial/694-view-jit</code>, has {{n_commits}} commits from 11-06 to 11-10, adding {{src_add}} lines to <code>src/</code> and removing {{src_del}}, in {{src_files}} files, with {{test_add}} lines of tests and {{scripts_add}} of scripts and CI. The compiler is {{jit_lines}} of those lines, in four modules, and {{jit_test}} of the test lines check that each compiled program agrees with the interpreter. Of the ten ingredients, {{untested}} came with no test of their own; the Firefox check, which drives the app and times it, was their only check. And {{n_fixups}} commits only fixed the one before, which did not compile, since nothing was compiled on the laptop and every type check ran on GitHub.</p>
+<p>The order below puts the measuring first, then what helps any branch, then hazel-jit's pieces in the order they depend on each other. Each increment names the ingredient it carries; its size is the lines that ingredient's commits added to <code>src/</code>, a ceiling, since they include the timers each change was measured with.</p>
+{{tab_redo}}
+<p>Two things make a hand redo cheaper than the first time. The ruler already exists, so each increment can be measured the way the builds here were, and kept only if it helps. And the dead ends are known: samples sent as data made the answer larger and were turned off (build 11, report 047); two caches regressed the drag before they were fixed (builds 31 to 34). Neither needs to be tried again.</p>
+
+<h2 id="builds">The builds</h2>
+<p><b>Every figure and table here names its build, numbered as in reports 050 and 051: each build is the one before it plus one change, all on <code>trial/694-view-jit</code> (hazelgrove/hazel#2817).</b> The table lists the builds this report cites, with each one's three measures; reports 050 and 051 list all 41, with what each added.</p>
+{{tab_builds}}
+<p>Build 38's figures use its second run (42817304210); its first (42816040542) landed on a machine 20 to 45% slower on work the build did not touch (the worker's encode, the slide's whole run), and read slower throughout.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Ticket 721: when only a livelit's model changes, keep the statics and the outline the program had, and give the elaboration the new model. Build 42 measured what that could take away: 14 to 35 ms of statics and the outline's 18 to 42.</li>
+<li>Skip the worker's run when the compiled run has answered, or take its answer in without a whole view.</li>
+<li>Agree with the team on the order of the hand redo, and which increments go to <code>dev</code> first.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>The numbers are the ones reports 045 to 051 measured, cited by build. The figures are drawn from each build's run of the Firefox check (<code>scripts/jit_slides.py</code> in <code>jit.yml</code> on GitHub's machines): its <code>jit.json</code> and <code>jit.log</code>, kept in report 050's and 051's <code>data/runs/</code>. A step's time is from the slider's click to the picture changing, steps 2 to 4 of the four (the first step of a slide pays first-call costs); the page's work after the picture is the sum of its top-level marks (view, calculate, update, decode, the outline, the comparison) from the picture to half a second after the worker's answer; a drag is 3 seconds of the neck slider. Each ingredient's code size is <code>git show --numstat</code> over the commits the ranked table names, in <code>~/hazel-694-jit</code>, counting <code>src/</code> without hazel-jit's own four modules (counted apart), and <code>test/</code>. The generator is <code>052/gen052.py</code>; the numbers are in <code>052/data/numbers.json</code> and in the page.</p>
+</main></body>
