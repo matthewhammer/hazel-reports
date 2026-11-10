@@ -53,6 +53,8 @@ for b in builds_of(os.path.join(ROOT, "050", "gen050.py")) + builds_of(os.path.j
 BUILDS[38]["run2"] = "42817304210"   # build 38's second run, on a machine like build 37's (its first was slower throughout)
 BUILDS[40] = dict(n=40, name="the outline mark timed", commit="f5b7a65cf2", run="42820611040")
 BUILDS[41] = dict(n=41, name="the outline mark stands", commit="a02025f5dc", run="42822587416")
+BUILDS[42] = dict(n=42, name="the edit's parts timed", commit="cfcd82582f", run="42826692242")
+BUILDS[43] = dict(n=43, name="a projector's update walks only what holds it", commit="421e30a04b", run="42830234099")
 # builds 1 to 3 waited for the worker: their steps are report 050's (from report 046's runs), click to picture
 PRE = {1: (4170, 6520), 2: (1850, 2380), 3: (1330, 1710)}
 
@@ -261,21 +263,22 @@ JIT_LINES = {f: int(subprocess.run(["wc", "-l", os.path.join(REPO, p)], capture_
                           ("HazelJitRun.re", "src/language/dynamics/HazelJitRun.re"),
                           ("HazelJitDOM.re", "src/haz3lcore/projectors/HazelJitDOM.re")]}
 JIT_TEST = int(subprocess.run(["wc", "-l", os.path.join(REPO, "test/Test_HazelJit.re")], capture_output=True, text=True).stdout.split()[0])
-BASE = git("merge-base", "a02025f5dc", "origin/integration/livelits-modular-editors")
+HEAD = "421e30a04b"
+BASE = git("merge-base", HEAD, "origin/integration/livelits-modular-editors")
 
 
 def shortstat(path):
-    out = git("diff", "--shortstat", BASE, "a02025f5dc", "--", *path)
+    out = git("diff", "--shortstat", BASE, HEAD, "--", *path)
     f = re.search(r"(\d+) files?", out); a = re.search(r"(\d+) insertion", out); d = re.search(r"(\d+) deletion", out)
     return (int(f.group(1)) if f else 0, int(a.group(1)) if a else 0, int(d.group(1)) if d else 0)
 
 
-BR = dict(commits=int(git("rev-list", "--count", f"{BASE}..a02025f5dc")), src=shortstat(["src"]), test=shortstat(["test"]),
+BR = dict(commits=int(git("rev-list", "--count", f"{BASE}..{HEAD}")), src=shortstat(["src"]), test=shortstat(["test"]),
           scripts=shortstat(["scripts", ".github"]))
 RULER = {f: int(subprocess.run(["wc", "-l", os.path.join(REPO, p)], capture_output=True, text=True).stdout.split()[0])
          for f, p in [("BenchMarks.re", "src/util/BenchMarks.re"), ("AnswerParts.re", "src/web/util/AnswerParts.re")]}
-FIXUPS = ["96a5031217", "b195b09088", "99542e86e3", "8bf44f23cf", "d8c2bbb671"]
-TIMERS_ONLY = [21, 25, 27, 28, 35, 40]
+FIXUPS = ["96a5031217", "b195b09088", "99542e86e3", "8bf44f23cf", "d8c2bbb671", "b031426c2f", "421e30a04b"]
+TIMERS_ONLY = [21, 25, 27, 28, 35, 40, 42]
 
 
 # ---------------------------------------------------------------- figures
@@ -506,19 +509,19 @@ def fig_ranked():
 
 FIG_NOW, NOW_BLOCKS, NOW_PIC, NOW_RES = fig_now()
 FIG_STEPS, P_STEPS = fig_trend("pics", "A slider's step, build by build: click to picture (steps 2 to 4)", "ms", GOAL, (10, 8000),
-                               '<b class="build">Builds 1 to 41</b> of <code>trial/694-view-jit</code> (reports 050 and 051), one '
+                               '<b class="build">Builds 1 to 43</b> of <code>trial/694-view-jit</code> (reports 050 and 051), one '
                                "run each, Firefox on GitHub's machines: the Witch's steps 2 to 4 (the first step of a slide pays "
                                "first-call costs), a dot at the median, a line over the range. Builds 1 to 3 (grey) waited for the "
                                "worker's answer; their ranges are over all four steps. Machines differ by up to a third from run "
                                "to run, so neighbouring builds' small differences are noise.",
                                "ms, log scale")
 FIG_DRAGS, P_DRAGS = fig_trend("fps", "A drag, build by build: frames a second, compiled", "fps", 60, None,
-                               '<b class="build">Builds 5 to 41</b>: a 3-second drag of the Witch\'s neck slider in the Firefox '
+                               '<b class="build">Builds 5 to 43</b>: a 3-second drag of the Witch\'s neck slider in the Firefox '
                                "check, one run each. Builds 31 and 33 slowed the drag (a shape check compared equal copies, then "
                                "model values, at every frame); builds 32 and 34 fixed them (report 051).",
                                "frames a second")
 FIG_AFTER, P_AFTER = fig_trend("after", "The page's own work after a step's picture, build by build", "ms", None, None,
-                               '<b class="build">Builds 5 to 41</b>: the page\'s top-level work from the picture to half a second '
+                               '<b class="build">Builds 5 to 43</b>: the page\'s top-level work from the picture to half a second '
                                "after the worker's answer (the edit, the outline, the comparison, the answer's decode and "
                                "view), steps 2 to 4. Machines differ: build 13's run read 20 to 40% slow throughout, build 38's "
                                "first run too (its second, on a machine like build 37's, is plotted).",
@@ -589,7 +592,7 @@ def redo_table():
 
 
 def builds_table():
-    cited = sorted({n for i in ING for n in i["builds"]} | {1, 3, 5, 8, 11, 12, 13, 38, 41})
+    cited = sorted({n for i in ING for n in i["builds"]} | {1, 3, 5, 8, 11, 12, 13, 38, 41, 42, 43})
     rows = ["<tr><th>Build</th><th>Commit</th><th>Firefox run</th><th>A step: click to picture, steps 2 to 4</th>"
             "<th>A drag</th><th>The page's work after the picture</th></tr>"]
     for n in cited:
@@ -624,6 +627,11 @@ NUMS = {
     "b41_pic": rng(b41["pics"][1:4]),
     "b41_fps": f'{b41["fps"]:.1f}',
     "b41_after": rng([v for v in b41["after"][1:4] if v is not None]),
+    "b43_pic": rng(BUILDS[43]["m"]["pics"][1:4]),
+    "b43_fps": f'{BUILDS[43]["m"]["fps"]:.1f}',
+    "b43_after": rng([v for v in BUILDS[43]["m"]["after"][1:4] if v is not None]),
+    "b43_zip": rng([m["ms"] for e in next(s_ for s_ in json.load(open(BUILDS[43]["m"]["json"]))["slides"] if s_.get("slide") == "Witch")["edits"]["on"][1:4]
+                    for m in e["marks"] if m["what"] == "update: the zipper's action"][:3]),
     "edit_ms": f'{blk["the edit, after the paint"]:.0f}',
     "outline_ms": f'{blk["the outline, on its own"]:.0f}',
     "answer_ms": f'{blk["the worker\'s answer"]:.0f}',
@@ -655,7 +663,7 @@ json.dump({"builds": {n: {k: v for k, v in b.items() if k != "m"} | ({"measured"
            "ingredients": [{k: v for k, v in i.items()} for i in ING],
            "now_step": {"build": 38, "run": NOW["run2"], "picture_ms": NOW_PIC, "answer_ms": NOW_RES,
                         "blocks": {r: [{"at": a, "ms": ms, "what": w} for a, ms, w in v] for r, v in NOW_BLOCKS.items()}},
-           "branch": {"base": BASE, "head": "a02025f5dc", **{k: v for k, v in BR.items()}, "fixups": FIXUPS,
+           "branch": {"base": BASE, "head": HEAD, **{k: v for k, v in BR.items()}, "fixups": FIXUPS,
                       "timers_only_builds": TIMERS_ONLY, "jit_modules_lines": JIT_LINES, "jit_test_lines": JIT_TEST}},
           open(os.path.join(HERE, "data", "numbers.json"), "w"), indent=1, default=str)
 print("wrote 052/index.html;", updated, {k: NUMS[k] for k in ("now_pic", "now_fps", "now_after", "edit_ms", "n_commits")})
