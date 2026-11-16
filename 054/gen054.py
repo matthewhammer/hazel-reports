@@ -48,7 +48,7 @@ PLAN = [
     dict(t=757, short="Int and Nat exact", name="Int and Nat exact, as the interpreter's", sec="numbers", stage=4, st="done",
          status="On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch."),
     dict(t=758, short="overflow: a stuck term", name="Overflow stops at a stuck term", sec="overflow", stage=4, st="done",
-         status="On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). Left: the interpreter's half as a PR to dev."),
+         status="On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter's half on a PR to dev, hazelgrove/hazel#2828."),
     dict(t=759, short="divide by zero: a stuck term", name="Divide by zero stops at a stuck term", sec="errors", stage=4, st="done",
          status="On the branch: the compiled run stops, and the interpreter makes the stuck term."),
     dict(t=760, short="holes, the stepper: the interpreter's", name="Holes and the stepper stay with the interpreter", sec="rules", stage=4, st="done",
