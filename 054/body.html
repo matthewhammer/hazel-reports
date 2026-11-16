@@ -131,6 +131,7 @@
 <li><b>Probes and the stepper:</b> putting a probe in a function takes that function out of the compiled set at the next compile, and the rest stay compiled. The stepper either runs on the interpreter alone or shows a compiled call as one step, as it shows a builtin's.</li>
 <li><b>The boundary:</b> compiled functions call one another directly in JavaScript, without crossing. A large value passed again and again (a list) can be converted once and remembered by the identity of the interpreter's value.</li>
 <li><b>Checking it:</b> the consistency sweep runs each evaluator test a third way, mixed, and compares with the interpreter alone.</li>
+<li><b>Where it hooks in:</b> the interpreter applies a builtin through one lookup by name (<code>Transition.re</code>, in <code>Builtins.forms_init</code>), and a builtin's answer is a term the interpreter goes on evaluating. So a compiled function can be a builtin made at run time, with no new kind of value. A compiled function bound by a <code>let</code> becomes such a builtin. When the call finishes, the builtin returns the answer. When it stops, it returns the application of the original Hazel function to the same argument, and the interpreter evaluates that as it would have anyway. The call already shows in a probe's call stack and in the stepper as a builtin's does.</li>
 </ul>
 
 <h2 id="next">What next</h2>
