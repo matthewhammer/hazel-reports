@@ -16,7 +16,7 @@
 <li><a href="#budget">A step budget</a>: Cyrus's concern, that a compiled function that never ends would freeze the page.</li>
 <li><a href="#cost">What it all costs</a>: the Witch slide, build by build.</li>
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
-<li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, and mixed mode, the direction chosen.</li>
+<li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, and compiling ahead of time for older phones.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
@@ -69,7 +69,7 @@
 <li><b>Recursion over more than one name,</b> <code>let (even, odd) = (fun ..., fun ...)</code>: each name assigned once, then the tuple of them. This gives the interpreter's answer whenever every part is a function, since a name is only read when a function runs. Any other part stays with the interpreter.</li>
 <li><b><code>undefined</code>,</b> on its own branch (<code>trial/761-undefined</code>, <code>e62f0a855a</code>): seven sweep programs, and more than that. The List builtins written in Hazel (<code>List.head</code>, <code>List.tail</code> and three others) use <code>undefined</code> for an empty list, so every program calling them was not compiled at all. A compiled run that reaches <code>undefined</code> now stops, as for an invalid operation; one that does not reach it costs nothing. With it the fast checks pass, and all seven programs compile and agree: 250 of the 313 compiled, 223 agreed, none differ (CI run 43899240156). One worry did not come true. Hazel gives <code>undefined</code> the hole type, the same as a written <code>?</code>, so the type-hole rule above might have caught it, but in none of these programs does an ascription around it carry the hole. All of CI passes with it (static, fast and full tests).</li>
 <li><b>Tuple extension and labels as values,</b> the six programs the first sweep counted as "this kind of term": <code>(a=1, b=2) ... (c=3)</code>, and label literals handed to <code>project_labels</code>, <code>select_labels</code> and <code>omit_labels</code>. Each now compiles as the interpreter defines it, on a branch above <code>undefined</code>'s (<code>trial/761-labels</code>, <code>1087cdcace</code>). All of CI passes, and with it the sweep compiles 256 of the 313 programs, all agreeing apart from the 27 known ill-typed tests.</li>
-<li><b>Strings beyond ASCII,</b> a parting the sweep could not see, because the evaluator's tests use only ASCII strings. Hazel counts a string's length and offsets in graphemes, the characters a reader sees. hazel-jit counted JavaScript's UTF-16 units, so <code>string_length</code> of an emoji was 2 compiled and 1 in Hazel. Now it counts graphemes, as Hazel does, and <code>string_sub</code> and <code>string_split</code> are compiled too. This is on a branch above the label work (<code>trial/761-strings</code>, <code>83f4dba237</code>), with tests on an emoji, an accent written as a separate mark, and a flag; CI is running.</li>
+<li><b>Strings beyond ASCII,</b> a parting the sweep could not see, because the evaluator's tests use only ASCII strings. Hazel counts a string's length and offsets in graphemes, the characters a reader sees. hazel-jit counted JavaScript's UTF-16 units, so <code>string_length</code> of an emoji was 2 compiled and 1 in Hazel. Now it counts graphemes, as Hazel does, and <code>string_sub</code> and <code>string_split</code> are compiled too. This is on a branch above the label work (<code>trial/761-strings</code>, <code>83f4dba237</code>), with tests on an emoji, an accent written as a separate mark, and a flag, and all of CI passes.</li>
 <li><b>Next:</b> a fixpoint over a pattern like <code>_</code>, labels that are not names, reverse application.</li>
 <li><b>Probes</b> are the largest: a probe shows the values that passed through it, and compiled code records none. Today a probe always shows the interpreter's run, which is correct, and never faster. Recording samples from compiled code would mean deciding what a sample is when the code that made it has no steps.</li>
 </ul>
@@ -134,9 +134,28 @@
 <li><b>Where it hooks in:</b> the interpreter applies a builtin through one lookup by name (<code>Transition.re</code>, in <code>Builtins.forms_init</code>), and a builtin's answer is a term the interpreter goes on evaluating. So a compiled function can be a builtin made at run time, with no new kind of value. A compiled function bound by a <code>let</code> becomes such a builtin. When the call finishes, the builtin returns the answer. When it stops, it returns the application of the original Hazel function to the same argument, and the interpreter evaluates that as it would have anyway. The call already shows in a probe's call stack and in the stepper as a builtin's does.</li>
 </ul>
 
+<h3 id="ahead">Compiled ahead of time, for older phones</h3>
+<p><b>A third use, not tried yet: compile a hazeljs app's Hazel when the site is built, and ship the JavaScript, so that an older phone loads neither Hazel's interpreter nor its build of the program, and every call runs compiled.</b> The idea is Matthew Hammer's, on 2026-11-16, after trying the two hazeljs oracles (an I Ching and a Tarot, whose rules are Hazel run by hazeljs in the page) on an older Android phone in Firefox: painfully slow to draw each card or line, and on each key press in the I Ching's question.</p>
+<p>What a page like that costs, measured on a laptop:</p>
+<ul>
+<li><b>Hazel's library,</b> hazel-lib.js: 2.8 MB of JavaScript (650 kB compressed), 174 ms to load in Node.</li>
+<li><b>Building the program</b> (parsing, the statics, elaboration), once per page: 621 ms for the I Ching and 499 ms for the Tarot in Node, 0.4 to 0.9 s in the browser.</li>
+<li><b>Each call, interpreted:</b> a cast 0.4 ms by coins and 1.2 ms by yarrow; a Tarot deal 7 ms for one card, 47 ms for a Celtic Cross, 105 ms for a year ahead.</li>
+<li><b>Hazel's editor in each listing of the rules:</b> a whole Hazel app, 7.2 MB of JavaScript and about 49 MB of memory, 1.9 s to load empty. The I Ching's page opened five, the Tarot's four.</li>
+</ul>
+<p>An older phone runs the same JavaScript several times slower. The editors went first. Since the oracles' 0.0.8, a listing stays text until its button opens the editor, and the I Ching's page, Hazel ready to cast, holds 28 MB. Since 0.0.9, each oracle can measure a device's speed and give a line to compare one device against another, so the phone's numbers are coming.</p>
+<p>Compiling ahead of time would take the rest. hazel-jit would run on the app's Hazel modules when the site is built, and the page would load the compiled JavaScript instead of the library: no build at load, and each call compiled. Report 050 measured a Petri net rule at 7.19 ms interpreted against 0.011 ms compiled, in Node. Hazel's library and its editor would load only when someone edits the rules, and then the interpreter runs the edited program, as it does now.</p>
+<p>The oracles' programs are what hazel-jit compiles best: closed, complete, every function's whole type declared, no probes. So this is the first path above, done before the page loads rather than in it. It needs four things:</p>
+<ul>
+<li><b>A build step:</b> the command line's <code>jit</code>, on the app's modules, writing a JavaScript file.</li>
+<li><b>Values at the edge:</b> hazel-jit's values in JavaScript are not hazeljs's (a constructor is <code>{c, v}</code> rather than <code>{tag, value}</code>, a list is a chain of cells rather than an array), so the exported functions need a small adapter, made from their declared types.</li>
+<li><b>The same answers:</b> the oracles' own checks, run both ways, compiled and interpreted, before a release.</li>
+<li><b>Saying which engine answered:</b> each line and card already says whether Hazel or the page's own JavaScript answered; compiled Hazel would be a third.</li>
+</ul>
+
 <h2 id="next">What next</h2>
 <ol>
-<li>Bring <code>undefined</code>, the label builtins and the string fix onto <code>trial/694-view-jit</code> together, once CI and the slides check pass on the last of them.</li>
+<li>Bring <code>undefined</code>, the label builtins, the string fix and reverse application onto <code>trial/694-view-jit</code> together, once CI and the slides check pass on the last of them.</li>
 <li>Choose SInt's width with Cyrus (recommended: 32 bits everywhere), then check overflow in the interpreter and in hazel-jit alike.</li>
 <li>Work through the rest of the limits by the sweep's counts: fixpoints over other patterns, labels that are not names, string_sub, reverse application.</li>
 <li>Design probes for compiled code: what a probe's sample is when the code that made it has no steps.</li>
@@ -146,6 +165,7 @@
 <li>Count the run-time type checks per call for an undeclared result type (ticket 762), and get hazelgrove/hazel#2825 reviewed.</li>
 <li>Mixed mode, a first step: a compiled-function value the interpreter can apply, for top-level functions with their whole types declared, behind a setting, falling back one call at a time.</li>
 <li>Mixed mode in the consistency sweep: each evaluator test run a third way, mixed, against the interpreter alone.</li>
+<li>Compile the hazeljs oracles' Hazel ahead of time, as above, and compare an older phone's speed lines before and after.</li>
 <li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of report 050, or the Tarot deal of ticket 730), interpreter alone against mixed.</li>
 </ol>
 
