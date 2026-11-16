@@ -54,7 +54,7 @@ PLAN = [
     dict(t=760, short="holes, the stepper: the interpreter's", name="Holes and the stepper stay with the interpreter", sec="rules", stage=4, st="done",
          status="On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser."),
     dict(t=761, short="the other limits, one at a time", name="The other limits, one at a time", sec="limits", stage=3, st="part",
-         status="Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined passes the fast checks on its own branch; tuple extension and the label builtins in CI; probes not begun."),
+         status="Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined passes CI on its own branch; tuple extension, the label builtins and strings in graphemes in CI; probes not begun."),
     dict(t=763, short="a step budget", name="A step budget for compiled code", sec="budget", stage=4, st="done",
          status="On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter."),
     dict(t=764, short="found: modulo by zero crashed", name="Found: modulo by zero crashed the interpreter", sec="found", stage=4, st="pr",
