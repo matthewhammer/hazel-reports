@@ -94,9 +94,9 @@ BUILDS = [
     dict(b="46", name="the six together", commit="59f28470c3", run=43792878754, when="11-15", adds="Tickets 756, 757, 759, 760, 761 and 763 merged on build 45.",
          step=[7, 10, 5, 5], view=5.4, jit=1.1, fps=59.0, draws=30),
     dict(b="47", name="a type hole is a hole", commit="f4f969588b", run=43898636577, when="11-16", adds="Build 46 and the type-hole rule (ticket 760); trial/694-view-jit since 11-16 07:4x MST.",
-         step=None, view=None, jit=None, fps=None, draws=None),
+         step=[10, 7, 4, 5], view=7.2, jit=1.6, fps=49.0, draws=30),
 ]
-SLIDES_760 = [("Full Body", 30, 30), ("Hands", 30, 30), ("Scenes", 36, 36), ("Witch", 30, 28)]
+SLIDES_760 = [("Full Body", 30, 30, 30), ("Hands", 30, 30, 28), ("Scenes", 36, 36, 36), ("Witch", 30, 28, 30)]
 
 # ---------------------------------------------------------------- SInt today (hazeljs 0.0.6, Hazel under js_of_ocaml as in the browser)
 SINT = [
@@ -183,11 +183,11 @@ def fig_witch():
         out.append(f'<rect x="{L}" y="{y + 4}" width="{X(b["view"]) - L:.1f}" height="17" rx="2" fill="#0e7490" opacity="0.55"/>')
         out.append(f'<rect x="{L}" y="{y + 4}" width="{X(b["jit"]) - L:.1f}" height="17" rx="2" fill="#0e7490"/>')
         out.append(f'<text x="{X(b["view"]) + 6:.1f}" y="{y + 16}" font-size="10.5" fill="var(--muted)">{b["view"]} ms (about {round(1000 / b["view"])} fps); run {b["jit"]} ms</text>')
-    cap = ("Builds 45 to 46, the Witch slide in Firefox on GitHub's machines (jit.yml), dragging the neck slider for 3 s with "
+    cap = ("Builds 45 to 47, the Witch slide in Firefox on GitHub's machines (jit.yml), dragging the neck slider for 3 s with "
            "compiled views on: the page's view per frame, and hazel-jit's compiled run per frame within it. One run each: "
            "the spread between them (5.4 to 7.3 ms) is as large as any difference, so these say no build is measurably slower "
-           "than build 45, not which is fastest. Build 47 is being measured.")
-    return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="Bars of the Witch view time per frame for builds 45 to 46, all under 8 ms, '
+           "than build 45, not which is fastest.")
+    return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="Bars of the Witch view time per frame for builds 45 to 47, all under 8 ms, '
             f'against a 16.7 ms line" style="width:100%;height:auto;display:block">' + "".join(out) + f"</svg><figcaption>{cap}</figcaption></figure>")
 
 
@@ -219,9 +219,9 @@ def sint_table():
 
 
 def slides_table():
-    rows = ["<tr><th>Slide</th><th>Livelits drawn from the compiled run, build 45</th><th>With the type-error rule (45 + 760)</th></tr>"]
-    for s, a, b in SLIDES_760:
-        rows.append(f"<tr><td>{s}</td><td class=\"n\">{a}</td><td class=\"n\">{b}</td></tr>")
+    rows = ["<tr><th>Slide</th><th>Livelits drawn from the compiled run, build 45</th><th>With the type-error rule (45 + 760)</th><th>Build 47, with the type-hole rule</th></tr>"]
+    for s, a, b, c in SLIDES_760:
+        rows.append(f"<tr><td>{s}</td><td class=\"n\">{a}</td><td class=\"n\">{b}</td><td class=\"n\">{c}</td></tr>")
     return '<table class="vals">' + "".join(rows) + "</table>"
 
 
@@ -264,7 +264,7 @@ json.dump({"meeting": {"date": "2026-11-13", "who": "Matthew Hammer and Cyrus Om
                      "first_sweep": FIRST_SWEEP},
            "witch_builds": {"what": "jit.yml (scripts/jit_slides.py), Firefox on GitHub's machines, the Witch slide; one run each. view and jit: ms a frame over a 3 s drag of the neck slider, compiled views on; step: hazel-jit's run before the first redraw at each of four slider steps (two calls each), ms; draws: livelits drawn from the compiled run since load.",
                             "builds": BUILDS},
-           "slides_with_type_error_rule": [{"slide": s, "build_45": a, "build_45_plus_760": b} for s, a, b in SLIDES_760],
+           "slides_drawn_from_compiled_run": [{"slide": s, "build_45": a, "build_45_plus_760": b, "build_47": c} for s, a, b, c in SLIDES_760],
            "sint_today": [{"program": p, "browser_interpreter": a, "native_build": b, "hazel_jit": c} for p, a, b, c in SINT]},
           open(os.path.join(HERE, "data", "numbers.json"), "w"), indent=1)
 print("wrote 054/index.html;", updated, NUMS["checks"], BY_RULE, BY_LIMIT)
