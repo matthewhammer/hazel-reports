@@ -157,7 +157,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-16 12:09 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-16 12:18 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </ul>
 
 <h3 id="ahead">Compiled ahead of time, for older phones<a class="anchor" href="#ahead" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="ahead" title="copy this section's address">copy link</button></h3>
-<p><b>A third use, now a working prototype: compile a hazeljs app's Hazel when the site is built, and ship the JavaScript, so that an older phone loads neither Hazel's interpreter nor its build of the program, and every call runs compiled. The I Ching compiled this way gives hazeljs's answer on all 8,102 checked, in 33 kB instead of 2.8 MB, with a cast about 500 times faster and a reading about 3,000 times, in Node on a laptop.</b> The idea is Matthew Hammer's, on 2026-11-16, after trying the two hazeljs oracles (an I Ching and a Tarot, whose rules are Hazel run by hazeljs in the page) on an older Android phone in Firefox: painfully slow to draw each card or line, and on each key press in the I Ching's question.</p>
+<p><b>A third use, now a working prototype: compile a hazeljs app's Hazel when the site is built, and ship the JavaScript, so that an older phone loads neither Hazel's interpreter nor its build of the program, and every call runs compiled. On the older Android phone, the I Ching compiled this way is ready to cast at 0.8 s instead of 3.7 s, and a reading takes under a millisecond instead of 86 to 113 ms. It gives hazeljs's answer on all 8,102 checked, in 33 kB instead of 2.8 MB.</b> The idea is Matthew Hammer's, on 2026-11-16, after trying the two hazeljs oracles (an I Ching and a Tarot, whose rules are Hazel run by hazeljs in the page) on an older Android phone in Firefox: painfully slow to draw each card or line, and on each key press in the I Ching's question.</p>
 <p>What a page like that costs, measured on a laptop:</p>
 <ul>
 <li><b>Hazel's library,</b> hazel-lib.js: 2.8 MB of JavaScript (650 kB compressed), 174 ms to load in Node.</li>
@@ -395,7 +395,18 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>The same answers:</b> <code>node/compare-compiled.mjs</code> runs both, compiled and hazeljs: every set of six lines with every pattern of changing lines (4,096), the readings of fewer lines, and 4,000 casts by coins and by yarrow. None differs. Three agreement tests in hazel-jit's own CI check the same program against the interpreter.</li>
 <li><b>Saying which engine answered:</b> the page, opened with <code>?compiled</code> (or by a link under ⚙️ Advanced), says "compiled Hazel" on each line and reading. Editing the rules loads hazeljs and runs them as before.</li>
 </ul>
-<p>Compiling the I Ching found a bug in hazel-jit. A labeled tuple, and a module, is a JavaScript array with each label also a property, and the I Ching's <code>Lines</code> module has a member named <code>length</code>: setting an array's <code>length</code> to a function threw, so every compiled call failed. A label that an array already has a use for (<code>length</code>, <code>__proto__</code>) is now kept under another key, the same everywhere hazel-jit writes or reads one (<code>trial/765-label-keys</code>, <code>30a131a046</code>). The phone's speed line, compiled against interpreted, is next.</p>
+<p>Compiling the I Ching found a bug in hazel-jit. A labeled tuple, and a module, is a JavaScript array with each label also a property, and the I Ching's <code>Lines</code> module has a member named <code>length</code>: setting an array's <code>length</code> to a function threw, so every compiled call failed. A label that an array already has a use for (<code>length</code>, <code>__proto__</code>) is now kept under another key, the same everywhere hazel-jit writes or reads one (<code>trial/765-label-keys</code>, <code>30a131a046</code>). </p>
+<p>The phone's speed lines, the same work interpreted and compiled (Firefox 160 on Android, one run each; a 0 is below the phone's timer, which Firefox rounds on purpose):</p>
+<table class="vals">
+<tr><th>On the older phone</th><th>0.0.9, interpreted</th><th>0.0.11, interpreted</th><th>0.0.12, compiled</th></tr>
+<tr><td>ready to cast</td><td class="n">3.7 s (Hazel at 0.8 s, then a 2.9 s build)</td><td class="n">3.7 s (Hazel at 1.0 to 1.2 s, then a 2.5 to 2.8 s build)</td><td class="n">0.8 s (no library, no build)</td></tr>
+<tr><td>a cast by coins</td><td class="n">3 ms</td><td class="n">3 to 4 ms</td><td class="n">0 ms (worst 1)</td></tr>
+<tr><td>a cast by yarrow</td><td class="n">9 ms</td><td class="n">10 to 11 ms</td><td class="n">0 ms (worst 8)</td></tr>
+<tr><td>a reading</td><td class="n">113 ms</td><td class="n">86 to 93 ms</td><td class="n">0 ms (worst 2)</td></tr>
+<tr><td>drawing the reading, to the next frame</td><td class="n">149 ms</td><td class="n">17 ms</td><td class="n">16 ms</td></tr>
+<tr><td>a key press in the question</td><td class="n">17 ms</td><td class="n">17 ms</td><td class="n">16 ms</td></tr>
+</table>
+<p>The first two lines the phone sent with <code>?compiled</code> came back interpreted, and the page did not say why: it fell back to hazeljs on any failure of the compiled file, silently. Since 0.0.12 it says so, in the status line and in the speed line, and with the address as <code>?compiled=1</code> the phone ran compiled, with no error.</p>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol>
@@ -409,7 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li>Count the run-time type checks per call for an undeclared result type (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a>), and get <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a> reviewed.</li>
 <li>Mixed mode, a first step: a compiled-function value the interpreter can apply, for top-level functions with their whole types declared, behind a setting, falling back one call at a time.</li>
 <li>Mixed mode in the consistency sweep: each evaluator test run a third way, mixed, against the interpreter alone.</li>
-<li>Compare an older phone's speed lines for the I Ching, compiled (<code>?compiled</code>) and interpreted; then the Tarot the same way, and the compiler inside hazeljs, so a site's build compiles without CI.</li>
+<li>The Tarot compiled the same way, and compiled made the oracles' default once it holds up; then the compiler inside hazeljs, so a site's build compiles without CI.</li>
 <li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a>, or the Tarot deal of <a href="https://matthewhammer.org/hazel/dashboard/#ticket-730"><code class="ref"><b>^ticket(</b>730<b>)</b></code></a>), interpreter alone against mixed.</li>
 </ol>
 
@@ -1004,6 +1015,54 @@ document.addEventListener("DOMContentLoaded", () => {
      "1.6 ms",
      "4 to 10 ms",
      "30"
+    ]
+   ]
+  },
+  {
+   "section": "Compiled ahead of time, for older phones",
+   "section_id": "ahead",
+   "columns": [
+    "On the older phone",
+    "0.0.9, interpreted",
+    "0.0.11, interpreted",
+    "0.0.12, compiled"
+   ],
+   "rows": [
+    [
+     "ready to cast",
+     "3.7 s (Hazel at 0.8 s, then a 2.9 s build)",
+     "3.7 s (Hazel at 1.0 to 1.2 s, then a 2.5 to 2.8 s build)",
+     "0.8 s (no library, no build)"
+    ],
+    [
+     "a cast by coins",
+     "3 ms",
+     "3 to 4 ms",
+     "0 ms (worst 1)"
+    ],
+    [
+     "a cast by yarrow",
+     "9 ms",
+     "10 to 11 ms",
+     "0 ms (worst 8)"
+    ],
+    [
+     "a reading",
+     "113 ms",
+     "86 to 93 ms",
+     "0 ms (worst 2)"
+    ],
+    [
+     "drawing the reading, to the next frame",
+     "149 ms",
+     "17 ms",
+     "16 ms"
+    ],
+    [
+     "a key press in the question",
+     "17 ms",
+     "17 ms",
+     "16 ms"
     ]
    ]
   }
