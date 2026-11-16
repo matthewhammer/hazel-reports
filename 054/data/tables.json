@@ -24,8 +24,8 @@
    [
     "^ticket(758)",
     "Overflow stops at a stuck term",
-    "Decided 11-16: 32 bits everywhere. Written in the interpreter and hazel-jit, each SInt result checked; CI running.",
-    "in progress"
+    "On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). Left: the interpreter's half as a PR to dev.",
+    "done"
    ],
    [
     "^ticket(759)",
@@ -42,7 +42,7 @@
    [
     "^ticket(761)",
     "The other limits, one at a time",
-    "Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined, tuple extension, the label builtins and strings in graphemes pass CI on their branches; probes not begun.",
+    "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application; eight programs of 313 still meet a limit. Probes not begun.",
     "in progress"
    ],
    [
@@ -90,17 +90,7 @@
     "rule"
    ],
    [
-    "undefined",
-    "7",
-    "a limit (^ticket(761))"
-   ],
-   [
-    "'this kind of term' (forms with no case of their own)",
-    "6",
-    "a limit (^ticket(761))"
-   ],
-   [
-    "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0)",
+    "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0; ill-typed tests)",
     "3",
     "a limit (^ticket(761))"
    ],
@@ -110,17 +100,12 @@
     "a limit (^ticket(761))"
    ],
    [
-    "the builtin string_sub",
+    "the builtin from_lvs",
     "1",
     "a limit (^ticket(761))"
    ],
    [
     "an expression as a module member",
-    "1",
-    "a limit (^ticket(761))"
-   ],
-   [
-    "a reverse application (|>)",
     "1",
     "a limit (^ticket(761))"
    ],
@@ -174,11 +159,13 @@
    "Slide",
    "Livelits drawn from the compiled run, build 45",
    "With the type-error rule (45 + 760)",
-   "Build 47, with the type-hole rule"
+   "Build 47, with the type-hole rule",
+   "Build 48"
   ],
   "rows": [
    [
     "Full Body",
+    "30",
     "30",
     "30",
     "30"
@@ -187,10 +174,12 @@
     "Hands",
     "30",
     "30",
+    "28",
     "28"
    ],
    [
     "Scenes",
+    "36",
     "36",
     "36",
     "36"
@@ -199,6 +188,7 @@
     "Witch",
     "30",
     "28",
+    "30",
     "30"
    ]
   ]
@@ -278,10 +268,21 @@
     "f4f969588b",
     "43898636577",
     "11-16",
-    "Build 46 and the type-hole rule (^ticket(760)); trial/694-view-jit since 11-16 07:4x MST.",
+    "Build 46 and the type-hole rule (^ticket(760)).",
     "7.2 ms (about 139 fps)",
     "1.6 ms",
     "4 to 10 ms",
+    "30"
+   ],
+   [
+    "48 · the limits, SInt, label keys",
+    "30a131a046",
+    "43949420309",
+    "11-16",
+    "Build 47 and undefined, tuple extension and the label builtins, strings in graphemes, reverse application (761), SInt at 32 bits (758), and labels named length (765); trial/694-view-jit since 11-16.",
+    "6.1 ms (about 164 fps)",
+    "1.6 ms",
+    "5 to 11 ms",
     "30"
    ]
   ]

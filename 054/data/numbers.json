@@ -48,12 +48,14 @@
    "short": "overflow: a stuck term",
    "name": "Overflow stops at a stuck term",
    "sec": "overflow",
-   "stage": 2,
-   "st": "part",
-   "status": "Decided 11-16: 32 bits everywhere. Written in the interpreter and hazel-jit, each SInt result checked; CI running.",
+   "stage": 4,
+   "st": "done",
+   "status": "On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). Left: the interpreter's half as a PR to dev.",
    "stages_reached": [
     "designed",
-    "written"
+    "written",
+    "CI green",
+    "on the branch"
    ]
   },
   {
@@ -91,13 +93,14 @@
    "short": "the other limits, one at a time",
    "name": "The other limits, one at a time",
    "sec": "limits",
-   "stage": 3,
+   "stage": 4,
    "st": "part",
-   "status": "Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined, tuple extension, the label builtins and strings in graphemes pass CI on their branches; probes not begun.",
+   "status": "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application; eight programs of 313 still meet a limit. Probes not begun.",
    "stages_reached": [
     "designed",
     "written",
-    "CI green"
+    "CI green",
+    "on the branch"
    ]
   },
   {
@@ -144,15 +147,25 @@
   }
  ],
  "sweep": {
-  "commit": "f4f969588b",
-  "job": 133371195383,
-  "run": 43887985051,
+  "build": "48",
+  "commit": "30a131a046",
+  "job": 133528440450,
+  "run": 43932529130,
   "checks": 313,
-  "compiled": 243,
-  "agreed": 216,
+  "compiled": 257,
+  "agreed": 230,
   "differ": 0,
   "threw": 0,
   "not_a_value": 27,
+  "build_47": {
+   "build": "47",
+   "commit": "f4f969588b",
+   "run": 43887985051,
+   "checks": 313,
+   "compiled": 243,
+   "agreed": 216,
+   "not_a_value": 27
+  },
   "not_compiled": [
    {
     "reason": "a hole",
@@ -170,17 +183,7 @@
     "kind": "rule"
    },
    {
-    "reason": "undefined",
-    "programs": 7,
-    "kind": "limit"
-   },
-   {
-    "reason": "'this kind of term' (forms with no case of their own)",
-    "programs": 6,
-    "kind": "limit"
-   },
-   {
-    "reason": "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0)",
+    "reason": "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0; ill-typed tests)",
     "programs": 3,
     "kind": "limit"
    },
@@ -190,17 +193,12 @@
     "kind": "limit"
    },
    {
-    "reason": "the builtin string_sub",
+    "reason": "the builtin from_lvs",
     "programs": 1,
     "kind": "limit"
    },
    {
     "reason": "an expression as a module member",
-    "programs": 1,
-    "kind": "limit"
-   },
-   {
-    "reason": "a reverse application (|>)",
     "programs": 1,
     "kind": "limit"
    },
@@ -211,7 +209,7 @@
    }
   ],
   "by_rule": 48,
-  "by_limit": 22,
+  "by_limit": 8,
   "first_sweep": {
    "commit": "4b17e3b0ba",
    "run": 43754503317,
@@ -322,7 +320,7 @@
     "commit": "f4f969588b",
     "run": 43898636577,
     "when": "11-16",
-    "adds": "Build 46 and the type-hole rule (ticket 760); trial/694-view-jit since 11-16 07:4x MST.",
+    "adds": "Build 46 and the type-hole rule (ticket 760).",
     "step": [
      10,
      7,
@@ -333,6 +331,24 @@
     "jit": 1.6,
     "fps": 49.0,
     "draws": 30
+   },
+   {
+    "b": "48",
+    "name": "the limits, SInt, label keys",
+    "commit": "30a131a046",
+    "run": 43949420309,
+    "when": "11-16",
+    "adds": "Build 47 and undefined, tuple extension and the label builtins, strings in graphemes, reverse application (761), SInt at 32 bits (758), and labels named length (765); trial/694-view-jit since 11-16.",
+    "step": [
+     11,
+     5,
+     5,
+     11
+    ],
+    "view": 6.1,
+    "jit": 1.6,
+    "fps": 52.6,
+    "draws": 30
    }
   ]
  },
@@ -341,25 +357,29 @@
    "slide": "Full Body",
    "build_45": 30,
    "build_45_plus_760": 30,
-   "build_47": 30
+   "build_47": 30,
+   "build_48": 30
   },
   {
    "slide": "Hands",
    "build_45": 30,
    "build_45_plus_760": 30,
-   "build_47": 28
+   "build_47": 28,
+   "build_48": 28
   },
   {
    "slide": "Scenes",
    "build_45": 36,
    "build_45_plus_760": 36,
-   "build_47": 36
+   "build_47": 36,
+   "build_48": 36
   },
   {
    "slide": "Witch",
    "build_45": 30,
    "build_45_plus_760": 28,
-   "build_47": 30
+   "build_47": 30,
+   "build_48": 30
   }
  ],
  "sint_today": [

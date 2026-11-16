@@ -47,14 +47,14 @@ PLAN = [
          status="On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides' own programs."),
     dict(t=757, short="Int and Nat exact", name="Int and Nat exact, as the interpreter's", sec="numbers", stage=4, st="done",
          status="On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch."),
-    dict(t=758, short="overflow: a stuck term", name="Overflow stops at a stuck term", sec="overflow", stage=2, st="part",
-         status="Decided 11-16: 32 bits everywhere. Written in the interpreter and hazel-jit, each SInt result checked; CI running."),
+    dict(t=758, short="overflow: a stuck term", name="Overflow stops at a stuck term", sec="overflow", stage=4, st="done",
+         status="On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). Left: the interpreter's half as a PR to dev."),
     dict(t=759, short="divide by zero: a stuck term", name="Divide by zero stops at a stuck term", sec="errors", stage=4, st="done",
          status="On the branch: the compiled run stops, and the interpreter makes the stuck term."),
     dict(t=760, short="holes, the stepper: the interpreter's", name="Holes and the stepper stay with the interpreter", sec="rules", stage=4, st="done",
          status="On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser."),
-    dict(t=761, short="the other limits, one at a time", name="The other limits, one at a time", sec="limits", stage=3, st="part",
-         status="Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined, tuple extension, the label builtins and strings in graphemes pass CI on their branches; probes not begun."),
+    dict(t=761, short="the other limits, one at a time", name="The other limits, one at a time", sec="limits", stage=4, st="part",
+         status="On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application; eight programs of 313 still meet a limit. Probes not begun."),
     dict(t=763, short="a step budget", name="A step budget for compiled code", sec="budget", stage=4, st="done",
          status="On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter."),
     dict(t=764, short="found: modulo by zero crashed", name="Found: modulo by zero crashed the interpreter", sec="found", stage=4, st="pr",
@@ -65,16 +65,16 @@ PLAN = [
 STAGES = ["designed", "written", "CI green", "on the branch"]
 
 # ---------------------------------------------------------------- the sweep: the fast checks' report on f4f969588b (job 133371195383)
-SWEEP = dict(commit="f4f969588b", job=133371195383, run=43887985051, checks=313, compiled=243, agreed=216, differ=0, threw=0, not_a_value=27)
+SWEEP = dict(build="48", commit="30a131a046", job=133528440450, run=43932529130, checks=313, compiled=257, agreed=230, differ=0, threw=0, not_a_value=27)
 NOT_COMPILED = [  # reason, count, rule or limit
     ("a hole", 14, "rule"), ("a type hole", 10, "rule"),
     ("a free variable (the tests' own unbound names: y 13, s2 6, x 2, b2 2, a 1)", 24, "rule"),
-    ("undefined", 7, "limit"), ("'this kind of term' (forms with no case of their own)", 6, "limit"),
-    ("a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0)", 3, "limit"),
-    ("a tuple label that is not a name", 2, "limit"), ("the builtin string_sub", 1, "limit"),
-    ("an expression as a module member", 1, "limit"), ("a reverse application (|>)", 1, "limit"),
+    ("a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0; ill-typed tests)", 3, "limit"),
+    ("a tuple label that is not a name", 2, "limit"), ("the builtin from_lvs", 1, "limit"),
+    ("an expression as a module member", 1, "limit"),
     ("a recursive definition of more than one name, not a tuple of functions", 1, "limit"),
 ]
+SWEEP_47 = dict(build="47", commit="f4f969588b", run=43887985051, checks=313, compiled=243, agreed=216, not_a_value=27)
 BY_RULE = sum(n for _, n, k in NOT_COMPILED if k == "rule")
 BY_LIMIT = sum(n for _, n, k in NOT_COMPILED if k == "limit")
 assert SWEEP["compiled"] == SWEEP["agreed"] + SWEEP["not_a_value"]
@@ -93,10 +93,12 @@ BUILDS = [
          step=[5, 6, 6, 3], view=7.0, jit=1.5, fps=53.0, draws=28),
     dict(b="46", name="the six together", commit="59f28470c3", run=43792878754, when="11-15", adds="Tickets 756, 757, 759, 760, 761 and 763 merged on build 45.",
          step=[7, 10, 5, 5], view=5.4, jit=1.1, fps=59.0, draws=30),
-    dict(b="47", name="a type hole is a hole", commit="f4f969588b", run=43898636577, when="11-16", adds="Build 46 and the type-hole rule (ticket 760); trial/694-view-jit since 11-16 07:4x MST.",
+    dict(b="47", name="a type hole is a hole", commit="f4f969588b", run=43898636577, when="11-16", adds="Build 46 and the type-hole rule (ticket 760).",
          step=[10, 7, 4, 5], view=7.2, jit=1.6, fps=49.0, draws=30),
+    dict(b="48", name="the limits, SInt, label keys", commit="30a131a046", run=43949420309, when="11-16", adds="Build 47 and undefined, tuple extension and the label builtins, strings in graphemes, reverse application (761), SInt at 32 bits (758), and labels named length (765); trial/694-view-jit since 11-16.",
+         step=[11, 5, 5, 11], view=6.1, jit=1.6, fps=52.6, draws=30),
 ]
-SLIDES_760 = [("Full Body", 30, 30, 30), ("Hands", 30, 30, 28), ("Scenes", 36, 36, 36), ("Witch", 30, 28, 30)]
+SLIDES_760 = [("Full Body", 30, 30, 30, 30), ("Hands", 30, 30, 28, 28), ("Scenes", 36, 36, 36, 36), ("Witch", 30, 28, 30, 30)]
 
 # ---------------------------------------------------------------- SInt today (hazeljs 0.0.6, Hazel under js_of_ocaml as in the browser)
 SINT = [
@@ -142,7 +144,7 @@ def fig_sweep():
              ("not compiled, by rule", BY_RULE, "#9ca3af"), ("not compiled, a limit", BY_LIMIT, "#7c3aed")]
     tot = SWEEP["checks"]
     x, y, h = L, 50, 30
-    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">Build 47: the {tot} evaluator test programs, run both ways</text>',
+    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">Build {SWEEP["build"]}: the {tot} evaluator test programs, run both ways</text>',
            f'<text x="16" y="34" font-size="11" fill="var(--muted)">{SWEEP["differ"]} differ, {SWEEP["threw"]} threw: every compiled program gave the interpreter\'s answer, or is a known ill-typed test</text>']
     for name, n, c in parts:
         w = n / tot * (W - L - R)
@@ -156,7 +158,7 @@ def fig_sweep():
         out.append(f'<text x="{lx + 16}" y="{y + h + 24}" font-size="10.5" fill="var(--ink)">{esc(name)} ({n})</text>')
         lx += 16 + 6.2 * len(f"{name} ({n})") + 16
     H = y + h + 40
-    cap = (f"Build 47 (<code>{SWEEP['commit']}</code>), the fast checks' sweep (CI run {SWEEP['run']}). Each of the evaluator's "
+    cap = (f"Build {SWEEP['build']} (<code>{SWEEP['commit']}</code>), the fast checks' sweep (CI run {SWEEP['run']}). Each of the evaluator's "
            f"test programs also goes to hazel-jit: compiled and run in JavaScript, its answer compared with the interpreter's. "
            f"\"Not a value\": the interpreter stops at a failed run-time type check in an ill-typed test (4 : String, ...), which "
            f"compiled code, its types erased, would run past; the page never compiles such a program (ticket 760). By rule: "
@@ -183,11 +185,11 @@ def fig_witch():
         out.append(f'<rect x="{L}" y="{y + 4}" width="{X(b["view"]) - L:.1f}" height="17" rx="2" fill="#0e7490" opacity="0.55"/>')
         out.append(f'<rect x="{L}" y="{y + 4}" width="{X(b["jit"]) - L:.1f}" height="17" rx="2" fill="#0e7490"/>')
         out.append(f'<text x="{X(b["view"]) + 6:.1f}" y="{y + 16}" font-size="10.5" fill="var(--muted)">{b["view"]} ms (about {round(1000 / b["view"])} fps); run {b["jit"]} ms</text>')
-    cap = ("Builds 45 to 47, the Witch slide in Firefox on GitHub's machines (jit.yml), dragging the neck slider for 3 s with "
+    cap = ("Builds 45 to 48, the Witch slide in Firefox on GitHub's machines (jit.yml), dragging the neck slider for 3 s with "
            "compiled views on: the page's view per frame, and hazel-jit's compiled run per frame within it. One run each: "
            "the spread between them (5.4 to 7.3 ms) is as large as any difference, so these say no build is measurably slower "
            "than build 45, not which is fastest.")
-    return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="Bars of the Witch view time per frame for builds 45 to 47, all under 8 ms, '
+    return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="Bars of the Witch view time per frame for builds 45 to 48, all under 8 ms, '
             f'against a 16.7 ms line" style="width:100%;height:auto;display:block">' + "".join(out) + f"</svg><figcaption>{cap}</figcaption></figure>")
 
 
@@ -258,9 +260,9 @@ def sint_table():
 
 
 def slides_table():
-    rows = ["<tr><th>Slide</th><th>Livelits drawn from the compiled run, build 45</th><th>With the type-error rule (45 + 760)</th><th>Build 47, with the type-hole rule</th></tr>"]
-    for s, a, b, c in SLIDES_760:
-        rows.append(f"<tr><td>{s}</td><td class=\"n\">{a}</td><td class=\"n\">{b}</td><td class=\"n\">{c}</td></tr>")
+    rows = ["<tr><th>Slide</th><th>Livelits drawn from the compiled run, build 45</th><th>With the type-error rule (45 + 760)</th><th>Build 47, with the type-hole rule</th><th>Build 48</th></tr>"]
+    for s, a, b, c, e in SLIDES_760:
+        rows.append(f"<tr><td>{s}</td><td class=\"n\">{a}</td><td class=\"n\">{b}</td><td class=\"n\">{c}</td><td class=\"n\">{e}</td></tr>")
     return '<table class="vals">' + "".join(rows) + "</table>"
 
 
@@ -299,11 +301,11 @@ head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<met
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
 json.dump({"meeting": {"date": "2026-11-13", "who": "Matthew Hammer and Cyrus Omar", "summary_by_matthew_2026_11_15": SUMMARY, "cyrus_step_limit": CYRUS},
            "plan": [{**p, "stages_reached": STAGES[:p["stage"]]} for p in PLAN],
-           "sweep": {**SWEEP, "not_compiled": [{"reason": r, "programs": n, "kind": k} for r, n, k in NOT_COMPILED], "by_rule": BY_RULE, "by_limit": BY_LIMIT,
+           "sweep": {**SWEEP, "build_47": SWEEP_47, "not_compiled": [{"reason": r, "programs": n, "kind": k} for r, n, k in NOT_COMPILED], "by_rule": BY_RULE, "by_limit": BY_LIMIT,
                      "first_sweep": FIRST_SWEEP},
            "witch_builds": {"what": "jit.yml (scripts/jit_slides.py), Firefox on GitHub's machines, the Witch slide; one run each. view and jit: ms a frame over a 3 s drag of the neck slider, compiled views on; step: hazel-jit's run before the first redraw at each of four slider steps (two calls each), ms; draws: livelits drawn from the compiled run since load.",
                             "builds": BUILDS},
-           "slides_drawn_from_compiled_run": [{"slide": s, "build_45": a, "build_45_plus_760": b, "build_47": c} for s, a, b, c in SLIDES_760],
+           "slides_drawn_from_compiled_run": [{"slide": s, "build_45": a, "build_45_plus_760": b, "build_47": c, "build_48": e} for s, a, b, c, e in SLIDES_760],
            "sint_today": [{"program": p, "browser_interpreter": a, "native_build": b, "hazel_jit": c} for p, a, b, c in SINT]},
           open(os.path.join(HERE, "data", "numbers.json"), "w"), indent=1)
 print("wrote 054/index.html;", updated, NUMS["checks"], BY_RULE, BY_LIMIT)
