@@ -1,0 +1,284 @@
+[
+ {
+  "section": "The plan",
+  "section_id": "plan",
+  "columns": [
+   "Ticket",
+   "The change",
+   "Where it stands",
+   ""
+  ],
+  "rows": [
+   [
+    "^ticket(756)",
+    "Consistency with the interpreter, checked in CI",
+    "On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides' own programs.",
+    "done"
+   ],
+   [
+    "^ticket(757)",
+    "Int and Nat exact, as the interpreter's",
+    "On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch.",
+    "done"
+   ],
+   [
+    "^ticket(758)",
+    "Overflow stops at a stuck term",
+    "Waits on a decision: SInt has three widths today. Recommended: 32 bits everywhere, each operation checked.",
+    "waiting"
+   ],
+   [
+    "^ticket(759)",
+    "Divide by zero stops at a stuck term",
+    "On the branch: the compiled run stops, and the interpreter makes the stuck term.",
+    "done"
+   ],
+   [
+    "^ticket(760)",
+    "Holes and the stepper stay with the interpreter",
+    "On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser.",
+    "done"
+   ],
+   [
+    "^ticket(761)",
+    "The other limits, one at a time",
+    "Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined in CI; probes not begun.",
+    "in progress"
+   ],
+   [
+    "^ticket(763)",
+    "A step budget for compiled code",
+    "On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter.",
+    "done"
+   ],
+   [
+    "^ticket(764)",
+    "Found: modulo by zero crashed the interpreter",
+    "Fixed on a PR to dev, hazelgrove/hazel#2825, waiting for review.",
+    "on a PR"
+   ],
+   [
+    "^ticket(762)",
+    "Found: an undeclared result type costs a step 5 to 7 times",
+    "Measured in Hazel's interpreter; the cause is where the ascriptions go. The fix is not begun.",
+    "waiting"
+   ]
+  ]
+ },
+ {
+  "section": "The same answers, checked in CI",
+  "section_id": "consistency",
+  "columns": [
+   "Not compiled because",
+   "Programs",
+   "Rule or limit"
+  ],
+  "rows": [
+   [
+    "a hole",
+    "14",
+    "rule"
+   ],
+   [
+    "a type hole",
+    "10",
+    "rule"
+   ],
+   [
+    "a free variable (the tests' own unbound names: y 13, s2 6, x 2, b2 2, a 1)",
+    "24",
+    "rule"
+   ],
+   [
+    "undefined",
+    "7",
+    "a limit (^ticket(761))"
+   ],
+   [
+    "'this kind of term' (forms with no case of their own)",
+    "6",
+    "a limit (^ticket(761))"
+   ],
+   [
+    "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0)",
+    "3",
+    "a limit (^ticket(761))"
+   ],
+   [
+    "a tuple label that is not a name",
+    "2",
+    "a limit (^ticket(761))"
+   ],
+   [
+    "the builtin string_sub",
+    "1",
+    "a limit (^ticket(761))"
+   ],
+   [
+    "an expression as a module member",
+    "1",
+    "a limit (^ticket(761))"
+   ],
+   [
+    "a reverse application (|>)",
+    "1",
+    "a limit (^ticket(761))"
+   ],
+   [
+    "a recursive definition of more than one name, not a tuple of functions",
+    "1",
+    "a limit (^ticket(761))"
+   ]
+  ]
+ },
+ {
+  "section": "Overflow",
+  "section_id": "overflow",
+  "columns": [
+   "Program",
+   "The browser's interpreter (32 bits, wraps)",
+   "A native build (OCaml's 63-bit int)",
+   "hazel-jit (a JS number)"
+  ],
+  "rows": [
+   [
+    "use SInt in 2147483647 + 1",
+    "-2147483648",
+    "2147483648",
+    "2147483648"
+   ],
+   [
+    "use SInt in 65536 * 65536",
+    "0",
+    "4294967296",
+    "4294967296"
+   ],
+   [
+    "use SInt in 1000000 * 1000000",
+    "-727379968",
+    "1000000000000",
+    "1000000000000"
+   ],
+   [
+    "use SInt in 2 ** 31",
+    "-2147483648",
+    "2147483648",
+    "2147483648"
+   ]
+  ]
+ },
+ {
+  "section": "What stays with the interpreter",
+  "section_id": "rules",
+  "columns": [
+   "Slide",
+   "Livelits drawn from the compiled run, build 45",
+   "With the type-error rule (45 + 760)"
+  ],
+  "rows": [
+   [
+    "Full Body",
+    "30",
+    "30"
+   ],
+   [
+    "Hands",
+    "30",
+    "30"
+   ],
+   [
+    "Scenes",
+    "36",
+    "36"
+   ],
+   [
+    "Witch",
+    "30",
+    "28"
+   ]
+  ]
+ },
+ {
+  "section": "What it all costs",
+  "section_id": "cost",
+  "columns": [
+   "Build",
+   "Commit",
+   "Run",
+   "When",
+   "What it adds",
+   "View a frame (drag)",
+   "Compiled run a frame",
+   "Compiled run at a step",
+   "Drawn from the compiled run"
+  ],
+  "rows": [
+   [
+    "45 · the base",
+    "fc1103900d",
+    "42888678269",
+    "11-10",
+    "^report(52)'s last build: the slide's whole run compiled, on trial/694-view-jit.",
+    "5.8 ms (about 172 fps)",
+    "1.3 ms",
+    "4 to 8 ms",
+    "30"
+   ],
+   [
+    "45 + 757 · exact integers",
+    "b908b4ed2e",
+    "43763443448",
+    "11-15",
+    "Int and Nat exact (^ticket(757)), on build 45 and ^ticket(756)'s first step.",
+    "6.6 ms (about 152 fps)",
+    "1.7 ms",
+    "4 to 9 ms",
+    "30"
+   ],
+   [
+    "45 + 763 · a step budget",
+    "b81b39f8d4",
+    "43763439842",
+    "11-15",
+    "A counter in every compiled function, and a budget around each run (^ticket(763)), on build 45.",
+    "7.3 ms (about 137 fps)",
+    "1.5 ms",
+    "5 to 10 ms",
+    "30"
+   ],
+   [
+    "45 + 760 · no type errors",
+    "1b89af31c5",
+    "43765797166",
+    "11-15",
+    "No program with type errors compiled (^ticket(760)), on build 45.",
+    "7.0 ms (about 143 fps)",
+    "1.5 ms",
+    "3 to 6 ms",
+    "28"
+   ],
+   [
+    "46 · the six together",
+    "59f28470c3",
+    "43792878754",
+    "11-15",
+    "Tickets 756, 757, 759, 760, 761 and 763 merged on build 45.",
+    "5.4 ms (about 185 fps)",
+    "1.1 ms",
+    "5 to 10 ms",
+    "30"
+   ],
+   [
+    "47 · a type hole is a hole",
+    "f4f969588b",
+    "43898636577",
+    "11-16",
+    "Build 46 and the type-hole rule (^ticket(760)); trial/694-view-jit since 11-16 07:4x MST.",
+    "being measured",
+    "being measured",
+    "being measured",
+    "being measured"
+   ]
+  ]
+ }
+]

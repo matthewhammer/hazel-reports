@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Same Answers as the Interpreter</title>
+<meta name="description" content="Work in progress on hazel-jit after Matthew and Cyrus's meeting of 2026-11-13: the changes planned, and where each stands.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.88em; }
+  table.vals th, table.vals td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; } table.vals th { font-weight: 600; }
+  table.vals td:first-child { min-width: 14ch; }
+  blockquote.msg { margin: 1em 0; padding: 0.4em 1.1em; border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent); border-radius: 0 6px 6px 0; }
+  figure.f { margin: 1.2em 0; } figure.f svg { max-width: 100%; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  code { overflow-wrap: anywhere; }
+  .st-done { color: #15803d; font-weight: 600; } .st-part { color: #b45309; font-weight: 600; } .st-wait { color: #6b7280; font-weight: 600; } .st-pr { color: #2563eb; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-done { color: #4ade80; } :root:not([data-theme="light"]) .st-part { color: #fbbf24; } :root:not([data-theme="light"]) .st-wait { color: #9ca3af; } :root:not([data-theme="light"]) .st-pr { color: #93c5fd; } }
+  :root[data-theme="dark"] .st-done { color: #4ade80; } :root[data-theme="dark"] .st-part { color: #fbbf24; } :root[data-theme="dark"] .st-wait { color: #9ca3af; } :root[data-theme="dark"] .st-pr { color: #93c5fd; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-16 09:01 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Same Answers as the Interpreter</h1>
+<p class="sub">hazel-jit compiles a livelit's view, and a slide's whole run, from Hazel to JavaScript, so that a slider's step can show in the picture within a frame (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> to <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>). On Friday 2026-11-13 Matthew Hammer and Cyrus Omar met about its next steps. The main one: what the compiled code computes must be what Hazel's interpreter computes, and CI must check it. Here is the plan from that meeting, change by change, and where each change stands. This report is revised as the work goes on.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#plan">The plan</a>: the meeting's items, as tickets, and how far each has come.</li>
+<li><a href="#what">What hazel-jit is</a>, for a reader new to it: what it compiles, where it runs, and what happens to what it does not compile.</li>
+<li><a href="#consistency">The same answers, checked in CI</a>: every evaluator test program also runs compiled, and a difference fails the build.</li>
+<li><a href="#numbers">Exact integers</a>: Int and Nat as the interpreter has them, past 2<sup>53</sup>.</li>
+<li><a href="#errors">Divide by zero and other invalid operations</a>: the compiled run stops, and the interpreter's run answers.</li>
+<li><a href="#overflow">Overflow</a>: SInt has three widths today, and the plan waits on choosing one.</li>
+<li><a href="#rules">What stays with the interpreter</a>: holes, type holes, programs with type errors, and the stepper's functions, explained.</li>
+<li><a href="#limits">The other limits, one at a time</a>: what the compiler did not handle, ranked by how often the tests meet it, and what is done.</li>
+<li><a href="#budget">A step budget</a>: Cyrus's concern, that a compiled function that never ends would freeze the page.</li>
+<li><a href="#cost">What it all costs</a>: the Witch slide, build by build.</li>
+<li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="plan">The plan<a class="anchor" href="#plan" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="plan" title="copy this section's address">copy link</button></h2>
+<p><b>Of the meeting's seven changes, five are done on the hazel-jit branch and pass CI. One is under way (the limits, three of their list done), and one waits on a decision (overflow, which needs SInt's width settled).</b> Each became a ticket on the work dashboard. Two more tickets came out of the work itself: a crash in the interpreter, now fixed on a PR to dev, and a cost in how Hazel checks types at run time.</p>
+<figure class="f"><svg viewBox="0 0 700 318" role="img" aria-label="Each ticket of the plan as a row of four stages, filled up to the stage it has reached" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The plan, ticket by ticket, on 2026-11-16</text><text x="16" y="34" font-size="11" fill="var(--muted)">each dot a stage reached; for ticket 764 the last stage is a PR to dev, not the branch</text><text x="300" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">designed</text><text x="410" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">written</text><text x="520" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">CI green</text><text x="630" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">on the branch</text><text x="260" y="67" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">756</tspan> the same answers, checked in CI</text><line x1="300" y1="63" x2="630" y2="63" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="63" r="7" fill="#15803d"/><circle cx="410" cy="63" r="7" fill="#15803d"/><circle cx="520" cy="63" r="7" fill="#15803d"/><circle cx="630" cy="63" r="7" fill="#15803d"/><text x="260" y="95" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">757</tspan> Int and Nat exact</text><line x1="300" y1="91" x2="630" y2="91" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="91" r="7" fill="#15803d"/><circle cx="410" cy="91" r="7" fill="#15803d"/><circle cx="520" cy="91" r="7" fill="#15803d"/><circle cx="630" cy="91" r="7" fill="#15803d"/><text x="260" y="123" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">758</tspan> overflow: a stuck term</text><line x1="300" y1="119" x2="630" y2="119" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="119" r="7" fill="#9ca3af"/><circle cx="410" cy="119" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="520" cy="119" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="630" cy="119" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><text x="260" y="151" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">759</tspan> divide by zero: a stuck term</text><line x1="300" y1="147" x2="630" y2="147" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="147" r="7" fill="#15803d"/><circle cx="410" cy="147" r="7" fill="#15803d"/><circle cx="520" cy="147" r="7" fill="#15803d"/><circle cx="630" cy="147" r="7" fill="#15803d"/><text x="260" y="179" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">760</tspan> holes, the stepper: the interpreter&#x27;s</text><line x1="300" y1="175" x2="630" y2="175" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="175" r="7" fill="#15803d"/><circle cx="410" cy="175" r="7" fill="#15803d"/><circle cx="520" cy="175" r="7" fill="#15803d"/><circle cx="630" cy="175" r="7" fill="#15803d"/><text x="260" y="207" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">761</tspan> the other limits, one at a time</text><line x1="300" y1="203" x2="630" y2="203" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="203" r="7" fill="#b45309"/><circle cx="410" cy="203" r="7" fill="#b45309"/><circle cx="520" cy="203" r="7" fill="#b45309"/><circle cx="630" cy="203" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><text x="260" y="235" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">763</tspan> a step budget</text><line x1="300" y1="231" x2="630" y2="231" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="231" r="7" fill="#15803d"/><circle cx="410" cy="231" r="7" fill="#15803d"/><circle cx="520" cy="231" r="7" fill="#15803d"/><circle cx="630" cy="231" r="7" fill="#15803d"/><text x="260" y="263" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">764</tspan> found: modulo by zero crashed</text><line x1="300" y1="259" x2="630" y2="259" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="259" r="7" fill="#2563eb"/><circle cx="410" cy="259" r="7" fill="#2563eb"/><circle cx="520" cy="259" r="7" fill="#2563eb"/><circle cx="630" cy="259" r="7" fill="#2563eb"/><text x="260" y="291" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">762</tspan> found: undeclared result types</text><line x1="300" y1="287" x2="630" y2="287" stroke="var(--line)" stroke-width="2"/><circle cx="300" cy="287" r="7" fill="#9ca3af"/><circle cx="410" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="520" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="630" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/></svg><figcaption>Tickets 756 to 763 are the meeting's items; 762 and 764 were found on the way. Green: done on <code>trial/694-view-jit</code> (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>, the hazel-jit prototype); amber: in progress; grey: waiting on a decision or not begun; blue: on a PR to dev. Not a build of the app: a status chart.</figcaption></figure>
+<p>Matthew's summary of the meeting, as he wrote it on 2026-11-15:</p>
+<blockquote class="msg"><ul><li>we want semantic consistency with Hazel the interpreter, and to ensure that with CI, and our design decisions.</li><li>arb precision Ints and Nats --- we want to use bignum in the output if we can, or something comparable, not native JS numbers for Ints and Nats.</li><li>when we hit an overflow for any times where that is possible -- we should check each time for non-arb precision numbers --- we should create an indet term / stuck term with that error -- look at existing interpreter cases for inspiration.</li><li>similar for divide by zero</li><li>for the output of hazel-jit, we should continue to avoid translating code with holes, and we should exclude &quot;stepper functions&quot; (don&#x27;t know what that is myself, please explain later).</li><li>probes, step budgets, and all other limitations we should work to overcome in the coming days.</li></ul></blockquote>
+<p>And Cyrus's concern, which Matthew passed on separately the same day: <i>"We need a way to limit compiled hazel functions that diverge --- we need a step limit. esp if we continue to optimize by including certain jit-compiled hazel functions into the main thread"</i></p>
+<table class="vals"><tr><th>Ticket</th><th>The change</th><th>Where it stands</th><th></th></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-756"><code class="ref"><b>^ticket(</b>756<b>)</b></code></a></td><td><a href="#consistency">Consistency with the interpreter, checked in CI</a></td><td>On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides&#x27; own programs.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a></td><td><a href="#numbers">Int and Nat exact, as the interpreter&#x27;s</a></td><td>On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-758"><code class="ref"><b>^ticket(</b>758<b>)</b></code></a></td><td><a href="#overflow">Overflow stops at a stuck term</a></td><td>Waits on a decision: SInt has three widths today. Recommended: 32 bits everywhere, each operation checked.</td><td class="st-wait">waiting</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-759"><code class="ref"><b>^ticket(</b>759<b>)</b></code></a></td><td><a href="#errors">Divide by zero stops at a stuck term</a></td><td>On the branch: the compiled run stops, and the interpreter makes the stuck term.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a></td><td><a href="#rules">Holes and the stepper stay with the interpreter</a></td><td>On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a></td><td><a href="#limits">The other limits, one at a time</a></td><td>Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined in CI; probes not begun.</td><td class="st-part">in progress</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a></td><td><a href="#budget">A step budget for compiled code</a></td><td>On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-764"><code class="ref"><b>^ticket(</b>764<b>)</b></code></a></td><td><a href="#found">Found: modulo by zero crashed the interpreter</a></td><td>Fixed on a PR to dev, <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a>, waiting for review.</td><td class="st-pr">on a PR</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a></td><td><a href="#found">Found: an undeclared result type costs a step 5 to 7 times</a></td><td>Measured in Hazel&#x27;s interpreter; the cause is where the ascriptions go. The fix is not begun.</td><td class="st-wait">waiting</td></tr></table>
+<p>All of the done changes are on <code>trial/694-view-jit</code>, the hazel-jit prototype branch (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>), since 2026-11-16 at 07:4x MST, as build 47 (<a href="#cost">the builds</a>). Each was written on its own branch from build 45, passed CI there, and was merged with the others; CI passed again on the merge. None is on dev: <a href="../053/"><code class="ref"><b>^report(</b>53<b>)</b></code></a> explains why the prototype is to be redone by hand in small steps.</p>
+
+<h2 id="what">What hazel-jit is<a class="anchor" href="#what" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="what" title="copy this section's address">copy link</button></h2>
+<p><b>hazel-jit translates an elaborated Hazel program to the text of a JavaScript function, and the page runs that function on its own thread at a livelit's event, to draw the livelits before the interpreter's answer comes back.</b> Hazel's interpreter, in a web worker, still runs every program, and its answer is still the program's result: the probes, the tests and the result panel come from it. So far hazel-jit has been a measurement of how fast compiled Hazel could be (a step of the Witch's slider in 2 to 3 ms, <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a>). The meeting's point is that it must also be correct, because whatever it draws, a user reads as what Hazel computed.</p>
+<p>A form the compiler does not handle raises an error with its reason, and the page then waits for the interpreter's run, as it did before hazel-jit. So a limit costs speed, never correctness. A compiled run that stops part way (an invalid operation, <code>undefined</code>, or the step budget) is handled the same way. These fallbacks are what keep hazel-jit's answers the same as the interpreter's: where the two would differ, hazel-jit gives no answer and the interpreter's is shown.</p>
+
+<h2 id="consistency">The same answers, checked in CI<a class="anchor" href="#consistency" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="consistency" title="copy this section's address">copy link</button></h2>
+<p><b>Every one of the evaluator's 313 test programs now also goes through hazel-jit in CI. 243 compile, and each gives the interpreter's answer, apart from 27 known ill-typed tests, and those the page never compiles. A new difference fails the build.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-756"><code class="ref"><b>^ticket(</b>756<b>)</b></code></a>.)</p>
+<figure class="f"><svg viewBox="0 0 700 120" role="img" aria-label="A bar of 313 programs: 216 agreed, 27 known ill-typed, 48 not compiled by rule, 22 not compiled for a limit" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">Build 47: the 313 evaluator test programs, run both ways</text><text x="16" y="34" font-size="11" fill="var(--muted)">0 differ, 0 threw: every compiled program gave the interpreter's answer, or is a known ill-typed test</text><rect x="16.0" y="50" width="461.0" height="30" fill="#15803d" opacity="0.88"/><text x="246.5" y="70" font-size="12" font-weight="700" text-anchor="middle" fill="#fff">216</text><rect x="477.0" y="50" width="57.6" height="30" fill="#b45309" opacity="0.88"/><text x="505.8" y="70" font-size="12" font-weight="700" text-anchor="middle" fill="#fff">27</text><rect x="534.6" y="50" width="102.4" height="30" fill="#9ca3af" opacity="0.88"/><text x="585.8" y="70" font-size="12" font-weight="700" text-anchor="middle" fill="#fff">48</text><rect x="637.0" y="50" width="47.0" height="30" fill="#7c3aed" opacity="0.88"/><text x="660.5" y="70" font-size="12" font-weight="700" text-anchor="middle" fill="#fff">22</text><rect x="16" y="94" width="11" height="11" fill="#15803d"/><text x="32" y="104" font-size="10.5" fill="var(--ink)">agreed (216)</text><rect x="122.4" y="94" width="11" height="11" fill="#b45309"/><text x="138.4" y="104" font-size="10.5" fill="var(--ink)">not a value: ill-typed, known (27)</text><rect x="365.20000000000005" y="94" width="11" height="11" fill="#9ca3af"/><text x="381.20000000000005" y="104" font-size="10.5" fill="var(--ink)">not compiled, by rule (48)</text><rect x="558.4000000000001" y="94" width="11" height="11" fill="#7c3aed"/><text x="574.4000000000001" y="104" font-size="10.5" fill="var(--ink)">not compiled, a limit (22)</text></svg><figcaption>Build 47 (<code>f4f969588b</code>), the fast checks' sweep (CI run 43887985051). Each of the evaluator's test programs also goes to hazel-jit: compiled and run in JavaScript, its answer compared with the interpreter's. "Not a value": the interpreter stops at a failed run-time type check in an ill-typed test (4 : String, ...), which compiled code, its types erased, would run past; the page never compiles such a program (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a>). By rule: holes, type holes, and the tests' unbound names. A limit: a form hazel-jit does not compile yet (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>).</figcaption></figure>
+<p>The check is a sweep in the evaluator's tests: each test hands its program to hazel-jit, runs the JavaScript, and compares the value with the interpreter's: numbers exactly (floats within a relative 10<sup>-9</sup>), lists, tuples, labels and constructors by structure, and a function only as being a function. A compiled run that stopped at an invalid operation agrees with an interpreter result stuck at the same error (<a href="#errors">below</a>). The 27 ill-typed tests are listed by name, and anything else that parts from the interpreter fails its test. The end of each run prints a report in CI's log: how many were compiled, how many agreed, and why the rest were not compiled.</p>
+<p>The first sweep, on 2026-11-15 (the full tests), had 316 programs: 237 compiled, 207 agreed, 30 ill-typed, and none differed. It found the rule that programs with type errors stay with the interpreter (<a href="#rules">below</a>). Merging the six branches found one more parting, with no static error: a value passed through a written type hole to a function that takes another type. That led to the rule that a type hole is a hole. The 48 programs not compiled by rule, and the 22 not compiled for a limit, are these:</p>
+<table class="vals"><tr><th>Not compiled because</th><th>Programs</th><th>Rule or limit</th></tr><tr><td>a hole</td><td class="n">14</td><td>rule</td></tr><tr><td>a type hole</td><td class="n">10</td><td>rule</td></tr><tr><td>a free variable (the tests&#x27; own unbound names: y 13, s2 6, x 2, b2 2, a 1)</td><td class="n">24</td><td>rule</td></tr><tr><td>undefined</td><td class="n">7</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>&#x27;this kind of term&#x27; (forms with no case of their own)</td><td class="n">6</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0)</td><td class="n">3</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>a tuple label that is not a name</td><td class="n">2</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>the builtin string_sub</td><td class="n">1</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>an expression as a module member</td><td class="n">1</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>a reverse application (|&gt;)</td><td class="n">1</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>a recursive definition of more than one name, not a tuple of functions</td><td class="n">1</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr></table>
+<p>What is left: the slides' own programs, which the sweep does not see. They are checked only by the Firefox run on GitHub's machines, which compares the pictures, not the values.</p>
+
+<h2 id="numbers">Exact integers<a class="anchor" href="#numbers" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="numbers" title="copy this section's address">copy link</button></h2>
+<p><b>Int and Nat are now exact in compiled code, as the interpreter's are: an integer is a JavaScript number while it is a safe integer (up to 2<sup>53</sup> − 1), and a BigInt past that.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a>.) The interpreter's Int and Nat are arbitrary-precision integers (Jane Street's Bigint), and hazel-jit had made them JavaScript numbers, which round past 2<sup>53</sup>: 2<sup>53</sup> + 1 came out as 2<sup>53</sup>.</p>
+<p>Every integer operation normalizes its result back to a number when it fits, so two equal integers are always the same value, and <code>===</code> still compares them. Division rounds toward zero, as the interpreter's does, and stays exact where <code>Math.trunc(a / b)</code> would round. Where plain BigInt everywhere cost a 4.1 times slower fib(25), a 1.5 times slower list walk, and 9.6 times slower model updates, this mix costs 1.6 times, nothing measurable, and 3.7 times (Node, against plain numbers; not a build of the app). On the Witch slide it costs nothing measurable (<a href="#cost">below</a>). SInt, Hazel's fixed-width integer, stays a JavaScript number: its width is the <a href="#overflow">overflow question</a>.</p>
+
+<h2 id="errors">Divide by zero and other invalid operations<a class="anchor" href="#errors" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="errors" title="copy this section's address">copy link</button></h2>
+<p><b>Where the interpreter stops at an error (dividing by zero, a negative power, <code>int_of_string</code> of something not a number), the compiled run now stops too, and the page shows the interpreter's run, which holds the stuck term with its error.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-759"><code class="ref"><b>^ticket(</b>759<b>)</b></code></a>.) Before, <code>7 / 0</code> compiled to Infinity.</p>
+<p>The stuck term is the same as the interpreter's by construction, since it is the interpreter's. The alternative, making the stuck term in JavaScript and evaluating around it as the interpreter does, would be a much larger piece of work and is not needed for the answers to agree. Writing the tests for this found a crash in the interpreter itself, on modulo by zero (<a href="#found">below</a>).</p>
+
+<h2 id="overflow">Overflow<a class="anchor" href="#overflow" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="overflow" title="copy this section's address">copy link</button></h2>
+<p><b>Not begun: SInt overflows three different ways today, depending on how Hazel runs, so the plan's "an indet term with that error" first needs one width chosen.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-758"><code class="ref"><b>^ticket(</b>758<b>)</b></code></a>.) The recommendation is 32 bits everywhere, what the browser has always done, with each SInt operation checked in the interpreter and in hazel-jit, and an IntegerOverflow error where the result does not fit. That changes the interpreter too, so it is a decision for Matthew and Cyrus.</p>
+<p>In the browser, Hazel runs under js_of_ocaml, where an OCaml int has 32 bits, and SInt wraps silently. A native build of Hazel has OCaml's 63-bit int. hazel-jit has a JavaScript number (checked through hazeljs 0.0.6, which runs Hazel as the browser does):</p>
+<table class="vals"><tr><th>Program</th><th>The browser's interpreter (32 bits, wraps)</th><th>A native build (OCaml's 63-bit int)</th><th>hazel-jit (a JS number)</th></tr><tr><td><code>use SInt in 2147483647 + 1</code></td><td class="n">-2147483648</td><td class="n">2147483648</td><td class="n">2147483648</td></tr><tr><td><code>use SInt in 65536 * 65536</code></td><td class="n">0</td><td class="n">4294967296</td><td class="n">4294967296</td></tr><tr><td><code>use SInt in 1000000 * 1000000</code></td><td class="n">-727379968</td><td class="n">1000000000000</td><td class="n">1000000000000</td></tr><tr><td><code>use SInt in 2 ** 31</code></td><td class="n">-2147483648</td><td class="n">2147483648</td><td class="n">2147483648</td></tr></table>
+<p>Int and Nat cannot overflow (<a href="#numbers">above</a>), and Float follows IEEE 754 in all three.</p>
+
+<h2 id="rules">What stays with the interpreter<a class="anchor" href="#rules" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="rules" title="copy this section's address">copy link</button></h2>
+<p><b>By rule, not as a limit, hazel-jit leaves to the interpreter: any program with a hole (now including a type hole, <code>?</code> in a type), any program with type errors, and anything the stepper shows.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a>.) Each is written down at the head of the compiler's source, <code>HazelJit.re</code>.</p>
+<p><b>Holes.</b> Empty holes, multiholes, dynamic error holes and invalid text were already not compiled: the interpreter evaluates around a hole, and its indeterminate result is the point of a hole. <b>Type holes</b> are new, from the merge's sweep. A value passed through <code>?</code> to a function taking <code>[Int]</code> fails a run-time check when it is a list of floats, and the interpreter shows the failed check. Compiled code has no types to check, and a float and an int are both a JavaScript number, so it cannot tell. No slide writes a type hole. <b>Type errors.</b> The first sweep's 30 ill-typed tests (<code>4 : String</code>, <code>1 + (4 : String)</code>, ...) are programs where the interpreter stops at a failed run-time check. Now the page compiles no program with static errors. Checked on the six slides of the Firefox check, the rule stopped none from compiling; the four with compiled runs kept them (the Witch's 28 against 30 reflects when its run was timed, not a program it stopped compiling):</p>
+<table class="vals"><tr><th>Slide</th><th>Livelits drawn from the compiled run, build 45</th><th>With the type-error rule (45 + 760)</th></tr><tr><td>Full Body</td><td class="n">30</td><td class="n">30</td></tr><tr><td>Hands</td><td class="n">30</td><td class="n">30</td></tr><tr><td>Scenes</td><td class="n">36</td><td class="n">36</td></tr><tr><td>Witch</td><td class="n">30</td><td class="n">28</td></tr></table>
+<p><b>The stepper's functions,</b> which Matthew asked to have explained. Hazel's stepper shows a program's evaluation one step at a time. Four forms of expression tell it which steps to show: <code>hide P in e</code> (skip the steps matching pattern P), <code>eval P in e</code> (take them without stopping), <code>pause P in e</code> (stop at them), and <code>debug P in e</code>. These are "stepper functions" in the sense Cyrus meant. They only mean something to a run that takes steps, so hazel-jit does not compile them (the reason is "a stepper filter"). Beyond the filters, nothing the stepper shows is drawn from compiled code. The stepper evaluates by the interpreter's own steps, and a livelit inside a probe drawer's stepper, drawn over one of its samples, is now drawn by the interpreter, never from a compiled run's answer (in the code and its tests; not yet checked in a browser).</p>
+
+<h2 id="limits">The other limits, one at a time<a class="anchor" href="#limits" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="limits" title="copy this section's address">copy link</button></h2>
+<p><b>Ranked by the first sweep, the limits most often met were missing builtins, partial application, recursion over more than one name, <code>undefined</code>, and other forms of term. The first three are done; <code>undefined</code> is in CI; probes are not begun.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>.)</p>
+<ul>
+<li><b>Builtins:</b> 17 the runtime lacked, now as the interpreter has them: string_match, string_replace, string_search, string_join, string_escaped, string_capitalize, string_uncapitalize, omit_all_labels, the six compare builtins (int, sint, nat, float, bool and string), and invert_ord. string_sub is the one the sweep still finds.</li>
+<li><b>Partial application,</b> <code>f(a, _)</code>: the function and the given arguments are evaluated first, in order, then a function of the missing ones.</li>
+<li><b>Recursion over more than one name,</b> <code>let (even, odd) = (fun ..., fun ...)</code>: each name assigned once, then the tuple of them. This gives the interpreter's answer whenever every part is a function, since a name is only read when a function runs. Any other part stays with the interpreter.</li>
+<li><b>In progress, <code>undefined</code>:</b> seven sweep programs, and more than that: the List builtins written in Hazel (<code>List.head</code>, <code>List.tail</code> and three others) use <code>undefined</code> for an empty list, so every program that calls them was not compiled at all. A compiled run that reaches <code>undefined</code> now stops, as for an invalid operation; one that does not reach it costs nothing. In CI, with one question open. Hazel gives <code>undefined</code> the hole type, the same as a written <code>?</code>, so the type-hole rule above may catch it too. If it does, that rule will be narrowed to the types a user writes.</li>
+<li><b>Next:</b> "this kind of term" (the forms with no case of their own in the compiler), a fixpoint over a pattern like <code>_</code>, labels that are not names, string_sub, reverse application.</li>
+<li><b>Probes</b> are the largest: a probe shows the values that passed through it, and compiled code records none. Today a probe always shows the interpreter's run, which is correct, and never faster. Recording samples from compiled code would mean deciding what a sample is when the code that made it has no steps.</li>
+</ul>
+
+<h2 id="budget">A step budget<a class="anchor" href="#budget" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="budget" title="copy this section's address">copy link</button></h2>
+<p><b>Every compiled function now counts its calls and every 16,384 calls reads the clock. A run past its budget (50 ms or 50 million calls) stops, and the interpreter's run answers.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a>.) Cyrus's concern is that compiled code runs on the page's own thread, so a Hazel function that never ends would freeze the page. The interpreter has a 20-second timer and a limit of 100 million transitions.</p>
+<p>Endless recursion turned out to be the smaller risk: it overflows JavaScript's stack in about a millisecond, and that error is caught like any other. The real risk is a run that ends, but late (fib(45)), and the clock catches that. In Node the counter costs 11 to 26%, and 20 to 33% with the clock (not a build of the app). On the Witch it costs nothing measurable in one run (<a href="#cost">below</a>), well inside a frame. A cheaper counter, at only the calls that can recur, is the next step.</p>
+
+<h2 id="cost">What it all costs<a class="anchor" href="#cost" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="cost" title="copy this section's address">copy link</button></h2>
+<p><b>On the Witch slide, the six changes together are not measurably slower than build 45: over a 3 s drag the page's view took 5.4 ms a frame (about 185 fps), against 5.8 (about 172 fps), with hazel-jit's own run 1.1 ms of it.</b> One run each. The spread between single runs (5.4 to 7.3 ms) is as large as any difference, so the numbers show no cost, not a gain. Every build stays far inside the 16.7 ms of a 60 fps frame. The fps assumes that updating the state is free: it is what the view alone allows.</p>
+<figure class="f"><svg viewBox="0 0 700 262" role="img" aria-label="Bars of the Witch view time per frame for builds 45 to 46, all under 8 ms, against a 16.7 ms line" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The Witch: the page's view a frame over a 3 s drag, by build</text><text x="16" y="34" font-size="11" fill="var(--muted)">the view's time with its frame rate as if updating were free; the darker bar, hazel-jit's compiled run within it; one run each</text><line x1="643.2" y1="42" x2="643.2" y2="218" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="5 3"/><text x="647.2" y="234" font-size="10.5" text-anchor="end" fill="#dc2626">16.7 ms: a 60 fps frame</text><text x="162" y="64" font-size="11" text-anchor="end" fill="var(--ink)">45 · the base</text><rect x="170" y="52" width="164.3" height="17" rx="2" fill="#0e7490" opacity="0.55"/><rect x="170" y="52" width="36.8" height="17" rx="2" fill="#0e7490"/><text x="340.3" y="64" font-size="10.5" fill="var(--muted)">5.8 ms (about 172 fps); run 1.3 ms</text><text x="162" y="98" font-size="11" text-anchor="end" fill="var(--ink)">45 + 757 · exact integers</text><rect x="170" y="86" width="187.0" height="17" rx="2" fill="#0e7490" opacity="0.55"/><rect x="170" y="86" width="48.2" height="17" rx="2" fill="#0e7490"/><text x="363.0" y="98" font-size="10.5" fill="var(--muted)">6.6 ms (about 152 fps); run 1.7 ms</text><text x="162" y="132" font-size="11" text-anchor="end" fill="var(--ink)">45 + 763 · a step budget</text><rect x="170" y="120" width="206.8" height="17" rx="2" fill="#0e7490" opacity="0.55"/><rect x="170" y="120" width="42.5" height="17" rx="2" fill="#0e7490"/><text x="382.8" y="132" font-size="10.5" fill="var(--muted)">7.3 ms (about 137 fps); run 1.5 ms</text><text x="162" y="166" font-size="11" text-anchor="end" fill="var(--ink)">45 + 760 · no type errors</text><rect x="170" y="154" width="198.3" height="17" rx="2" fill="#0e7490" opacity="0.55"/><rect x="170" y="154" width="42.5" height="17" rx="2" fill="#0e7490"/><text x="374.3" y="166" font-size="10.5" fill="var(--muted)">7.0 ms (about 143 fps); run 1.5 ms</text><text x="162" y="200" font-size="11" text-anchor="end" fill="var(--ink)">46 · the six together</text><rect x="170" y="188" width="153.0" height="17" rx="2" fill="#0e7490" opacity="0.55"/><rect x="170" y="188" width="31.2" height="17" rx="2" fill="#0e7490"/><text x="329.0" y="200" font-size="10.5" fill="var(--muted)">5.4 ms (about 185 fps); run 1.1 ms</text></svg><figcaption>Builds 45 to 46, the Witch slide in Firefox on GitHub's machines (jit.yml), dragging the neck slider for 3 s with compiled views on: the page's view per frame, and hazel-jit's compiled run per frame within it. One run each: the spread between them (5.4 to 7.3 ms) is as large as any difference, so these say no build is measurably slower than build 45, not which is fastest. Build 47 is being measured.</figcaption></figure>
+<p>The builds are numbered as in <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> to <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>. Builds 45 + 757, 45 + 763 and 45 + 760 are each build 45 with one change, measured on its own. Build 46 is the six merged; build 47 adds the type-hole rule and is what <code>trial/694-view-jit</code> holds now.</p>
+<table class="vals"><tr><th>Build</th><th>Commit</th><th>Run</th><th>When</th><th>What it adds</th><th>View a frame (drag)</th><th>Compiled run a frame</th><th>Compiled run at a step</th><th>Drawn from the compiled run</th></tr><tr><td><b>45</b> · the base</td><td><code>fc1103900d</code></td><td>42888678269</td><td>11-10</td><td><a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>&#x27;s last build: the slide&#x27;s whole run compiled, on trial/694-view-jit.</td><td class="n">5.8 ms (about 172 fps)</td><td class="n">1.3 ms</td><td class="n">4 to 8 ms</td><td class="n">30</td></tr><tr><td><b>45 + 757</b> · exact integers</td><td><code>b908b4ed2e</code></td><td>43763443448</td><td>11-15</td><td>Int and Nat exact (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a>), on build 45 and <a href="https://matthewhammer.org/hazel/dashboard/#ticket-756"><code class="ref"><b>^ticket(</b>756<b>)</b></code></a>&#x27;s first step.</td><td class="n">6.6 ms (about 152 fps)</td><td class="n">1.7 ms</td><td class="n">4 to 9 ms</td><td class="n">30</td></tr><tr><td><b>45 + 763</b> · a step budget</td><td><code>b81b39f8d4</code></td><td>43763439842</td><td>11-15</td><td>A counter in every compiled function, and a budget around each run (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a>), on build 45.</td><td class="n">7.3 ms (about 137 fps)</td><td class="n">1.5 ms</td><td class="n">5 to 10 ms</td><td class="n">30</td></tr><tr><td><b>45 + 760</b> · no type errors</td><td><code>1b89af31c5</code></td><td>43765797166</td><td>11-15</td><td>No program with type errors compiled (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a>), on build 45.</td><td class="n">7.0 ms (about 143 fps)</td><td class="n">1.5 ms</td><td class="n">3 to 6 ms</td><td class="n">28</td></tr><tr><td><b>46</b> · the six together</td><td><code>59f28470c3</code></td><td>43792878754</td><td>11-15</td><td>Tickets 756, 757, 759, 760, 761 and 763 merged on build 45.</td><td class="n">5.4 ms (about 185 fps)</td><td class="n">1.1 ms</td><td class="n">5 to 10 ms</td><td class="n">30</td></tr><tr><td><b>47</b> · a type hole is a hole</td><td><code>f4f969588b</code></td><td>43898636577</td><td>11-16</td><td>Build 46 and the type-hole rule (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a>); trial/694-view-jit since 11-16 07:4x MST.</td><td class="n" colspan="4">being measured</td></tr></table>
+
+<h2 id="found">Found along the way<a class="anchor" href="#found" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="found" title="copy this section's address">copy link</button></h2>
+<p><b>Modulo by zero crashed Hazel's interpreter, on dev too; the fix is a PR to dev, <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a>, waiting for review.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-764"><code class="ref"><b>^ticket(</b>764<b>)</b></code></a>.) <code>int_mod</code>, <code>sint_mod</code>, <code>nat_mod</code> and <code>float_mod</code> answered a zero divisor with an error naming a builtin <code>mod</code> that does not exist, so evaluating it raised an exception instead of showing "Error: Divide by Zero". This dates from at least 2025-07-02. Renaming was not enough: the error's inside was then stepped again, and the error was lost. So the fix also makes a builtin's error final, as an operator's already is. CI passes with it.</p>
+<p><b>A Hazel function that declares what it takes but not what it returns costs 5 to 7 times as much a step at run time, in the interpreter.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a>.) It was measured in a Tarot deck written in Hazel: a step of <code>take</code> cost 0.36 ms with only its argument types, and 0.07 ms with its whole type. Declaring every type made a deal 3.7 times faster. The cause is not unknown types, but where the ascriptions (the run-time type checks) land: on each case arm's result, in each copy of the body, rather than once around it. This is the interpreter's cost, not hazel-jit's, and it is the kind of check Matthew Keenan asked about in <a href="../053/"><code class="ref"><b>^report(</b>53<b>)</b></code></a>. The next step is to count the checks per call.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>Finish <code>undefined</code>: read CI, and if the type-hole rule catches <code>undefined</code>'s type, narrow the rule to the types a user writes.</li>
+<li>Choose SInt's width with Cyrus (recommended: 32 bits everywhere), then check overflow in the interpreter and in hazel-jit alike.</li>
+<li>Work through the rest of the limits by the sweep's counts: the forms with no case of their own, fixpoints over other patterns, labels, string_sub, reverse application.</li>
+<li>Design probes for compiled code: what a probe's sample is when the code that made it has no steps.</li>
+<li>Bring the slides' programs into the consistency check, beside the evaluator's tests.</li>
+<li>Make the step counter cheaper: count only at calls that can recur.</li>
+<li>Check in the browser that a livelit in a probe drawer's stepper is drawn by the interpreter.</li>
+<li>Count the run-time type checks per call for an undeclared result type (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a>), and get <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a> reviewed.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>The plan is Matthew Hammer's summary of the meeting, quoted as he wrote it, and the dashboard's tickets 756 to 764. The sweep's numbers are the report it prints in CI's log: build 47's fast checks (CI run 43887985051), and the first sweep's full tests (CI run 43754503317). The Witch's numbers come from the Firefox check on GitHub's machines (<code>scripts/jit_slides.py</code>, run by the <code>jit.yml</code> workflow of hazelgrove/hazel), one run per build, with the runs named in the builds table. The view a frame and the compiled run a frame are its page timeline over a 3 s drag of the neck slider. The compiled run at a step is its time before the first redraw at each of four slider steps. The Node figures are microbenchmarks on JavaScript written as hazel-jit writes it, not builds of the app. SInt's behaviour was checked through hazeljs 0.0.6. Everything the page shows is in <a href="data/numbers.json">data/numbers.json</a>.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/054/data"><code>054/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-16T15:38:57Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 0, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "open", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-15T22:38:11Z", "base": "dev"}}, BUILT = "2026-11-16";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 54,
+ "title": "Same Answers as the Interpreter",
+ "date": "2026-11-16",
+ "kind": "hazel-jit: the changes planned at Matthew Hammer and Cyrus Omar's meeting of 2026-11-13, and where each stands; work in progress",
+ "status": "work in progress",
+ "question": "After the meeting of 2026-11-13, what changes to hazel-jit were planned, and how far has each come? Matthew Hammer, 2026-11-16: \"please draft a WIP report for me, and publish it, with the changes we've planned for hazel-jit, and our status on those changes thus far.\"",
+ "measurements": "The sweep: the report Test_HazelJit_Agree prints at the end of the evaluator tests in CI's log (hazelgrove/hazel, GitHub Actions), build 47's fast checks (run 43887985051, job 133371195383) and the first sweep's full tests (run 43754503317). The Witch: jit.yml's Firefox check (scripts/jit_slides.py) on GitHub's machines, one run per build, the runs named in the builds table. Node microbenchmarks and hazeljs 0.0.6 checks are not builds of the app.",
+ "builds": "Numbered as in reports 050 to 052. Build 45 is fc1103900d; '45 + N' is build 45 with ticket N's change alone; build 46 is the six changes merged (59f28470c3); build 47 adds the type-hole rule (f4f969588b) and is trial/694-view-jit since 2026-11-16.",
+ "files": [
+  "data/meta.json",
+  "data/numbers.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "The plan",
+   "section_id": "plan",
+   "columns": [
+    "Ticket",
+    "The change",
+    "Where it stands",
+    ""
+   ],
+   "rows": [
+    [
+     "^ticket(756)",
+     "Consistency with the interpreter, checked in CI",
+     "On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides' own programs.",
+     "done"
+    ],
+    [
+     "^ticket(757)",
+     "Int and Nat exact, as the interpreter's",
+     "On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch.",
+     "done"
+    ],
+    [
+     "^ticket(758)",
+     "Overflow stops at a stuck term",
+     "Waits on a decision: SInt has three widths today. Recommended: 32 bits everywhere, each operation checked.",
+     "waiting"
+    ],
+    [
+     "^ticket(759)",
+     "Divide by zero stops at a stuck term",
+     "On the branch: the compiled run stops, and the interpreter makes the stuck term.",
+     "done"
+    ],
+    [
+     "^ticket(760)",
+     "Holes and the stepper stay with the interpreter",
+     "On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser.",
+     "done"
+    ],
+    [
+     "^ticket(761)",
+     "The other limits, one at a time",
+     "Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined in CI; probes not begun.",
+     "in progress"
+    ],
+    [
+     "^ticket(763)",
+     "A step budget for compiled code",
+     "On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter.",
+     "done"
+    ],
+    [
+     "^ticket(764)",
+     "Found: modulo by zero crashed the interpreter",
+     "Fixed on a PR to dev, hazelgrove/hazel#2825, waiting for review.",
+     "on a PR"
+    ],
+    [
+     "^ticket(762)",
+     "Found: an undeclared result type costs a step 5 to 7 times",
+     "Measured in Hazel's interpreter; the cause is where the ascriptions go. The fix is not begun.",
+     "waiting"
+    ]
+   ]
+  },
+  {
+   "section": "The same answers, checked in CI",
+   "section_id": "consistency",
+   "columns": [
+    "Not compiled because",
+    "Programs",
+    "Rule or limit"
+   ],
+   "rows": [
+    [
+     "a hole",
+     "14",
+     "rule"
+    ],
+    [
+     "a type hole",
+     "10",
+     "rule"
+    ],
+    [
+     "a free variable (the tests' own unbound names: y 13, s2 6, x 2, b2 2, a 1)",
+     "24",
+     "rule"
+    ],
+    [
+     "undefined",
+     "7",
+     "a limit (^ticket(761))"
+    ],
+    [
+     "'this kind of term' (forms with no case of their own)",
+     "6",
+     "a limit (^ticket(761))"
+    ],
+    [
+     "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0)",
+     "3",
+     "a limit (^ticket(761))"
+    ],
+    [
+     "a tuple label that is not a name",
+     "2",
+     "a limit (^ticket(761))"
+    ],
+    [
+     "the builtin string_sub",
+     "1",
+     "a limit (^ticket(761))"
+    ],
+    [
+     "an expression as a module member",
+     "1",
+     "a limit (^ticket(761))"
+    ],
+    [
+     "a reverse application (|>)",
+     "1",
+     "a limit (^ticket(761))"
+    ],
+    [
+     "a recursive definition of more than one name, not a tuple of functions",
+     "1",
+     "a limit (^ticket(761))"
+    ]
+   ]
+  },
+  {
+   "section": "Overflow",
+   "section_id": "overflow",
+   "columns": [
+    "Program",
+    "The browser's interpreter (32 bits, wraps)",
+    "A native build (OCaml's 63-bit int)",
+    "hazel-jit (a JS number)"
+   ],
+   "rows": [
+    [
+     "use SInt in 2147483647 + 1",
+     "-2147483648",
+     "2147483648",
+     "2147483648"
+    ],
+    [
+     "use SInt in 65536 * 65536",
+     "0",
+     "4294967296",
+     "4294967296"
+    ],
+    [
+     "use SInt in 1000000 * 1000000",
+     "-727379968",
+     "1000000000000",
+     "1000000000000"
+    ],
+    [
+     "use SInt in 2 ** 31",
+     "-2147483648",
+     "2147483648",
+     "2147483648"
+    ]
+   ]
+  },
+  {
+   "section": "What stays with the interpreter",
+   "section_id": "rules",
+   "columns": [
+    "Slide",
+    "Livelits drawn from the compiled run, build 45",
+    "With the type-error rule (45 + 760)"
+   ],
+   "rows": [
+    [
+     "Full Body",
+     "30",
+     "30"
+    ],
+    [
+     "Hands",
+     "30",
+     "30"
+    ],
+    [
+     "Scenes",
+     "36",
+     "36"
+    ],
+    [
+     "Witch",
+     "30",
+     "28"
+    ]
+   ]
+  },
+  {
+   "section": "What it all costs",
+   "section_id": "cost",
+   "columns": [
+    "Build",
+    "Commit",
+    "Run",
+    "When",
+    "What it adds",
+    "View a frame (drag)",
+    "Compiled run a frame",
+    "Compiled run at a step",
+    "Drawn from the compiled run"
+   ],
+   "rows": [
+    [
+     "45 · the base",
+     "fc1103900d",
+     "42888678269",
+     "11-10",
+     "^report(52)'s last build: the slide's whole run compiled, on trial/694-view-jit.",
+     "5.8 ms (about 172 fps)",
+     "1.3 ms",
+     "4 to 8 ms",
+     "30"
+    ],
+    [
+     "45 + 757 · exact integers",
+     "b908b4ed2e",
+     "43763443448",
+     "11-15",
+     "Int and Nat exact (^ticket(757)), on build 45 and ^ticket(756)'s first step.",
+     "6.6 ms (about 152 fps)",
+     "1.7 ms",
+     "4 to 9 ms",
+     "30"
+    ],
+    [
+     "45 + 763 · a step budget",
+     "b81b39f8d4",
+     "43763439842",
+     "11-15",
+     "A counter in every compiled function, and a budget around each run (^ticket(763)), on build 45.",
+     "7.3 ms (about 137 fps)",
+     "1.5 ms",
+     "5 to 10 ms",
+     "30"
+    ],
+    [
+     "45 + 760 · no type errors",
+     "1b89af31c5",
+     "43765797166",
+     "11-15",
+     "No program with type errors compiled (^ticket(760)), on build 45.",
+     "7.0 ms (about 143 fps)",
+     "1.5 ms",
+     "3 to 6 ms",
+     "28"
+    ],
+    [
+     "46 · the six together",
+     "59f28470c3",
+     "43792878754",
+     "11-15",
+     "Tickets 756, 757, 759, 760, 761 and 763 merged on build 45.",
+     "5.4 ms (about 185 fps)",
+     "1.1 ms",
+     "5 to 10 ms",
+     "30"
+    ],
+    [
+     "47 · a type hole is a hole",
+     "f4f969588b",
+     "43898636577",
+     "11-16",
+     "Build 46 and the type-hole rule (^ticket(760)); trial/694-view-jit since 11-16 07:4x MST.",
+     "being measured",
+     "being measured",
+     "being measured",
+     "being measured"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/054/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>

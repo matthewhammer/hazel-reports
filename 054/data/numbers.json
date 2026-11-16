@@ -1,0 +1,381 @@
+{
+ "meeting": {
+  "date": "2026-11-13",
+  "who": "Matthew Hammer and Cyrus Omar",
+  "summary_by_matthew_2026_11_15": [
+   "we want semantic consistency with Hazel the interpreter, and to ensure that with CI, and our design decisions.",
+   "arb precision Ints and Nats --- we want to use bignum in the output if we can, or something comparable, not native JS numbers for Ints and Nats.",
+   "when we hit an overflow for any times where that is possible -- we should check each time for non-arb precision numbers --- we should create an indet term / stuck term with that error -- look at existing interpreter cases for inspiration.",
+   "similar for divide by zero",
+   "for the output of hazel-jit, we should continue to avoid translating code with holes, and we should exclude \"stepper functions\" (don't know what that is myself, please explain later).",
+   "probes, step budgets, and all other limitations we should work to overcome in the coming days."
+  ],
+  "cyrus_step_limit": "We need a way to limit compiled hazel functions that diverge --- we need a step limit. esp if we continue to optimize by including certain jit-compiled hazel functions into the main thread"
+ },
+ "plan": [
+  {
+   "t": 756,
+   "short": "the same answers, checked in CI",
+   "name": "Consistency with the interpreter, checked in CI",
+   "sec": "consistency",
+   "stage": 4,
+   "st": "done",
+   "status": "On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides' own programs.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green",
+    "on the branch"
+   ]
+  },
+  {
+   "t": 757,
+   "short": "Int and Nat exact",
+   "name": "Int and Nat exact, as the interpreter's",
+   "sec": "numbers",
+   "stage": 4,
+   "st": "done",
+   "status": "On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green",
+    "on the branch"
+   ]
+  },
+  {
+   "t": 758,
+   "short": "overflow: a stuck term",
+   "name": "Overflow stops at a stuck term",
+   "sec": "overflow",
+   "stage": 1,
+   "st": "wait",
+   "status": "Waits on a decision: SInt has three widths today. Recommended: 32 bits everywhere, each operation checked.",
+   "stages_reached": [
+    "designed"
+   ]
+  },
+  {
+   "t": 759,
+   "short": "divide by zero: a stuck term",
+   "name": "Divide by zero stops at a stuck term",
+   "sec": "errors",
+   "stage": 4,
+   "st": "done",
+   "status": "On the branch: the compiled run stops, and the interpreter makes the stuck term.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green",
+    "on the branch"
+   ]
+  },
+  {
+   "t": 760,
+   "short": "holes, the stepper: the interpreter's",
+   "name": "Holes and the stepper stay with the interpreter",
+   "sec": "rules",
+   "stage": 4,
+   "st": "done",
+   "status": "On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green",
+    "on the branch"
+   ]
+  },
+  {
+   "t": 761,
+   "short": "the other limits, one at a time",
+   "name": "The other limits, one at a time",
+   "sec": "limits",
+   "stage": 3,
+   "st": "part",
+   "status": "Three of the list on the branch (17 builtins, partial application, mutual recursion); undefined in CI; probes not begun.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green"
+   ]
+  },
+  {
+   "t": 763,
+   "short": "a step budget",
+   "name": "A step budget for compiled code",
+   "sec": "budget",
+   "stage": 4,
+   "st": "done",
+   "status": "On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green",
+    "on the branch"
+   ]
+  },
+  {
+   "t": 764,
+   "short": "found: modulo by zero crashed",
+   "name": "Found: modulo by zero crashed the interpreter",
+   "sec": "found",
+   "stage": 4,
+   "st": "pr",
+   "status": "Fixed on a PR to dev, hazelgrove/hazel#2825, waiting for review.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green",
+    "on the branch"
+   ]
+  },
+  {
+   "t": 762,
+   "short": "found: undeclared result types",
+   "name": "Found: an undeclared result type costs a step 5 to 7 times",
+   "sec": "found",
+   "stage": 1,
+   "st": "wait",
+   "status": "Measured in Hazel's interpreter; the cause is where the ascriptions go. The fix is not begun.",
+   "stages_reached": [
+    "designed"
+   ]
+  }
+ ],
+ "sweep": {
+  "commit": "f4f969588b",
+  "job": 133371195383,
+  "run": 43887985051,
+  "checks": 313,
+  "compiled": 243,
+  "agreed": 216,
+  "differ": 0,
+  "threw": 0,
+  "not_a_value": 27,
+  "not_compiled": [
+   {
+    "reason": "a hole",
+    "programs": 14,
+    "kind": "rule"
+   },
+   {
+    "reason": "a type hole",
+    "programs": 10,
+    "kind": "rule"
+   },
+   {
+    "reason": "a free variable (the tests' own unbound names: y 13, s2 6, x 2, b2 2, a 1)",
+    "programs": 24,
+    "kind": "rule"
+   },
+   {
+    "reason": "undefined",
+    "programs": 7,
+    "kind": "limit"
+   },
+   {
+    "reason": "'this kind of term' (forms with no case of their own)",
+    "programs": 6,
+    "kind": "limit"
+   },
+   {
+    "reason": "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0)",
+    "programs": 3,
+    "kind": "limit"
+   },
+   {
+    "reason": "a tuple label that is not a name",
+    "programs": 2,
+    "kind": "limit"
+   },
+   {
+    "reason": "the builtin string_sub",
+    "programs": 1,
+    "kind": "limit"
+   },
+   {
+    "reason": "an expression as a module member",
+    "programs": 1,
+    "kind": "limit"
+   },
+   {
+    "reason": "a reverse application (|>)",
+    "programs": 1,
+    "kind": "limit"
+   },
+   {
+    "reason": "a recursive definition of more than one name, not a tuple of functions",
+    "programs": 1,
+    "kind": "limit"
+   }
+  ],
+  "by_rule": 48,
+  "by_limit": 22,
+  "first_sweep": {
+   "commit": "4b17e3b0ba",
+   "run": 43754503317,
+   "suite": "full tests",
+   "checks": 316,
+   "compiled": 237,
+   "agreed": 207,
+   "not_a_value": 30,
+   "not_compiled": 79
+  }
+ },
+ "witch_builds": {
+  "what": "jit.yml (scripts/jit_slides.py), Firefox on GitHub's machines, the Witch slide; one run each. view and jit: ms a frame over a 3 s drag of the neck slider, compiled views on; step: hazel-jit's run before the first redraw at each of four slider steps (two calls each), ms; draws: livelits drawn from the compiled run since load.",
+  "builds": [
+   {
+    "b": "45",
+    "name": "the base",
+    "commit": "fc1103900d",
+    "run": 42888678269,
+    "when": "11-10",
+    "adds": "Report 052's last build: the slide's whole run compiled, on trial/694-view-jit.",
+    "step": [
+     8,
+     4,
+     5,
+     4
+    ],
+    "view": 5.8,
+    "jit": 1.3,
+    "fps": 57.0,
+    "draws": 30
+   },
+   {
+    "b": "45 + 757",
+    "name": "exact integers",
+    "commit": "b908b4ed2e",
+    "run": 43763443448,
+    "when": "11-15",
+    "adds": "Int and Nat exact (ticket 757), on build 45 and ticket 756's first step.",
+    "step": [
+     9,
+     6,
+     5,
+     4
+    ],
+    "view": 6.6,
+    "jit": 1.7,
+    "fps": 50.7,
+    "draws": 30
+   },
+   {
+    "b": "45 + 763",
+    "name": "a step budget",
+    "commit": "b81b39f8d4",
+    "run": 43763439842,
+    "when": "11-15",
+    "adds": "A counter in every compiled function, and a budget around each run (ticket 763), on build 45.",
+    "step": [
+     10,
+     7,
+     5,
+     5
+    ],
+    "view": 7.3,
+    "jit": 1.5,
+    "fps": 52.0,
+    "draws": 30
+   },
+   {
+    "b": "45 + 760",
+    "name": "no type errors",
+    "commit": "1b89af31c5",
+    "run": 43765797166,
+    "when": "11-15",
+    "adds": "No program with type errors compiled (ticket 760), on build 45.",
+    "step": [
+     5,
+     6,
+     6,
+     3
+    ],
+    "view": 7.0,
+    "jit": 1.5,
+    "fps": 53.0,
+    "draws": 28
+   },
+   {
+    "b": "46",
+    "name": "the six together",
+    "commit": "59f28470c3",
+    "run": 43792878754,
+    "when": "11-15",
+    "adds": "Tickets 756, 757, 759, 760, 761 and 763 merged on build 45.",
+    "step": [
+     7,
+     10,
+     5,
+     5
+    ],
+    "view": 5.4,
+    "jit": 1.1,
+    "fps": 59.0,
+    "draws": 30
+   },
+   {
+    "b": "47",
+    "name": "a type hole is a hole",
+    "commit": "f4f969588b",
+    "run": 43898636577,
+    "when": "11-16",
+    "adds": "Build 46 and the type-hole rule (ticket 760); trial/694-view-jit since 11-16 07:4x MST.",
+    "step": null,
+    "view": null,
+    "jit": null,
+    "fps": null,
+    "draws": null
+   }
+  ]
+ },
+ "slides_with_type_error_rule": [
+  {
+   "slide": "Full Body",
+   "build_45": 30,
+   "build_45_plus_760": 30
+  },
+  {
+   "slide": "Hands",
+   "build_45": 30,
+   "build_45_plus_760": 30
+  },
+  {
+   "slide": "Scenes",
+   "build_45": 36,
+   "build_45_plus_760": 36
+  },
+  {
+   "slide": "Witch",
+   "build_45": 30,
+   "build_45_plus_760": 28
+  }
+ ],
+ "sint_today": [
+  {
+   "program": "use SInt in 2147483647 + 1",
+   "browser_interpreter": "-2147483648",
+   "native_build": "2147483648",
+   "hazel_jit": "2147483648"
+  },
+  {
+   "program": "use SInt in 65536 * 65536",
+   "browser_interpreter": "0",
+   "native_build": "4294967296",
+   "hazel_jit": "4294967296"
+  },
+  {
+   "program": "use SInt in 1000000 * 1000000",
+   "browser_interpreter": "-727379968",
+   "native_build": "1000000000000",
+   "hazel_jit": "1000000000000"
+  },
+  {
+   "program": "use SInt in 2 ** 31",
+   "browser_interpreter": "-2147483648",
+   "native_build": "2147483648",
+   "hazel_jit": "2147483648"
+  }
+ ]
+}

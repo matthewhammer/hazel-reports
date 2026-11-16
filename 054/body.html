@@ -1,0 +1,102 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 054 · hazel-jit · 2026-11-16, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 052</p>
+<h1>Same Answers as the Interpreter</h1>
+<p class="sub">hazel-jit compiles a livelit's view, and a slide's whole run, from Hazel to JavaScript, so that a slider's step can show in the picture within a frame (reports 050 to 052). On Friday 2026-11-13 Matthew Hammer and Cyrus Omar met about its next steps. The main one: what the compiled code computes must be what Hazel's interpreter computes, and CI must check it. Here is the plan from that meeting, change by change, and where each change stands. This report is revised as the work goes on.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#plan">The plan</a>: the meeting's items, as tickets, and how far each has come.</li>
+<li><a href="#what">What hazel-jit is</a>, for a reader new to it: what it compiles, where it runs, and what happens to what it does not compile.</li>
+<li><a href="#consistency">The same answers, checked in CI</a>: every evaluator test program also runs compiled, and a difference fails the build.</li>
+<li><a href="#numbers">Exact integers</a>: Int and Nat as the interpreter has them, past 2<sup>53</sup>.</li>
+<li><a href="#errors">Divide by zero and other invalid operations</a>: the compiled run stops, and the interpreter's run answers.</li>
+<li><a href="#overflow">Overflow</a>: SInt has three widths today, and the plan waits on choosing one.</li>
+<li><a href="#rules">What stays with the interpreter</a>: holes, type holes, programs with type errors, and the stepper's functions, explained.</li>
+<li><a href="#limits">The other limits, one at a time</a>: what the compiler did not handle, ranked by how often the tests meet it, and what is done.</li>
+<li><a href="#budget">A step budget</a>: Cyrus's concern, that a compiled function that never ends would freeze the page.</li>
+<li><a href="#cost">What it all costs</a>: the Witch slide, build by build.</li>
+<li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="plan">The plan</h2>
+<p><b>Of the meeting's seven changes, five are done on the hazel-jit branch and pass CI. One is under way (the limits, three of their list done), and one waits on a decision (overflow, which needs SInt's width settled).</b> Each became a ticket on the work dashboard. Two more tickets came out of the work itself: a crash in the interpreter, now fixed on a PR to dev, and a cost in how Hazel checks types at run time.</p>
+{{fig_board}}
+<p>Matthew's summary of the meeting, as he wrote it on 2026-11-15:</p>
+{{summary}}
+<p>And Cyrus's concern, which Matthew passed on separately the same day: <i>"{{cyrus}}"</i></p>
+{{tab_plan}}
+<p>All of the done changes are on <code>trial/694-view-jit</code>, the hazel-jit prototype branch (hazelgrove/hazel#2817), since 2026-11-16 at 07:4x MST, as build 47 (<a href="#cost">the builds</a>). Each was written on its own branch from build 45, passed CI there, and was merged with the others; CI passed again on the merge. None is on dev: report 053 explains why the prototype is to be redone by hand in small steps.</p>
+
+<h2 id="what">What hazel-jit is</h2>
+<p><b>hazel-jit translates an elaborated Hazel program to the text of a JavaScript function, and the page runs that function on its own thread at a livelit's event, to draw the livelits before the interpreter's answer comes back.</b> Hazel's interpreter, in a web worker, still runs every program, and its answer is still the program's result: the probes, the tests and the result panel come from it. So far hazel-jit has been a measurement of how fast compiled Hazel could be (a step of the Witch's slider in 2 to 3 ms, report 050). The meeting's point is that it must also be correct, because whatever it draws, a user reads as what Hazel computed.</p>
+<p>A form the compiler does not handle raises an error with its reason, and the page then waits for the interpreter's run, as it did before hazel-jit. So a limit costs speed, never correctness. A compiled run that stops part way (an invalid operation, <code>undefined</code>, or the step budget) is handled the same way. These fallbacks are what keep hazel-jit's answers the same as the interpreter's: where the two would differ, hazel-jit gives no answer and the interpreter's is shown.</p>
+
+<h2 id="consistency">The same answers, checked in CI</h2>
+<p><b>Every one of the evaluator's {{checks}} test programs now also goes through hazel-jit in CI. {{compiled}} compile, and each gives the interpreter's answer, apart from {{not_a_value}} known ill-typed tests, and those the page never compiles. A new difference fails the build.</b> (Ticket 756.)</p>
+{{fig_sweep}}
+<p>The check is a sweep in the evaluator's tests: each test hands its program to hazel-jit, runs the JavaScript, and compares the value with the interpreter's: numbers exactly (floats within a relative 10<sup>-9</sup>), lists, tuples, labels and constructors by structure, and a function only as being a function. A compiled run that stopped at an invalid operation agrees with an interpreter result stuck at the same error (<a href="#errors">below</a>). The {{not_a_value}} ill-typed tests are listed by name, and anything else that parts from the interpreter fails its test. The end of each run prints a report in CI's log: how many were compiled, how many agreed, and why the rest were not compiled.</p>
+<p>The first sweep, on 2026-11-15 (the full tests), had 316 programs: 237 compiled, 207 agreed, 30 ill-typed, and none differed. It found the rule that programs with type errors stay with the interpreter (<a href="#rules">below</a>). Merging the six branches found one more parting, with no static error: a value passed through a written type hole to a function that takes another type. That led to the rule that a type hole is a hole. The {{by_rule}} programs not compiled by rule, and the {{by_limit}} not compiled for a limit, are these:</p>
+{{tab_sweep}}
+<p>What is left: the slides' own programs, which the sweep does not see. They are checked only by the Firefox run on GitHub's machines, which compares the pictures, not the values.</p>
+
+<h2 id="numbers">Exact integers</h2>
+<p><b>Int and Nat are now exact in compiled code, as the interpreter's are: an integer is a JavaScript number while it is a safe integer (up to 2<sup>53</sup> − 1), and a BigInt past that.</b> (Ticket 757.) The interpreter's Int and Nat are arbitrary-precision integers (Jane Street's Bigint), and hazel-jit had made them JavaScript numbers, which round past 2<sup>53</sup>: 2<sup>53</sup> + 1 came out as 2<sup>53</sup>.</p>
+<p>Every integer operation normalizes its result back to a number when it fits, so two equal integers are always the same value, and <code>===</code> still compares them. Division rounds toward zero, as the interpreter's does, and stays exact where <code>Math.trunc(a / b)</code> would round. Where plain BigInt everywhere cost a 4.1 times slower fib(25), a 1.5 times slower list walk, and 9.6 times slower model updates, this mix costs 1.6 times, nothing measurable, and 3.7 times (Node, against plain numbers; not a build of the app). On the Witch slide it costs nothing measurable (<a href="#cost">below</a>). SInt, Hazel's fixed-width integer, stays a JavaScript number: its width is the <a href="#overflow">overflow question</a>.</p>
+
+<h2 id="errors">Divide by zero and other invalid operations</h2>
+<p><b>Where the interpreter stops at an error (dividing by zero, a negative power, <code>int_of_string</code> of something not a number), the compiled run now stops too, and the page shows the interpreter's run, which holds the stuck term with its error.</b> (Ticket 759.) Before, <code>7 / 0</code> compiled to Infinity.</p>
+<p>The stuck term is the same as the interpreter's by construction, since it is the interpreter's. The alternative, making the stuck term in JavaScript and evaluating around it as the interpreter does, would be a much larger piece of work and is not needed for the answers to agree. Writing the tests for this found a crash in the interpreter itself, on modulo by zero (<a href="#found">below</a>).</p>
+
+<h2 id="overflow">Overflow</h2>
+<p><b>Not begun: SInt overflows three different ways today, depending on how Hazel runs, so the plan's "an indet term with that error" first needs one width chosen.</b> (Ticket 758.) The recommendation is 32 bits everywhere, what the browser has always done, with each SInt operation checked in the interpreter and in hazel-jit, and an IntegerOverflow error where the result does not fit. That changes the interpreter too, so it is a decision for Matthew and Cyrus.</p>
+<p>In the browser, Hazel runs under js_of_ocaml, where an OCaml int has 32 bits, and SInt wraps silently. A native build of Hazel has OCaml's 63-bit int. hazel-jit has a JavaScript number (checked through hazeljs 0.0.6, which runs Hazel as the browser does):</p>
+{{tab_sint}}
+<p>Int and Nat cannot overflow (<a href="#numbers">above</a>), and Float follows IEEE 754 in all three.</p>
+
+<h2 id="rules">What stays with the interpreter</h2>
+<p><b>By rule, not as a limit, hazel-jit leaves to the interpreter: any program with a hole (now including a type hole, <code>?</code> in a type), any program with type errors, and anything the stepper shows.</b> (Ticket 760.) Each is written down at the head of the compiler's source, <code>HazelJit.re</code>.</p>
+<p><b>Holes.</b> Empty holes, multiholes, dynamic error holes and invalid text were already not compiled: the interpreter evaluates around a hole, and its indeterminate result is the point of a hole. <b>Type holes</b> are new, from the merge's sweep. A value passed through <code>?</code> to a function taking <code>[Int]</code> fails a run-time check when it is a list of floats, and the interpreter shows the failed check. Compiled code has no types to check, and a float and an int are both a JavaScript number, so it cannot tell. No slide writes a type hole. <b>Type errors.</b> The first sweep's 30 ill-typed tests (<code>4 : String</code>, <code>1 + (4 : String)</code>, ...) are programs where the interpreter stops at a failed run-time check. Now the page compiles no program with static errors. Checked on the six slides of the Firefox check, the rule stopped none from compiling; the four with compiled runs kept them (the Witch's 28 against 30 reflects when its run was timed, not a program it stopped compiling):</p>
+{{tab_slides}}
+<p><b>The stepper's functions,</b> which Matthew asked to have explained. Hazel's stepper shows a program's evaluation one step at a time. Four forms of expression tell it which steps to show: <code>hide P in e</code> (skip the steps matching pattern P), <code>eval P in e</code> (take them without stopping), <code>pause P in e</code> (stop at them), and <code>debug P in e</code>. These are "stepper functions" in the sense Cyrus meant. They only mean something to a run that takes steps, so hazel-jit does not compile them (the reason is "a stepper filter"). Beyond the filters, nothing the stepper shows is drawn from compiled code. The stepper evaluates by the interpreter's own steps, and a livelit inside a probe drawer's stepper, drawn over one of its samples, is now drawn by the interpreter, never from a compiled run's answer (in the code and its tests; not yet checked in a browser).</p>
+
+<h2 id="limits">The other limits, one at a time</h2>
+<p><b>Ranked by the first sweep, the limits most often met were missing builtins, partial application, recursion over more than one name, <code>undefined</code>, and other forms of term. The first three are done; <code>undefined</code> is in CI; probes are not begun.</b> (Ticket 761.)</p>
+<ul>
+<li><b>Builtins:</b> 17 the runtime lacked, now as the interpreter has them: string_match, string_replace, string_search, string_join, string_escaped, string_capitalize, string_uncapitalize, omit_all_labels, the six compare builtins (int, sint, nat, float, bool and string), and invert_ord. string_sub is the one the sweep still finds.</li>
+<li><b>Partial application,</b> <code>f(a, _)</code>: the function and the given arguments are evaluated first, in order, then a function of the missing ones.</li>
+<li><b>Recursion over more than one name,</b> <code>let (even, odd) = (fun ..., fun ...)</code>: each name assigned once, then the tuple of them. This gives the interpreter's answer whenever every part is a function, since a name is only read when a function runs. Any other part stays with the interpreter.</li>
+<li><b>In progress, <code>undefined</code>:</b> seven sweep programs, and more than that: the List builtins written in Hazel (<code>List.head</code>, <code>List.tail</code> and three others) use <code>undefined</code> for an empty list, so every program that calls them was not compiled at all. A compiled run that reaches <code>undefined</code> now stops, as for an invalid operation; one that does not reach it costs nothing. In CI, with one question open. Hazel gives <code>undefined</code> the hole type, the same as a written <code>?</code>, so the type-hole rule above may catch it too. If it does, that rule will be narrowed to the types a user writes.</li>
+<li><b>Next:</b> "this kind of term" (the forms with no case of their own in the compiler), a fixpoint over a pattern like <code>_</code>, labels that are not names, string_sub, reverse application.</li>
+<li><b>Probes</b> are the largest: a probe shows the values that passed through it, and compiled code records none. Today a probe always shows the interpreter's run, which is correct, and never faster. Recording samples from compiled code would mean deciding what a sample is when the code that made it has no steps.</li>
+</ul>
+
+<h2 id="budget">A step budget</h2>
+<p><b>Every compiled function now counts its calls and every 16,384 calls reads the clock. A run past its budget (50 ms or 50 million calls) stops, and the interpreter's run answers.</b> (Ticket 763.) Cyrus's concern is that compiled code runs on the page's own thread, so a Hazel function that never ends would freeze the page. The interpreter has a 20-second timer and a limit of 100 million transitions.</p>
+<p>Endless recursion turned out to be the smaller risk: it overflows JavaScript's stack in about a millisecond, and that error is caught like any other. The real risk is a run that ends, but late (fib(45)), and the clock catches that. In Node the counter costs 11 to 26%, and 20 to 33% with the clock (not a build of the app). On the Witch it costs nothing measurable in one run (<a href="#cost">below</a>), well inside a frame. A cheaper counter, at only the calls that can recur, is the next step.</p>
+
+<h2 id="cost">What it all costs</h2>
+<p><b>On the Witch slide, the six changes together are not measurably slower than build 45: over a 3 s drag the page's view took 5.4 ms a frame (about 185 fps), against 5.8 (about 172 fps), with hazel-jit's own run 1.1 ms of it.</b> One run each. The spread between single runs (5.4 to 7.3 ms) is as large as any difference, so the numbers show no cost, not a gain. Every build stays far inside the 16.7 ms of a 60 fps frame. The fps assumes that updating the state is free: it is what the view alone allows.</p>
+{{fig_witch}}
+<p>The builds are numbered as in reports 050 to 052. Builds 45 + 757, 45 + 763 and 45 + 760 are each build 45 with one change, measured on its own. Build 46 is the six merged; build 47 adds the type-hole rule and is what <code>trial/694-view-jit</code> holds now.</p>
+{{tab_builds}}
+
+<h2 id="found">Found along the way</h2>
+<p><b>Modulo by zero crashed Hazel's interpreter, on dev too; the fix is a PR to dev, hazelgrove/hazel#2825, waiting for review.</b> (Ticket 764.) <code>int_mod</code>, <code>sint_mod</code>, <code>nat_mod</code> and <code>float_mod</code> answered a zero divisor with an error naming a builtin <code>mod</code> that does not exist, so evaluating it raised an exception instead of showing "Error: Divide by Zero". This dates from at least 2025-07-02. Renaming was not enough: the error's inside was then stepped again, and the error was lost. So the fix also makes a builtin's error final, as an operator's already is. CI passes with it.</p>
+<p><b>A Hazel function that declares what it takes but not what it returns costs 5 to 7 times as much a step at run time, in the interpreter.</b> (Ticket 762.) It was measured in a Tarot deck written in Hazel: a step of <code>take</code> cost 0.36 ms with only its argument types, and 0.07 ms with its whole type. Declaring every type made a deal 3.7 times faster. The cause is not unknown types, but where the ascriptions (the run-time type checks) land: on each case arm's result, in each copy of the body, rather than once around it. This is the interpreter's cost, not hazel-jit's, and it is the kind of check Matthew Keenan asked about in report 053. The next step is to count the checks per call.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Finish <code>undefined</code>: read CI, and if the type-hole rule catches <code>undefined</code>'s type, narrow the rule to the types a user writes.</li>
+<li>Choose SInt's width with Cyrus (recommended: 32 bits everywhere), then check overflow in the interpreter and in hazel-jit alike.</li>
+<li>Work through the rest of the limits by the sweep's counts: the forms with no case of their own, fixpoints over other patterns, labels, string_sub, reverse application.</li>
+<li>Design probes for compiled code: what a probe's sample is when the code that made it has no steps.</li>
+<li>Bring the slides' programs into the consistency check, beside the evaluator's tests.</li>
+<li>Make the step counter cheaper: count only at calls that can recur.</li>
+<li>Check in the browser that a livelit in a probe drawer's stepper is drawn by the interpreter.</li>
+<li>Count the run-time type checks per call for an undeclared result type (ticket 762), and get hazelgrove/hazel#2825 reviewed.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>The plan is Matthew Hammer's summary of the meeting, quoted as he wrote it, and the dashboard's tickets 756 to 764. The sweep's numbers are the report it prints in CI's log: build 47's fast checks (CI run 43887985051), and the first sweep's full tests (CI run 43754503317). The Witch's numbers come from the Firefox check on GitHub's machines (<code>scripts/jit_slides.py</code>, run by the <code>jit.yml</code> workflow of hazelgrove/hazel), one run per build, with the runs named in the builds table. The view a frame and the compiled run a frame are its page timeline over a 3 s drag of the neck slider. The compiled run at a step is its time before the first redraw at each of four slider steps. The Node figures are microbenchmarks on JavaScript written as hazel-jit writes it, not builds of the app. SInt's behaviour was checked through hazeljs 0.0.6. Everything the page shows is in <a href="data/numbers.json">data/numbers.json</a>.</p>
+</main></body>
