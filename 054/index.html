@@ -157,7 +157,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-16 12:18 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-16 12:54 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </ul>
 
 <h3 id="ahead">Compiled ahead of time, for older phones<a class="anchor" href="#ahead" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="ahead" title="copy this section's address">copy link</button></h3>
-<p><b>A third use, now a working prototype: compile a hazeljs app's Hazel when the site is built, and ship the JavaScript, so that an older phone loads neither Hazel's interpreter nor its build of the program, and every call runs compiled. On the older Android phone, the I Ching compiled this way is ready to cast at 0.8 s instead of 3.7 s, and a reading takes under a millisecond instead of 86 to 113 ms. It gives hazeljs's answer on all 8,102 checked, in 33 kB instead of 2.8 MB.</b> The idea is Matthew Hammer's, on 2026-11-16, after trying the two hazeljs oracles (an I Ching and a Tarot, whose rules are Hazel run by hazeljs in the page) on an older Android phone in Firefox: painfully slow to draw each card or line, and on each key press in the I Ching's question.</p>
+<p><b>A third use, now a working prototype: compile a hazeljs app's Hazel when the site is built, and ship the JavaScript, so that an older phone loads neither Hazel's interpreter nor its build of the program, and every call runs compiled. On the older Android phone, the I Ching compiled this way is ready to cast at 0.8 s instead of 3.7 s, and a reading takes under a millisecond instead of 86 to 113 ms. It gives hazeljs's answer on all 8,102 checked, in 33 kB instead of 2.8 MB. Since the oracles' 0.0.13 both of them, the I Ching and the Tarot, run compiled by default: the Tarot's 6,400 deals checked are hazeljs's too, and a Celtic Cross takes 0.008 ms instead of 46, in Node.</b> The idea is Matthew Hammer's, on 2026-11-16, after trying the two hazeljs oracles (an I Ching and a Tarot, whose rules are Hazel run by hazeljs in the page) on an older Android phone in Firefox: painfully slow to draw each card or line, and on each key press in the I Ching's question.</p>
 <p>What a page like that costs, measured on a laptop:</p>
 <ul>
 <li><b>Hazel's library,</b> hazel-lib.js: 2.8 MB of JavaScript (650 kB compressed), 174 ms to load in Node.</li>
@@ -420,7 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li>Count the run-time type checks per call for an undeclared result type (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a>), and get <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a> reviewed.</li>
 <li>Mixed mode, a first step: a compiled-function value the interpreter can apply, for top-level functions with their whole types declared, behind a setting, falling back one call at a time.</li>
 <li>Mixed mode in the consistency sweep: each evaluator test run a third way, mixed, against the interpreter alone.</li>
-<li>The Tarot compiled the same way, and compiled made the oracles' default once it holds up; then the compiler inside hazeljs, so a site's build compiles without CI.</li>
+<li>The compiler inside hazeljs, so a site's build compiles without CI (both oracles now run compiled by default, built from CI's output).</li>
 <li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a>, or the Tarot deal of <a href="https://matthewhammer.org/hazel/dashboard/#ticket-730"><code class="ref"><b>^ticket(</b>730<b>)</b></code></a>), interpreter alone against mixed.</li>
 </ol>
 
