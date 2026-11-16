@@ -10,7 +10,7 @@
 <li><a href="#consistency">The same answers, checked in CI</a>: every evaluator test program also runs compiled, and a difference fails the build.</li>
 <li><a href="#numbers">Exact integers</a>: Int and Nat as the interpreter has them, past 2<sup>53</sup>.</li>
 <li><a href="#errors">Divide by zero and other invalid operations</a>: the compiled run stops, and the interpreter's run answers.</li>
-<li><a href="#overflow">Overflow</a>: SInt has three widths today, and the plan waits on choosing one.</li>
+<li><a href="#overflow">Overflow</a>: SInt had three widths; now 32 bits everywhere, and overflow an error.</li>
 <li><a href="#rules">What stays with the interpreter</a>: holes, type holes, programs with type errors, and the stepper's functions, explained.</li>
 <li><a href="#limits">The other limits, one at a time</a>: what the compiler did not handle, ranked by how often the tests meet it, and what is done.</li>
 <li><a href="#budget">A step budget</a>: Cyrus's concern, that a compiled function that never ends would freeze the page.</li>
@@ -21,7 +21,7 @@
 </ol>
 
 <h2 id="plan">The plan</h2>
-<p><b>Of the meeting's seven changes, five are done on the hazel-jit branch and pass CI. One is under way (the limits, three of their list done), and one waits on a decision (overflow, which needs SInt's width settled).</b> Each became a ticket on the work dashboard. Two more tickets came out of the work itself: a crash in the interpreter, now fixed on a PR to dev, and a cost in how Hazel checks types at run time.</p>
+<p><b>Of the meeting's seven changes, five are done on the hazel-jit branch and pass CI. Two are under way: the limits, most of their list done, and overflow, where SInt's width is now decided, 32 bits everywhere, and the checks are written.</b> Each became a ticket on the work dashboard. Two more tickets came out of the work itself: a crash in the interpreter, now fixed on a PR to dev, and a cost in how Hazel checks types at run time.</p>
 {{fig_board}}
 <p>Matthew's summary of the meeting, as he wrote it on 2026-11-15:</p>
 {{summary}}
@@ -50,9 +50,9 @@
 <p>The stuck term is the same as the interpreter's by construction, since it is the interpreter's. The alternative, making the stuck term in JavaScript and evaluating around it as the interpreter does, would be a much larger piece of work and is not needed for the answers to agree. Writing the tests for this found a crash in the interpreter itself, on modulo by zero (<a href="#found">below</a>).</p>
 
 <h2 id="overflow">Overflow</h2>
-<p><b>Not begun: SInt overflows three different ways today, depending on how Hazel runs, so the plan's "an indet term with that error" first needs one width chosen.</b> (Ticket 758.) The recommendation is 32 bits everywhere, what the browser has always done, with each SInt operation checked in the interpreter and in hazel-jit, and an IntegerOverflow error where the result does not fit. That changes the interpreter too, so it is a decision for Matthew and Cyrus.</p>
-<p>In the browser, Hazel runs under js_of_ocaml, where an OCaml int has 32 bits, and SInt wraps silently. A native build of Hazel has OCaml's 63-bit int. hazel-jit has a JavaScript number (checked through hazeljs 0.0.6, which runs Hazel as the browser does):</p>
+<p><b>Decided on 2026-11-16, Matthew Hammer: an SInt has 32 bits everywhere, and a result past them is an error, a stuck term, as a divide by zero is. Written on a branch, in the interpreter and in hazel-jit, with CI running.</b> (Ticket 758.) Until now SInt overflowed three different ways, depending on how Hazel ran. In the browser, Hazel runs under js_of_ocaml, where an OCaml int has 32 bits, and SInt wrapped silently. A native build of Hazel has OCaml's 63-bit int. hazel-jit had a JavaScript number (checked through hazeljs 0.0.6, which runs Hazel as the browser does):</p>
 {{tab_sint}}
+<p>Now each of these stops, in all three, at a new error, IntegerOverflow ("Error: Integer overflow (an SInt has 32 bits)"). Every SInt operation (sum, difference, product, power, negation, and the one quotient too big, the least SInt divided by −1) checks its result against [−2<sup>31</sup>, 2<sup>31</sup> − 1]. The interpreter computes the result as a floating-point number first: exact for any two 32-bit operands' sum, and past 2<sup>53</sup> surely out of range. So the answer no longer depends on the width of the int the interpreter runs on. A value made into an SInt from an Int, a Nat or a Float that does not fit stops at the existing IntegerTooBig, natively too. hazel-jit makes the same checks and stops its run there, for the interpreter's. Seven tests check both agree, values at the edges of 32 bits included (<code>trial/758-sint32</code>, <code>3c9fb4d9ed</code>). Changing the interpreter changes the language, so it goes to dev as its own PR afterwards.</p>
 <p>Int and Nat cannot overflow (<a href="#numbers">above</a>), and Float follows IEEE 754 in all three.</p>
 
 <h2 id="rules">What stays with the interpreter</h2>
@@ -156,7 +156,7 @@
 <h2 id="next">What next</h2>
 <ol>
 <li>Bring <code>undefined</code>, the label builtins, the string fix and reverse application onto <code>trial/694-view-jit</code> together, once CI and the slides check pass on the last of them.</li>
-<li>Choose SInt's width with Cyrus (recommended: 32 bits everywhere), then check overflow in the interpreter and in hazel-jit alike.</li>
+<li>SInt at 32 bits: read CI, then propose the interpreter's half to dev as a PR of its own, since it changes the language.</li>
 <li>Work through the rest of the limits by the sweep's counts: fixpoints over other patterns, labels that are not names, string_sub, reverse application.</li>
 <li>Design probes for compiled code: what a probe's sample is when the code that made it has no steps.</li>
 <li>Bring the slides' programs into the consistency check, beside the evaluator's tests.</li>
