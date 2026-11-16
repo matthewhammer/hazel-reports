@@ -113,7 +113,7 @@ def fig_board():
     W, L, top, rh = 700, 270, 52, 28
     H = top + rh * len(PLAN) + 14
     cols = {"done": "#15803d", "part": "#b45309", "wait": "#9ca3af", "pr": "#2563eb"}
-    sx = lambda i: L + 30 + i * 110
+    sx = lambda i: L + 20 + i * 108
     out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The plan, ticket by ticket, on 2026-11-16</text>',
            '<text x="16" y="34" font-size="11" fill="var(--muted)">each dot a stage reached; for ticket 764 the last stage is a PR to dev, not the branch</text>']
     for i, s in enumerate(STAGES):
@@ -191,6 +191,45 @@ def fig_witch():
             f'against a 16.7 ms line" style="width:100%;height:auto;display:block">' + "".join(out) + f"</svg><figcaption>{cap}</figcaption></figure>")
 
 
+def fig_mixed():
+    W, H = 720, 300
+    o = ['<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>'
+         '<marker id="ahm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker></defs>',
+         '<text x="16" y="20" font-size="12.5" font-weight="700" fill="var(--ink)">Mixed mode: the interpreter calls compiled functions, as it calls a builtin</text>',
+         '<text x="16" y="36" font-size="11" fill="var(--muted)">a design sketch, not built yet</text>',
+         '<rect x="16" y="52" width="330" height="230" rx="8" fill="none" stroke="var(--line)" stroke-width="1.5"/>',
+         '<text x="30" y="74" font-size="12" font-weight="700" fill="var(--ink)">Hazel\'s interpreter, in the worker</text>',
+         '<text x="30" y="92" font-size="10.5" fill="var(--muted)">evaluates the program, around its holes, with its probes</text>']
+    code = [("let rule : (Net, Int) -> Net = ...", "#15803d", "complete, typed: compiled"),
+            ("let view = fun n -> ... ? ...", "#6b7280", "a hole: the interpreter's"),
+            ("let total = fun xs -> ... probe ...", "#6b7280", "a probe: the interpreter's"),
+            ("... rule(net, 2) ...", "var(--ink)", "a call")]
+    for i, (c, col, note) in enumerate(code):
+        y = 122 + i * 40
+        o.append(f'<text x="30" y="{y}" font-size="11" font-family="ui-monospace,monospace" fill="{col}">{esc(c)}</text>')
+        o.append(f'<text x="30" y="{y + 15}" font-size="10" fill="var(--muted)">{esc(note)}</text>')
+    o += ['<rect x="474" y="96" width="230" height="120" rx="8" fill="none" stroke="#15803d" stroke-width="1.5"/>',
+          '<text x="488" y="118" font-size="12" font-weight="700" fill="#15803d">Compiled functions (JS)</text>',
+          '<text x="488" y="140" font-size="11" font-family="ui-monospace,monospace" fill="var(--ink)">rule</text>',
+          '<text x="488" y="160" font-size="10" fill="var(--muted)">call each other directly;</text>',
+          '<text x="488" y="174" font-size="10" fill="var(--muted)">each call under the step budget</text>',
+          '<line x1="200" y1="240" x2="472" y2="140" stroke="var(--ink)" stroke-width="1.4" marker-end="url(#ah)"/>',
+          '<text x="352" y="170" font-size="10" fill="var(--ink)" text-anchor="middle" transform="rotate(-20 352 170)">the argument, to JS once</text>',
+          '<line x1="474" y1="176" x2="230" y2="252" stroke="var(--ink)" stroke-width="1.4" marker-end="url(#ah)"/>',
+          '<text x="380" y="228" font-size="10" fill="var(--ink)" text-anchor="middle" transform="rotate(-17 380 228)">the answer, by its declared type</text>',
+          '<path d="M 500 216 C 500 292, 300 298, 250 264" fill="none" stroke="#b45309" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#ahm)"/>',
+          '<text x="704" y="236" font-size="10.5" text-anchor="end" fill="#b45309">a stop (the budget, an invalid</text>',
+          '<text x="704" y="250" font-size="10.5" text-anchor="end" fill="#b45309">operation, a value that will</text>',
+          '<text x="704" y="264" font-size="10.5" text-anchor="end" fill="#b45309">not convert): the Hazel</text>',
+          '<text x="704" y="278" font-size="10.5" text-anchor="end" fill="#b45309">function runs instead</text>']
+    cap = ("Not a build of the app: a design sketch. The interpreter keeps running the program, with its holes and probes; "
+           "a function whose body is complete, has its whole type declared and holds no probe is compiled once, and the "
+           "interpreter calls it as it calls a builtin. Any stop falls back for that one call, to the same Hazel function.")
+    return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="The interpreter, running a program with a hole and a probe, '
+            f'calls a compiled function in JS, converting the argument in and the answer back, and falls back to the Hazel function on a stop" '
+            f'style="width:100%;height:auto;display:block">' + "".join(o) + f"</svg><figcaption>{cap}</figcaption></figure>")
+
+
 # ---------------------------------------------------------------- tables
 
 
@@ -245,7 +284,7 @@ def summary_block():
 
 NUMS = {"updated": updated, "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
-FIGS = {"fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
+FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
         "tab_sint": sint_table(), "tab_slides": slides_table(), "tab_builds": builds_table(), "summary": summary_block()}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():

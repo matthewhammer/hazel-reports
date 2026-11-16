@@ -1,7 +1,7 @@
 <body><main>
 <p class="series"><a href="../">Hazel reports</a> · report 054 · hazel-jit · 2026-11-16, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 052</p>
 <h1>Same Answers as the Interpreter</h1>
-<p class="sub">hazel-jit compiles a livelit's view, and a slide's whole run, from Hazel to JavaScript, so that a slider's step can show in the picture within a frame (reports 050 to 052). On Friday 2026-11-13 Matthew Hammer and Cyrus Omar met about its next steps. The main one: what the compiled code computes must be what Hazel's interpreter computes, and CI must check it. Here is the plan from that meeting, change by change, and where each change stands. This report is revised as the work goes on.</p>
+<p class="sub">hazel-jit compiles a livelit's view, and a slide's whole run, from Hazel to JavaScript, so that a slider's step can show in the picture within a frame (reports 050 to 052). On Friday 2026-11-13 Matthew Hammer and Cyrus Omar met about its next steps. The main one: what the compiled code computes must be what Hazel's interpreter computes, and CI must check it. Here is the plan from that meeting, change by change, and where each change stands. It also covers what it would take to run any piece of a Hazel program this way, not only livelit views, and the direction chosen: a mixed mode, where the interpreter calls compiled functions. This report is revised as the work goes on.</p>
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
@@ -16,6 +16,7 @@
 <li><a href="#budget">A step budget</a>: Cyrus's concern, that a compiled function that never ends would freeze the page.</li>
 <li><a href="#cost">What it all costs</a>: the Witch slide, build by build.</li>
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
+<li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, and mixed mode, the direction chosen.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
@@ -68,7 +69,8 @@
 <li><b>Recursion over more than one name,</b> <code>let (even, odd) = (fun ..., fun ...)</code>: each name assigned once, then the tuple of them. This gives the interpreter's answer whenever every part is a function, since a name is only read when a function runs. Any other part stays with the interpreter.</li>
 <li><b><code>undefined</code>,</b> on its own branch (<code>trial/761-undefined</code>, <code>e62f0a855a</code>): seven sweep programs, and more than that. The List builtins written in Hazel (<code>List.head</code>, <code>List.tail</code> and three others) use <code>undefined</code> for an empty list, so every program calling them was not compiled at all. A compiled run that reaches <code>undefined</code> now stops, as for an invalid operation; one that does not reach it costs nothing. With it the fast checks pass, and all seven programs compile and agree: 250 of the 313 compiled, 223 agreed, none differ (CI run 43899240156). One worry did not come true. Hazel gives <code>undefined</code> the hole type, the same as a written <code>?</code>, so the type-hole rule above might have caught it, but in none of these programs does an ascription around it carry the hole. The full tests are running.</li>
 <li><b>Tuple extension and labels as values,</b> the six programs the first sweep counted as "this kind of term": <code>(a=1, b=2) ... (c=3)</code>, and label literals handed to <code>project_labels</code>, <code>select_labels</code> and <code>omit_labels</code>. Each now compiles as the interpreter defines it, on a branch above <code>undefined</code>'s (<code>trial/761-labels</code>, <code>1087cdcace</code>), with CI running.</li>
-<li><b>Next:</b> a fixpoint over a pattern like <code>_</code>, labels that are not names, string_sub, reverse application.</li>
+<li><b>Strings beyond ASCII,</b> a parting the sweep could not see, because the evaluator's tests use only ASCII strings. Hazel counts a string's length and offsets in graphemes, the characters a reader sees. hazel-jit counted JavaScript's UTF-16 units, so <code>string_length</code> of an emoji was 2 compiled and 1 in Hazel. Now it counts graphemes, as Hazel does, and <code>string_sub</code> and <code>string_split</code> are compiled too. This is on a branch above the label work (<code>trial/761-strings</code>, <code>83f4dba237</code>), with tests on an emoji, an accent written as a separate mark, and a flag; CI is running.</li>
+<li><b>Next:</b> a fixpoint over a pattern like <code>_</code>, labels that are not names, reverse application.</li>
 <li><b>Probes</b> are the largest: a probe shows the values that passed through it, and compiled code records none. Today a probe always shows the interpreter's run, which is correct, and never faster. Recording samples from compiled code would mean deciding what a sample is when the code that made it has no steps.</li>
 </ul>
 
@@ -86,6 +88,51 @@
 <p><b>Modulo by zero crashed Hazel's interpreter, on dev too; the fix is a PR to dev, hazelgrove/hazel#2825, waiting for review.</b> (Ticket 764.) <code>int_mod</code>, <code>sint_mod</code>, <code>nat_mod</code> and <code>float_mod</code> answered a zero divisor with an error naming a builtin <code>mod</code> that does not exist, so evaluating it raised an exception instead of showing "Error: Divide by Zero". This dates from at least 2025-07-02. Renaming was not enough: the error's inside was then stepped again, and the error was lost. So the fix also makes a builtin's error final, as an operator's already is. CI passes with it.</p>
 <p><b>A Hazel function that declares what it takes but not what it returns costs 5 to 7 times as much a step at run time, in the interpreter.</b> (Ticket 762.) It was measured in a Tarot deck written in Hazel: a step of <code>take</code> cost 0.36 ms with only its argument types, and 0.07 ms with its whole type. Declaring every type made a deal 3.7 times faster. The cause is not unknown types, but where the ascriptions (the run-time type checks) land: on each case arm's result, in each copy of the body, rather than once around it. This is the interpreter's cost, not hazel-jit's, and it is the kind of check Matthew Keenan asked about in report 053. The next step is to count the checks per call.</p>
 
+<h2 id="beyond">Beyond livelits</h2>
+<p><b>Most of hazel-jit's limits come from one assumption: it compiles a whole program that is closed, finished and well typed, and its answer is only a preview, with the interpreter's run as the real answer. Running any piece of a program in JavaScript breaks each part of that. The direction chosen is a mixed mode: the interpreter keeps running the program and calls compiled functions as it calls a builtin.</b> Matthew Hammer asked on 2026-11-16 what it would take to apply hazel-jit to any fragment of elaborated Hazel, and which of its assumptions stand in the way. Of three ways to go, he chose the third: "I like the mixed mode idea a lot."</p>
+{{fig_mixed}}
+
+<h3 id="assumes">What today's design assumes</h3>
+<ol>
+<li><b>The program is closed.</b> Its only free variables are builtins, and a closure carrying its own environment is not compiled. A slide's run starts from nothing, so this has not mattered. A piece from inside a program has free variables bound to the interpreter's values, closures among them: those must be converted on the way in, and an interpreter closure must either be compiled too or be called back from JavaScript.</li>
+<li><b>The compiled answer is a preview.</b> The page draws from it, and the interpreter's answer, arriving later, is the program's result. If compiled code gives the result itself, every remaining difference is a wrong answer, and the consistency check becomes a gate.</li>
+<li><b>Falling back is all or nothing, and costs nothing extra,</b> since the interpreter runs anyway. For a piece of a program, falling back means running it twice, partly in JavaScript and then in the interpreter. That is safe only because evaluation has no side effects.</li>
+<li><b>The answer's type is known.</b> Converting an answer back needs its type: a Float 1.0 and an Int 1 are the same JavaScript number, and without a type a tuple's labels are guessed from its properties. A view's answer is always Html.</li>
+<li><b>The inputs are small.</b> Views draw small models, so recursion stays shallow. JavaScript has no tail calls and a stack of thousands to tens of thousands of calls, depending on the browser, where the interpreter keeps its stack on the heap. A <code>List.map</code> over 100,000 elements works in the interpreter and overflows compiled; today that falls back, correct but slow.</li>
+<li><b>Three shortcuts are for livelits only:</b> a livelit's model is a parameter, so a slider step does not recompile; each view's answer is collected by its projector; and Html goes straight to the page's DOM without becoming Hazel terms. In general, every edit changes the code, so it is compiled again, and new code starts cold in the JavaScript engine. Compiling is quick (the Witch's largest livelit definition, 62,000 nodes: 6 ms to translate, 9 ms for the browser to parse), but what to cache by, and what to make a parameter, come back as questions.</li>
+<li><b>The program is finished.</b> Holes, type holes and type errors go to the interpreter by rule (<a href="#rules">above</a>). A program being edited usually has holes, so compiled code helps only its complete parts. That argues for compiling pieces rather than whole programs.</li>
+</ol>
+
+<h3 id="general">What is new in the general case</h3>
+<ol>
+<li><b>Divergence and long runs.</b> The step budget bounds a freeze. But its units are calls and time, not the interpreter's steps, so compiled code may finish where the interpreter would time out, or the reverse. If the same answers include the same timeouts, the limit needs a definition in the language that both count the same way. A piece of a program that draws nothing belongs in the worker, where a long run freezes nothing.</li>
+<li><b>The boundary costs.</b> Converting values in and out builds Hazel terms and makes new ids. Report 045 found a livelit's render about 40 times slower with that trip in and out than compiled alone. Small pieces that cross often lose most of the gain, so pieces must be large, or values must stay in JavaScript between calls.</li>
+<li><b>What the interpreter records:</b> probes, the stepper's steps, traces, test results, and the ids that tie a value to the code that made it. Compiled code records none of them. A piece holding a probe or a test, or shown in the stepper, stays with the interpreter.</li>
+<li><b>Evaluating around holes,</b> Hazel's central feature: a program with holes still runs, and its result holds the holes. Compiled code cannot; it stops.</li>
+<li><b>Run-time type checks.</b> Where a value passes through the unknown type <code>?</code>, the interpreter checks it as the program runs; compiled code has no types to check with. Values entering a compiled piece typed <code>?</code> would need checking on the way in.</li>
+<li><b>Every builtin twice.</b> Each of Hazel's builtins written in OCaml has a twin written by hand in JavaScript, and a general compiler meets them all. Looking for this report found one that differed: <code>string_length</code> (<a href="#limits">above</a>, now fixed).</li>
+<li><b>Security.</b> Compiled code runs through <code>new Function</code> with the page's full access. For livelits, that is slides we wrote; for any piece of any program, including one opened from a shared link, a bug in how the compiler escapes text would let a program run its own script in the page. A page whose security policy forbids <code>eval</code> cannot run it at all.</li>
+<li><b>Two implementations to maintain.</b> Every new language feature must either compile or fall back, and the consistency check must cover it.</li>
+</ol>
+
+<h3 id="paths">Three ways to go</h3>
+<ol>
+<li><b>Whole closed programs, in the worker,</b> with the interpreter as the fallback: close to what we have, without the livelit shortcuts, and unable to freeze the page.</li>
+<li><b>A fragment interface:</b> compile a closed function whose free variables are typed parameters, convert its inputs once, and keep its values in JavaScript.</li>
+<li><b>Mixed mode, the one chosen:</b> the interpreter calls compiled functions as it calls builtins, for functions that are complete, free of probes and worth compiling. The first two are steps toward it.</li>
+</ol>
+
+<h3 id="mixed">Mixed mode, sketched</h3>
+<p><b>Mixed mode keeps the interpreter in charge of the program, so holes, probes and the stepper work as they do now, and gives its complete functions compiled speed.</b> Not built yet; a sketch:</p>
+<ul>
+<li><b>What is compiled:</b> a function whose body is complete (no hole, type hole or type error), holds no probe, test or stepper filter, and whose free variables are builtins or other compiled functions, with its whole type declared. The declared type converts the answer back. Ticket 762 found that declaring it also makes the interpreter's own steps 5 to 7 times cheaper.</li>
+<li><b>How it is called:</b> a new kind of value beside a builtin. Applying it converts the argument to JavaScript once, runs the compiled function under the step budget, and converts the answer back by the declared type. It runs in the worker, where the interpreter runs, so a long call freezes no page.</li>
+<li><b>Falling back, one call at a time:</b> on any stop (the budget, an invalid operation, <code>undefined</code>, an argument that will not convert because it holds a hole), the interpreter applies the original Hazel function to the same argument. Evaluation has no side effects, so running a call twice is safe. A program with holes elsewhere still runs its complete functions compiled, and the interpreter evaluates around the holes.</li>
+<li><b>Probes and the stepper:</b> putting a probe in a function takes that function out of the compiled set at the next compile, and the rest stay compiled. The stepper either runs on the interpreter alone or shows a compiled call as one step, as it shows a builtin's.</li>
+<li><b>The boundary:</b> compiled functions call one another directly in JavaScript, without crossing. A large value passed again and again (a list) can be converted once and remembered by the identity of the interpreter's value.</li>
+<li><b>Checking it:</b> the consistency sweep runs each evaluator test a third way, mixed, and compares with the interpreter alone.</li>
+</ul>
+
 <h2 id="next">What next</h2>
 <ol>
 <li>Finish <code>undefined</code>: its full tests, then onto <code>trial/694-view-jit</code>.</li>
@@ -96,6 +143,9 @@
 <li>Make the step counter cheaper: count only at calls that can recur.</li>
 <li>Check in the browser that a livelit in a probe drawer's stepper is drawn by the interpreter.</li>
 <li>Count the run-time type checks per call for an undeclared result type (ticket 762), and get hazelgrove/hazel#2825 reviewed.</li>
+<li>Mixed mode, a first step: a compiled-function value the interpreter can apply, for top-level functions with their whole types declared, behind a setting, falling back one call at a time.</li>
+<li>Mixed mode in the consistency sweep: each evaluator test run a third way, mixed, against the interpreter alone.</li>
+<li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of report 050, or the Tarot deal of ticket 730), interpreter alone against mixed.</li>
 </ol>
 
 <h2 id="method">How this was put together</h2>
