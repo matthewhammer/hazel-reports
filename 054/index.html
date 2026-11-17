@@ -157,7 +157,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-17 15:34 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-17 15:57 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#plan">The plan</a>: the meeting's items, as tickets, and how far each has come.</li>
 <li><a href="#what">What hazel-jit is</a>, for a reader new to it: what it compiles, where it runs, and what happens to what it does not compile.</li>
 <li><a href="#consistency">The same answers, checked in CI</a>: every evaluator test program also runs compiled, and a difference fails the build.</li>
-<li><a href="#timed">The same programs, timed</a>: the evaluator's programs, each run in the interpreter and compiled, timed.</li>
+<li><a href="#timed">The same programs, timed</a>: the evaluator's programs, each run in the interpreter and compiled, timed; and a larger program, the astrology oracle, 170 times as fast compiled.</li>
 <li><a href="#numbers">Exact integers</a>: Int and Nat as the interpreter has them, past 2<sup>53</sup>.</li>
 <li><a href="#errors">Divide by zero and other invalid operations</a>: the compiled run stops, and the interpreter's run answers.</li>
 <li><a href="#overflow">Overflow</a>: SInt had three widths; now 32 bits everywhere, and overflow an error.</li>
@@ -294,6 +294,18 @@ document.addEventListener("DOMContentLoaded", () => {
 <p><b>The slides' own programs, timed the same way on build 49: of the 129 programs under hazel-programs, 21 have a static error and stay with the interpreter, as do those with a hole (27), a type hole (25) or a test (25); 10 call to_lvs and 4 int_plus, builtins hazel-jit lacks; the 15 that compile and give the interpreter's value took the interpreter 8.4 ms a run in all and compiled code 0.026 ms, the median program 269 times as fast.</b></p>
 <table class="vals"><tr><th>Program (hazel-programs/)</th><th>The interpreter, a run</th><th>Compiled JS, a run</th><th>As fast, times</th><th>First runs: the interpreter</th><th>The JS parsed and run</th></tr><tr><td><code>docs/reference/polymorphism.hz</code></td><td class="n">2.16 ms <span class="muted">×12</span></td><td class="n">0.88 µs <span class="muted">×5779</span></td><td class="n">2,457</td><td class="n">4.12 ms</td><td class="n">0.13 ms</td></tr><tr><td><code>docs/livelits/either/either-typed.hz</code></td><td class="n">1.90 ms <span class="muted">×16</span></td><td class="n">1.7 µs <span class="muted">×2947</span></td><td class="n">1,121</td><td class="n">1.78 ms</td><td class="n">0.41 ms</td></tr><tr><td><code>docs/livelits/splices-mvp.hz</code></td><td class="n">1.27 ms <span class="muted">×27</span></td><td class="n">5.6 µs <span class="muted">×887</span></td><td class="n">225</td><td class="n">0.85 ms</td><td class="n">0.62 ms</td></tr><tr><td><code>docs/livelits/either/either-unknown.hz</code></td><td class="n">0.59 ms <span class="muted">×56</span></td><td class="n">2.0 µs <span class="muted">×2512</span></td><td class="n">296</td><td class="n">0.43 ms</td><td class="n">92.1 µs</td></tr><tr><td><code>docs/livelits/result-view.hz</code></td><td class="n">0.47 ms <span class="muted">×45</span></td><td class="n">1.7 µs <span class="muted">×2875</span></td><td class="n">269</td><td class="n">0.54 ms</td><td class="n">0.11 ms</td></tr><tr><td><code>docs/livelits/splices-in-text.hz</code></td><td class="n">0.44 ms <span class="muted">×61</span></td><td class="n">1.2 µs <span class="muted">×4037</span></td><td class="n">353</td><td class="n">0.40 ms</td><td class="n">0.47 ms</td></tr><tr><td><code>docs/livelits/splice-row.hz</code></td><td class="n">0.41 ms <span class="muted">×38</span></td><td class="n">7.4 µs <span class="muted">×672</span></td><td class="n">54</td><td class="n">0.94 ms</td><td class="n">0.10 ms</td></tr><tr><td><code>docs/livelits/hygiene/generated-binders.hz</code></td><td class="n">0.39 ms <span class="muted">×70</span></td><td class="n">1.3 µs <span class="muted">×3713</span></td><td class="n">292</td><td class="n">0.42 ms</td><td class="n">82.5 µs</td></tr><tr><td><code>docs/livelits/lockable-cell.hz</code></td><td class="n">0.27 ms <span class="muted">×56</span></td><td class="n">1.3 µs <span class="muted">×3922</span></td><td class="n">204</td><td class="n">1.60 ms</td><td class="n">66.2 µs</td></tr><tr><td><code>docs/livelits/hygiene/capture.hz</code></td><td class="n">0.25 ms <span class="muted">×92</span></td><td class="n">0.82 µs <span class="muted">×6108</span></td><td class="n">311</td><td class="n">0.27 ms</td><td class="n">0.46 ms</td></tr><tr><td><code>docs/livelits/hygiene/abs.hz</code></td><td class="n">0.19 ms <span class="muted">×10</span></td><td class="n">1.6 µs <span class="muted">×4605</span></td><td class="n">118</td><td class="n">0.32 ms</td><td class="n">0.59 ms</td></tr><tr><td><code>docs/livelits/advanced/javascript.hz</code></td><td class="n">22.9 µs <span class="muted">×346</span></td><td class="n">0.05 µs <span class="muted">×100000</span></td><td class="n">510</td><td class="n">0.14 ms</td><td class="n">7.5 µs</td></tr><tr><td><code>docs/livelits/expansion-errors/errors-about.hz</code></td><td class="n">5.5 µs <span class="muted">×1000</span></td><td class="n">0.04 µs <span class="muted">×100000</span></td><td class="n">127</td><td class="n">66.8 µs</td><td class="n">7.6 µs</td></tr><tr><td><code>docs/livelits/either/either-about.hz</code></td><td class="n">4.3 µs <span class="muted">×387</span></td><td class="n">0.04 µs <span class="muted">×100000</span></td><td class="n">99</td><td class="n">60.6 µs</td><td class="n">11.6 µs</td></tr><tr><td><code>docs/livelits/hygiene/about.hz</code></td><td class="n">3.2 µs <span class="muted">×1000</span></td><td class="n">0.04 µs <span class="muted">×100000</span></td><td class="n">73</td><td class="n">57.1 µs</td><td class="n">6.1 µs</td></tr></table>
 <p>These are the evaluator's own tests, which are small: most take the interpreter well under a millisecond. The Witch slide is the larger case (<a href="#cost">what it all costs</a>, and <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> to <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>), and mixed mode's timings are larger programs again (<a href="#mixed-built">the first step, built</a>).</p>
+<h3 id="timed-astrology">A larger program: the astrology oracle<a class="anchor" href="#timed-astrology" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="timed-astrology" title="copy this section's address">copy link</button></h3>
+<p><b>The astrology oracle's rules, eleven modules of floating-point code, compile whole and give the interpreter's answer, 170 times as fast: a reading in 2.6 ms compiled against 437 ms interpreted.</b> The evaluator's programs above are small, most under a millisecond. This one is the Hazel of hazeljs-oracles' astrology page (its <code>astrology/rules</code> at <code>fbfc59f</code>, about 30 kB: the Sun, the Moon and the planets from Meeus's and Schlyter's series, the chart's angles, the aspects and the reading's words), joined as hazeljs joins it and asked for one reading, a birth and a day.</p>
+<table class="vals">
+<tr><th>Phase</th><th>Time</th><th>Runs</th></tr>
+<tr><td>Parsed (FastParse, as hazeljs parses)</td><td class="n">592 ms</td><td class="n">1</td></tr>
+<tr><td>Elaborated</td><td class="n">196 ms</td><td class="n">1</td></tr>
+<tr><td>The interpreter's run, one reading</td><td class="n">437 ms</td><td class="n">1</td></tr>
+<tr><td>hazel-jit's compile, the whole program</td><td class="n">13 ms</td><td class="n">1</td></tr>
+<tr><td>The compiled JavaScript's run (79 kB of it)</td><td class="n">2.57 ms</td><td class="n">3</td></tr>
+</table>
+<p>Build 49 with the test added (<code>trial/768-astrology-timed</code>, <code>81945a4d4c</code>, CI run 44191280236, the fast checks, Node on GitHub's machines). One run each, so these are one sample, not a distribution: the compiled run's three runs are the first and two more, and the interpreter's run is its first. The two answers were compared value by value and agree. Mixed mode's measure of the same program is in the full tests, not yet back.</p>
+<p>Getting these numbers took five CI runs, each past its time limit. The tests' own parser reads text by inserting it, as typing would, which is slow for a 30 kB program, so the test now parses with FastParse. Three readings, each run three times, plus mixed mode, were too much for the 20 minutes the quick tests had left. The fifth run wrote each phase to a file as it ended, which CI prints after the tests whatever happens. That file shows the test itself finishing in under 2 s, and the quick tests still going past their limit for a reason not yet found.</p>
 
 <h2 id="numbers">Exact integers<a class="anchor" href="#numbers" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="numbers" title="copy this section's address">copy link</button></h2>
 <p><b>Int and Nat are now exact in compiled code, as the interpreter's are: an integer is a JavaScript number while it is a safe integer (up to 2<sup>53</sup> − 1), and a BigInt past that.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a>.) The interpreter's Int and Nat are arbitrary-precision integers (Jane Street's Bigint), and hazel-jit had made them JavaScript numbers, which round past 2<sup>53</sup>: 2<sup>53</sup> + 1 came out as 2<sup>53</sup>.</p>
@@ -492,7 +504,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <p><b>Build 49 is the prototype branch now: next, the slides' builtins, a numeric program compiled whole, and mixed mode across modules.</b> In order:</p>
 <ol class="outline">
 <li>The slides' builtins (<code>trial/761-slide-builtins</code>): an operator passed as a function, and <code>to_lvs</code>, so more of the slides' programs compile. Its fast checks pass, but its full tests went past their 100 minutes twice (build 49's took 72; CI runs 44146528138 and 44165874889). The second gave each slide's compiled run a budget, so a compiled run that never ends is ruled out. A likelier cost: the consistency check runs on every evaluator program in the full tests too, and for each one that compiles it times the interpreter again, ten runs or more, so compiling more programs adds runs of the full tests' heaviest programs. The full tests now keep the check and skip its timing (the report's timings come from the quick tests), and leave a trail as they run, which CI prints even when a run is killed (CI run 44184122601, running). Then onto the prototype branch.</li>
-<li>The astrology oracle compiled whole (<code>trial/768-astrology-timed</code>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-768"><code class="ref"><b>^ticket(</b>768<b>)</b></code></a>): its eleven modules, the answer compared with the interpreter's and both timed, and in mixed mode. The first real program here that is mostly floating point. Not measured yet: three runs took the quick tests past their 20 minutes, the last with a single reading run once each way, where hazeljs builds the program and runs a reading in 1.3 s. Parsing is ruled out (the tests' own parser reads by insertion, as typing would; the test now uses FastParse, as hazeljs does). Moved to the full tests, with each phase timed apart, it took them past their 100 minutes too (CI run 44173654112; build 49's took 72), and a killed run prints nothing. Each phase now goes on a trail that CI prints after the tests, pass or fail, and the test is back in the quick tests (CI run 44191280236, running). That gap is itself a question: the tests' build of Hazel may be far slower than the app's.</li>
+<li>The astrology oracle compiled whole (<code>trial/768-astrology-timed</code>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-768"><code class="ref"><b>^ticket(</b>768<b>)</b></code></a>): measured, <a href="#timed-astrology">170 times as fast as the interpreter for one reading</a>, the same answer. Left: mixed mode's measure of it (in the full tests), and why the quick tests on that branch still go past their 20 minutes when the astrology test itself takes under 2 s; the slides' branch's trail (above) is looking at the same kind of question.</li>
 <li>Mixed mode across modules: a module's member that calls another module's (<code>Lines.becomes</code> in the I Ching's reading) compiled too, so the I Ching's rules compile whole.</li>
 <li>Mixed mode's crossing cost: a call from interpreted code to a one-line compiled function costs more than the function (500 calls of <code>sq</code>, 27 ms mixed against 22 interpreted). Convert a large value once and remember it, and leave very small functions to the interpreter.</li>
 <li>Step counts in compiled code (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-767"><code class="ref"><b>^ticket(</b>767<b>)</b></code></a>): a counter from the measured costs, each evaluator program's count compared with the interpreter's in the sweep.</li>
@@ -1200,6 +1212,42 @@ document.addEventListener("DOMContentLoaded", () => {
      "73",
      "57.1 µs",
      "6.1 µs"
+    ]
+   ]
+  },
+  {
+   "section": "A larger program: the astrology oracle",
+   "section_id": "timed-astrology",
+   "columns": [
+    "Phase",
+    "Time",
+    "Runs"
+   ],
+   "rows": [
+    [
+     "Parsed (FastParse, as hazeljs parses)",
+     "592 ms",
+     "1"
+    ],
+    [
+     "Elaborated",
+     "196 ms",
+     "1"
+    ],
+    [
+     "The interpreter's run, one reading",
+     "437 ms",
+     "1"
+    ],
+    [
+     "hazel-jit's compile, the whole program",
+     "13 ms",
+     "1"
+    ],
+    [
+     "The compiled JavaScript's run (79 kB of it)",
+     "2.57 ms",
+     "3"
     ]
    ]
   },
