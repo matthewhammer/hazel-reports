@@ -101,6 +101,8 @@ BUILDS = [
          step=[10, 7, 4, 5], view=7.2, jit=1.6, fps=49.0, draws=30),
     dict(b="48", name="the limits, SInt, label keys", commit="30a131a046", run=43949420309, when="11-16", adds="Build 47 and undefined, tuple extension and the label builtins, strings in graphemes, reverse application (761), SInt at 32 bits (758), and labels named length (765); trial/694-view-jit since 11-16.",
          step=[11, 5, 5, 11], view=6.1, jit=1.6, fps=52.6, draws=30),
+    dict(b="49", name="this morning's branches", commit="0e56bdbd0a", run=44137800916, when="11-17", adds="Build 48 and the last limits (761), mixed mode's first step (766), the timing and the slides' check (756), the step calibration (767); on trial/694-build-49, its fast checks green.",
+         step=[8, 12, 5, 4], view=6.8, jit=1.5, fps=53.7, draws=30),
 ]
 SLIDES_760 = [("Full Body", 30, 30, 30, 30), ("Hands", 30, 30, 28, 28), ("Scenes", 36, 36, 36, 36), ("Witch", 30, 28, 30, 30)]
 
