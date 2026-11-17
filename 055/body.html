@@ -1,0 +1,115 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 055 · hazel-jit · 2026-11-17, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 054</p>
+<h1>Holes Across the Boundary</h1>
+<p class="sub">A starter project for hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript; when an argument holds a hole anywhere, the whole call goes back to the interpreter. Can such a value cross into compiled code and out again, unopened, and what do the checks that keep it unopened cost? Written for John, on the Hazel team, who offered on 2026-11-17 to take on the question of holes raised at the team's meeting that day.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#today">Where holes stand</a>: no code with a hole is compiled, by rule, and a value with a hole sends its whole call back to the interpreter.</li>
+<li><a href="#idea">The idea</a>: a hole as an opaque value, which compiled code may carry but never opens.</li>
+<li><a href="#looks">Where compiled code looks inside a value</a>, and why JavaScript will not stop it there by itself.</li>
+<li><a href="#designs">Three places for the checks</a>, and what each costs.</li>
+<li><a href="#first">A first step</a>, and how to know it works.</li>
+<li><a href="#reading">Where to start reading</a>: the files, by line, and the reports.</li>
+<li><a href="#settle">Questions to settle first</a>, with Cyrus and Matthew.</li>
+<li><a href="#warmup">A warm-up on dev</a>: float literals that read back, hazelgrove/hazel#2831.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="today">Where holes stand</h2>
+<p><b>No code with a hole is compiled, by rule, and today a value with a hole cannot cross into compiled code at all: the call goes back to the interpreter whole.</b></p>
+<p>hazel-jit compiles Hazel to JavaScript (reports 050 to 054). What it leaves to the interpreter by rule, not as a gap to close, was settled at Matthew Hammer and Cyrus Omar's meeting of 2026-11-13: <i>"for the output of hazel-jit, we should continue to avoid translating code with holes"</i>. The interpreter evaluates around holes, and its indeterminate results are the point of them (report 054, <a href="../054/#rules">What stays with the interpreter</a>). That rule stands here.</p>
+<p>Mixed mode (report 054, <a href="../054/#mixed">Mixed mode</a>; on the prototype branch only) is where values meet compiled code. The interpreter runs the program as always. Each function bound at the program's top, or in a module there, whose whole type is declared (<code>let f : A -&gt; B = fun ...</code>) is compiled, and the interpreter calls it as it calls a builtin: the argument is converted to a JavaScript value (<code>HazelJitValue.to_js</code>), the compiled function runs, and its answer is converted back by the declared result type (<code>of_js</code>). On any stop, that call falls back: the interpreter applies its own closure to the same argument, and its answer is the answer.</p>
+<p>The conversion knows numbers, booleans, strings, lists, tuples, labeled tuples and constructors. On anything else, a hole among them, it raises, and the call falls back, even when the function would never have looked at the hole:</p>
+<table class="vals">
+<tr><th>Program</th><th>Mixed mode today</th><th>With this project</th></tr>
+<tr><td><code>let swap : (Int, Int) -&gt; (Int, Int) = fun (a, b) -&gt; (b, a) in swap(1, ?)</code></td><td>falls back; the interpreter answers <code>(?, 1)</code></td><td>compiled; the same <code>(?, 1)</code>, the same hole</td></tr>
+<tr><td><code>let len : [Int] -&gt; Int = fun xs -&gt; case xs | [] =&gt; 0 | _ :: rest =&gt; 1 + len(rest) end in len([1, ?, 3])</code></td><td>falls back</td><td>compiled; <code>3</code>, never looking at an element</td></tr>
+<tr><td><code>let inc : Int -&gt; Int = fun x -&gt; x + 1 in inc(?)</code></td><td>falls back; <code>? + 1</code></td><td>still falls back: <code>+</code> looks inside</td></tr>
+<tr><td><code>type Shape = + Circle(Float) + Square(Float) in let round : Shape -&gt; Bool = fun s -&gt; case s | Circle(_) =&gt; true | _ =&gt; false end in round(?)</code></td><td>falls back; the interpreter's match is stuck</td><td>still falls back, which takes a check: see <a href="#looks">below</a></td></tr>
+</table>
+<p>It matters because a program being edited usually has a hole somewhere, and data with holes in it (a livelit's model with a field not yet filled, a list being typed) reaches functions that only move it around.</p>
+
+<h2 id="idea">The idea</h2>
+<p><b>Carry a hole as an opaque JavaScript value: compiled code may store it, pass it and return it, but any operation that would look inside it stops the run, and that call goes back to the interpreter.</b></p>
+{{fig_idea}}
+<ul>
+<li><b>In:</b> where <code>to_js</code> meets a value it cannot represent (an empty hole, a multihole, or any indeterminate term, such as <code>? + 1</code> or a stuck match), it gives a fresh object standing for it, say <code>{$opaque: k}</code>, and keeps the Hazel term itself in a table at <code>k</code>, its hole ids and environment as they are.</li>
+<li><b>Through:</b> compiled code moves it as it moves any value: into a list, a tuple or a constructor's argument, and out as the answer.</li>
+<li><b>Never opened:</b> an operation that would look inside it stops the run as an indeterminate result, as reaching <code>undefined</code> does since ticket 761 (<code>Runtime.indet</code>), and the call falls back, so its answer is the interpreter's.</li>
+<li><b>Out:</b> <code>of_js</code>, meeting <code>{$opaque: k}</code>, gives back the term from the table, exactly, so a probe or fill-and-resume sees what it would have seen.</li>
+</ul>
+<p>Compiled code still contains no hole; only the data does, and compiled code never inspects it. So the rule of 2026-11-13 holds.</p>
+
+<h2 id="looks">Where compiled code looks inside a value</h2>
+<p><b>JavaScript will not stop by itself: an opaque object in the wrong place gives a wrong answer silently, so the checks have to be written.</b> Where an operation throws, the run stops and the call falls back, which is safe. Where it returns, it is wrong:</p>
+<table class="vals">
+<tr><th>Where</th><th>What the compiled code does</th><th>With an opaque object</th></tr>
+<tr><td>A pattern on a constructor</td><td><code>v.c === "Some"</code> (<code>HazelJit.re</code>, line 577)</td><td>false, so the next arm is tried, and a wildcard arm then matches, where the interpreter's match is stuck. <b>Wrong.</b></td></tr>
+<tr><td>The empty-list pattern</td><td><code>v === null</code> (line 529)</td><td>false, so the cons arm runs and reads <code>v.h</code>: <code>undefined</code>. <b>Wrong.</b></td></tr>
+<tr><td>Float arithmetic</td><td><code>a + b</code></td><td>a string such as <code>"[object Object]1"</code>, or <code>NaN</code>. <b>Wrong.</b></td></tr>
+<tr><td>Equality</td><td><code>===</code>, and the runtime's <code>eq</code> for structures</td><td>false, where the interpreter is stuck. <b>Wrong.</b></td></tr>
+<tr><td>A tuple's part</td><td><code>v[0]</code></td><td><code>undefined</code>, carried on. <b>Wrong.</b></td></tr>
+<tr><td>A call</td><td><code>f(x)</code></td><td>a TypeError when <code>f</code> is opaque: the run stops and falls back. Safe.</td></tr>
+<tr><td>A labeled projection</td><td>the runtime's <code>project_labels</code></td><td>already stops as indeterminate on a value that is not a tuple. Safe.</td></tr>
+</table>
+
+<h2 id="designs">Three places for the checks</h2>
+<p><b>The checks can go everywhere, only where a silent wrong answer can come out, or into a second compiled version used only when a hole arrives; the third keeps calls without holes at today's speed.</b> The cost that matters is the one on calls with no hole in them, the common case: the Witch slide's compiled views must stay within a frame at 60 a second (report 054, <a href="../054/#cost">What it all costs</a>: 6.8 ms a frame on build 49).</p>
+<ol>
+<li><b>Everywhere</b> compiled code looks inside a value: a test before each operation, pattern test and part (<code>typeof v === "object" &amp;&amp; v !== null &amp;&amp; "$opaque" in v</code>). Simple, and every call pays, holes or not.</li>
+<li><b>Only where a wrong answer comes out silently</b> (the rows marked wrong above), leaving the rest to JavaScript's own errors. Fewer tests; still paid by every call.</li>
+<li><b>Two compiled versions</b> of each function. <code>to_js</code> already walks the whole argument, so it knows whether a hole was in it: with none, today's unchecked code runs; with one, a checked version, with the second design's tests, compiled the first time such an argument arrives. Calls without holes cost what they cost today, and the price is compile time and code size, once per function that ever meets a hole.</li>
+</ol>
+<p>Our lean, for discussion: the third, its checked version carrying the second's tests. Whether any of this pays is a measurement, not a guess (<a href="#first">below</a>).</p>
+
+<h2 id="first">A first step</h2>
+<p><b>Start with values that only pass through, checked by tests that already exist and measured by timings that already run in CI.</b></p>
+<ol>
+<li><b>The boundary.</b> <code>to_js</code> and <code>of_js</code> carry opaque values and keep their table (<code>HazelJitValue.re</code>).</li>
+<li><b>The checked version.</b> The second design's tests generated under a flag in <code>HazelJit.re</code>'s code generation, and mixed mode choosing the checked version when <code>to_js</code> met a hole (<code>HazelJitMixed.re</code>).</li>
+<li><b>Tests</b> beside the mixed-mode tests in <code>test/Test_HazelJit.re</code>: <code>swap(1, ?)</code> and <code>len([1, ?, 3])</code> compiled, with the interpreter's answers, compared by <code>same_value</code>, which must find the same hole; <code>inc(?)</code> and <code>round(?)</code> still falling back; a hole inside a constructor's argument; a hole's environment kept.</li>
+<li><b>The consistency check.</b> <code>mixed_sweep</code> (<code>test/Test_HazelJit_Agree.re</code>) already runs every evaluator test program in mixed mode and compares its answer with the interpreter's; the programs that pass holes to typed functions start taking the new path.</li>
+<li><b>The cost.</b> The timings in report 054's <a href="../054/#timed">The same programs, timed</a> come from the quick tests on every push, and the Witch slide's frame time from the <code>jit.yml</code> check in Firefox, so a change to the code generation shows its cost on its next push.</li>
+</ol>
+
+<h2 id="reading">Where to start reading</h2>
+<p><b>Five files on the prototype branch, and three reports.</b> The branch is <code>trial/694-view-jit</code> (hazelgrove/hazel#2817), build 49, <code>0e56bdbd0a</code>; line numbers are that commit's. The files are in <code>src/language/dynamics/</code> and <code>test/</code>.</p>
+<table class="vals">
+<tr><th>File</th><th>Where</th><th>What it holds</th></tr>
+<tr><td><code>HazelJit.re</code></td><td>lines 1 to 60</td><td>What hazel-jit leaves to the interpreter, and why.</td></tr>
+<tr><td><code>HazelJit.re</code></td><td>lines 60 to 250</td><td>The runtime the compiled code calls: <code>invalid</code>, <code>indet</code>, <code>limit</code>, the ways a compiled run stops.</td></tr>
+<tr><td><code>HazelJit.re</code></td><td>lines 480 to 590</td><td>Patterns, compiled to tests and bindings; holes refused (lines 483 and 585).</td></tr>
+<tr><td><code>HazelJitValue.re</code></td><td>lines 192 and 300</td><td><code>to_js</code> and <code>of_js</code>, the boundary.</td></tr>
+<tr><td><code>HazelJitMixed.re</code></td><td>lines 136, 157, 183</td><td><code>fall_back</code>, <code>call</code>, <code>rewrite</code>: mixed mode.</td></tr>
+<tr><td><code>test/Test_HazelJit.re</code></td><td>from line 1960</td><td>The mixed-mode tests; "mixed: a hole in the argument, that call the interpreter's" at line 1989.</td></tr>
+<tr><td><code>test/Test_HazelJit_Agree.re</code></td><td>lines 73, 294, 317</td><td><code>agree</code>, <code>same_value</code>, <code>mixed_sweep</code>: how answers are compared.</td></tr>
+</table>
+<p>The reports: 054 (its sections What hazel-jit is, What stays with the interpreter, Mixed mode, and Questions for the team), 053 (why the prototype is to be redone by hand in small PRs), and 050 to 052 (how compiled livelit views came about). CI runs the tests on every push to a branch of hazelgrove/hazel; the quick tests take 10 to 15 minutes there.</p>
+
+<h2 id="settle">Questions to settle first</h2>
+<p><b>Four, with Cyrus and Matthew, before code: where the work lives, which values are opaque, whether a hole keeps its identity, and when the checked version is compiled.</b> Each has our lean.</p>
+<ol>
+<li><b>Does it live on the prototype branch?</b> Report 053 proposes redoing hazel-jit by hand, in small PRs to dev, and mixed mode is so far only on the prototype. <span class="muted">Lean:</span> design and measure there; it lands on dev with mixed mode.</li>
+<li><b>Which values are opaque: empty holes only, or every indeterminate term</b> (a stuck application, a failed cast)? <span class="muted">Lean:</span> every value <code>to_js</code> cannot represent, since the interpreter's answer holds the term itself either way.</li>
+<li><b>Must a hole keep its identity through compiled code</b>, its id and its closure's environment, so that fill-and-resume and probes still work? <span class="muted">Lean:</span> yes; the table gives back the very term that went in.</li>
+<li><b>The checked version: compiled up front, or the first time a hole arrives?</b> <span class="muted">Lean:</span> the first time; most functions never meet one.</li>
+</ol>
+
+<h2 id="warmup">A warm-up on dev</h2>
+<p><b>A smaller first PR, independent of the prototype: make float literals print so that they read back as the same number (hazelgrove/hazel#2831).</b> <code>Atom.to_literal</code> prints a float with <code>%f</code>, six decimal places (<code>src/language/term/Atom.re</code>, line 208 on dev), so a literal such as <code>280.4606184</code> does not survive the fast parser's round trip, and its module falls to the slow parser, whose cost grows much faster than the module. The fix is the shortest form that reads back. Atom's derived equality compares floats by the same six decimals (lines 30 to 32); evaluation does not, it compares by value. It is a tour of the parser and of review on dev.</p>
+
+<h2 id="next">What next</h2>
+<p><b>Settle the questions, then the boundary, the checks, and the measurements.</b></p>
+<ol class="outline">
+<li>Settle the four questions with Cyrus and Matthew.</li>
+<li>If wanted first, the warm-up PR for hazelgrove/hazel#2831.</li>
+<li>Opaque values at the boundary, passing through only: <code>to_js</code>, <code>of_js</code>, and the pass-through tests.</li>
+<li>The checked version, mixed mode's choice of it, and tests for each silent case.</li>
+<li>Measure: the quick tests' timings and the Witch slide's frame time, before and after.</li>
+<li>Write it up, with the numbers, here or in a report of its own.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>Written from the code of build 49 (<code>0e56bdbd0a</code>, 2026-11-17 10:30 MST) and report 054, on 2026-11-17, after John's offer. Nothing here is measured yet; the examples' answers today are mixed mode's documented behaviour (a call whose argument does not convert falls back), and the "with this project" column is what the design intends. The file references and the examples are in the data below and in <a href="https://github.com/matthewhammer/hazel-reports/tree/main/055/data">055/data</a>.</p>
+</main></body>

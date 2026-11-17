@@ -1,0 +1,125 @@
+[
+ {
+  "section": "Where holes stand",
+  "section_id": "today",
+  "columns": [
+   "Program",
+   "Mixed mode today",
+   "With this project"
+  ],
+  "rows": [
+   [
+    "let swap : (Int, Int) -> (Int, Int) = fun (a, b) -> (b, a) in swap(1, ?)",
+    "falls back; the interpreter answers (?, 1)",
+    "compiled; the same (?, 1), the same hole"
+   ],
+   [
+    "let len : [Int] -> Int = fun xs -> case xs | [] => 0 | _ :: rest => 1 + len(rest) end in len([1, ?, 3])",
+    "falls back",
+    "compiled; 3, never looking at an element"
+   ],
+   [
+    "let inc : Int -> Int = fun x -> x + 1 in inc(?)",
+    "falls back; ? + 1",
+    "still falls back: + looks inside"
+   ],
+   [
+    "type Shape = + Circle(Float) + Square(Float) in let round : Shape -> Bool = fun s -> case s | Circle(_) => true | _ => false end in round(?)",
+    "falls back; the interpreter's match is stuck",
+    "still falls back, which takes a check: see below"
+   ]
+  ]
+ },
+ {
+  "section": "Where compiled code looks inside a value",
+  "section_id": "looks",
+  "columns": [
+   "Where",
+   "What the compiled code does",
+   "With an opaque object"
+  ],
+  "rows": [
+   [
+    "A pattern on a constructor",
+    "v.c === \"Some\" (HazelJit.re, line 577)",
+    "false, so the next arm is tried, and a wildcard arm then matches, where the interpreter's match is stuck. Wrong."
+   ],
+   [
+    "The empty-list pattern",
+    "v === null (line 529)",
+    "false, so the cons arm runs and reads v.h: undefined. Wrong."
+   ],
+   [
+    "Float arithmetic",
+    "a + b",
+    "a string such as \"[object Object]1\", or NaN. Wrong."
+   ],
+   [
+    "Equality",
+    "===, and the runtime's eq for structures",
+    "false, where the interpreter is stuck. Wrong."
+   ],
+   [
+    "A tuple's part",
+    "v[0]",
+    "undefined, carried on. Wrong."
+   ],
+   [
+    "A call",
+    "f(x)",
+    "a TypeError when f is opaque: the run stops and falls back. Safe."
+   ],
+   [
+    "A labeled projection",
+    "the runtime's project_labels",
+    "already stops as indeterminate on a value that is not a tuple. Safe."
+   ]
+  ]
+ },
+ {
+  "section": "Where to start reading",
+  "section_id": "reading",
+  "columns": [
+   "File",
+   "Where",
+   "What it holds"
+  ],
+  "rows": [
+   [
+    "HazelJit.re",
+    "lines 1 to 60",
+    "What hazel-jit leaves to the interpreter, and why."
+   ],
+   [
+    "HazelJit.re",
+    "lines 60 to 250",
+    "The runtime the compiled code calls: invalid, indet, limit, the ways a compiled run stops."
+   ],
+   [
+    "HazelJit.re",
+    "lines 480 to 590",
+    "Patterns, compiled to tests and bindings; holes refused (lines 483 and 585)."
+   ],
+   [
+    "HazelJitValue.re",
+    "lines 192 and 300",
+    "to_js and of_js, the boundary."
+   ],
+   [
+    "HazelJitMixed.re",
+    "lines 136, 157, 183",
+    "fall_back, call, rewrite: mixed mode."
+   ],
+   [
+    "test/Test_HazelJit.re",
+    "from line 1960",
+    "The mixed-mode tests; \"mixed: a hole in the argument, that call the interpreter's\" at line 1989."
+   ],
+   [
+    "test/Test_HazelJit_Agree.re",
+    "lines 73, 294, 317",
+    "agree, same_value, mixed_sweep: how answers are compared."
+   ]
+  ]
+ }
+]

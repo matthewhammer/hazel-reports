@@ -19,7 +19,7 @@
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
 <li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, step counts and probes as the interpreter's, and compiling ahead of time for older phones.</li>
 <li><a href="#questions">Questions for the team</a>: seventeen open design questions, each with our lean, for the team's meeting of 2026-11-17, two of them met by the astrology oracle this morning.</li>
-<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+<li><a href="#next">What next</a>, with <a href="#next-who">next steps for Matthew and others</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
 <h2 id="plan">The plan</h2>
@@ -257,6 +257,21 @@
 <li>Reviews for hazelgrove/hazel#2828 (SInt) and hazelgrove/hazel#2825 (modulo by zero).</li>
 <li>A cheaper step counter (ticket 763); the probe drawer's stepper checked in the browser (ticket 760); the run-time type checks of an undeclared result type counted (ticket 762); a build-time compiler for hazeljs apps (ticket 765).</li>
 </ol>
+<h3 id="next-who">Next steps for Matthew and others</h3>
+<p><b>The steps above are the agent's. These need a person: answers and a landing plan from Matthew and Cyrus, two reviews from anyone who knows the evaluator, an owner for one change to elaboration, and a first project for John.</b></p>
+<ul>
+<li><b>Matthew:</b>
+  <ul>
+  <li>Write down the answers the team's meeting of 2026-11-17 gave to the <a href="#questions">seventeen questions</a>, as the answers of 2026-11-13 are written there. They decide mixed mode's first step.</li>
+  <li>Decide how hazel-jit reaches dev (question 13): report 053's small PRs, the two fixes first, then the compiler with the consistency check in CI and nothing a user sees. It decides when anyone outside the prototype branch meets compiled code.</li>
+  <li>With Cyrus, settle the four questions of report 055 before John starts, first of all whether his project lives on the prototype branch.</li>
+  </ul></li>
+<li><b>Cyrus:</b> the questions on mixed mode (3 to 9) and on landing (13 to 15), and whether the two problems the astrology oracle met (16 and 17: hazelgrove/hazel#2832, hazelgrove/hazel#2831) are worth fixing now, and by whom.</li>
+<li><b>Anyone who knows the evaluator:</b> review hazelgrove/hazel#2828 (SInt at 32 bits, overflow an error) and hazelgrove/hazel#2825 (modulo by zero, which crashes the interpreter today). Both are small, and both are on dev's path for hazel-jit.</li>
+<li><b>Someone who knows elaboration:</b> ticket 762, undeclared result types costing each step 5 to 7 times (question 15): the result's ascription put once around the body, which changes where the interpreter inserts its run-time checks.</li>
+<li><b>John, on the Hazel team:</b> report 055, a starter project: let a value with a hole cross into compiled code and out again unopened, instead of sending the whole call back to the interpreter. Or first, as a warm-up on dev, hazelgrove/hazel#2831, floats printed so they read back.</li>
+</ul>
+
 
 <h2 id="method">How this was put together</h2>
 <p>The plan is Matthew Hammer's summary of the meeting, quoted as he wrote it, and the dashboard's tickets 756 to 764. The sweep's numbers are the report it prints in CI's log: build 47's fast checks (CI run 43887985051), and the first sweep's full tests (CI run 43754503317). The Witch's numbers come from the Firefox check on GitHub's machines (<code>scripts/jit_slides.py</code>, run by the <code>jit.yml</code> workflow of hazelgrove/hazel), one run per build, with the runs named in the builds table. The view a frame and the compiled run a frame are its page timeline over a 3 s drag of the neck slider. The compiled run at a step is its time before the first redraw at each of four slider steps. The Node figures are microbenchmarks on JavaScript written as hazel-jit writes it, not builds of the app. SInt's behaviour was checked through hazeljs 0.0.6. Everything the page shows is in <a href="data/numbers.json">data/numbers.json</a>.</p>

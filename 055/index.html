@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holes Across the Boundary</title>
+<meta name="description" content="A starter project for hazel-jit: let a value with a hole cross into compiled code and out again unopened, instead of sending the whole call back to the interpreter.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.88em; }
+  table.vals th, table.vals td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals th { font-weight: 600; } table.vals td:first-child { min-width: 14ch; }
+  figure.f { margin: 1.2em 0; } figure.f svg { max-width: 100%; height: auto; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  code { overflow-wrap: anywhere; }
+  .fig-box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; } .fig-ink { fill: var(--ink); } .fig-mute { fill: var(--muted); }
+  .fig-arrow { stroke: var(--ink); stroke-width: 1.6; fill: none; } .fig-stop { stroke: var(--bad); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+  .fig-hole { fill: var(--paper); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 2; } .fig-acc { fill: var(--accent); } .fig-bad { fill: var(--bad); }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-17 15:26 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Holes Across the Boundary</h1>
+<p class="sub">A starter project for hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript; when an argument holds a hole anywhere, the whole call goes back to the interpreter. Can such a value cross into compiled code and out again, unopened, and what do the checks that keep it unopened cost? Written for John, on the Hazel team, who offered on 2026-11-17 to take on the question of holes raised at the team's meeting that day.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#today">Where holes stand</a>: no code with a hole is compiled, by rule, and a value with a hole sends its whole call back to the interpreter.</li>
+<li><a href="#idea">The idea</a>: a hole as an opaque value, which compiled code may carry but never opens.</li>
+<li><a href="#looks">Where compiled code looks inside a value</a>, and why JavaScript will not stop it there by itself.</li>
+<li><a href="#designs">Three places for the checks</a>, and what each costs.</li>
+<li><a href="#first">A first step</a>, and how to know it works.</li>
+<li><a href="#reading">Where to start reading</a>: the files, by line, and the reports.</li>
+<li><a href="#settle">Questions to settle first</a>, with Cyrus and Matthew.</li>
+<li><a href="#warmup">A warm-up on dev</a>: float literals that read back, <a href="https://github.com/hazelgrove/hazel/issues/2831">hazelgrove/hazel#2831</a>.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="today">Where holes stand<a class="anchor" href="#today" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="today" title="copy this section's address">copy link</button></h2>
+<p><b>No code with a hole is compiled, by rule, and today a value with a hole cannot cross into compiled code at all: the call goes back to the interpreter whole.</b></p>
+<p>hazel-jit compiles Hazel to JavaScript (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> to <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>). What it leaves to the interpreter by rule, not as a gap to close, was settled at Matthew Hammer and Cyrus Omar's meeting of 2026-11-13: <i>"for the output of hazel-jit, we should continue to avoid translating code with holes"</i>. The interpreter evaluates around holes, and its indeterminate results are the point of them (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#rules">What stays with the interpreter</a>). That rule stands here.</p>
+<p>Mixed mode (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#mixed">Mixed mode</a>; on the prototype branch only) is where values meet compiled code. The interpreter runs the program as always. Each function bound at the program's top, or in a module there, whose whole type is declared (<code>let f : A -&gt; B = fun ...</code>) is compiled, and the interpreter calls it as it calls a builtin: the argument is converted to a JavaScript value (<code>HazelJitValue.to_js</code>), the compiled function runs, and its answer is converted back by the declared result type (<code>of_js</code>). On any stop, that call falls back: the interpreter applies its own closure to the same argument, and its answer is the answer.</p>
+<p>The conversion knows numbers, booleans, strings, lists, tuples, labeled tuples and constructors. On anything else, a hole among them, it raises, and the call falls back, even when the function would never have looked at the hole:</p>
+<table class="vals">
+<tr><th>Program</th><th>Mixed mode today</th><th>With this project</th></tr>
+<tr><td><code>let swap : (Int, Int) -&gt; (Int, Int) = fun (a, b) -&gt; (b, a) in swap(1, ?)</code></td><td>falls back; the interpreter answers <code>(?, 1)</code></td><td>compiled; the same <code>(?, 1)</code>, the same hole</td></tr>
+<tr><td><code>let len : [Int] -&gt; Int = fun xs -&gt; case xs | [] =&gt; 0 | _ :: rest =&gt; 1 + len(rest) end in len([1, ?, 3])</code></td><td>falls back</td><td>compiled; <code>3</code>, never looking at an element</td></tr>
+<tr><td><code>let inc : Int -&gt; Int = fun x -&gt; x + 1 in inc(?)</code></td><td>falls back; <code>? + 1</code></td><td>still falls back: <code>+</code> looks inside</td></tr>
+<tr><td><code>type Shape = + Circle(Float) + Square(Float) in let round : Shape -&gt; Bool = fun s -&gt; case s | Circle(_) =&gt; true | _ =&gt; false end in round(?)</code></td><td>falls back; the interpreter's match is stuck</td><td>still falls back, which takes a check: see <a href="#looks">below</a></td></tr>
+</table>
+<p>It matters because a program being edited usually has a hole somewhere, and data with holes in it (a livelit's model with a field not yet filled, a list being typed) reaches functions that only move it around.</p>
+
+<h2 id="idea">The idea<a class="anchor" href="#idea" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="idea" title="copy this section's address">copy link</button></h2>
+<p><b>Carry a hole as an opaque JavaScript value: compiled code may store it, pass it and return it, but any operation that would look inside it stops the run, and that call goes back to the interpreter.</b></p>
+<figure class="f" id="fig-idea">
+<svg viewBox="0 0 760 250" role="img" aria-labelledby="fig-idea-cap" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fig-ink"/></marker>
+<marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fig-bad"/></marker></defs>
+<rect x="10" y="30" width="210" height="170" rx="10" class="fig-box"/>
+<text x="115" y="54" text-anchor="middle" class="fig-ink" font-weight="600">The interpreter</text>
+<text x="115" y="96" text-anchor="middle" class="fig-ink" font-family="ui-monospace, monospace">swap((1, ?))</text>
+<text x="115" y="170" text-anchor="middle" class="fig-ink" font-family="ui-monospace, monospace">(?, 1)</text>
+<text x="115" y="188" text-anchor="middle" class="fig-mute" font-size="11">the same hole, its id and environment</text>
+<rect x="540" y="30" width="210" height="170" rx="10" class="fig-box"/>
+<text x="645" y="54" text-anchor="middle" class="fig-ink" font-weight="600">Compiled swap</text>
+<text x="645" y="96" text-anchor="middle" class="fig-ink" font-family="ui-monospace, monospace">[1, {$opaque: 0}]</text>
+<text x="645" y="170" text-anchor="middle" class="fig-ink" font-family="ui-monospace, monospace">[{$opaque: 0}, 1]</text>
+<text x="645" y="133" text-anchor="middle" class="fig-mute" font-size="11">moves it, never opens it</text>
+<circle cx="380" cy="128" r="30" class="fig-hole"/>
+<text x="380" y="134" text-anchor="middle" class="fig-acc" font-weight="700" font-size="18">?</text>
+<text x="420" y="66" text-anchor="middle" class="fig-mute" font-size="11">the table keeps the term: 0 &#8594; ?</text>
+<path d="M222,92 L536,92" class="fig-arrow" marker-end="url(#ah)"/>
+<text x="300" y="86" text-anchor="middle" class="fig-ink" font-family="ui-monospace, monospace" font-size="12">to_js</text>
+<path d="M536,166 L224,166" class="fig-arrow" marker-end="url(#ah)"/>
+<text x="460" y="160" text-anchor="middle" class="fig-ink" font-family="ui-monospace, monospace" font-size="12">of_js</text>
+<path d="M600,202 C560,240 200,240 150,204" class="fig-stop" marker-end="url(#ahb)"/>
+<text x="380" y="244" text-anchor="middle" class="fig-bad" font-size="12">an operation that would open it (x + 1, a match): the run stops, and the call falls back</text>
+</svg>
+<figcaption id="fig-idea-cap">A hole crossing the boundary in mixed mode, as proposed. Going in, <code>to_js</code> turns the hole into an opaque object and keeps the Hazel term in a table; the compiled function moves the object without opening it; coming out, <code>of_js</code> gives back the very term that went in. An operation that would open it stops the compiled run, and the interpreter answers that call, as every call that cannot cross does today.</figcaption>
+</figure>
+<ul>
+<li><b>In:</b> where <code>to_js</code> meets a value it cannot represent (an empty hole, a multihole, or any indeterminate term, such as <code>? + 1</code> or a stuck match), it gives a fresh object standing for it, say <code>{$opaque: k}</code>, and keeps the Hazel term itself in a table at <code>k</code>, its hole ids and environment as they are.</li>
+<li><b>Through:</b> compiled code moves it as it moves any value: into a list, a tuple or a constructor's argument, and out as the answer.</li>
+<li><b>Never opened:</b> an operation that would look inside it stops the run as an indeterminate result, as reaching <code>undefined</code> does since <a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a> (<code>Runtime.indet</code>), and the call falls back, so its answer is the interpreter's.</li>
+<li><b>Out:</b> <code>of_js</code>, meeting <code>{$opaque: k}</code>, gives back the term from the table, exactly, so a probe or fill-and-resume sees what it would have seen.</li>
+</ul>
+<p>Compiled code still contains no hole; only the data does, and compiled code never inspects it. So the rule of 2026-11-13 holds.</p>
+
+<h2 id="looks">Where compiled code looks inside a value<a class="anchor" href="#looks" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="looks" title="copy this section's address">copy link</button></h2>
+<p><b>JavaScript will not stop by itself: an opaque object in the wrong place gives a wrong answer silently, so the checks have to be written.</b> Where an operation throws, the run stops and the call falls back, which is safe. Where it returns, it is wrong:</p>
+<table class="vals">
+<tr><th>Where</th><th>What the compiled code does</th><th>With an opaque object</th></tr>
+<tr><td>A pattern on a constructor</td><td><code>v.c === "Some"</code> (<code>HazelJit.re</code>, line 577)</td><td>false, so the next arm is tried, and a wildcard arm then matches, where the interpreter's match is stuck. <b>Wrong.</b></td></tr>
+<tr><td>The empty-list pattern</td><td><code>v === null</code> (line 529)</td><td>false, so the cons arm runs and reads <code>v.h</code>: <code>undefined</code>. <b>Wrong.</b></td></tr>
+<tr><td>Float arithmetic</td><td><code>a + b</code></td><td>a string such as <code>"[object Object]1"</code>, or <code>NaN</code>. <b>Wrong.</b></td></tr>
+<tr><td>Equality</td><td><code>===</code>, and the runtime's <code>eq</code> for structures</td><td>false, where the interpreter is stuck. <b>Wrong.</b></td></tr>
+<tr><td>A tuple's part</td><td><code>v[0]</code></td><td><code>undefined</code>, carried on. <b>Wrong.</b></td></tr>
+<tr><td>A call</td><td><code>f(x)</code></td><td>a TypeError when <code>f</code> is opaque: the run stops and falls back. Safe.</td></tr>
+<tr><td>A labeled projection</td><td>the runtime's <code>project_labels</code></td><td>already stops as indeterminate on a value that is not a tuple. Safe.</td></tr>
+</table>
+
+<h2 id="designs">Three places for the checks<a class="anchor" href="#designs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="designs" title="copy this section's address">copy link</button></h2>
+<p><b>The checks can go everywhere, only where a silent wrong answer can come out, or into a second compiled version used only when a hole arrives; the third keeps calls without holes at today's speed.</b> The cost that matters is the one on calls with no hole in them, the common case: the Witch slide's compiled views must stay within a frame at 60 a second (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#cost">What it all costs</a>: 6.8 ms a frame on build 49).</p>
+<ol>
+<li><b>Everywhere</b> compiled code looks inside a value: a test before each operation, pattern test and part (<code>typeof v === "object" &amp;&amp; v !== null &amp;&amp; "$opaque" in v</code>). Simple, and every call pays, holes or not.</li>
+<li><b>Only where a wrong answer comes out silently</b> (the rows marked wrong above), leaving the rest to JavaScript's own errors. Fewer tests; still paid by every call.</li>
+<li><b>Two compiled versions</b> of each function. <code>to_js</code> already walks the whole argument, so it knows whether a hole was in it: with none, today's unchecked code runs; with one, a checked version, with the second design's tests, compiled the first time such an argument arrives. Calls without holes cost what they cost today, and the price is compile time and code size, once per function that ever meets a hole.</li>
+</ol>
+<p>Our lean, for discussion: the third, its checked version carrying the second's tests. Whether any of this pays is a measurement, not a guess (<a href="#first">below</a>).</p>
+
+<h2 id="first">A first step<a class="anchor" href="#first" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="first" title="copy this section's address">copy link</button></h2>
+<p><b>Start with values that only pass through, checked by tests that already exist and measured by timings that already run in CI.</b></p>
+<ol>
+<li><b>The boundary.</b> <code>to_js</code> and <code>of_js</code> carry opaque values and keep their table (<code>HazelJitValue.re</code>).</li>
+<li><b>The checked version.</b> The second design's tests generated under a flag in <code>HazelJit.re</code>'s code generation, and mixed mode choosing the checked version when <code>to_js</code> met a hole (<code>HazelJitMixed.re</code>).</li>
+<li><b>Tests</b> beside the mixed-mode tests in <code>test/Test_HazelJit.re</code>: <code>swap(1, ?)</code> and <code>len([1, ?, 3])</code> compiled, with the interpreter's answers, compared by <code>same_value</code>, which must find the same hole; <code>inc(?)</code> and <code>round(?)</code> still falling back; a hole inside a constructor's argument; a hole's environment kept.</li>
+<li><b>The consistency check.</b> <code>mixed_sweep</code> (<code>test/Test_HazelJit_Agree.re</code>) already runs every evaluator test program in mixed mode and compares its answer with the interpreter's; the programs that pass holes to typed functions start taking the new path.</li>
+<li><b>The cost.</b> The timings in <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>'s <a href="../054/#timed">The same programs, timed</a> come from the quick tests on every push, and the Witch slide's frame time from the <code>jit.yml</code> check in Firefox, so a change to the code generation shows its cost on its next push.</li>
+</ol>
+
+<h2 id="reading">Where to start reading<a class="anchor" href="#reading" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="reading" title="copy this section's address">copy link</button></h2>
+<p><b>Five files on the prototype branch, and three reports.</b> The branch is <code>trial/694-view-jit</code> (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>), build 49, <code>0e56bdbd0a</code>; line numbers are that commit's. The files are in <code>src/language/dynamics/</code> and <code>test/</code>.</p>
+<table class="vals">
+<tr><th>File</th><th>Where</th><th>What it holds</th></tr>
+<tr><td><code>HazelJit.re</code></td><td>lines 1 to 60</td><td>What hazel-jit leaves to the interpreter, and why.</td></tr>
+<tr><td><code>HazelJit.re</code></td><td>lines 60 to 250</td><td>The runtime the compiled code calls: <code>invalid</code>, <code>indet</code>, <code>limit</code>, the ways a compiled run stops.</td></tr>
+<tr><td><code>HazelJit.re</code></td><td>lines 480 to 590</td><td>Patterns, compiled to tests and bindings; holes refused (lines 483 and 585).</td></tr>
+<tr><td><code>HazelJitValue.re</code></td><td>lines 192 and 300</td><td><code>to_js</code> and <code>of_js</code>, the boundary.</td></tr>
+<tr><td><code>HazelJitMixed.re</code></td><td>lines 136, 157, 183</td><td><code>fall_back</code>, <code>call</code>, <code>rewrite</code>: mixed mode.</td></tr>
+<tr><td><code>test/Test_HazelJit.re</code></td><td>from line 1960</td><td>The mixed-mode tests; "mixed: a hole in the argument, that call the interpreter's" at line 1989.</td></tr>
+<tr><td><code>test/Test_HazelJit_Agree.re</code></td><td>lines 73, 294, 317</td><td><code>agree</code>, <code>same_value</code>, <code>mixed_sweep</code>: how answers are compared.</td></tr>
+</table>
+<p>The reports: 054 (its sections What hazel-jit is, What stays with the interpreter, Mixed mode, and Questions for the team), 053 (why the prototype is to be redone by hand in small PRs), and 050 to 052 (how compiled livelit views came about). CI runs the tests on every push to a branch of hazelgrove/hazel; the quick tests take 10 to 15 minutes there.</p>
+
+<h2 id="settle">Questions to settle first<a class="anchor" href="#settle" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="settle" title="copy this section's address">copy link</button></h2>
+<p><b>Four, with Cyrus and Matthew, before code: where the work lives, which values are opaque, whether a hole keeps its identity, and when the checked version is compiled.</b> Each has our lean.</p>
+<ol>
+<li><b>Does it live on the prototype branch?</b> <a href="../053/"><code class="ref"><b>^report(</b>53<b>)</b></code></a> proposes redoing hazel-jit by hand, in small PRs to dev, and mixed mode is so far only on the prototype. <span class="muted">Lean:</span> design and measure there; it lands on dev with mixed mode.</li>
+<li><b>Which values are opaque: empty holes only, or every indeterminate term</b> (a stuck application, a failed cast)? <span class="muted">Lean:</span> every value <code>to_js</code> cannot represent, since the interpreter's answer holds the term itself either way.</li>
+<li><b>Must a hole keep its identity through compiled code</b>, its id and its closure's environment, so that fill-and-resume and probes still work? <span class="muted">Lean:</span> yes; the table gives back the very term that went in.</li>
+<li><b>The checked version: compiled up front, or the first time a hole arrives?</b> <span class="muted">Lean:</span> the first time; most functions never meet one.</li>
+</ol>
+
+<h2 id="warmup">A warm-up on dev<a class="anchor" href="#warmup" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="warmup" title="copy this section's address">copy link</button></h2>
+<p><b>A smaller first PR, independent of the prototype: make float literals print so that they read back as the same number (<a href="https://github.com/hazelgrove/hazel/issues/2831">hazelgrove/hazel#2831</a>).</b> <code>Atom.to_literal</code> prints a float with <code>%f</code>, six decimal places (<code>src/language/term/Atom.re</code>, line 208 on dev), so a literal such as <code>280.4606184</code> does not survive the fast parser's round trip, and its module falls to the slow parser, whose cost grows much faster than the module. The fix is the shortest form that reads back. Atom's derived equality compares floats by the same six decimals (lines 30 to 32); evaluation does not, it compares by value. It is a tour of the parser and of review on dev.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<p><b>Settle the questions, then the boundary, the checks, and the measurements.</b></p>
+<ol class="outline">
+<li>Settle the four questions with Cyrus and Matthew.</li>
+<li>If wanted first, the warm-up PR for <a href="https://github.com/hazelgrove/hazel/issues/2831">hazelgrove/hazel#2831</a>.</li>
+<li>Opaque values at the boundary, passing through only: <code>to_js</code>, <code>of_js</code>, and the pass-through tests.</li>
+<li>The checked version, mixed mode's choice of it, and tests for each silent case.</li>
+<li>Measure: the quick tests' timings and the Witch slide's frame time, before and after.</li>
+<li>Write it up, with the numbers, here or in a report of its own.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>Written from the code of build 49 (<code>0e56bdbd0a</code>, 2026-11-17 10:30 MST) and <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, on 2026-11-17, after John's offer. Nothing here is measured yet; the examples' answers today are mixed mode's documented behaviour (a call whose argument does not convert falls back), and the "with this project" column is what the design intends. The file references and the examples are in the data below and in <a href="https://github.com/matthewhammer/hazel-reports/tree/main/055/data">055/data</a>.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/055/data"><code>055/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-17T20:21:39Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}}, BUILT = "2026-11-17";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 55,
+ "title": "Holes Across the Boundary",
+ "date": "2026-11-17",
+ "kind": "hazel-jit: a starter project, written for a new contributor; a design brief, nothing measured yet",
+ "status": "work in progress",
+ "question": "In mixed mode, can a value with a hole in it cross into compiled code and out again unopened, instead of sending the whole call back to the interpreter, and what do the checks that keep it unopened cost? From John, on the Hazel team, 2026-11-17, offering to look into holes and hazel-jit; Matthew Hammer: \"Yes, write the brief\".",
+ "measurements": "None yet. The examples' 'today' column is mixed mode's documented behaviour on build 49 (a call whose argument does not convert falls back); the 'proposed' column is what the design intends.",
+ "builds": [
+  {
+   "build": "49",
+   "branch": "trial/694-view-jit",
+   "pr": "hazelgrove/hazel#2817",
+   "commit": "0e56bdbd0a",
+   "date": "2026-11-17 10:30 MST"
+  }
+ ],
+ "files": [
+  "data/brief.json",
+  "data/meta.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Where holes stand",
+   "section_id": "today",
+   "columns": [
+    "Program",
+    "Mixed mode today",
+    "With this project"
+   ],
+   "rows": [
+    [
+     "let swap : (Int, Int) -> (Int, Int) = fun (a, b) -> (b, a) in swap(1, ?)",
+     "falls back; the interpreter answers (?, 1)",
+     "compiled; the same (?, 1), the same hole"
+    ],
+    [
+     "let len : [Int] -> Int = fun xs -> case xs | [] => 0 | _ :: rest => 1 + len(rest) end in len([1, ?, 3])",
+     "falls back",
+     "compiled; 3, never looking at an element"
+    ],
+    [
+     "let inc : Int -> Int = fun x -> x + 1 in inc(?)",
+     "falls back; ? + 1",
+     "still falls back: + looks inside"
+    ],
+    [
+     "type Shape = + Circle(Float) + Square(Float) in let round : Shape -> Bool = fun s -> case s | Circle(_) => true | _ => false end in round(?)",
+     "falls back; the interpreter's match is stuck",
+     "still falls back, which takes a check: see below"
+    ]
+   ]
+  },
+  {
+   "section": "Where compiled code looks inside a value",
+   "section_id": "looks",
+   "columns": [
+    "Where",
+    "What the compiled code does",
+    "With an opaque object"
+   ],
+   "rows": [
+    [
+     "A pattern on a constructor",
+     "v.c === \"Some\" (HazelJit.re, line 577)",
+     "false, so the next arm is tried, and a wildcard arm then matches, where the interpreter's match is stuck. Wrong."
+    ],
+    [
+     "The empty-list pattern",
+     "v === null (line 529)",
+     "false, so the cons arm runs and reads v.h: undefined. Wrong."
+    ],
+    [
+     "Float arithmetic",
+     "a + b",
+     "a string such as \"[object Object]1\", or NaN. Wrong."
+    ],
+    [
+     "Equality",
+     "===, and the runtime's eq for structures",
+     "false, where the interpreter is stuck. Wrong."
+    ],
+    [
+     "A tuple's part",
+     "v[0]",
+     "undefined, carried on. Wrong."
+    ],
+    [
+     "A call",
+     "f(x)",
+     "a TypeError when f is opaque: the run stops and falls back. Safe."
+    ],
+    [
+     "A labeled projection",
+     "the runtime's project_labels",
+     "already stops as indeterminate on a value that is not a tuple. Safe."
+    ]
+   ]
+  },
+  {
+   "section": "Where to start reading",
+   "section_id": "reading",
+   "columns": [
+    "File",
+    "Where",
+    "What it holds"
+   ],
+   "rows": [
+    [
+     "HazelJit.re",
+     "lines 1 to 60",
+     "What hazel-jit leaves to the interpreter, and why."
+    ],
+    [
+     "HazelJit.re",
+     "lines 60 to 250",
+     "The runtime the compiled code calls: invalid, indet, limit, the ways a compiled run stops."
+    ],
+    [
+     "HazelJit.re",
+     "lines 480 to 590",
+     "Patterns, compiled to tests and bindings; holes refused (lines 483 and 585)."
+    ],
+    [
+     "HazelJitValue.re",
+     "lines 192 and 300",
+     "to_js and of_js, the boundary."
+    ],
+    [
+     "HazelJitMixed.re",
+     "lines 136, 157, 183",
+     "fall_back, call, rewrite: mixed mode."
+    ],
+    [
+     "test/Test_HazelJit.re",
+     "from line 1960",
+     "The mixed-mode tests; \"mixed: a hole in the argument, that call the interpreter's\" at line 1989."
+    ],
+    [
+     "test/Test_HazelJit_Agree.re",
+     "lines 73, 294, 317",
+     "agree, same_value, mixed_sweep: how answers are compared."
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/055/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
