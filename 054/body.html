@@ -8,6 +8,7 @@
 <li><a href="#plan">The plan</a>: the meeting's items, as tickets, and how far each has come.</li>
 <li><a href="#what">What hazel-jit is</a>, for a reader new to it: what it compiles, where it runs, and what happens to what it does not compile.</li>
 <li><a href="#consistency">The same answers, checked in CI</a>: every evaluator test program also runs compiled, and a difference fails the build.</li>
+<li><a href="#timed">The same programs, timed</a>: the evaluator's programs, each run in the interpreter and compiled, timed.</li>
 <li><a href="#numbers">Exact integers</a>: Int and Nat as the interpreter has them, past 2<sup>53</sup>.</li>
 <li><a href="#errors">Divide by zero and other invalid operations</a>: the compiled run stops, and the interpreter's run answers.</li>
 <li><a href="#overflow">Overflow</a>: SInt had three widths; now 32 bits everywhere, and overflow an error.</li>
@@ -42,6 +43,13 @@
 {{tab_sweep}}
 <p>What is left: the slides' own programs, which the sweep does not see. They are checked only by the Firefox run on GitHub's machines, which compares the pictures, not the values.</p>
 
+<h2 id="timed">The same programs, timed</h2>
+<p><b>{{timing_summary}}</b> Matthew asked for these on 2026-11-17: the evaluator's test programs, timed in the interpreter and in hazel-jit.</p>
+{{fig_timing}}
+<p>How each was timed: in CI, in the same Node process as the tests, as the consistency check ran. Most of these programs take the interpreter well under a millisecond, too near the timer's grain for one run to say much, so each is run again and again (Matthew: "can we repeat the work 100 or 1000 times to get a multi ms number in the interpreter?"). The interpreter's runs repeat until they add to 20 ms, at least 10 times and at most 1000. The compiled JavaScript's repeat until they add to 5 ms, at most 100,000 times. The times are a run's, the total over the repeats. Both are warm then: the interpreter has seen the program before, and so has the JavaScript engine. The first runs are kept too, since a page meets those: the interpreter's as the test ran it, hazel-jit's compile to JavaScript's text, and the JavaScript parsed and run once.</p>
+{{tab_timing}}
+<p>These are the evaluator's own tests, which are small: most take the interpreter well under a millisecond. The Witch slide is the larger case (<a href="#cost">what it all costs</a>, and reports 050 to 052), and mixed mode's timings are larger programs again (<a href="#mixed-built">the first step, built</a>).</p>
+
 <h2 id="numbers">Exact integers</h2>
 <p><b>Int and Nat are now exact in compiled code, as the interpreter's are: an integer is a JavaScript number while it is a safe integer (up to 2<sup>53</sup> − 1), and a BigInt past that.</b> (Ticket 757.) The interpreter's Int and Nat are arbitrary-precision integers (Jane Street's Bigint), and hazel-jit had made them JavaScript numbers, which round past 2<sup>53</sup>: 2<sup>53</sup> + 1 came out as 2<sup>53</sup>.</p>
 <p>Every integer operation normalizes its result back to a number when it fits, so two equal integers are always the same value, and <code>===</code> still compares them. Division rounds toward zero, as the interpreter's does, and stays exact where <code>Math.trunc(a / b)</code> would round. Where plain BigInt everywhere cost a 4.1 times slower fib(25), a 1.5 times slower list walk, and 9.6 times slower model updates, this mix costs 1.6 times, nothing measurable, and 3.7 times (Node, against plain numbers; not a build of the app). On the Witch slide it costs nothing measurable (<a href="#cost">below</a>). SInt, Hazel's fixed-width integer, stays a JavaScript number: its width is the <a href="#overflow">overflow question</a>.</p>
@@ -74,6 +82,7 @@
 <li><b>Reverse application,</b> <code>x |> f</code>, which Hazel holds as an application written the other way round and steps alike: compiled as <code>f(x)</code> is.</li>
 <li><b>Next:</b> labels that are not names, an expression as a module member, the builtin from_lvs. The three fixpoints over a pattern like <code>_</code> are ill-typed tests, whose interpreter answers are failed casts, so compiling them would only add partings.</li>
 <li><b>Probes</b> are the largest: a probe shows the values that passed through it, and compiled code records none. Today a probe always shows the interpreter's run, which is correct, and never faster. Recording samples from compiled code would mean deciding what a sample is when the code that made it has no steps.</li>
+<li><b>The sweep's last limits</b>, on their own branch (<code>trial/761-last-limits</code>, <code>dd85975e96</code>, fast checks green, CI run 44134100041): an explicitly unlabeled entry, <code>(_=e)</code>, compiled as the entry itself; <code>from_lvs</code>; a module member that is an expression, evaluated and dropped as the elaborated module's <code>let _ = e</code> is; and a recursive definition's part that is not a function, when it names none of the names. A tuple label that is a hole, <code>(?=1, 2)</code>, counts as a hole now, which the rule keeps with the interpreter. Of the 313 programs, 260 compile, 233 give the interpreter's value, none differ, and 27 are the known ill-typed tests. Four still meet a limit: three ill-typed fixpoints over patterns that are not names (<code>fix _</code>, <code>fix ()</code>, <code>fix 0</code>), left so on purpose, and one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile. CI found one thing on the way: <code>let (_=x) = (_=1) in x</code> is <code>(_=1)</code> to the interpreter and <code>1</code> compiled, which the evaluator's own tests count as the same (they ignore explicit unlabelling), and so now does the sweep.</li>
 </ul>
 
 <h2 id="budget">A step budget</h2>
@@ -150,6 +159,10 @@
 <h3 id="steps">Step counts and probes, as the interpreter's</h3>
 <p><b>Compiled code can count exactly the steps the interpreter takes, in every program it compiles, with care in three places. With those counts it can make the interpreter's own probe samples, with two limits. Nothing found so far makes either impossible: the costs are a little run time, a tie to the interpreter's internals, and the work.</b> This answers Matthew and Cyrus's two questions of 2026-11-13 (ticket 767). Not built yet.</p>
 <p><b>What the interpreter counts.</b> Its count goes up by one at every transition, whichever of its 36 kinds: those that interpret the program (a variable looked up, a let bound, a function applied, an operator, a case, a projection) and those that are bookkeeping (a closure wrapped, parentheses removed, a cast). It goes up one more after each pattern match. The count is the same with or without incremental reuse: a reused result adds the steps it took when it was first computed, so that probe samples stay where they were. Each probe sample is stamped with it: the span of steps from its start to its end.</p>
+<p><b>The counts, measured.</b> For 57 small programs, each a construct apart from the last, the interpreter's count is regular enough to read off (ticket 767's calibration, CI run 44131334098). A literal is a step. An operator or a pair of parentheses adds one. A let adds three of its own: binding, its pattern, and completing the closure around its body. Each level of a simple recursion, <code>if n == 0 then 0 else f(n - 1)</code>, adds exactly 16 (18, 34, 50, 66 for <code>f(0)</code> to <code>f(3)</code>). A declared <code>Int -&gt; Int</code> adds one cast step to each call. Some counts need the interpreter's bookkeeping to explain: <code>true &amp;&amp; false</code> takes 4 and <code>false &amp;&amp; true</code> 3. The whole table:</p>
+<details><summary>The 57 programs and their counts</summary>
+{{tab_calib}}
+</details>
 <p><b>Why compiled code can match it.</b> hazel-jit translates the program construct by construct and runs it in the same order as the interpreter: arguments first, left to right. Most constructs take a fixed number of steps of their own, apart from their parts: an operator one; a let one, and one for its pattern; an application one, one for its pattern, and the closure's bookkeeping. So the compiler can add, wherever code runs straight through, the steps the interpreter takes there. That is one addition for each straight run of code, about what today's budget counter costs (ticket 763). Then the budget and the interpreter's step limit are one number, in one unit.</p>
 <p><b>Where it needs care: the "if not, why not".</b></p>
 <ol class="outline">
@@ -225,19 +238,15 @@
 </ol>
 
 <h2 id="next">What next</h2>
-<p><b>Today, before the meeting: ticket 761's last limits, and mixed mode's first step.</b> Then the rest, in order:</p>
+<p><b>The morning's branches are green or nearly: next, they go onto the prototype branch together, and mixed mode reaches across modules.</b> In order:</p>
 <ol class="outline">
-<li>The last limits the sweep finds (ticket 761): tuple labels that are not names, an expression as a module member, the builtin <code>from_lvs</code>, and a recursive definition of something other than functions.</li>
-<li>Mixed mode, a first step (ticket 766): a compiled function as a builtin made at run time, behind a setting, for let-bound functions with their whole types declared, falling back one call at a time.</li>
-<li>Mixed mode in the consistency sweep: each evaluator test run a third way, mixed, against the interpreter alone.</li>
+<li>Build 49: the last limits, mixed mode, the timing and the slides' check brought onto <code>trial/694-view-jit</code> together, CI and the slides checked again.</li>
+<li>Mixed mode across modules: a module's member that calls another module's (<code>Lines.becomes</code> in the I Ching's reading) compiled too, so the I Ching's rules compile whole.</li>
+<li>Mixed mode's crossing cost: a call from interpreted code to a one-line compiled function costs more than the function (500 calls of <code>sq</code>, 27 ms mixed against 22 interpreted). Convert a large value once and remember it, and leave very small functions to the interpreter.</li>
+<li>Step counts in compiled code (ticket 767): a counter from the measured costs, each evaluator program's count compared with the interpreter's in the sweep.</li>
+<li>Probes in compiled code, on the step counts, after the team's answer.</li>
 <li>Reviews for hazelgrove/hazel#2828 (SInt) and hazelgrove/hazel#2825 (modulo by zero).</li>
-<li>Probes in compiled code, after the team's answer on probes.</li>
-<li>The slides' programs in the consistency check, beside the evaluator's tests (ticket 756).</li>
-<li>A cheaper step counter: count only at calls that can recur (ticket 763).</li>
-<li>A check in the browser that a livelit in a probe drawer's stepper is drawn by the interpreter (ticket 760).</li>
-<li>The run-time type checks per call for an undeclared result type, counted (ticket 762).</li>
-<li>A build-time compiler for hazeljs apps, so a site compiles without CI (ticket 765).</li>
-<li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of report 050, or the Tarot's deal), interpreter alone against mixed.</li>
+<li>A cheaper step counter (ticket 763); the probe drawer's stepper checked in the browser (ticket 760); the run-time type checks of an undeclared result type counted (ticket 762); a build-time compiler for hazeljs apps (ticket 765).</li>
 </ol>
 
 <h2 id="method">How this was put together</h2>

@@ -157,7 +157,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-17 09:21 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-17 10:23 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -251,6 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#plan">The plan</a>: the meeting's items, as tickets, and how far each has come.</li>
 <li><a href="#what">What hazel-jit is</a>, for a reader new to it: what it compiles, where it runs, and what happens to what it does not compile.</li>
 <li><a href="#consistency">The same answers, checked in CI</a>: every evaluator test program also runs compiled, and a difference fails the build.</li>
+<li><a href="#timed">The same programs, timed</a>: the evaluator's programs, each run in the interpreter and compiled, timed.</li>
 <li><a href="#numbers">Exact integers</a>: Int and Nat as the interpreter has them, past 2<sup>53</sup>.</li>
 <li><a href="#errors">Divide by zero and other invalid operations</a>: the compiled run stops, and the interpreter's run answers.</li>
 <li><a href="#overflow">Overflow</a>: SInt had three widths; now 32 bits everywhere, and overflow an error.</li>
@@ -270,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <p>Matthew's summary of the meeting, as he wrote it on 2026-11-15:</p>
 <blockquote class="msg"><ul><li>we want semantic consistency with Hazel the interpreter, and to ensure that with CI, and our design decisions.</li><li>arb precision Ints and Nats --- we want to use bignum in the output if we can, or something comparable, not native JS numbers for Ints and Nats.</li><li>when we hit an overflow for any times where that is possible -- we should check each time for non-arb precision numbers --- we should create an indet term / stuck term with that error -- look at existing interpreter cases for inspiration.</li><li>similar for divide by zero</li><li>for the output of hazel-jit, we should continue to avoid translating code with holes, and we should exclude &quot;stepper functions&quot; (don&#x27;t know what that is myself, please explain later).</li><li>probes, step budgets, and all other limitations we should work to overcome in the coming days.</li></ul></blockquote>
 <p>And Cyrus's concern, which Matthew passed on separately the same day: <i>"We need a way to limit compiled hazel functions that diverge --- we need a step limit. esp if we continue to optimize by including certain jit-compiled hazel functions into the main thread"</i></p>
-<table class="vals"><tr><th>Ticket</th><th>The change</th><th>Where it stands</th><th></th></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-756"><code class="ref"><b>^ticket(</b>756<b>)</b></code></a></td><td><a href="#consistency">Consistency with the interpreter, checked in CI</a></td><td>On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides&#x27; own programs.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a></td><td><a href="#numbers">Int and Nat exact, as the interpreter&#x27;s</a></td><td>On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-758"><code class="ref"><b>^ticket(</b>758<b>)</b></code></a></td><td><a href="#overflow">Overflow stops at a stuck term</a></td><td>On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter&#x27;s half is on a PR to dev, <a href="https://github.com/hazelgrove/hazel/pull/2828">hazelgrove/hazel#2828</a>: CI green, its tests reaching 96% of the changed lines; waiting on review.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-759"><code class="ref"><b>^ticket(</b>759<b>)</b></code></a></td><td><a href="#errors">Divide by zero stops at a stuck term</a></td><td>On the branch: the compiled run stops, and the interpreter makes the stuck term.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a></td><td><a href="#rules">Holes and the stepper stay with the interpreter</a></td><td>On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a></td><td><a href="#limits">The other limits, one at a time</a></td><td>On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application; eight programs of 313 still meet a limit. Probes not begun.</td><td class="st-part">in progress</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a></td><td><a href="#budget">A step budget for compiled code</a></td><td>On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-764"><code class="ref"><b>^ticket(</b>764<b>)</b></code></a></td><td><a href="#found">Found: modulo by zero crashed the interpreter</a></td><td>Fixed on a PR to dev, <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a>, waiting for review.</td><td class="st-pr">on a PR</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a></td><td><a href="#found">Found: an undeclared result type costs a step 5 to 7 times</a></td><td>Measured in Hazel&#x27;s interpreter; the cause is where the ascriptions go. The fix is not begun.</td><td class="st-wait">waiting</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-765"><code class="ref"><b>^ticket(</b>765<b>)</b></code></a></td><td><a href="#ahead">Found: the oracles were slow on an older phone; compiled ahead of time</a></td><td>Both oracles run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Left: the compiler inside hazeljs.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-766"><code class="ref"><b>^ticket(</b>766<b>)</b></code></a></td><td><a href="#mixed">Chosen after the meeting: mixed mode</a></td><td>A first step is written, on its own branch, and in CI: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins.</td><td class="st-part">in progress</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-767"><code class="ref"><b>^ticket(</b>767<b>)</b></code></a></td><td><a href="#steps">Asked 11-13: the interpreter&#x27;s step counts in compiled code, then probes</a></td><td>Designed: yes to both, with care for casts and a check in CI (below). Not begun.</td><td class="st-part">in progress</td></tr></table>
+<table class="vals"><tr><th>Ticket</th><th>The change</th><th>Where it stands</th><th></th></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-756"><code class="ref"><b>^ticket(</b>756<b>)</b></code></a></td><td><a href="#consistency">Consistency with the interpreter, checked in CI</a></td><td>On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides&#x27; own programs.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a></td><td><a href="#numbers">Int and Nat exact, as the interpreter&#x27;s</a></td><td>On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-758"><code class="ref"><b>^ticket(</b>758<b>)</b></code></a></td><td><a href="#overflow">Overflow stops at a stuck term</a></td><td>On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter&#x27;s half is on a PR to dev, <a href="https://github.com/hazelgrove/hazel/pull/2828">hazelgrove/hazel#2828</a>: CI green, its tests reaching 96% of the changed lines; waiting on review.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-759"><code class="ref"><b>^ticket(</b>759<b>)</b></code></a></td><td><a href="#errors">Divide by zero stops at a stuck term</a></td><td>On the branch: the compiled run stops, and the interpreter makes the stuck term.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a></td><td><a href="#rules">Holes and the stepper stay with the interpreter</a></td><td>On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a></td><td><a href="#limits">The other limits, one at a time</a></td><td>On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, three of them ill-typed tests. Probes not begun.</td><td class="st-part">in progress</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a></td><td><a href="#budget">A step budget for compiled code</a></td><td>On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-764"><code class="ref"><b>^ticket(</b>764<b>)</b></code></a></td><td><a href="#found">Found: modulo by zero crashed the interpreter</a></td><td>Fixed on a PR to dev, <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a>, waiting for review.</td><td class="st-pr">on a PR</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a></td><td><a href="#found">Found: an undeclared result type costs a step 5 to 7 times</a></td><td>Measured in Hazel&#x27;s interpreter; the cause is where the ascriptions go. The fix is not begun.</td><td class="st-wait">waiting</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-765"><code class="ref"><b>^ticket(</b>765<b>)</b></code></a></td><td><a href="#ahead">Found: the oracles were slow on an older phone; compiled ahead of time</a></td><td>Both oracles run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Left: the compiler inside hazeljs.</td><td class="st-done">done</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-766"><code class="ref"><b>^ticket(</b>766<b>)</b></code></a></td><td><a href="#mixed">Chosen after the meeting: mixed mode</a></td><td>A first step is written, on its own branch, CI green 11-17: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins. The Petri net rule 22 times as fast, the I Ching&#x27;s 4.</td><td class="st-part">in progress</td></tr><tr><td><a href="https://matthewhammer.org/hazel/dashboard/#ticket-767"><code class="ref"><b>^ticket(</b>767<b>)</b></code></a></td><td><a href="#steps">Asked 11-13: the interpreter&#x27;s step counts in compiled code, then probes</a></td><td>Designed: yes to both, with care for casts and a check in CI (below). The interpreter&#x27;s counts for 57 small programs measured; the counter in compiled code not begun.</td><td class="st-part">in progress</td></tr></table>
 <p>All of the done changes are on <code>trial/694-view-jit</code>, the hazel-jit prototype branch (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>), as build 48 since 2026-11-16 (<a href="#cost">the builds</a>). Each was written on its own branch, passed CI there, and was brought together with the others; CI passed again on the whole, and so did the slides. None is on dev: <a href="../053/"><code class="ref"><b>^report(</b>53<b>)</b></code></a> explains why the prototype is to be redone by hand in small steps.</p>
 
 <h2 id="what">What hazel-jit is<a class="anchor" href="#what" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="what" title="copy this section's address">copy link</button></h2>
@@ -284,6 +285,13 @@ document.addEventListener("DOMContentLoaded", () => {
 <p>The first sweep, on 2026-11-15 (the full tests), had 316 programs: 237 compiled, 207 agreed, 30 ill-typed, and none differed. It found the rule that programs with type errors stay with the interpreter (<a href="#rules">below</a>). Merging the six branches found one more parting, with no static error: a value passed through a written type hole to a function that takes another type. That led to the rule that a type hole is a hole. The 48 programs not compiled by rule, and the 8 not compiled for a limit, are these:</p>
 <table class="vals"><tr><th>Not compiled because</th><th>Programs</th><th>Rule or limit</th></tr><tr><td>a hole</td><td class="n">14</td><td>rule</td></tr><tr><td>a type hole</td><td class="n">10</td><td>rule</td></tr><tr><td>a free variable (the tests&#x27; own unbound names: y 13, s2 6, x 2, b2 2, a 1)</td><td class="n">24</td><td>rule</td></tr><tr><td>a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0; ill-typed tests)</td><td class="n">3</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>a tuple label that is not a name</td><td class="n">2</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>the builtin from_lvs</td><td class="n">1</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>an expression as a module member</td><td class="n">1</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr><tr><td>a recursive definition of more than one name, not a tuple of functions</td><td class="n">1</td><td>a limit (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>)</td></tr></table>
 <p>What is left: the slides' own programs, which the sweep does not see. They are checked only by the Firefox run on GitHub's machines, which compares the pictures, not the values.</p>
+
+<h2 id="timed">The same programs, timed<a class="anchor" href="#timed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="timed" title="copy this section's address">copy link</button></h2>
+<p><b>Run again and again, the 232 evaluator programs that compile and give the interpreter's value took the interpreter 24 ms a run in all, and compiled code 0.17 ms. The median program is 222 times as fast compiled (32 µs against 0.19 µs), and every one is faster, from 1.4 to 1,530 times; the 69 that take the interpreter 0.1 ms or more, a median 336 times. Run once, compiling included, as a page that compiles before its first run would, the median program is 1.4 times as fast, and 53 of the 232 are slower: programs of a few microseconds, where compiling is the cost.</b> Matthew asked for these on 2026-11-17: the evaluator's test programs, timed in the interpreter and in hazel-jit.</p>
+<figure class="f"><svg viewBox="0 0 700 430" role="img" aria-label="A scatter of 232 programs on log scales, the interpreter's time a run across and the compiled JS's up" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The evaluator's 232 programs, a run's time each way</text><text x="16" y="34" font-size="11" fill="var(--muted)">each dot a program, each time a run's, over its repeats: across, the interpreter; up, the compiled JS</text><line x1="70.0" y1="44" x2="70.0" y2="378" stroke="var(--line)" stroke-width="0.6"/><line x1="70" y1="378.0" x2="680" y2="378.0" stroke="var(--line)" stroke-width="0.6"/><text x="70.0" y="392" font-size="10" text-anchor="middle" fill="var(--muted)">0.01 µs</text><text x="64" y="381.0" font-size="10" text-anchor="end" fill="var(--muted)">0.01 µs</text><line x1="171.7" y1="44" x2="171.7" y2="378" stroke="var(--line)" stroke-width="0.6"/><line x1="70" y1="322.3" x2="680" y2="322.3" stroke="var(--line)" stroke-width="0.6"/><text x="171.7" y="392" font-size="10" text-anchor="middle" fill="var(--muted)">0.1 µs</text><text x="64" y="325.3" font-size="10" text-anchor="end" fill="var(--muted)">0.1 µs</text><line x1="273.3" y1="44" x2="273.3" y2="378" stroke="var(--line)" stroke-width="0.6"/><line x1="70" y1="266.7" x2="680" y2="266.7" stroke="var(--line)" stroke-width="0.6"/><text x="273.3" y="392" font-size="10" text-anchor="middle" fill="var(--muted)">0.001 ms</text><text x="64" y="269.7" font-size="10" text-anchor="end" fill="var(--muted)">0.001 ms</text><line x1="375.0" y1="44" x2="375.0" y2="378" stroke="var(--line)" stroke-width="0.6"/><line x1="70" y1="211.0" x2="680" y2="211.0" stroke="var(--line)" stroke-width="0.6"/><text x="375.0" y="392" font-size="10" text-anchor="middle" fill="var(--muted)">0.01 ms</text><text x="64" y="214.0" font-size="10" text-anchor="end" fill="var(--muted)">0.01 ms</text><line x1="476.7" y1="44" x2="476.7" y2="378" stroke="var(--line)" stroke-width="0.6"/><line x1="70" y1="155.3" x2="680" y2="155.3" stroke="var(--line)" stroke-width="0.6"/><text x="476.7" y="392" font-size="10" text-anchor="middle" fill="var(--muted)">0.1 ms</text><text x="64" y="158.3" font-size="10" text-anchor="end" fill="var(--muted)">0.1 ms</text><line x1="578.3" y1="44" x2="578.3" y2="378" stroke="var(--line)" stroke-width="0.6"/><line x1="70" y1="99.7" x2="680" y2="99.7" stroke="var(--line)" stroke-width="0.6"/><text x="578.3" y="392" font-size="10" text-anchor="middle" fill="var(--muted)">1 ms</text><text x="64" y="102.7" font-size="10" text-anchor="end" fill="var(--muted)">1 ms</text><line x1="680.0" y1="44" x2="680.0" y2="378" stroke="var(--line)" stroke-width="0.6"/><line x1="70" y1="44.0" x2="680" y2="44.0" stroke="var(--line)" stroke-width="0.6"/><text x="680.0" y="392" font-size="10" text-anchor="middle" fill="var(--muted)">10 ms</text><text x="64" y="47.0" font-size="10" text-anchor="end" fill="var(--muted)">10 ms</text><line x1="70.0" y1="378.0" x2="680.0" y2="44.0" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/><text x="676.0" y="39.0" font-size="10" text-anchor="end" fill="var(--muted)">as fast</text><line x1="273.3" y1="378.0" x2="680.0" y2="155.3" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/><text x="676.0" y="150.3" font-size="10" text-anchor="end" fill="var(--muted)">100 times as fast</text><line x1="476.7" y1="378.0" x2="680.0" y2="266.7" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/><text x="676.0" y="261.7" font-size="10" text-anchor="end" fill="var(--muted)">10,000 times</text><circle cx="457.8" cy="304.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="442.4" cy="309.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="402.8" cy="327.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="457.3" cy="301.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="425.3" cy="291.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="438.4" cy="329.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="463.1" cy="267.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="435.1" cy="256.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="459.4" cy="263.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="468.8" cy="288.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="466.3" cy="298.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="447.6" cy="271.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="440.4" cy="300.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="360.2" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="406.7" cy="340.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="413.7" cy="256.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="408.3" cy="306.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="431.6" cy="281.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="393.7" cy="311.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="373.0" cy="331.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="379.6" cy="338.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="392.5" cy="216.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="386.7" cy="218.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="396.2" cy="312.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="394.3" cy="306.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="393.7" cy="280.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="385.1" cy="213.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="400.1" cy="217.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="425.8" cy="333.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="424.9" cy="328.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="392.9" cy="339.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="388.5" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="411.0" cy="308.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="384.5" cy="327.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="476.5" cy="317.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="411.5" cy="319.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="465.5" cy="291.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="483.0" cy="277.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="499.0" cy="282.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="511.8" cy="276.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="491.7" cy="290.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="510.2" cy="275.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="485.8" cy="277.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="486.2" cy="297.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="478.5" cy="292.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="482.3" cy="300.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="482.1" cy="304.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="483.5" cy="293.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="484.3" cy="298.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="487.0" cy="303.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="440.7" cy="307.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="461.7" cy="299.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="424.8" cy="302.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="414.4" cy="329.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="420.3" cy="308.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="400.9" cy="330.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="452.9" cy="287.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="496.2" cy="289.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="437.1" cy="294.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="482.3" cy="293.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="489.1" cy="290.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="527.1" cy="277.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="475.0" cy="295.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="533.8" cy="277.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="468.9" cy="310.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="488.5" cy="293.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="493.7" cy="285.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="484.4" cy="264.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="485.7" cy="294.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="476.9" cy="276.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="479.6" cy="298.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="488.3" cy="275.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="481.1" cy="285.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="496.9" cy="299.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="509.2" cy="282.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="434.7" cy="312.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="503.4" cy="271.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="497.3" cy="267.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="509.2" cy="257.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="506.4" cy="263.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="478.9" cy="284.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="513.4" cy="281.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="460.0" cy="295.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="478.3" cy="279.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="477.9" cy="301.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="483.3" cy="288.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="493.6" cy="289.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="503.8" cy="263.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="489.2" cy="297.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="502.5" cy="286.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="492.1" cy="260.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="512.7" cy="282.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="431.5" cy="308.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="405.6" cy="331.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="426.6" cy="304.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="399.6" cy="308.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="462.1" cy="303.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="465.5" cy="302.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="481.6" cy="289.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="466.2" cy="304.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="478.6" cy="290.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="488.4" cy="284.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="501.6" cy="291.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="498.2" cy="272.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="519.3" cy="261.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="496.0" cy="276.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="505.2" cy="291.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="431.0" cy="315.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="456.4" cy="281.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="447.7" cy="270.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="521.2" cy="260.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="521.5" cy="254.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="556.7" cy="247.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="589.2" cy="230.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="589.6" cy="235.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="567.2" cy="234.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="549.5" cy="253.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="645.4" cy="172.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="302.1" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="376.5" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="392.8" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="437.5" cy="304.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="408.7" cy="322.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="430.9" cy="300.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="406.5" cy="312.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="421.1" cy="308.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="413.6" cy="327.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="405.4" cy="330.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="376.6" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="432.5" cy="329.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="426.2" cy="334.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="417.6" cy="215.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="419.1" cy="329.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="420.9" cy="308.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="478.4" cy="331.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="492.5" cy="271.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="395.7" cy="329.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="395.4" cy="340.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="465.6" cy="309.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="470.7" cy="291.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="464.2" cy="319.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="493.3" cy="304.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="414.5" cy="338.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="309.5" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="337.1" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="303.0" cy="342.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="323.7" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="348.1" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="355.9" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="324.6" cy="342.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="346.3" cy="342.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="416.7" cy="308.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="420.2" cy="332.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="406.4" cy="329.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="418.0" cy="317.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="493.2" cy="312.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="407.2" cy="315.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="406.2" cy="304.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="434.3" cy="305.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="416.4" cy="299.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="494.1" cy="269.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="431.1" cy="319.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="429.1" cy="304.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="335.0" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="325.6" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="406.2" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="411.2" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="402.2" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="355.4" cy="340.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="425.0" cy="340.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="398.5" cy="340.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="402.3" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="375.4" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="375.0" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="361.5" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="377.4" cy="341.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="378.3" cy="340.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="354.7" cy="340.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="354.7" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="358.2" cy="340.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="387.0" cy="335.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="371.5" cy="329.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="383.8" cy="332.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="385.9" cy="335.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="403.1" cy="299.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="411.9" cy="310.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="450.9" cy="337.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="392.8" cy="333.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="373.2" cy="329.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="393.9" cy="331.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="350.0" cy="341.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="541.4" cy="275.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="367.7" cy="339.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="381.3" cy="314.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="405.3" cy="306.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="400.6" cy="328.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="420.6" cy="326.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="384.2" cy="330.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="423.7" cy="312.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="396.8" cy="320.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="404.6" cy="299.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="421.0" cy="319.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="414.8" cy="306.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="418.6" cy="326.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="395.9" cy="331.0" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="413.0" cy="314.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="416.7" cy="316.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="407.8" cy="322.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="401.1" cy="326.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="420.6" cy="309.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="414.3" cy="299.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="414.5" cy="294.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="435.5" cy="313.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="398.8" cy="310.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="413.5" cy="329.9" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="430.7" cy="327.1" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="428.7" cy="303.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="419.1" cy="309.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="422.8" cy="309.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="425.6" cy="306.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="423.3" cy="318.5" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="419.4" cy="311.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="440.3" cy="315.8" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="407.5" cy="330.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="445.2" cy="292.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="495.0" cy="304.4" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="437.1" cy="323.3" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="451.7" cy="259.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="503.1" cy="304.6" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="424.7" cy="288.2" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="512.3" cy="288.7" r="3" fill="#2563eb" fill-opacity="0.55"/><circle cx="478.5" cy="297.9" r="3" fill="#2563eb" fill-opacity="0.55"/><text x="375" y="416" font-size="11" text-anchor="middle" fill="var(--ink)">the interpreter, a run</text><text x="14" y="211" font-size="11" text-anchor="middle" fill="var(--ink)" transform="rotate(-90 14 211)">compiled JS, a run</text></svg><figcaption>Measured on <code>4c51a00490</code> (build 48 with the last limits, and the timing; CI run 44133893762, the fast checks, Node on GitHub's machines). Each program's interpreter runs repeated until they added to 20 ms (10 to 1000 times), and its compiled JS's until they added to 5 ms; each dot is a run's time, the total over the repeats. Below the line marked "as fast", compiled code was faster. Not a build of the app.</figcaption></figure>
+<p>How each was timed: in CI, in the same Node process as the tests, as the consistency check ran. Most of these programs take the interpreter well under a millisecond, too near the timer's grain for one run to say much, so each is run again and again (Matthew: "can we repeat the work 100 or 1000 times to get a multi ms number in the interpreter?"). The interpreter's runs repeat until they add to 20 ms, at least 10 times and at most 1000. The compiled JavaScript's repeat until they add to 5 ms, at most 100,000 times. The times are a run's, the total over the repeats. Both are warm then: the interpreter has seen the program before, and so has the JavaScript engine. The first runs are kept too, since a page meets those: the interpreter's as the test ran it, hazel-jit's compile to JavaScript's text, and the JavaScript parsed and run once.</p>
+<table class="vals"><tr><th>Program (the evaluator's test)</th><th>The interpreter, a run</th><th>Compiled JS, a run</th><th>As fast, times</th><th>First runs: the interpreter</th><th>hazel-jit's compile</th><th>The JS parsed and run</th></tr><tr><td><code>       [(index=true, `A`=60, `B`=30, `C`=0), (index=false, `A...</code></td><td class="n">4.56 ms <span class="muted">×10</span></td><td class="n">48.3 µs <span class="muted">×114</span></td><td class="n">95</td><td class="n">6.17 ms</td><td class="n">0.36 ms</td><td class="n">4.46 ms</td></tr><tr><td><code>[5, 4, 3, 1, 1] == sort(fun (x, y) -&gt; if x == y then Eq else ...</code></td><td class="n">1.29 ms <span class="muted">×20</span></td><td class="n">3.6 µs <span class="muted">×1461</span></td><td class="n">358</td><td class="n">1.03 ms</td><td class="n">0.25 ms</td><td class="n">0.10 ms</td></tr><tr><td><code>[1, 1, 3, 4, 5] == sort(fun (x, y) -&gt; if x == y then Eq else ...</code></td><td class="n">1.28 ms <span class="muted">×21</span></td><td class="n">4.5 µs <span class="muted">×1123</span></td><td class="n">287</td><td class="n">0.99 ms</td><td class="n">0.21 ms</td><td class="n">0.12 ms</td></tr><tr><td><code>[1, 2, 3] == unique([1, 2, 2, 3, 1, 3])</code></td><td class="n">0.78 ms <span class="muted">×31</span></td><td class="n">3.8 µs <span class="muted">×1717</span></td><td class="n">207</td><td class="n">3.76 ms</td><td class="n">0.16 ms</td><td class="n">0.10 ms</td></tr><tr><td><code>[1, 2, 3] == sort(fun (x, y) -&gt; if x == y then Eq else (if x ...</code></td><td class="n">0.61 ms <span class="muted">×41</span></td><td class="n">2.3 µs <span class="muted">×2399</span></td><td class="n">271</td><td class="n">0.55 ms</td><td class="n">0.20 ms</td><td class="n">95.3 µs</td></tr><tr><td><code>[(1, [1, 3]), (0, [2, 4])] == group_on_key([1, 2, 3, 4], fun ...</code></td><td class="n">0.52 ms <span class="muted">×41</span></td><td class="n">1.8 µs <span class="muted">×2841</span></td><td class="n">295</td><td class="n">1.12 ms</td><td class="n">0.14 ms</td><td class="n">86.7 µs</td></tr><tr><td><code>[5, 3] == type T=String in let map = typfun a -&gt;typfun b -&gt; f...</code></td><td class="n">0.43 ms <span class="muted">×48</span></td><td class="n">0.70 µs <span class="muted">×7595</span></td><td class="n">615</td><td class="n">1.66 ms</td><td class="n">0.10 ms</td><td class="n">40.5 µs</td></tr><tr><td><code>([2, 4], [1, 3]) == partition([1, 2, 3, 4], fun x -&gt; int_mod(...</code></td><td class="n">0.36 ms <span class="muted">×78</span></td><td class="n">0.64 µs <span class="muted">×7748</span></td><td class="n">565</td><td class="n">0.36 ms</td><td class="n">0.11 ms</td><td class="n">66.8 µs</td></tr><tr><td><code>[1, 3] == filteri([1, 2, 3, 4], fun (i, x) -&gt; int_mod(i, 2) =...</code></td><td class="n">0.31 ms <span class="muted">×74</span></td><td class="n">0.63 µs <span class="muted">×7942</span></td><td class="n">498</td><td class="n">0.93 ms</td><td class="n">0.15 ms</td><td class="n">57.6 µs</td></tr><tr><td><code>[1, 2] == sort(fun (x, y) -&gt; if x == y then Eq else (if x &lt; y...</code></td><td class="n">0.28 ms <span class="muted">×64</span></td><td class="n">1.7 µs <span class="muted">×4241</span></td><td class="n">166</td><td class="n">0.34 ms</td><td class="n">0.21 ms</td><td class="n">42.8 µs</td></tr><tr><td><code>[1, 2] == sort(fun (x, y) -&gt; if x == y then Eq else (if x &lt; y...</code></td><td class="n">0.27 ms <span class="muted">×65</span></td><td class="n">1.3 µs <span class="muted">×3852</span></td><td class="n">211</td><td class="n">0.37 ms</td><td class="n">0.18 ms</td><td class="n">43.6 µs</td></tr><tr><td><code>([2, 4], [1, 3]) == partition_map([1, 2, 3, 4], fun x -&gt; if i...</code></td><td class="n">0.26 ms <span class="muted">×72</span></td><td class="n">1.2 µs <span class="muted">×4014</span></td><td class="n">211</td><td class="n">0.34 ms</td><td class="n">0.13 ms</td><td class="n">52.0 µs</td></tr></table>
+<p>These are the evaluator's own tests, which are small: most take the interpreter well under a millisecond. The Witch slide is the larger case (<a href="#cost">what it all costs</a>, and <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a> to <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>), and mixed mode's timings are larger programs again (<a href="#mixed-built">the first step, built</a>).</p>
 
 <h2 id="numbers">Exact integers<a class="anchor" href="#numbers" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="numbers" title="copy this section's address">copy link</button></h2>
 <p><b>Int and Nat are now exact in compiled code, as the interpreter's are: an integer is a JavaScript number while it is a safe integer (up to 2<sup>53</sup> − 1), and a BigInt past that.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a>.) The interpreter's Int and Nat are arbitrary-precision integers (Jane Street's Bigint), and hazel-jit had made them JavaScript numbers, which round past 2<sup>53</sup>: 2<sup>53</sup> + 1 came out as 2<sup>53</sup>.</p>
@@ -317,6 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>Reverse application,</b> <code>x |> f</code>, which Hazel holds as an application written the other way round and steps alike: compiled as <code>f(x)</code> is.</li>
 <li><b>Next:</b> labels that are not names, an expression as a module member, the builtin from_lvs. The three fixpoints over a pattern like <code>_</code> are ill-typed tests, whose interpreter answers are failed casts, so compiling them would only add partings.</li>
 <li><b>Probes</b> are the largest: a probe shows the values that passed through it, and compiled code records none. Today a probe always shows the interpreter's run, which is correct, and never faster. Recording samples from compiled code would mean deciding what a sample is when the code that made it has no steps.</li>
+<li><b>The sweep's last limits</b>, on their own branch (<code>trial/761-last-limits</code>, <code>dd85975e96</code>, fast checks green, CI run 44134100041): an explicitly unlabeled entry, <code>(_=e)</code>, compiled as the entry itself; <code>from_lvs</code>; a module member that is an expression, evaluated and dropped as the elaborated module's <code>let _ = e</code> is; and a recursive definition's part that is not a function, when it names none of the names. A tuple label that is a hole, <code>(?=1, 2)</code>, counts as a hole now, which the rule keeps with the interpreter. Of the 313 programs, 260 compile, 233 give the interpreter's value, none differ, and 27 are the known ill-typed tests. Four still meet a limit: three ill-typed fixpoints over patterns that are not names (<code>fix _</code>, <code>fix ()</code>, <code>fix 0</code>), left so on purpose, and one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile. CI found one thing on the way: <code>let (_=x) = (_=1) in x</code> is <code>(_=1)</code> to the interpreter and <code>1</code> compiled, which the evaluator's own tests count as the same (they ignore explicit unlabelling), and so now does the sweep.</li>
 </ul>
 
 <h2 id="budget">A step budget<a class="anchor" href="#budget" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="budget" title="copy this section's address">copy link</button></h2>
@@ -380,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </ul>
 
 <h4 id="mixed-built">The first step, built on 2026-11-17</h4>
-<p><b>Mixed mode's first step is on its own branch, <code>trial/766-mixed</code>, beside the prototype: the interpreter runs the program, and calls each top-level function and module member with its whole type declared as compiled JavaScript.</b> Its CI is running; what it finds goes here.</p>
+<p><b>Mixed mode's first step is on its own branch, <code>trial/766-mixed</code>, beside the prototype: the interpreter runs the program, and calls each top-level function and module member with its whole type declared as compiled JavaScript.</b> On <code>40f097c83c</code> (CI run 44134213388, green), the consistency check found 6 evaluator programs with a function to compile (7 functions), and all 6 gave the interpreter's answer; 29 other functions were left to the interpreter because their whole type is not declared, which bears on the question of which functions to compile. Measured on larger programs (below): a recursion compiled whole runs hundreds of times as fast; the Petri net rule 22 times; the I Ching 4 times, since only 13 of its functions compile so far (its readings call other modules' members, Lines.becomes, which the rewrite does not see yet); and a one-line function called 500 times from interpreted code is slower than not compiling it, each call's crossing costing more than its work.</p>
 <ul>
 <li><b>Which functions:</b> a let at the top of the program, or a member of a module there, that binds a function whose whole type is declared (<code>let f : A -&gt; B = fun ...</code>), with no unknown in it. Each is compiled with the functions accepted before it that are in scope there, and the type aliases among them, so it can call them. One that names anything else, an earlier let that is not such a function, is left to the interpreter, and the reason kept.</li>
 <li><b>How the interpreter reaches it:</b> the program is rewritten before it runs. The interpreter still evaluates each such definition to its own closure, then hands the closure to a builtin made at run time, which keeps it and gives back a second builtin, the compiled function. The rest of the program sees that builtin under the function's name. The interpreter's one change is where it looks a builtin up: a table filled at run time, after its fixed one.</li>
@@ -388,11 +397,15 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>Checked:</b> the consistency sweep runs every evaluator test a third way, mixed, against the interpreter alone, and reports how many agree. Hazel-jit's own tests check nine programs: recursion; a call to an earlier function; a hole elsewhere, the function still compiled; a hole in the argument and a division by zero, each falling back; lists and constructors; a whole Float; and a module's members.</li>
 <li><b>Not yet:</b> no setting in the app, and no hook where the worker evaluates. The stepper shows a compiled call as one builtin step, and the rewritten definitions lose their probes.</li>
 </ul>
-
+<table class="vals"><tr><th>Program</th><th>The interpreter alone</th><th>Mixed</th><th>Rewrite and compile, once</th><th>Functions compiled</th><th>Calls compiled</th><th>Fell back</th></tr><tr><td>fib(16), all compiled</td><td class="n">71.5 ms</td><td class="n">0.2 ms</td><td class="n">0.3 ms</td><td class="n">1</td><td class="n">1</td><td class="n">0</td></tr><tr><td>the Petri net rule of <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>, whole types declared, 100 events from an interpreted loop</td><td class="n">462.7 ms</td><td class="n">20.6 ms</td><td class="n">15.4 ms</td><td class="n">12</td><td class="n">112</td><td class="n">0</td></tr><tr><td>the I Ching of hazeljs-oracles, 200 readings from an interpreted loop</td><td class="n">1033.2 ms</td><td class="n">240.2 ms</td><td class="n">3.7 ms</td><td class="n">13</td><td class="n">7800</td><td class="n">0</td></tr><tr><td>500 calls of a one-line function (sq) from an interpreted loop</td><td class="n">22.4 ms</td><td class="n">27.2 ms</td><td class="n">0.2 ms</td><td class="n">1</td><td class="n">500</td><td class="n">0</td></tr></table><p class="muted">Measured in CI (run 44134213388, Node on GitHub's machines, the evaluator tests' build), each program once after a first run; the same answer both ways checked. Not a build of the app.</p>
 
 <h3 id="steps">Step counts and probes, as the interpreter's<a class="anchor" href="#steps" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="steps" title="copy this section's address">copy link</button></h3>
 <p><b>Compiled code can count exactly the steps the interpreter takes, in every program it compiles, with care in three places. With those counts it can make the interpreter's own probe samples, with two limits. Nothing found so far makes either impossible: the costs are a little run time, a tie to the interpreter's internals, and the work.</b> This answers Matthew and Cyrus's two questions of 2026-11-13 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-767"><code class="ref"><b>^ticket(</b>767<b>)</b></code></a>). Not built yet.</p>
 <p><b>What the interpreter counts.</b> Its count goes up by one at every transition, whichever of its 36 kinds: those that interpret the program (a variable looked up, a let bound, a function applied, an operator, a case, a projection) and those that are bookkeeping (a closure wrapped, parentheses removed, a cast). It goes up one more after each pattern match. The count is the same with or without incremental reuse: a reused result adds the steps it took when it was first computed, so that probe samples stay where they were. Each probe sample is stamped with it: the span of steps from its start to its end.</p>
+<p><b>The counts, measured.</b> For 57 small programs, each a construct apart from the last, the interpreter's count is regular enough to read off (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-767"><code class="ref"><b>^ticket(</b>767<b>)</b></code></a>'s calibration, CI run 44131334098). A literal is a step. An operator or a pair of parentheses adds one. A let adds three of its own: binding, its pattern, and completing the closure around its body. Each level of a simple recursion, <code>if n == 0 then 0 else f(n - 1)</code>, adds exactly 16 (18, 34, 50, 66 for <code>f(0)</code> to <code>f(3)</code>). A declared <code>Int -&gt; Int</code> adds one cast step to each call. Some counts need the interpreter's bookkeeping to explain: <code>true &amp;&amp; false</code> takes 4 and <code>false &amp;&amp; true</code> 3. The whole table:</p>
+<details><summary>The 57 programs and their counts</summary>
+<table class="vals"><tr><th>Program</th><th>Steps</th></tr><tr><td><code>1</code></td><td class="n">1</td></tr><tr><td><code>1 + 2</code></td><td class="n">3</td></tr><tr><td><code>1 + 2 + 3</code></td><td class="n">5</td></tr><tr><td><code>(1)</code></td><td class="n">2</td></tr><tr><td><code>((1))</code></td><td class="n">3</td></tr><tr><td><code>-1</code></td><td class="n">2</td></tr><tr><td><code>!true</code></td><td class="n">2</td></tr><tr><td><code>true &amp;&amp; false</code></td><td class="n">4</td></tr><tr><td><code>false &amp;&amp; true</code></td><td class="n">3</td></tr><tr><td><code>1.0 +. 2.0</code></td><td class="n">3</td></tr><tr><td><code>&quot;a&quot; ++ &quot;b&quot;</code></td><td class="n">3</td></tr><tr><td><code>let x = 1 in 2</code></td><td class="n">5</td></tr><tr><td><code>let x = 1 in x</code></td><td class="n">5</td></tr><tr><td><code>let x = 1 in x + x</code></td><td class="n">7</td></tr><tr><td><code>let x = 1 in let y = 2 in x + y</code></td><td class="n">11</td></tr><tr><td><code>let (a, b) = (1, 2) in a</code></td><td class="n">7</td></tr><tr><td><code>fun x -&gt; x</code></td><td class="n">1</td></tr><tr><td><code>(fun x -&gt; x)(1)</code></td><td class="n">7</td></tr><tr><td><code>(fun x -&gt; 1)(2)</code></td><td class="n">7</td></tr><tr><td><code>(fun (x, y) -&gt; x + y)(1, 2)</code></td><td class="n">11</td></tr><tr><td><code>let f = fun x -&gt; x in f(1)</code></td><td class="n">10</td></tr><tr><td><code>let f = fun x -&gt; x in f(f(1))</code></td><td class="n">15</td></tr><tr><td><code>((fun x -&gt; fun y -&gt; x + y)(1))(2)</code></td><td class="n">15</td></tr><tr><td><code>let f = fun n -&gt; if n == 0 then 0 else f(n - 1) in f(0)</code></td><td class="n">18</td></tr><tr><td><code>let f = fun n -&gt; if n == 0 then 0 else f(n - 1) in f(1)</code></td><td class="n">34</td></tr><tr><td><code>let f = fun n -&gt; if n == 0 then 0 else f(n - 1) in f(2)</code></td><td class="n">50</td></tr><tr><td><code>let f = fun n -&gt; if n == 0 then 0 else f(n - 1) in f(3)</code></td><td class="n">66</td></tr><tr><td><code>if true then 1 else 2</code></td><td class="n">3</td></tr><tr><td><code>if 1 == 1 then 1 else 2</code></td><td class="n">5</td></tr><tr><td><code>case 1 | 1 =&gt; 2 | _ =&gt; 3 end</code></td><td class="n">5</td></tr><tr><td><code>case 2 | 1 =&gt; 2 | _ =&gt; 3 end</code></td><td class="n">5</td></tr><tr><td><code>case 3 | 1 =&gt; 2 | 2 =&gt; 3 | _ =&gt; 4 end</code></td><td class="n">5</td></tr><tr><td><code>(1, 2)</code></td><td class="n">4</td></tr><tr><td><code>(1 + 1, 2)</code></td><td class="n">6</td></tr><tr><td><code>(a = 1, b = 2)</code></td><td class="n">6</td></tr><tr><td><code>(a = 1, b = 2).a</code></td><td class="n">8</td></tr><tr><td><code>[1, 2]</code></td><td class="n">3</td></tr><tr><td><code>[1 + 1, 2]</code></td><td class="n">5</td></tr><tr><td><code>1 :: []</code></td><td class="n">4</td></tr><tr><td><code>1 :: 2 :: []</code></td><td class="n">6</td></tr><tr><td><code>[1] @ [2]</code></td><td class="n">5</td></tr><tr><td><code>Some(1)</code></td><td class="n">3</td></tr><tr><td><code>case Some(1) | Some(x) =&gt; x | None =&gt; 0 end</code></td><td class="n">8</td></tr><tr><td><code>string_length(&quot;ab&quot;)</code></td><td class="n">4</td></tr><tr><td><code>string_length(&quot;ab&quot;) + 1</code></td><td class="n">6</td></tr><tr><td><code>(1 : Int)</code></td><td class="n">3</td></tr><tr><td><code>let f : Int -&gt; Int = fun x -&gt; x in f(1)</code></td><td class="n">11</td></tr><tr><td><code>let f = fun x : Int -&gt; x in f(1)</code></td><td class="n">10</td></tr><tr><td><code>let f : Int -&gt; Int = fun x -&gt; x in f(f(1))</code></td><td class="n">17</td></tr><tr><td><code>let xs : [Int] = [1, 2, 3] in xs</code></td><td class="n">8</td></tr><tr><td><code>let f : [Int] -&gt; Int = fun xs -&gt; case xs | [] =&gt; 0 | x :: _ =&gt; x end in f([1, 2, 3])</code></td><td class="n">19</td></tr><tr><td><code>type T = + A + B(Int) in B(1)</code></td><td class="n">3</td></tr><tr><td><code>type T = + A + B(Int) in case B(1) | A =&gt; 0 | B(n) =&gt; n end</code></td><td class="n">7</td></tr><tr><td><code>use SInt in 1 + 2</code></td><td class="n">3</td></tr><tr><td><code>module M = { let x = 1 } in M.x</code></td><td class="n">9</td></tr><tr><td><code>let x = 1 in (x, x)</code></td><td class="n">8</td></tr><tr><td><code>let f = fun x -&gt; fun y -&gt; x in f(1)(2)</code></td><td class="n">15</td></tr></table>
+</details>
 <p><b>Why compiled code can match it.</b> hazel-jit translates the program construct by construct and runs it in the same order as the interpreter: arguments first, left to right. Most constructs take a fixed number of steps of their own, apart from their parts: an operator one; a let one, and one for its pattern; an application one, one for its pattern, and the closure's bookkeeping. So the compiler can add, wherever code runs straight through, the steps the interpreter takes there. That is one addition for each straight run of code, about what today's budget counter costs (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a>). Then the budget and the interpreter's step limit are one number, in one unit.</p>
 <p><b>Where it needs care: the "if not, why not".</b></p>
 <ol class="outline">
@@ -468,19 +481,15 @@ document.addEventListener("DOMContentLoaded", () => {
 </ol>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
-<p><b>Today, before the meeting: <a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>'s last limits, and mixed mode's first step.</b> Then the rest, in order:</p>
+<p><b>The morning's branches are green or nearly: next, they go onto the prototype branch together, and mixed mode reaches across modules.</b> In order:</p>
 <ol class="outline">
-<li>The last limits the sweep finds (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-761"><code class="ref"><b>^ticket(</b>761<b>)</b></code></a>): tuple labels that are not names, an expression as a module member, the builtin <code>from_lvs</code>, and a recursive definition of something other than functions.</li>
-<li>Mixed mode, a first step (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-766"><code class="ref"><b>^ticket(</b>766<b>)</b></code></a>): a compiled function as a builtin made at run time, behind a setting, for let-bound functions with their whole types declared, falling back one call at a time.</li>
-<li>Mixed mode in the consistency sweep: each evaluator test run a third way, mixed, against the interpreter alone.</li>
+<li>Build 49: the last limits, mixed mode, the timing and the slides' check brought onto <code>trial/694-view-jit</code> together, CI and the slides checked again.</li>
+<li>Mixed mode across modules: a module's member that calls another module's (<code>Lines.becomes</code> in the I Ching's reading) compiled too, so the I Ching's rules compile whole.</li>
+<li>Mixed mode's crossing cost: a call from interpreted code to a one-line compiled function costs more than the function (500 calls of <code>sq</code>, 27 ms mixed against 22 interpreted). Convert a large value once and remember it, and leave very small functions to the interpreter.</li>
+<li>Step counts in compiled code (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-767"><code class="ref"><b>^ticket(</b>767<b>)</b></code></a>): a counter from the measured costs, each evaluator program's count compared with the interpreter's in the sweep.</li>
+<li>Probes in compiled code, on the step counts, after the team's answer.</li>
 <li>Reviews for <a href="https://github.com/hazelgrove/hazel/pull/2828">hazelgrove/hazel#2828</a> (SInt) and <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a> (modulo by zero).</li>
-<li>Probes in compiled code, after the team's answer on probes.</li>
-<li>The slides' programs in the consistency check, beside the evaluator's tests (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-756"><code class="ref"><b>^ticket(</b>756<b>)</b></code></a>).</li>
-<li>A cheaper step counter: count only at calls that can recur (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a>).</li>
-<li>A check in the browser that a livelit in a probe drawer's stepper is drawn by the interpreter (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a>).</li>
-<li>The run-time type checks per call for an undeclared result type, counted (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a>).</li>
-<li>A build-time compiler for hazeljs apps, so a site compiles without CI (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-765"><code class="ref"><b>^ticket(</b>765<b>)</b></code></a>).</li>
-<li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of <a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a>, or the Tarot's deal), interpreter alone against mixed.</li>
+<li>A cheaper step counter (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a>); the probe drawer's stepper checked in the browser (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-760"><code class="ref"><b>^ticket(</b>760<b>)</b></code></a>); the run-time type checks of an undeclared result type counted (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-762"><code class="ref"><b>^ticket(</b>762<b>)</b></code></a>); a build-time compiler for hazeljs apps (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-765"><code class="ref"><b>^ticket(</b>765<b>)</b></code></a>).</li>
 </ol>
 
 <h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
@@ -786,7 +795,9 @@ document.addEventListener("DOMContentLoaded", () => {
  "files": [
   "data/meta.json",
   "data/numbers.json",
-  "data/tables.json"
+  "data/steps.tsv",
+  "data/tables.json",
+  "data/timing.tsv"
  ],
  "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
  "tables": [
@@ -833,7 +844,7 @@ document.addEventListener("DOMContentLoaded", () => {
     [
      "^ticket(761)",
      "The other limits, one at a time",
-     "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application; eight programs of 313 still meet a limit. Probes not begun.",
+     "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, three of them ill-typed tests. Probes not begun.",
      "in progress"
     ],
     [
@@ -863,13 +874,13 @@ document.addEventListener("DOMContentLoaded", () => {
     [
      "^ticket(766)",
      "Chosen after the meeting: mixed mode",
-     "A first step is written, on its own branch, and in CI: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins.",
+     "A first step is written, on its own branch, CI green 11-17: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins. The Petri net rule 22 times as fast, the I Ching's 4.",
      "in progress"
     ],
     [
      "^ticket(767)",
      "Asked 11-13: the interpreter's step counts in compiled code, then probes",
-     "Designed: yes to both, with care for casts and a check in CI (below). Not begun.",
+     "Designed: yes to both, with care for casts and a check in CI (below). The interpreter's counts for 57 small programs measured; the counter in compiled code not begun.",
      "in progress"
     ]
    ]
@@ -922,6 +933,129 @@ document.addEventListener("DOMContentLoaded", () => {
      "a recursive definition of more than one name, not a tuple of functions",
      "1",
      "a limit (^ticket(761))"
+    ]
+   ]
+  },
+  {
+   "section": "The same programs, timed",
+   "section_id": "timed",
+   "columns": [
+    "Program (the evaluator's test)",
+    "The interpreter, a run",
+    "Compiled JS, a run",
+    "As fast, times",
+    "First runs: the interpreter",
+    "hazel-jit's compile",
+    "The JS parsed and run"
+   ],
+   "rows": [
+    [
+     "[(index=true, `A`=60, `B`=30, `C`=0), (index=false, `A...",
+     "4.56 ms ×10",
+     "48.3 µs ×114",
+     "95",
+     "6.17 ms",
+     "0.36 ms",
+     "4.46 ms"
+    ],
+    [
+     "[5, 4, 3, 1, 1] == sort(fun (x, y) -> if x == y then Eq else ...",
+     "1.29 ms ×20",
+     "3.6 µs ×1461",
+     "358",
+     "1.03 ms",
+     "0.25 ms",
+     "0.10 ms"
+    ],
+    [
+     "[1, 1, 3, 4, 5] == sort(fun (x, y) -> if x == y then Eq else ...",
+     "1.28 ms ×21",
+     "4.5 µs ×1123",
+     "287",
+     "0.99 ms",
+     "0.21 ms",
+     "0.12 ms"
+    ],
+    [
+     "[1, 2, 3] == unique([1, 2, 2, 3, 1, 3])",
+     "0.78 ms ×31",
+     "3.8 µs ×1717",
+     "207",
+     "3.76 ms",
+     "0.16 ms",
+     "0.10 ms"
+    ],
+    [
+     "[1, 2, 3] == sort(fun (x, y) -> if x == y then Eq else (if x ...",
+     "0.61 ms ×41",
+     "2.3 µs ×2399",
+     "271",
+     "0.55 ms",
+     "0.20 ms",
+     "95.3 µs"
+    ],
+    [
+     "[(1, [1, 3]), (0, [2, 4])] == group_on_key([1, 2, 3, 4], fun ...",
+     "0.52 ms ×41",
+     "1.8 µs ×2841",
+     "295",
+     "1.12 ms",
+     "0.14 ms",
+     "86.7 µs"
+    ],
+    [
+     "[5, 3] == type T=String in let map = typfun a ->typfun b -> f...",
+     "0.43 ms ×48",
+     "0.70 µs ×7595",
+     "615",
+     "1.66 ms",
+     "0.10 ms",
+     "40.5 µs"
+    ],
+    [
+     "([2, 4], [1, 3]) == partition([1, 2, 3, 4], fun x -> int_mod(...",
+     "0.36 ms ×78",
+     "0.64 µs ×7748",
+     "565",
+     "0.36 ms",
+     "0.11 ms",
+     "66.8 µs"
+    ],
+    [
+     "[1, 3] == filteri([1, 2, 3, 4], fun (i, x) -> int_mod(i, 2) =...",
+     "0.31 ms ×74",
+     "0.63 µs ×7942",
+     "498",
+     "0.93 ms",
+     "0.15 ms",
+     "57.6 µs"
+    ],
+    [
+     "[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y...",
+     "0.28 ms ×64",
+     "1.7 µs ×4241",
+     "166",
+     "0.34 ms",
+     "0.21 ms",
+     "42.8 µs"
+    ],
+    [
+     "[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y...",
+     "0.27 ms ×65",
+     "1.3 µs ×3852",
+     "211",
+     "0.37 ms",
+     "0.18 ms",
+     "43.6 µs"
+    ],
+    [
+     "([2, 4], [1, 3]) == partition_map([1, 2, 3, 4], fun x -> if i...",
+     "0.26 ms ×72",
+     "1.2 µs ×4014",
+     "211",
+     "0.34 ms",
+     "0.13 ms",
+     "52.0 µs"
     ]
    ]
   },
@@ -1093,6 +1227,295 @@ document.addEventListener("DOMContentLoaded", () => {
      "1.6 ms",
      "5 to 11 ms",
      "30"
+    ]
+   ]
+  },
+  {
+   "section": "Mixed mode",
+   "section_id": "mixed",
+   "columns": [
+    "Program",
+    "The interpreter alone",
+    "Mixed",
+    "Rewrite and compile, once",
+    "Functions compiled",
+    "Calls compiled",
+    "Fell back"
+   ],
+   "rows": [
+    [
+     "fib(16), all compiled",
+     "71.5 ms",
+     "0.2 ms",
+     "0.3 ms",
+     "1",
+     "1",
+     "0"
+    ],
+    [
+     "the Petri net rule of ^report(43), whole types declared, 100 events from an interpreted loop",
+     "462.7 ms",
+     "20.6 ms",
+     "15.4 ms",
+     "12",
+     "112",
+     "0"
+    ],
+    [
+     "the I Ching of hazeljs-oracles, 200 readings from an interpreted loop",
+     "1033.2 ms",
+     "240.2 ms",
+     "3.7 ms",
+     "13",
+     "7800",
+     "0"
+    ],
+    [
+     "500 calls of a one-line function (sq) from an interpreted loop",
+     "22.4 ms",
+     "27.2 ms",
+     "0.2 ms",
+     "1",
+     "500",
+     "0"
+    ]
+   ]
+  },
+  {
+   "section": "Step counts and probes, as the interpreter's",
+   "section_id": "steps",
+   "columns": [
+    "Program",
+    "Steps"
+   ],
+   "rows": [
+    [
+     "1",
+     "1"
+    ],
+    [
+     "1 + 2",
+     "3"
+    ],
+    [
+     "1 + 2 + 3",
+     "5"
+    ],
+    [
+     "(1)",
+     "2"
+    ],
+    [
+     "((1))",
+     "3"
+    ],
+    [
+     "-1",
+     "2"
+    ],
+    [
+     "!true",
+     "2"
+    ],
+    [
+     "true && false",
+     "4"
+    ],
+    [
+     "false && true",
+     "3"
+    ],
+    [
+     "1.0 +. 2.0",
+     "3"
+    ],
+    [
+     "\"a\" ++ \"b\"",
+     "3"
+    ],
+    [
+     "let x = 1 in 2",
+     "5"
+    ],
+    [
+     "let x = 1 in x",
+     "5"
+    ],
+    [
+     "let x = 1 in x + x",
+     "7"
+    ],
+    [
+     "let x = 1 in let y = 2 in x + y",
+     "11"
+    ],
+    [
+     "let (a, b) = (1, 2) in a",
+     "7"
+    ],
+    [
+     "fun x -> x",
+     "1"
+    ],
+    [
+     "(fun x -> x)(1)",
+     "7"
+    ],
+    [
+     "(fun x -> 1)(2)",
+     "7"
+    ],
+    [
+     "(fun (x, y) -> x + y)(1, 2)",
+     "11"
+    ],
+    [
+     "let f = fun x -> x in f(1)",
+     "10"
+    ],
+    [
+     "let f = fun x -> x in f(f(1))",
+     "15"
+    ],
+    [
+     "((fun x -> fun y -> x + y)(1))(2)",
+     "15"
+    ],
+    [
+     "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(0)",
+     "18"
+    ],
+    [
+     "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(1)",
+     "34"
+    ],
+    [
+     "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(2)",
+     "50"
+    ],
+    [
+     "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(3)",
+     "66"
+    ],
+    [
+     "if true then 1 else 2",
+     "3"
+    ],
+    [
+     "if 1 == 1 then 1 else 2",
+     "5"
+    ],
+    [
+     "case 1 | 1 => 2 | _ => 3 end",
+     "5"
+    ],
+    [
+     "case 2 | 1 => 2 | _ => 3 end",
+     "5"
+    ],
+    [
+     "case 3 | 1 => 2 | 2 => 3 | _ => 4 end",
+     "5"
+    ],
+    [
+     "(1, 2)",
+     "4"
+    ],
+    [
+     "(1 + 1, 2)",
+     "6"
+    ],
+    [
+     "(a = 1, b = 2)",
+     "6"
+    ],
+    [
+     "(a = 1, b = 2).a",
+     "8"
+    ],
+    [
+     "[1, 2]",
+     "3"
+    ],
+    [
+     "[1 + 1, 2]",
+     "5"
+    ],
+    [
+     "1 :: []",
+     "4"
+    ],
+    [
+     "1 :: 2 :: []",
+     "6"
+    ],
+    [
+     "[1] @ [2]",
+     "5"
+    ],
+    [
+     "Some(1)",
+     "3"
+    ],
+    [
+     "case Some(1) | Some(x) => x | None => 0 end",
+     "8"
+    ],
+    [
+     "string_length(\"ab\")",
+     "4"
+    ],
+    [
+     "string_length(\"ab\") + 1",
+     "6"
+    ],
+    [
+     "(1 : Int)",
+     "3"
+    ],
+    [
+     "let f : Int -> Int = fun x -> x in f(1)",
+     "11"
+    ],
+    [
+     "let f = fun x : Int -> x in f(1)",
+     "10"
+    ],
+    [
+     "let f : Int -> Int = fun x -> x in f(f(1))",
+     "17"
+    ],
+    [
+     "let xs : [Int] = [1, 2, 3] in xs",
+     "8"
+    ],
+    [
+     "let f : [Int] -> Int = fun xs -> case xs | [] => 0 | x :: _ => x end in f([1, 2, 3])",
+     "19"
+    ],
+    [
+     "type T = + A + B(Int) in B(1)",
+     "3"
+    ],
+    [
+     "type T = + A + B(Int) in case B(1) | A => 0 | B(n) => n end",
+     "7"
+    ],
+    [
+     "use SInt in 1 + 2",
+     "3"
+    ],
+    [
+     "module M = { let x = 1 } in M.x",
+     "9"
+    ],
+    [
+     "let x = 1 in (x, x)",
+     "8"
+    ],
+    [
+     "let f = fun x -> fun y -> x in f(1)(2)",
+     "15"
     ]
    ]
   },

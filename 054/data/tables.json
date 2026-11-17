@@ -42,7 +42,7 @@
    [
     "^ticket(761)",
     "The other limits, one at a time",
-    "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application; eight programs of 313 still meet a limit. Probes not begun.",
+    "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, three of them ill-typed tests. Probes not begun.",
     "in progress"
    ],
    [
@@ -72,13 +72,13 @@
    [
     "^ticket(766)",
     "Chosen after the meeting: mixed mode",
-    "A first step is written, on its own branch, and in CI: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins.",
+    "A first step is written, on its own branch, CI green 11-17: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins. The Petri net rule 22 times as fast, the I Ching's 4.",
     "in progress"
    ],
    [
     "^ticket(767)",
     "Asked 11-13: the interpreter's step counts in compiled code, then probes",
-    "Designed: yes to both, with care for casts and a check in CI (below). Not begun.",
+    "Designed: yes to both, with care for casts and a check in CI (below). The interpreter's counts for 57 small programs measured; the counter in compiled code not begun.",
     "in progress"
    ]
   ]
@@ -131,6 +131,129 @@
     "a recursive definition of more than one name, not a tuple of functions",
     "1",
     "a limit (^ticket(761))"
+   ]
+  ]
+ },
+ {
+  "section": "The same programs, timed",
+  "section_id": "timed",
+  "columns": [
+   "Program (the evaluator's test)",
+   "The interpreter, a run",
+   "Compiled JS, a run",
+   "As fast, times",
+   "First runs: the interpreter",
+   "hazel-jit's compile",
+   "The JS parsed and run"
+  ],
+  "rows": [
+   [
+    "[(index=true, `A`=60, `B`=30, `C`=0), (index=false, `A...",
+    "4.56 ms ×10",
+    "48.3 µs ×114",
+    "95",
+    "6.17 ms",
+    "0.36 ms",
+    "4.46 ms"
+   ],
+   [
+    "[5, 4, 3, 1, 1] == sort(fun (x, y) -> if x == y then Eq else ...",
+    "1.29 ms ×20",
+    "3.6 µs ×1461",
+    "358",
+    "1.03 ms",
+    "0.25 ms",
+    "0.10 ms"
+   ],
+   [
+    "[1, 1, 3, 4, 5] == sort(fun (x, y) -> if x == y then Eq else ...",
+    "1.28 ms ×21",
+    "4.5 µs ×1123",
+    "287",
+    "0.99 ms",
+    "0.21 ms",
+    "0.12 ms"
+   ],
+   [
+    "[1, 2, 3] == unique([1, 2, 2, 3, 1, 3])",
+    "0.78 ms ×31",
+    "3.8 µs ×1717",
+    "207",
+    "3.76 ms",
+    "0.16 ms",
+    "0.10 ms"
+   ],
+   [
+    "[1, 2, 3] == sort(fun (x, y) -> if x == y then Eq else (if x ...",
+    "0.61 ms ×41",
+    "2.3 µs ×2399",
+    "271",
+    "0.55 ms",
+    "0.20 ms",
+    "95.3 µs"
+   ],
+   [
+    "[(1, [1, 3]), (0, [2, 4])] == group_on_key([1, 2, 3, 4], fun ...",
+    "0.52 ms ×41",
+    "1.8 µs ×2841",
+    "295",
+    "1.12 ms",
+    "0.14 ms",
+    "86.7 µs"
+   ],
+   [
+    "[5, 3] == type T=String in let map = typfun a ->typfun b -> f...",
+    "0.43 ms ×48",
+    "0.70 µs ×7595",
+    "615",
+    "1.66 ms",
+    "0.10 ms",
+    "40.5 µs"
+   ],
+   [
+    "([2, 4], [1, 3]) == partition([1, 2, 3, 4], fun x -> int_mod(...",
+    "0.36 ms ×78",
+    "0.64 µs ×7748",
+    "565",
+    "0.36 ms",
+    "0.11 ms",
+    "66.8 µs"
+   ],
+   [
+    "[1, 3] == filteri([1, 2, 3, 4], fun (i, x) -> int_mod(i, 2) =...",
+    "0.31 ms ×74",
+    "0.63 µs ×7942",
+    "498",
+    "0.93 ms",
+    "0.15 ms",
+    "57.6 µs"
+   ],
+   [
+    "[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y...",
+    "0.28 ms ×64",
+    "1.7 µs ×4241",
+    "166",
+    "0.34 ms",
+    "0.21 ms",
+    "42.8 µs"
+   ],
+   [
+    "[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y...",
+    "0.27 ms ×65",
+    "1.3 µs ×3852",
+    "211",
+    "0.37 ms",
+    "0.18 ms",
+    "43.6 µs"
+   ],
+   [
+    "([2, 4], [1, 3]) == partition_map([1, 2, 3, 4], fun x -> if i...",
+    "0.26 ms ×72",
+    "1.2 µs ×4014",
+    "211",
+    "0.34 ms",
+    "0.13 ms",
+    "52.0 µs"
    ]
   ]
  },
@@ -302,6 +425,295 @@
     "1.6 ms",
     "5 to 11 ms",
     "30"
+   ]
+  ]
+ },
+ {
+  "section": "Mixed mode",
+  "section_id": "mixed",
+  "columns": [
+   "Program",
+   "The interpreter alone",
+   "Mixed",
+   "Rewrite and compile, once",
+   "Functions compiled",
+   "Calls compiled",
+   "Fell back"
+  ],
+  "rows": [
+   [
+    "fib(16), all compiled",
+    "71.5 ms",
+    "0.2 ms",
+    "0.3 ms",
+    "1",
+    "1",
+    "0"
+   ],
+   [
+    "the Petri net rule of ^report(43), whole types declared, 100 events from an interpreted loop",
+    "462.7 ms",
+    "20.6 ms",
+    "15.4 ms",
+    "12",
+    "112",
+    "0"
+   ],
+   [
+    "the I Ching of hazeljs-oracles, 200 readings from an interpreted loop",
+    "1033.2 ms",
+    "240.2 ms",
+    "3.7 ms",
+    "13",
+    "7800",
+    "0"
+   ],
+   [
+    "500 calls of a one-line function (sq) from an interpreted loop",
+    "22.4 ms",
+    "27.2 ms",
+    "0.2 ms",
+    "1",
+    "500",
+    "0"
+   ]
+  ]
+ },
+ {
+  "section": "Step counts and probes, as the interpreter's",
+  "section_id": "steps",
+  "columns": [
+   "Program",
+   "Steps"
+  ],
+  "rows": [
+   [
+    "1",
+    "1"
+   ],
+   [
+    "1 + 2",
+    "3"
+   ],
+   [
+    "1 + 2 + 3",
+    "5"
+   ],
+   [
+    "(1)",
+    "2"
+   ],
+   [
+    "((1))",
+    "3"
+   ],
+   [
+    "-1",
+    "2"
+   ],
+   [
+    "!true",
+    "2"
+   ],
+   [
+    "true && false",
+    "4"
+   ],
+   [
+    "false && true",
+    "3"
+   ],
+   [
+    "1.0 +. 2.0",
+    "3"
+   ],
+   [
+    "\"a\" ++ \"b\"",
+    "3"
+   ],
+   [
+    "let x = 1 in 2",
+    "5"
+   ],
+   [
+    "let x = 1 in x",
+    "5"
+   ],
+   [
+    "let x = 1 in x + x",
+    "7"
+   ],
+   [
+    "let x = 1 in let y = 2 in x + y",
+    "11"
+   ],
+   [
+    "let (a, b) = (1, 2) in a",
+    "7"
+   ],
+   [
+    "fun x -> x",
+    "1"
+   ],
+   [
+    "(fun x -> x)(1)",
+    "7"
+   ],
+   [
+    "(fun x -> 1)(2)",
+    "7"
+   ],
+   [
+    "(fun (x, y) -> x + y)(1, 2)",
+    "11"
+   ],
+   [
+    "let f = fun x -> x in f(1)",
+    "10"
+   ],
+   [
+    "let f = fun x -> x in f(f(1))",
+    "15"
+   ],
+   [
+    "((fun x -> fun y -> x + y)(1))(2)",
+    "15"
+   ],
+   [
+    "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(0)",
+    "18"
+   ],
+   [
+    "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(1)",
+    "34"
+   ],
+   [
+    "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(2)",
+    "50"
+   ],
+   [
+    "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(3)",
+    "66"
+   ],
+   [
+    "if true then 1 else 2",
+    "3"
+   ],
+   [
+    "if 1 == 1 then 1 else 2",
+    "5"
+   ],
+   [
+    "case 1 | 1 => 2 | _ => 3 end",
+    "5"
+   ],
+   [
+    "case 2 | 1 => 2 | _ => 3 end",
+    "5"
+   ],
+   [
+    "case 3 | 1 => 2 | 2 => 3 | _ => 4 end",
+    "5"
+   ],
+   [
+    "(1, 2)",
+    "4"
+   ],
+   [
+    "(1 + 1, 2)",
+    "6"
+   ],
+   [
+    "(a = 1, b = 2)",
+    "6"
+   ],
+   [
+    "(a = 1, b = 2).a",
+    "8"
+   ],
+   [
+    "[1, 2]",
+    "3"
+   ],
+   [
+    "[1 + 1, 2]",
+    "5"
+   ],
+   [
+    "1 :: []",
+    "4"
+   ],
+   [
+    "1 :: 2 :: []",
+    "6"
+   ],
+   [
+    "[1] @ [2]",
+    "5"
+   ],
+   [
+    "Some(1)",
+    "3"
+   ],
+   [
+    "case Some(1) | Some(x) => x | None => 0 end",
+    "8"
+   ],
+   [
+    "string_length(\"ab\")",
+    "4"
+   ],
+   [
+    "string_length(\"ab\") + 1",
+    "6"
+   ],
+   [
+    "(1 : Int)",
+    "3"
+   ],
+   [
+    "let f : Int -> Int = fun x -> x in f(1)",
+    "11"
+   ],
+   [
+    "let f = fun x : Int -> x in f(1)",
+    "10"
+   ],
+   [
+    "let f : Int -> Int = fun x -> x in f(f(1))",
+    "17"
+   ],
+   [
+    "let xs : [Int] = [1, 2, 3] in xs",
+    "8"
+   ],
+   [
+    "let f : [Int] -> Int = fun xs -> case xs | [] => 0 | x :: _ => x end in f([1, 2, 3])",
+    "19"
+   ],
+   [
+    "type T = + A + B(Int) in B(1)",
+    "3"
+   ],
+   [
+    "type T = + A + B(Int) in case B(1) | A => 0 | B(n) => n end",
+    "7"
+   ],
+   [
+    "use SInt in 1 + 2",
+    "3"
+   ],
+   [
+    "module M = { let x = 1 } in M.x",
+    "9"
+   ],
+   [
+    "let x = 1 in (x, x)",
+    "8"
+   ],
+   [
+    "let f = fun x -> fun y -> x in f(1)(2)",
+    "15"
    ]
   ]
  },

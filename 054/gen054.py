@@ -54,7 +54,7 @@ PLAN = [
     dict(t=760, short="holes, the stepper: the interpreter's", name="Holes and the stepper stay with the interpreter", sec="rules", stage=4, st="done",
          status="On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser."),
     dict(t=761, short="the other limits, one at a time", name="The other limits, one at a time", sec="limits", stage=4, st="part",
-         status="On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application; eight programs of 313 still meet a limit. Probes not begun."),
+         status="On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, three of them ill-typed tests. Probes not begun."),
     dict(t=763, short="a step budget", name="A step budget for compiled code", sec="budget", stage=4, st="done",
          status="On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter."),
     dict(t=764, short="found: modulo by zero crashed", name="Found: modulo by zero crashed the interpreter", sec="found", stage=4, st="pr",
@@ -64,9 +64,9 @@ PLAN = [
     dict(t=765, short="found: slow on an older phone", name="Found: the oracles were slow on an older phone; compiled ahead of time", sec="ahead", stage=4, st="done",
          status="Both oracles run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Left: the compiler inside hazeljs."),
     dict(t=766, short="next: mixed mode", name="Chosen after the meeting: mixed mode", sec="mixed", stage=1, st="part",
-         status="A first step is written, on its own branch, and in CI: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins."),
+         status="A first step is written, on its own branch, CI green 11-17: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins. The Petri net rule 22 times as fast, the I Ching's 4."),
     dict(t=767, short="next: steps and probes", name="Asked 11-13: the interpreter's step counts in compiled code, then probes", sec="steps", stage=1, st="part",
-         status="Designed: yes to both, with care for casts and a check in CI (below). Not begun."),
+         status="Designed: yes to both, with care for casts and a check in CI (below). The interpreter's counts for 57 small programs measured; the counter in compiled code not begun."),
 ]
 STAGES = ["designed", "written", "CI green", "on the branch"]
 
@@ -288,17 +288,25 @@ def builds_table():
 
 # ---------------------------------------------------------------- mixed mode's first step (ticket 766): CI's report on its branch
 # measured: (program, the interpreter alone ms, mixed ms, rewrite and compile ms, functions compiled, calls compiled, fell back)
-MIXED = dict(branch="trial/766-mixed", commit=None, run=None, sweep=None, measured=[])
+MIXED = dict(branch="trial/766-mixed", commit="40f097c83c", run=44134213388,
+             sweep=dict(programs=6, functions=7, agreed=6, differ=0, failed=0, calls=16843, fell=2, undeclared=29),
+             measured=[("fib(16), all compiled", 71.5, 0.2, 0.3, 1, 1, 0),
+                       ("the Petri net rule of report 043, whole types declared, 100 events from an interpreted loop", 462.7, 20.6, 15.4, 12, 112, 0),
+                       ("the I Ching of hazeljs-oracles, 200 readings from an interpreted loop", 1033.2, 240.2, 3.7, 13, 7800, 0),
+                       ("500 calls of a one-line function (sq) from an interpreted loop", 22.4, 27.2, 0.2, 1, 500, 0)])
 
 
 def mixed_status():
     if MIXED["commit"] is None:
         return "Its CI is running; what it finds goes here."
     sw = MIXED["sweep"]
-    out = (f"On <code>{MIXED['commit']}</code> (CI run {MIXED['run']}), the sweep found {sw['programs']} evaluator programs with a "
-           f"function to compile ({sw['functions']} functions): {sw['agreed']} gave the interpreter's answer, {sw['differ']} differed, "
-           f"{sw['failed']} failed to run; {sw['calls']} calls went to compiled code and {sw['fell']} fell back.")
-    return out
+    return (f"On <code>{MIXED['commit']}</code> (CI run {MIXED['run']}, green), the consistency check found {sw['programs']} evaluator programs "
+            f"with a function to compile ({sw['functions']} functions), and all {sw['agreed']} gave the interpreter's answer; "
+            f"{sw['undeclared']} other functions were left to the interpreter because their whole type is not declared, which bears on the "
+            f"question of which functions to compile. Measured on larger programs (below): a recursion compiled whole runs hundreds of times "
+            f"as fast; the Petri net rule 22 times; the I Ching 4 times, since only 13 of its functions compile so far (its readings call "
+            f"other modules' members, Lines.becomes, which the rewrite does not see yet); and a one-line function called 500 times from "
+            f"interpreted code is slower than not compiling it, each call's crossing costing more than its work.")
 
 
 def mixed_table():
@@ -313,6 +321,144 @@ def mixed_table():
     return '<table class="vals">' + "".join(rows) + f'</table><p class="muted">{cap}</p>'
 
 
+# ---------------------------------------------------------------- the evaluator's programs timed both ways (Matthew, 2026-11-17: "please
+# time the tests in interpreter vs jit and present those results in report 54"): the sweep's timing lines, from CI's log
+TIMING = dict(commit="4c51a00490", run=44133893762, file=os.path.join(HERE, "data", "timing.tsv"))
+
+
+def timing_rows():
+    if not os.path.exists(TIMING["file"]):
+        return []
+    rows = []
+    for line in open(TIMING["file"]):
+        parts = line.rstrip("\n").split("\t")
+        if len(parts) < 10 or parts[0] != "hazel-jit time":
+            continue
+        rows.append(dict(interp1=float(parts[1]), interp=float(parts[2]), interp_n=int(parts[3]), compile=float(parts[4]),
+                         parse=float(parts[5]), run1=float(parts[6]), run=float(parts[7]), run_n=int(parts[8]), test=parts[9]))
+    return rows
+
+
+TROWS = timing_rows()
+
+
+def median(xs):
+    xs = sorted(xs)
+    n = len(xs)
+    return xs[n // 2] if n % 2 else (xs[n // 2 - 1] + xs[n // 2]) / 2
+
+
+def timing_numbers():
+    if not TROWS:
+        return {}
+    tot = lambda k: sum(r[k] for r in TROWS)
+    ratio = lambda r: r["interp"] / max(r["run"], 1e-6)
+    first = lambda r: r["parse"] + r["run1"]
+    return dict(n=len(TROWS), interp=tot("interp"), run=tot("run"), interp1=tot("interp1"), compile=tot("compile"),
+                first=sum(first(r) for r in TROWS), med_interp=median([r["interp"] for r in TROWS]), med_run=median([r["run"] for r in TROWS]),
+                med_ratio=median([ratio(r) for r in TROWS]), lo_ratio=min(ratio(r) for r in TROWS), hi_ratio=max(ratio(r) for r in TROWS),
+                med_ratio1=median([r["interp1"] / max(first(r), 1e-3) for r in TROWS]),
+                med_ratio_c=median([r["interp1"] / max(r["compile"] + first(r), 1e-3) for r in TROWS]),
+                slower1=sum(1 for r in TROWS if r["compile"] + first(r) > r["interp1"]),
+                min_n=min(r["interp_n"] for r in TROWS), max_n=max(r["interp_n"] for r in TROWS))
+
+
+TN = timing_numbers()
+
+
+def fig_timing():
+    if not TROWS:
+        return '<p class="muted">The timings are being measured; they go here.</p>'
+    import math
+    W, L, R, T, B = 700, 70, 20, 44, 52
+    H = 430
+    xs = [max(r["interp"], 1e-5) for r in TROWS]
+    ys = [max(r["run"], 1e-5) for r in TROWS]
+    lo = math.floor(math.log10(min(min(xs), min(ys))))
+    hi = math.ceil(math.log10(max(max(xs), max(ys))))
+    sx = lambda v: L + (math.log10(v) - lo) / (hi - lo) * (W - L - R)
+    sy = lambda v: H - B - (math.log10(v) - lo) / (hi - lo) * (H - T - B)
+    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The evaluator\'s {len(TROWS)} programs, a run\'s time each way</text>',
+           '<text x="16" y="34" font-size="11" fill="var(--muted)">each dot a program, each time a run\'s, over its repeats: across, the interpreter; up, the compiled JS</text>']
+    for e in range(lo, hi + 1):
+        v = 10 ** e
+        lab = f"{v:g} ms" if v >= 0.001 else f"{v * 1000:g} µs"
+        out.append(f'<line x1="{sx(v):.1f}" y1="{T}" x2="{sx(v):.1f}" y2="{H - B}" stroke="var(--line)" stroke-width="0.6"/>')
+        out.append(f'<line x1="{L}" y1="{sy(v):.1f}" x2="{W - R}" y2="{sy(v):.1f}" stroke="var(--line)" stroke-width="0.6"/>')
+        out.append(f'<text x="{sx(v):.1f}" y="{H - B + 14}" font-size="10" text-anchor="middle" fill="var(--muted)">{lab}</text>')
+        out.append(f'<text x="{L - 6}" y="{sy(v) + 3:.1f}" font-size="10" text-anchor="end" fill="var(--muted)">{lab}</text>')
+    a, b = 10 ** lo, 10 ** hi
+    for k, name in [(1, "as fast"), (100, "100 times as fast"), (10000, "10,000 times")]:
+        x1 = max(a, a * k)
+        if x1 >= b:
+            continue
+        out.append(f'<line x1="{sx(x1):.1f}" y1="{sy(x1 / k):.1f}" x2="{sx(b):.1f}" y2="{sy(b / k):.1f}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>')
+        out.append(f'<text x="{sx(b) - 4:.1f}" y="{sy(b / k) - 5:.1f}" font-size="10" text-anchor="end" fill="var(--muted)">{name}</text>')
+    for x, y in zip(xs, ys):
+        out.append(f'<circle cx="{sx(x):.1f}" cy="{sy(y):.1f}" r="3" fill="#2563eb" fill-opacity="0.55"/>')
+    out.append(f'<text x="{(L + W - R) / 2:.0f}" y="{H - 14}" font-size="11" text-anchor="middle" fill="var(--ink)">the interpreter, a run</text>')
+    out.append(f'<text x="14" y="{(T + H - B) / 2:.0f}" font-size="11" text-anchor="middle" fill="var(--ink)" transform="rotate(-90 14 {(T + H - B) / 2:.0f})">compiled JS, a run</text>')
+    cap = (f"Measured on <code>{TIMING['commit']}</code> (build 48 with the last limits, and the timing; CI run {TIMING['run']}, the fast checks, "
+           f"Node on GitHub's machines). Each program's interpreter runs repeated until they added to 20 ms ({TN['min_n']} to {TN['max_n']} times), "
+           "and its compiled JS's until they added to 5 ms; each dot is a run's time, the total over the repeats. Below the line marked "
+           "\"as fast\", compiled code was faster. Not a build of the app.")
+    return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="A scatter of {len(TROWS)} programs on log scales, '
+            f'the interpreter\'s time a run across and the compiled JS\'s up" style="width:100%;height:auto;display:block">' + "".join(out) +
+            f"</svg><figcaption>{cap}</figcaption></figure>")
+
+
+def timing_table():
+    if not TROWS:
+        return ""
+    top = sorted(TROWS, key=lambda r: -r["interp"])[:12]
+    def f(v):
+        return f"{v:.1f} ms" if v >= 10 else f"{v:.2f} ms" if v >= 0.1 else f"{v * 1000:.1f} µs" if v >= 0.001 else f"{v * 1000:.2f} µs"
+    rows = ["<tr><th>Program (the evaluator's test)</th><th>The interpreter, a run</th><th>Compiled JS, a run</th><th>As fast, times</th>"
+            "<th>First runs: the interpreter</th><th>hazel-jit's compile</th><th>The JS parsed and run</th></tr>"]
+    for r in top:
+        name = r["test"] if len(r["test"]) <= 64 else r["test"][:61] + "..."
+        rows.append(f'<tr><td><code>{esc(name)}</code></td><td class="n">{f(r["interp"])} <span class="muted">×{r["interp_n"]}</span></td>'
+                    f'<td class="n">{f(r["run"])} <span class="muted">×{r["run_n"]}</span></td><td class="n">{r["interp"] / max(r["run"], 1e-6):,.0f}</td>'
+                    f'<td class="n">{f(r["interp1"])}</td><td class="n">{f(r["compile"])}</td><td class="n">{f(r["parse"] + r["run1"])}</td></tr>')
+    return '<table class="vals">' + "".join(rows) + "</table>"
+
+
+def timing_summary():
+    if not TN:
+        return "Measuring; the numbers go here."
+    big = [r for r in TROWS if r["interp"] >= 0.1]
+    big_med = median([r["interp"] / max(r["run"], 1e-6) for r in big]) if big else 0
+    return (f"Run again and again, the {TN['n']} evaluator programs that compile and give the interpreter's value took the interpreter "
+            f"{TN['interp']:.0f} ms a run in all, and compiled code {TN['run']:.2f} ms. The median program is {TN['med_ratio']:,.0f} times as fast "
+            f"compiled ({TN['med_interp'] * 1000:.0f} µs against {TN['med_run'] * 1000:.2f} µs), and every one is faster, from {TN['lo_ratio']:.1f} "
+            f"to {TN['hi_ratio']:,.0f} times; the {len(big)} that take the interpreter 0.1 ms or more, a median {big_med:,.0f} times. Run once, "
+            f"compiling included, as a page that compiles before its first run would, the median program is {TN['med_ratio_c']:.1f} times as fast, "
+            f"and {TN['slower1']} of the {TN['n']} are slower: programs of a few microseconds, where compiling is the cost.")
+
+
+# ---------------------------------------------------------------- (ticket 767) the interpreter's step counts for small programs, each a
+# construct apart from the last (Test_HazelJit's calibration, CI run 44131334098, on trial/767-steps df87481567)
+CALIB = dict(commit="df87481567", run=44131334098)
+CROWS = [(int(l.split("\t", 1)[0]), l.rstrip("\n").split("\t", 1)[1]) for l in open(os.path.join(HERE, "data", "steps.tsv")) if "\t" in l]
+# the pairs that show one construct's own cost: (what, the program with it, the program without)
+CPAIRS = [
+    ("a literal", "1", None),
+    ("an operator", "1 + 2", "1"),
+    ("parentheses", "(1)", "1"),
+    ("a let (binding, its pattern, closing its closure), less its parts", "let x = 1 in 2", None),
+    ("a call of a named function", "let f = fun x -> x in f(f(1))", "let f = fun x -> x in f(1)"),
+    ("a level of recursion, if n == 0 then 0 else f(n - 1)", "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(1)", "let f = fun n -> if n == 0 then 0 else f(n - 1) in f(0)"),
+    ("a declared Int -> Int, a call", "let f : Int -> Int = fun x -> x in f(f(1))", "let f = fun x -> x in f(f(1))"),
+]
+
+
+def calib_table():
+    rows = ["<tr><th>Program</th><th>Steps</th></tr>"]
+    for n, src in CROWS:
+        rows.append(f'<tr><td><code>{esc(src)}</code></td><td class="n">{n}</td></tr>')
+    return '<table class="vals">' + "".join(rows) + "</table>"
+
+
 def summary_block():
     li = "".join(f"<li>{esc(s)}</li>" for s in SUMMARY)
     return f'<blockquote class="msg"><ul>{li}</ul></blockquote>'
@@ -322,7 +468,8 @@ NUMS = {"updated": updated, "checks": str(SWEEP["checks"]), "compiled": str(SWEE
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
         "tab_sint": sint_table(), "tab_slides": slides_table(), "tab_builds": builds_table(), "summary": summary_block(),
-        "mixed_status": mixed_status(), "tab_mixed": mixed_table()}
+        "mixed_status": mixed_status(), "tab_mixed": mixed_table(), "fig_timing": fig_timing(), "tab_timing": timing_table(),
+        "timing_summary": timing_summary(), "tab_calib": calib_table()}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
     body = body.replace("{{" + k + "}}", v)
