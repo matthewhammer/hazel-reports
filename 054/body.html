@@ -29,7 +29,7 @@
 {{summary}}
 <p>And Cyrus's concern, which Matthew passed on separately the same day: <i>"{{cyrus}}"</i></p>
 {{tab_plan}}
-<p>All of the done changes are on <code>trial/694-view-jit</code>, the hazel-jit prototype branch (hazelgrove/hazel#2817), as build 48 since 2026-11-16 (<a href="#cost">the builds</a>). Each was written on its own branch, passed CI there, and was brought together with the others; CI passed again on the whole, and so did the slides. None is on dev: report 053 explains why the prototype is to be redone by hand in small steps.</p>
+<p>All of the done changes are on <code>trial/694-view-jit</code>, the hazel-jit prototype branch (hazelgrove/hazel#2817), as build 48 since 2026-11-16, and build 49, this morning's branches merged (the last limits, mixed mode, the timing, the slides' check, the step calibration), passes the fast checks on <code>trial/694-build-49</code>, its full tests and the slides' browser check running (<a href="#cost">the builds</a>). Each was written on its own branch, passed CI there, and was brought together with the others; CI passed again on the whole, and so did the slides. None is on dev: report 053 explains why the prototype is to be redone by hand in small steps.</p>
 
 <h2 id="what">What hazel-jit is</h2>
 <p><b>hazel-jit translates an elaborated Hazel program to the text of a JavaScript function, and the page runs that function on its own thread at a livelit's event, to draw the livelits before the interpreter's answer comes back.</b> Hazel's interpreter, in a web worker, still runs every program, and its answer is still the program's result: the probes, the tests and the result panel come from it. So far hazel-jit has been a measurement of how fast compiled Hazel could be (a step of the Witch's slider in 2 to 3 ms, report 050). The meeting's point is that it must also be correct, because whatever it draws, a user reads as what Hazel computed.</p>
@@ -48,6 +48,8 @@
 {{fig_timing}}
 <p>How each was timed: in CI, in the same Node process as the tests, as the consistency check ran. Most of these programs take the interpreter well under a millisecond, too near the timer's grain for one run to say much, so each is run again and again (Matthew: "can we repeat the work 100 or 1000 times to get a multi ms number in the interpreter?"). The interpreter's runs repeat until they add to 20 ms, at least 10 times and at most 1000. The compiled JavaScript's repeat until they add to 5 ms, at most 100,000 times. The times are a run's, the total over the repeats. Both are warm then: the interpreter has seen the program before, and so has the JavaScript engine. The first runs are kept too, since a page meets those: the interpreter's as the test ran it, hazel-jit's compile to JavaScript's text, and the JavaScript parsed and run once.</p>
 {{tab_timing}}
+<p><b>{{slide_summary}}</b></p>
+{{tab_slide_timing}}
 <p>These are the evaluator's own tests, which are small: most take the interpreter well under a millisecond. The Witch slide is the larger case (<a href="#cost">what it all costs</a>, and reports 050 to 052), and mixed mode's timings are larger programs again (<a href="#mixed-built">the first step, built</a>).</p>
 
 <h2 id="numbers">Exact integers</h2>

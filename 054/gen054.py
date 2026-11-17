@@ -44,7 +44,7 @@ CYRUS = ("We need a way to limit compiled hazel functions that diverge --- we ne
 # stages: 1 designed, 2 written, 3 CI green, 4 on trial/694-view-jit (or, for 764, a PR to dev)
 PLAN = [
     dict(t=756, short="the same answers, checked in CI", name="Consistency with the interpreter, checked in CI", sec="consistency", stage=4, st="done",
-         status="On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides' own programs."),
+         status="On build 49: every evaluator test program also runs compiled, and any difference fails CI; so do the slides' own programs (129: 15 compile, all agree); each program timed both ways."),
     dict(t=757, short="Int and Nat exact", name="Int and Nat exact, as the interpreter's", sec="numbers", stage=4, st="done",
          status="On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch."),
     dict(t=758, short="overflow: a stuck term", name="Overflow stops at a stuck term", sec="overflow", stage=4, st="done",
@@ -71,14 +71,12 @@ PLAN = [
 STAGES = ["designed", "written", "CI green", "on the branch"]
 
 # ---------------------------------------------------------------- the sweep: the fast checks' report on f4f969588b (job 133371195383)
-SWEEP = dict(build="48", commit="30a131a046", job=133528440450, run=43932529130, checks=313, compiled=257, agreed=230, differ=0, threw=0, not_a_value=27)
+SWEEP = dict(build="49", commit="0e56bdbd0a", job=134231714506, run=44137711359, checks=313, compiled=260, agreed=233, differ=0, threw=0, not_a_value=27)
 NOT_COMPILED = [  # reason, count, rule or limit
-    ("a hole", 14, "rule"), ("a type hole", 10, "rule"),
+    ("a hole (a label that is a hole among them)", 15, "rule"), ("a type hole", 10, "rule"),
     ("a free variable (the tests' own unbound names: y 13, s2 6, x 2, b2 2, a 1)", 24, "rule"),
     ("a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0; ill-typed tests)", 3, "limit"),
-    ("a tuple label that is not a name", 2, "limit"), ("the builtin from_lvs", 1, "limit"),
-    ("an expression as a module member", 1, "limit"),
-    ("a recursive definition of more than one name, not a tuple of functions", 1, "limit"),
+    ("a recursive definition whose value part names one of its names, inside a function it builds", 1, "limit"),
 ]
 SWEEP_47 = dict(build="47", commit="f4f969588b", run=43887985051, checks=313, compiled=243, agreed=216, not_a_value=27)
 BY_RULE = sum(n for _, n, k in NOT_COMPILED if k == "rule")
@@ -288,12 +286,12 @@ def builds_table():
 
 # ---------------------------------------------------------------- mixed mode's first step (ticket 766): CI's report on its branch
 # measured: (program, the interpreter alone ms, mixed ms, rewrite and compile ms, functions compiled, calls compiled, fell back)
-MIXED = dict(branch="trial/766-mixed", commit="40f097c83c", run=44134213388,
+MIXED = dict(branch="trial/694-build-49", commit="0e56bdbd0a", run=44137711359,
              sweep=dict(programs=6, functions=7, agreed=6, differ=0, failed=0, calls=16843, fell=2, undeclared=29),
-             measured=[("fib(16), all compiled", 71.5, 0.2, 0.3, 1, 1, 0),
-                       ("the Petri net rule of report 043, whole types declared, 100 events from an interpreted loop", 462.7, 20.6, 15.4, 12, 112, 0),
-                       ("the I Ching of hazeljs-oracles, 200 readings from an interpreted loop", 1033.2, 240.2, 3.7, 13, 7800, 0),
-                       ("500 calls of a one-line function (sq) from an interpreted loop", 22.4, 27.2, 0.2, 1, 500, 0)])
+             measured=[("fib(16), all compiled", 72.6, 0.1, 0.5, 1, 1, 0),
+                       ("the Petri net rule of report 043, whole types declared, 100 events from an interpreted loop", 120.8, 16.8, 5.5, 12, 112, 0),
+                       ("the I Ching of hazeljs-oracles, 200 readings from an interpreted loop", 1117.5, 235.0, 3.7, 13, 7800, 0),
+                       ("500 calls of a one-line function (sq) from an interpreted loop", 22.4, 27.9, 0.2, 1, 500, 0)])
 
 
 def mixed_status():
@@ -304,7 +302,7 @@ def mixed_status():
             f"with a function to compile ({sw['functions']} functions), and all {sw['agreed']} gave the interpreter's answer; "
             f"{sw['undeclared']} other functions were left to the interpreter because their whole type is not declared, which bears on the "
             f"question of which functions to compile. Measured on larger programs (below): a recursion compiled whole runs hundreds of times "
-            f"as fast; the Petri net rule 22 times; the I Ching 4 times, since only 13 of its functions compile so far (its readings call "
+            f"as fast; the Petri net rule 7 times (22 times on the branch's own run, where the interpreter took 463 ms rather than 121: these are single runs, and noisy); the I Ching 5 times, since only 13 of its functions compile so far (its readings call "
             f"other modules' members, Lines.becomes, which the rewrite does not see yet); and a one-line function called 500 times from "
             f"interpreted code is slower than not compiling it, each call's crossing costing more than its work.")
 
@@ -316,14 +314,14 @@ def mixed_table():
     for name, a, b, c, f, k, fb in MIXED["measured"]:
         rows.append(f'<tr><td>{esc(name)}</td><td class="n">{a:.1f} ms</td><td class="n">{b:.1f} ms</td><td class="n">{c:.1f} ms</td>'
                     f'<td class="n">{f}</td><td class="n">{k}</td><td class="n">{fb}</td></tr>')
-    cap = (f"Measured in CI (run {MIXED['run']}, Node on GitHub's machines, the evaluator tests' build), each program once after a first run; "
+    cap = (f"Build 49 (<code>{MIXED['commit']}</code>, CI run {MIXED['run']}, Node on GitHub's machines), each program once after a first run, not repeated as the evaluator's programs are; "
            "the same answer both ways checked. Not a build of the app.")
     return '<table class="vals">' + "".join(rows) + f'</table><p class="muted">{cap}</p>'
 
 
 # ---------------------------------------------------------------- the evaluator's programs timed both ways (Matthew, 2026-11-17: "please
 # time the tests in interpreter vs jit and present those results in report 54"): the sweep's timing lines, from CI's log
-TIMING = dict(commit="4c51a00490", run=44133893762, file=os.path.join(HERE, "data", "timing.tsv"))
+TIMING = dict(commit="0e56bdbd0a", run=44137711359, file=os.path.join(HERE, "data", "timing.tsv"))
 
 
 def timing_rows():
@@ -398,7 +396,7 @@ def fig_timing():
         out.append(f'<circle cx="{sx(x):.1f}" cy="{sy(y):.1f}" r="3" fill="#2563eb" fill-opacity="0.55"/>')
     out.append(f'<text x="{(L + W - R) / 2:.0f}" y="{H - 14}" font-size="11" text-anchor="middle" fill="var(--ink)">the interpreter, a run</text>')
     out.append(f'<text x="14" y="{(T + H - B) / 2:.0f}" font-size="11" text-anchor="middle" fill="var(--ink)" transform="rotate(-90 14 {(T + H - B) / 2:.0f})">compiled JS, a run</text>')
-    cap = (f"Measured on <code>{TIMING['commit']}</code> (build 48 with the last limits, and the timing; CI run {TIMING['run']}, the fast checks, "
+    cap = (f"Build 49 (<code>{TIMING['commit']}</code>, CI run {TIMING['run']}, the fast checks, "
            f"Node on GitHub's machines). Each program's interpreter runs repeated until they added to 20 ms ({TN['min_n']} to {TN['max_n']} times), "
            "and its compiled JS's until they added to 5 ms; each dot is a run's time, the total over the repeats. Below the line marked "
            "\"as fast\", compiled code was faster. Not a build of the app.")
@@ -436,6 +434,54 @@ def timing_summary():
             f"and {TN['slower1']} of the {TN['n']} are slower: programs of a few microseconds, where compiling is the cost.")
 
 
+# the slides' programs, timed the same way (the slides' check, Test_HazelJit, on build 49): "hazel-jit slide time" lines
+SLIDES_T = dict(file=os.path.join(HERE, "data", "slide-timing.tsv"),
+                summary="of the 129 programs under hazel-programs, 21 have a static error and stay with the interpreter, as do those with a hole (27), a type hole (25) or a test (25); 10 call to_lvs and 4 int_plus, builtins hazel-jit lacks; ")
+
+
+def slide_rows():
+    if not os.path.exists(SLIDES_T["file"]):
+        return []
+    rows = []
+    for line in open(SLIDES_T["file"]):
+        p = line.rstrip("\n").split("\t")
+        if len(p) < 9 or p[0] != "hazel-jit slide time":
+            continue
+        rows.append(dict(interp1=float(p[1]), interp=float(p[2]), interp_n=int(p[3]), parse=float(p[4]), run1=float(p[5]),
+                         run=float(p[6]), run_n=int(p[7]), path=p[8]))
+    return rows
+
+
+SROWS = slide_rows()
+
+
+def slide_table():
+    if not SROWS:
+        return ""
+    def f(v):
+        return f"{v:.1f} ms" if v >= 10 else f"{v:.2f} ms" if v >= 0.1 else f"{v * 1000:.1f} µs" if v >= 0.001 else f"{v * 1000:.2f} µs"
+    rows = ["<tr><th>Program (hazel-programs/)</th><th>The interpreter, a run</th><th>Compiled JS, a run</th><th>As fast, times</th>"
+            "<th>First runs: the interpreter</th><th>The JS parsed and run</th></tr>"]
+    for r in sorted(SROWS, key=lambda r: -r["interp"]):
+        name = r["path"].replace("hazel-programs/", "").replace("../", "")
+        rows.append(f'<tr><td><code>{esc(name)}</code></td><td class="n">{f(r["interp"])} <span class="muted">×{r["interp_n"]}</span></td>'
+                    f'<td class="n">{f(r["run"])} <span class="muted">×{r["run_n"]}</span></td><td class="n">{r["interp"] / max(r["run"], 1e-6):,.0f}</td>'
+                    f'<td class="n">{f(r["interp1"])}</td><td class="n">{f(r["parse"] + r["run1"])}</td></tr>')
+    return '<table class="vals">' + "".join(rows) + "</table>"
+
+
+def slide_summary():
+    if not SROWS:
+        return "The slides' own programs are being timed the same way, on build 49; they go here."
+    tot = lambda k: sum(r[k] for r in SROWS)
+    ratios = sorted(r["interp"] / max(r["run"], 1e-6) for r in SROWS)
+    med = ratios[len(ratios) // 2]
+    head = SLIDES_T["summary"] or ""
+    return (f"The slides' own programs, timed the same way on build 49: {head}the {len(SROWS)} that compile and give the interpreter's "
+            f"value took the interpreter {tot('interp'):.1f} ms a run in all and compiled code {tot('run'):.3f} ms, the median program "
+            f"{med:,.0f} times as fast.")
+
+
 # ---------------------------------------------------------------- (ticket 767) the interpreter's step counts for small programs, each a
 # construct apart from the last (Test_HazelJit's calibration, CI run 44131334098, on trial/767-steps df87481567)
 CALIB = dict(commit="df87481567", run=44131334098)
@@ -469,7 +515,8 @@ NUMS = {"updated": updated, "checks": str(SWEEP["checks"]), "compiled": str(SWEE
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
         "tab_sint": sint_table(), "tab_slides": slides_table(), "tab_builds": builds_table(), "summary": summary_block(),
         "mixed_status": mixed_status(), "tab_mixed": mixed_table(), "fig_timing": fig_timing(), "tab_timing": timing_table(),
-        "timing_summary": timing_summary(), "tab_calib": calib_table()}
+        "timing_summary": timing_summary(), "tab_calib": calib_table(), "tab_slide_timing": slide_table(),
+        "slide_summary": slide_summary()}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
     body = body.replace("{{" + k + "}}", v)

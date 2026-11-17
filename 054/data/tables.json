@@ -12,7 +12,7 @@
    [
     "^ticket(756)",
     "Consistency with the interpreter, checked in CI",
-    "On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides' own programs.",
+    "On build 49: every evaluator test program also runs compiled, and any difference fails CI; so do the slides' own programs (129: 15 compile, all agree); each program timed both ways.",
     "done"
    ],
    [
@@ -93,8 +93,8 @@
   ],
   "rows": [
    [
-    "a hole",
-    "14",
+    "a hole (a label that is a hole among them)",
+    "15",
     "rule"
    ],
    [
@@ -113,22 +113,7 @@
     "a limit (^ticket(761))"
    ],
    [
-    "a tuple label that is not a name",
-    "2",
-    "a limit (^ticket(761))"
-   ],
-   [
-    "the builtin from_lvs",
-    "1",
-    "a limit (^ticket(761))"
-   ],
-   [
-    "an expression as a module member",
-    "1",
-    "a limit (^ticket(761))"
-   ],
-   [
-    "a recursive definition of more than one name, not a tuple of functions",
+    "a recursive definition whose value part names one of its names, inside a function it builds",
     "1",
     "a limit (^ticket(761))"
    ]
@@ -149,111 +134,245 @@
   "rows": [
    [
     "[(index=true, `A`=60, `B`=30, `C`=0), (index=false, `A...",
-    "4.56 ms ×10",
-    "48.3 µs ×114",
-    "95",
-    "6.17 ms",
+    "5.43 ms ×10",
+    "19.6 µs ×255",
+    "277",
+    "15.5 ms",
     "0.36 ms",
-    "4.46 ms"
+    "3.13 ms"
    ],
    [
-    "[5, 4, 3, 1, 1] == sort(fun (x, y) -> if x == y then Eq else ...",
-    "1.29 ms ×20",
-    "3.6 µs ×1461",
-    "358",
-    "1.03 ms",
-    "0.25 ms",
-    "0.10 ms"
+    "[(1, 3), (2, 4)] == zip([1, 2], [3, 4])",
+    "3.59 ms ×148",
+    "0.99 µs ×5052",
+    "3,624",
+    "0.13 ms",
+    "72.5 µs",
+    "71.8 µs"
    ],
    [
     "[1, 1, 3, 4, 5] == sort(fun (x, y) -> if x == y then Eq else ...",
-    "1.28 ms ×21",
-    "4.5 µs ×1123",
-    "287",
-    "0.99 ms",
-    "0.21 ms",
-    "0.12 ms"
+    "1.89 ms ×20",
+    "4.7 µs ×1055",
+    "400",
+    "1.09 ms",
+    "0.20 ms",
+    "0.16 ms"
+   ],
+   [
+    "[5, 4, 3, 1, 1] == sort(fun (x, y) -> if x == y then Eq else ...",
+    "1.71 ms ×18",
+    "3.3 µs ×1499",
+    "512",
+    "1.30 ms",
+    "0.22 ms",
+    "0.11 ms"
    ],
    [
     "[1, 2, 3] == unique([1, 2, 2, 3, 1, 3])",
-    "0.78 ms ×31",
-    "3.8 µs ×1717",
-    "207",
-    "3.76 ms",
-    "0.16 ms",
-    "0.10 ms"
+    "0.99 ms ×30",
+    "1.8 µs ×2722",
+    "538",
+    "1.50 ms",
+    "0.17 ms",
+    "98.7 µs"
+   ],
+   [
+    "[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y...",
+    "0.84 ms ×28",
+    "1.1 µs ×4537",
+    "763",
+    "1.10 ms",
+    "0.34 ms",
+    "42.2 µs"
    ],
    [
     "[1, 2, 3] == sort(fun (x, y) -> if x == y then Eq else (if x ...",
-    "0.61 ms ×41",
-    "2.3 µs ×2399",
-    "271",
-    "0.55 ms",
-    "0.20 ms",
-    "95.3 µs"
+    "0.71 ms ×35",
+    "5.3 µs ×1159",
+    "136",
+    "0.66 ms",
+    "0.30 ms",
+    "0.12 ms"
    ],
    [
     "[(1, [1, 3]), (0, [2, 4])] == group_on_key([1, 2, 3, 4], fun ...",
-    "0.52 ms ×41",
-    "1.8 µs ×2841",
-    "295",
-    "1.12 ms",
-    "0.14 ms",
-    "86.7 µs"
+    "0.53 ms ×51",
+    "1.0 µs ×4890",
+    "522",
+    "1.16 ms",
+    "0.13 ms",
+    "89.2 µs"
    ],
    [
     "[5, 3] == type T=String in let map = typfun a ->typfun b -> f...",
-    "0.43 ms ×48",
-    "0.70 µs ×7595",
-    "615",
-    "1.66 ms",
-    "0.10 ms",
-    "40.5 µs"
+    "0.44 ms ×65",
+    "0.85 µs ×7571",
+    "512",
+    "0.54 ms",
+    "91.8 µs",
+    "56.5 µs"
    ],
    [
-    "([2, 4], [1, 3]) == partition([1, 2, 3, 4], fun x -> int_mod(...",
-    "0.36 ms ×78",
-    "0.64 µs ×7748",
-    "565",
-    "0.36 ms",
-    "0.11 ms",
-    "66.8 µs"
+    "[2, 4] == filter([1, 2, 3, 4], fun x -> int_mod(x, 2) == 0)",
+    "0.39 ms ×78",
+    "0.43 µs ×11640",
+    "907",
+    "0.34 ms",
+    "93.1 µs",
+    "0.18 ms"
    ],
    [
     "[1, 3] == filteri([1, 2, 3, 4], fun (i, x) -> int_mod(i, 2) =...",
-    "0.31 ms ×74",
-    "0.63 µs ×7942",
-    "498",
-    "0.93 ms",
-    "0.15 ms",
-    "57.6 µs"
+    "0.37 ms ×67",
+    "0.64 µs ×11816",
+    "571",
+    "1.63 ms",
+    "0.14 ms",
+    "60.9 µs"
    ],
    [
-    "[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y...",
-    "0.28 ms ×64",
-    "1.7 µs ×4241",
-    "166",
-    "0.34 ms",
-    "0.21 ms",
-    "42.8 µs"
-   ],
-   [
-    "[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y...",
-    "0.27 ms ×65",
-    "1.3 µs ×3852",
-    "211",
-    "0.37 ms",
-    "0.18 ms",
-    "43.6 µs"
-   ],
-   [
-    "([2, 4], [1, 3]) == partition_map([1, 2, 3, 4], fun x -> if i...",
-    "0.26 ms ×72",
-    "1.2 µs ×4014",
-    "211",
-    "0.34 ms",
+    "[3, 2, 1] == reverse([1, 2, 3])",
+    "0.34 ms ×102",
+    "0.56 µs ×8953",
+    "617",
+    "0.28 ms",
     "0.13 ms",
-    "52.0 µs"
+    "48.2 µs"
+   ]
+  ]
+ },
+ {
+  "section": "The same programs, timed",
+  "section_id": "timed",
+  "columns": [
+   "Program (hazel-programs/)",
+   "The interpreter, a run",
+   "Compiled JS, a run",
+   "As fast, times",
+   "First runs: the interpreter",
+   "The JS parsed and run"
+  ],
+  "rows": [
+   [
+    "docs/reference/polymorphism.hz",
+    "2.16 ms ×12",
+    "0.88 µs ×5779",
+    "2,457",
+    "4.12 ms",
+    "0.13 ms"
+   ],
+   [
+    "docs/livelits/either/either-typed.hz",
+    "1.90 ms ×16",
+    "1.7 µs ×2947",
+    "1,121",
+    "1.78 ms",
+    "0.41 ms"
+   ],
+   [
+    "docs/livelits/splices-mvp.hz",
+    "1.27 ms ×27",
+    "5.6 µs ×887",
+    "225",
+    "0.85 ms",
+    "0.62 ms"
+   ],
+   [
+    "docs/livelits/either/either-unknown.hz",
+    "0.59 ms ×56",
+    "2.0 µs ×2512",
+    "296",
+    "0.43 ms",
+    "92.1 µs"
+   ],
+   [
+    "docs/livelits/result-view.hz",
+    "0.47 ms ×45",
+    "1.7 µs ×2875",
+    "269",
+    "0.54 ms",
+    "0.11 ms"
+   ],
+   [
+    "docs/livelits/splices-in-text.hz",
+    "0.44 ms ×61",
+    "1.2 µs ×4037",
+    "353",
+    "0.40 ms",
+    "0.47 ms"
+   ],
+   [
+    "docs/livelits/splice-row.hz",
+    "0.41 ms ×38",
+    "7.4 µs ×672",
+    "54",
+    "0.94 ms",
+    "0.10 ms"
+   ],
+   [
+    "docs/livelits/hygiene/generated-binders.hz",
+    "0.39 ms ×70",
+    "1.3 µs ×3713",
+    "292",
+    "0.42 ms",
+    "82.5 µs"
+   ],
+   [
+    "docs/livelits/lockable-cell.hz",
+    "0.27 ms ×56",
+    "1.3 µs ×3922",
+    "204",
+    "1.60 ms",
+    "66.2 µs"
+   ],
+   [
+    "docs/livelits/hygiene/capture.hz",
+    "0.25 ms ×92",
+    "0.82 µs ×6108",
+    "311",
+    "0.27 ms",
+    "0.46 ms"
+   ],
+   [
+    "docs/livelits/hygiene/abs.hz",
+    "0.19 ms ×10",
+    "1.6 µs ×4605",
+    "118",
+    "0.32 ms",
+    "0.59 ms"
+   ],
+   [
+    "docs/livelits/advanced/javascript.hz",
+    "22.9 µs ×346",
+    "0.05 µs ×100000",
+    "510",
+    "0.14 ms",
+    "7.5 µs"
+   ],
+   [
+    "docs/livelits/expansion-errors/errors-about.hz",
+    "5.5 µs ×1000",
+    "0.04 µs ×100000",
+    "127",
+    "66.8 µs",
+    "7.6 µs"
+   ],
+   [
+    "docs/livelits/either/either-about.hz",
+    "4.3 µs ×387",
+    "0.04 µs ×100000",
+    "99",
+    "60.6 µs",
+    "11.6 µs"
+   ],
+   [
+    "docs/livelits/hygiene/about.hz",
+    "3.2 µs ×1000",
+    "0.04 µs ×100000",
+    "73",
+    "57.1 µs",
+    "6.1 µs"
    ]
   ]
  },
@@ -443,26 +562,26 @@
   "rows": [
    [
     "fib(16), all compiled",
-    "71.5 ms",
-    "0.2 ms",
-    "0.3 ms",
+    "72.6 ms",
+    "0.1 ms",
+    "0.5 ms",
     "1",
     "1",
     "0"
    ],
    [
     "the Petri net rule of ^report(43), whole types declared, 100 events from an interpreted loop",
-    "462.7 ms",
-    "20.6 ms",
-    "15.4 ms",
+    "120.8 ms",
+    "16.8 ms",
+    "5.5 ms",
     "12",
     "112",
     "0"
    ],
    [
     "the I Ching of hazeljs-oracles, 200 readings from an interpreted loop",
-    "1033.2 ms",
-    "240.2 ms",
+    "1117.5 ms",
+    "235.0 ms",
     "3.7 ms",
     "13",
     "7800",
@@ -471,7 +590,7 @@
    [
     "500 calls of a one-line function (sq) from an interpreted loop",
     "22.4 ms",
-    "27.2 ms",
+    "27.9 ms",
     "0.2 ms",
     "1",
     "500",

@@ -20,7 +20,7 @@
    "sec": "consistency",
    "stage": 4,
    "st": "done",
-   "status": "On the branch: every evaluator test program also runs compiled, and any difference fails CI. Left: the slides' own programs.",
+   "status": "On build 49: every evaluator test program also runs compiled, and any difference fails CI; so do the slides' own programs (129: 15 compile, all agree); each program timed both ways.",
    "stages_reached": [
     "designed",
     "written",
@@ -186,13 +186,13 @@
   }
  ],
  "sweep": {
-  "build": "48",
-  "commit": "30a131a046",
-  "job": 133528440450,
-  "run": 43932529130,
+  "build": "49",
+  "commit": "0e56bdbd0a",
+  "job": 134231714506,
+  "run": 44137711359,
   "checks": 313,
-  "compiled": 257,
-  "agreed": 230,
+  "compiled": 260,
+  "agreed": 233,
   "differ": 0,
   "threw": 0,
   "not_a_value": 27,
@@ -207,8 +207,8 @@
   },
   "not_compiled": [
    {
-    "reason": "a hole",
-    "programs": 14,
+    "reason": "a hole (a label that is a hole among them)",
+    "programs": 15,
     "kind": "rule"
    },
    {
@@ -227,28 +227,13 @@
     "kind": "limit"
    },
    {
-    "reason": "a tuple label that is not a name",
-    "programs": 2,
-    "kind": "limit"
-   },
-   {
-    "reason": "the builtin from_lvs",
-    "programs": 1,
-    "kind": "limit"
-   },
-   {
-    "reason": "an expression as a module member",
-    "programs": 1,
-    "kind": "limit"
-   },
-   {
-    "reason": "a recursive definition of more than one name, not a tuple of functions",
+    "reason": "a recursive definition whose value part names one of its names, inside a function it builds",
     "programs": 1,
     "kind": "limit"
    }
   ],
-  "by_rule": 48,
-  "by_limit": 8,
+  "by_rule": 49,
+  "by_limit": 4,
   "first_sweep": {
    "commit": "4b17e3b0ba",
    "run": 43754503317,
