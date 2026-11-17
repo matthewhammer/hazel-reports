@@ -64,7 +64,9 @@ PLAN = [
     dict(t=765, short="found: slow on an older phone", name="Found: the oracles were slow on an older phone; compiled ahead of time", sec="ahead", stage=4, st="done",
          status="Both oracles run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Left: the compiler inside hazeljs."),
     dict(t=766, short="next: mixed mode", name="Chosen after the meeting: mixed mode", sec="mixed", stage=1, st="part",
-         status="Designed (sketched below): the interpreter runs the program and calls its complete functions compiled, as builtins. A first step begins 11-17."),
+         status="A first step is written, on its own branch, and in CI: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins."),
+    dict(t=767, short="next: steps and probes", name="Asked 11-13: the interpreter's step counts in compiled code, then probes", sec="steps", stage=1, st="part",
+         status="Designed: yes to both, with care for casts and a check in CI (below). Not begun."),
 ]
 STAGES = ["designed", "written", "CI green", "on the branch"]
 
@@ -135,7 +137,7 @@ def fig_board():
             else:
                 out.append(f'<circle cx="{sx(i)}" cy="{y + 11}" r="6" fill="none" stroke="{c}" stroke-width="1.6"/>')
     cap = ("Tickets 756 to 763 are the meeting's items; 762, 764 and 765 were found on the way, and 766 is the direction chosen "
-           "after the meeting. For 765 the last stage is the oracles' pages running compiled code. Green: done on "
+           "after the meeting; 767 is the meeting's answer on steps and probes. For 765 the last stage is the oracles' pages running compiled code. Green: done on "
            "<code>trial/694-view-jit</code> (hazelgrove/hazel#2817, the hazel-jit prototype); amber: in progress; grey: "
            "waiting on a decision or not begun; blue: on a PR to dev. Not a build of the app: a status chart.")
     return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="Each ticket of the plan as a row of four stages, '
@@ -284,6 +286,33 @@ def builds_table():
     return '<table class="vals">' + "".join(rows) + "</table>"
 
 
+# ---------------------------------------------------------------- mixed mode's first step (ticket 766): CI's report on its branch
+# measured: (program, the interpreter alone ms, mixed ms, rewrite and compile ms, functions compiled, calls compiled, fell back)
+MIXED = dict(branch="trial/766-mixed", commit=None, run=None, sweep=None, measured=[])
+
+
+def mixed_status():
+    if MIXED["commit"] is None:
+        return "Its CI is running; what it finds goes here."
+    sw = MIXED["sweep"]
+    out = (f"On <code>{MIXED['commit']}</code> (CI run {MIXED['run']}), the sweep found {sw['programs']} evaluator programs with a "
+           f"function to compile ({sw['functions']} functions): {sw['agreed']} gave the interpreter's answer, {sw['differ']} differed, "
+           f"{sw['failed']} failed to run; {sw['calls']} calls went to compiled code and {sw['fell']} fell back.")
+    return out
+
+
+def mixed_table():
+    if not MIXED["measured"]:
+        return ""
+    rows = ["<tr><th>Program</th><th>The interpreter alone</th><th>Mixed</th><th>Rewrite and compile, once</th><th>Functions compiled</th><th>Calls compiled</th><th>Fell back</th></tr>"]
+    for name, a, b, c, f, k, fb in MIXED["measured"]:
+        rows.append(f'<tr><td>{esc(name)}</td><td class="n">{a:.1f} ms</td><td class="n">{b:.1f} ms</td><td class="n">{c:.1f} ms</td>'
+                    f'<td class="n">{f}</td><td class="n">{k}</td><td class="n">{fb}</td></tr>')
+    cap = (f"Measured in CI (run {MIXED['run']}, Node on GitHub's machines, the evaluator tests' build), each program once after a first run; "
+           "the same answer both ways checked. Not a build of the app.")
+    return '<table class="vals">' + "".join(rows) + f'</table><p class="muted">{cap}</p>'
+
+
 def summary_block():
     li = "".join(f"<li>{esc(s)}</li>" for s in SUMMARY)
     return f'<blockquote class="msg"><ul>{li}</ul></blockquote>'
@@ -292,7 +321,8 @@ def summary_block():
 NUMS = {"updated": updated, "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
-        "tab_sint": sint_table(), "tab_slides": slides_table(), "tab_builds": builds_table(), "summary": summary_block()}
+        "tab_sint": sint_table(), "tab_slides": slides_table(), "tab_builds": builds_table(), "summary": summary_block(),
+        "mixed_status": mixed_status(), "tab_mixed": mixed_table()}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
     body = body.replace("{{" + k + "}}", v)
