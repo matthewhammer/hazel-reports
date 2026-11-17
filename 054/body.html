@@ -18,7 +18,7 @@
 <li><a href="#cost">What it all costs</a>: the Witch slide, build by build.</li>
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
 <li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, step counts and probes as the interpreter's, and compiling ahead of time for older phones.</li>
-<li><a href="#questions">Questions for the team</a>: fifteen open design questions, each with our lean, for the team's meeting of 2026-11-17.</li>
+<li><a href="#questions">Questions for the team</a>: seventeen open design questions, each with our lean, for the team's meeting of 2026-11-17, two of them met by the astrology oracle this morning.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
@@ -29,7 +29,7 @@
 {{summary}}
 <p>And Cyrus's concern, which Matthew passed on separately the same day: <i>"{{cyrus}}"</i></p>
 {{tab_plan}}
-<p>All of the done changes are on <code>trial/694-view-jit</code>, the hazel-jit prototype branch (hazelgrove/hazel#2817), as build 48 since 2026-11-16, and build 49, this morning's branches merged (the last limits, mixed mode, the timing, the slides' check, the step calibration), passes the fast checks on <code>trial/694-build-49</code>, its full tests and the slides' browser check running (<a href="#cost">the builds</a>). Each was written on its own branch, passed CI there, and was brought together with the others; CI passed again on the whole, and so did the slides. None is on dev: report 053 explains why the prototype is to be redone by hand in small steps.</p>
+<p>All of the done changes are on <code>trial/694-view-jit</code>, the hazel-jit prototype branch (hazelgrove/hazel#2817), as build 49 since 2026-11-17: this morning's branches merged (the last limits, mixed mode, the timing, the slides' check, the step calibration), with all of CI green on it (static checks, fast checks and full tests, CI run 44137711359) and the slides' browser check too (run 44137800916; <a href="#cost">the builds</a>). Each was written on its own branch, passed CI there, and was brought together with the others; CI passed again on the whole, and so did the slides. None is on dev: report 053 explains why the prototype is to be redone by hand in small steps.</p>
 
 <h2 id="what">What hazel-jit is</h2>
 <p><b>hazel-jit translates an elaborated Hazel program to the text of a JavaScript function, and the page runs that function on its own thread at a livelit's event, to draw the livelits before the interpreter's answer comes back.</b> Hazel's interpreter, in a web worker, still runs every program, and its answer is still the program's result: the probes, the tests and the result panel come from it. So far hazel-jit has been a measurement of how fast compiled Hazel could be (a step of the Witch's slider in 2 to 3 ms, report 050). The meeting's point is that it must also be correct, because whatever it draws, a user reads as what Hazel computed.</p>
@@ -209,7 +209,7 @@
 <p>The first two lines the phone sent with <code>?compiled</code> came back interpreted, and the page did not say why: it fell back to hazeljs on any failure of the compiled file, silently. Since 0.0.12 it says so, in the status line and in the speed line, and with the address as <code>?compiled=1</code> the phone ran compiled, with no error.</p>
 
 <h2 id="questions">Questions for the team</h2>
-<p><b>Fifteen questions are open, for the team's meeting of 2026-11-17: two PRs to review, seven on mixed mode, three on what compiled code must match, and three on how it lands.</b> Each has our lean and what the answer decides. None blocks today's work; the answers on mixed mode decide its first step.</p>
+<p><b>Seventeen questions are open, for the team's meeting of 2026-11-17: two PRs to review, seven on mixed mode, three on what compiled code must match, three on how it lands, and two that an app met this morning.</b> Each has our lean and what the answer decides. None blocks today's work; the answers on mixed mode decide its first step.</p>
 <blockquote class="msg"><p><b>Answered at Matthew and Cyrus's meeting of 2026-11-13</b> (Matthew, 2026-11-17): <i>"we want to mimic the step counts in the compiled code, if possible. can we make it match the interpreter in each case? if not, why not?"</i> and <i>"if we can mimic the step counts in the compiled code, can we support probes? if not, why not?"</i> That settles three of the questions below, on the stepper, probes and the step budget. Our answer to theirs: yes and yes, with the care and limits in <a href="#steps">step counts and probes, as the interpreter's</a>.</p></blockquote>
 <h3 id="q-on">On PRs to dev</h3>
 <ol class="outline" start="1">
@@ -238,11 +238,18 @@
 <li><b>Should hazeljs ship the compiler?</b> <span class="muted">Our lean:</span> No: a tool at a site's build time, with only the runtime (about 17 kB) shipped to pages. hazeljs's library is already 2.8 MB. <span class="muted">It decides:</span> How an app like the oracles gets compiled code without CI's help.</li>
 <li><b>Undeclared result types cost a step 5 to 7 times (ticket 762): fix in elaboration?</b> <span class="muted">Our lean:</span> Yes: put the result's ascription once around the body, where the typed form has it. It changes where the interpreter inserts its run-time checks, so it needs an owner who knows elaboration. <span class="muted">It decides:</span> Whether every Hazel program, not only compiled ones, gets the speed.</li>
 </ol>
+<h3 id="q-app">Met by an app</h3>
+<p>The astrology oracle (hazeljs-oracles 0.0.15, ticket 768) is eleven modules of numeric code, the Sun, Moon and planets from Meeus's and Schlyter's series, run by hazeljs. Writing it met two problems in the interpreter's side of Hazel, filed this morning.</p>
+<ol class="outline" start="16">
+<li><b>An answer that is a function grows past gigabytes (hazelgrove/hazel#2832): fix <code>Evaluator.finish</code>?</b> <span class="muted">Our lean:</span> Yes. <code>finish</code> substitutes the environment into the answer, so a function that reaches earlier modules copies their closures into it, nested; leave a closure in the answer as a closure, and substitute only for display. Compiled code never meets it: a compiled function is a JavaScript function. <span class="muted">It decides:</span> Whether a hazeljs page can take functions from a program of many modules. The astrology page cannot today, so it builds the whole program again for each chart, about 1.3 s.</li>
+<li><b>Float literals print with six decimals (hazelgrove/hazel#2831): print them so they read back?</b> <span class="muted">Our lean:</span> Yes, the shortest form that reads back as the same number. Today a literal with more decimals sends its module to the recovering parser, whose cost grows much faster than the module. Compiled code already prints floats exactly, and evaluation compares them by value, so the interpreter and compiled code agree on them; only parsing and the terms' own equality (six decimals) are affected. <span class="muted">It decides:</span> Whether numeric programs can write constants as they are; the astrology rules write long ones as ratios.</li>
+</ol>
 
 <h2 id="next">What next</h2>
-<p><b>The morning's branches are green or nearly: next, they go onto the prototype branch together, and mixed mode reaches across modules.</b> In order:</p>
+<p><b>Build 49 is the prototype branch now: next, the slides' builtins, a numeric program compiled whole, and mixed mode across modules.</b> In order:</p>
 <ol class="outline">
-<li>Build 49: the last limits, mixed mode, the timing and the slides' check brought onto <code>trial/694-view-jit</code> together, CI and the slides checked again.</li>
+<li>The slides' builtins (<code>trial/761-slide-builtins</code>): an operator passed as a function, and <code>to_lvs</code>, so more of the slides' programs compile; its fast checks pass, its full tests are running. Then onto the prototype branch.</li>
+<li>The astrology oracle compiled whole (<code>trial/768-astrology-timed</code>, ticket 768): its eleven modules and three readings, the answer compared with the interpreter's and both timed, and in mixed mode. The first real program here that is mostly floating point; CI running.</li>
 <li>Mixed mode across modules: a module's member that calls another module's (<code>Lines.becomes</code> in the I Ching's reading) compiled too, so the I Ching's rules compile whole.</li>
 <li>Mixed mode's crossing cost: a call from interpreted code to a one-line compiled function costs more than the function (500 calls of <code>sq</code>, 27 ms mixed against 22 interpreted). Convert a large value once and remember it, and leave very small functions to the interpreter.</li>
 <li>Step counts in compiled code (ticket 767): a counter from the measured costs, each evaluator program's count compared with the interpreter's in the sweep.</li>
