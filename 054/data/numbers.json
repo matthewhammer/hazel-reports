@@ -50,7 +50,7 @@
    "sec": "overflow",
    "stage": 4,
    "st": "done",
-   "status": "On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter's half on a PR to dev, hazelgrove/hazel#2828: its CI green, waiting on review.",
+   "status": "On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter's half is on a PR to dev, hazelgrove/hazel#2828: CI green, its tests reaching 96% of the changed lines; waiting on review.",
    "stages_reached": [
     "designed",
     "written",
@@ -141,6 +141,33 @@
    "stage": 1,
    "st": "wait",
    "status": "Measured in Hazel's interpreter; the cause is where the ascriptions go. The fix is not begun.",
+   "stages_reached": [
+    "designed"
+   ]
+  },
+  {
+   "t": 765,
+   "short": "found: slow on an older phone",
+   "name": "Found: the oracles were slow on an older phone; compiled ahead of time",
+   "sec": "ahead",
+   "stage": 4,
+   "st": "done",
+   "status": "Both oracles run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Left: the compiler inside hazeljs.",
+   "stages_reached": [
+    "designed",
+    "written",
+    "CI green",
+    "on the branch"
+   ]
+  },
+  {
+   "t": 766,
+   "short": "next: mixed mode",
+   "name": "Chosen after the meeting: mixed mode",
+   "sec": "mixed",
+   "stage": 1,
+   "st": "part",
+   "status": "Designed (sketched below): the interpreter runs the program and calls its complete functions compiled, as builtins. A first step begins 11-17.",
    "stages_reached": [
     "designed"
    ]

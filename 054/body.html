@@ -17,11 +17,12 @@
 <li><a href="#cost">What it all costs</a>: the Witch slide, build by build.</li>
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
 <li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, and compiling ahead of time for older phones.</li>
+<li><a href="#questions">Questions for the team</a>: fifteen open design questions, each with our lean, for the team's meeting of 2026-11-17.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
 <h2 id="plan">The plan</h2>
-<p><b>Of the meeting's seven changes, six are done on the hazel-jit branch and pass CI, overflow among them: SInt is 32 bits everywhere, each result checked. One is under way: the limits, where eight of the evaluator's 313 programs still meet one, and probes are not begun.</b> Each became a ticket on the work dashboard. Two more tickets came out of the work itself: a crash in the interpreter, now fixed on a PR to dev, and a cost in how Hazel checks types at run time.</p>
+<p><b>Of the meeting's seven changes, six are done on the hazel-jit branch and pass CI, overflow among them: SInt is 32 bits everywhere, each result checked. One is under way: the limits, where eight of the evaluator's 313 programs still meet one, and probes are not begun.</b> Each became a ticket on the work dashboard. Three more tickets came out of the work itself: a crash in the interpreter, now fixed on a PR to dev; a cost in how Hazel checks types at run time; and the oracles, slow on an older phone, now compiled ahead of time. A last ticket is the direction chosen after the meeting, mixed mode. What the team could decide is gathered in <a href="#questions">questions for the team</a>.</p>
 {{fig_board}}
 <p>Matthew's summary of the meeting, as he wrote it on 2026-11-15:</p>
 {{summary}}
@@ -166,20 +167,50 @@
 </table>
 <p>The first two lines the phone sent with <code>?compiled</code> came back interpreted, and the page did not say why: it fell back to hazeljs on any failure of the compiled file, silently. Since 0.0.12 it says so, in the status line and in the speed line, and with the address as <code>?compiled=1</code> the phone ran compiled, with no error.</p>
 
+<h2 id="questions">Questions for the team</h2>
+<p><b>Fifteen questions are open, for the team's meeting of 2026-11-17: two PRs to review, seven on mixed mode, three on what compiled code must match, and three on how it lands.</b> Each has our lean and what the answer decides. None blocks today's work; the answers on mixed mode decide its first step.</p>
+<h3 id="q-on">On PRs to dev</h3>
+<ol class="outline" start="1">
+<li><b>SInt at 32 bits, and overflow an error (hazelgrove/hazel#2828): agreed?</b> <span class="muted">Our lean:</span> Yes, as the meeting asked. Wrapping at 32 bits everywhere would be cheaper in compiled code, but silent. <span class="muted">It decides:</span> Whether #2828 merges. It changes the language: a program that relied on wrapping now stops at an error.</li>
+<li><b>Who reviews the fix for modulo by zero (hazelgrove/hazel#2825)?</b> <span class="muted">Our lean:</span> Anyone who knows the evaluator; it is small. <span class="muted">It decides:</span> Whether the interpreter still crashes on <code>int_mod(7, 0)</code>.</li>
+</ol>
+<h3 id="q-mixed">Mixed mode (ticket 766)</h3>
+<ol class="outline" start="3">
+<li><b>Which functions get compiled?</b> <span class="muted">Our lean:</span> Let-bound functions with their whole type declared (<code>let f : A -&gt; B = fun ...</code>), complete, with no probe. The elaborated type of any function would reach more, but it can hold unknowns, and the answer is converted back by that type. <span class="muted">It decides:</span> How much of a program runs compiled, and whether Hazel should nudge people to declare types; ticket 762 says that pays in the interpreter too.</li>
+<li><b>What does the stepper show for a compiled call?</b> <span class="muted">Our lean:</span> Mixed mode off while the stepper is open, since the stepper is for seeing steps. The other choice: one step, as for a builtin. <span class="muted">It decides:</span> Whether stepping a program ever skips steps.</li>
+<li><b>Probes in compiled code: what is a probe's sample when the code that made it has no steps?</b> <span class="muted">Our lean:</span> For now, a probe takes its function out of the compiled set, and the rest stay compiled. Recording samples in JavaScript later, if the team wants probes and speed together. <span class="muted">It decides:</span> The design of probes, the last of ticket 761's limits.</li>
+<li><b>Main thread or worker?</b> <span class="muted">Our lean:</span> Mixed mode in the worker only, where the interpreter runs; the main thread keeps only livelit views, as now, under the step budget, which answers Cyrus's concern. <span class="muted">It decides:</span> Whether a long compiled call can ever freeze the page.</li>
+<li><b>Falling back runs a call again from the start. Is that safe for good?</b> <span class="muted">Our lean:</span> Yes while evaluation has no effects. Is any effect planned (a livelit updating its model, randomness, input and output)? <span class="muted">It decides:</span> Whether one-call-at-a-time fallback stays correct.</li>
+<li><b>A program with a type error elsewhere: compile its sound functions?</b> <span class="muted">Our lean:</span> Yes, per function: a value that does not fit the declared type is caught where it crosses, and that call falls back. Today a single error anywhere keeps the whole program interpreted. <span class="muted">It decides:</span> How often a program being edited, so often with an error somewhere, runs compiled.</li>
+<li><b>One step budget or two?</b> <span class="muted">Our lean:</span> One, counted in the interpreter's steps, for both. Compiled code today has its own, 50 ms or 50 million calls a run. <span class="muted">It decides:</span> What a budget means to a user, and what the stepper and probes count.</li>
+</ol>
+<h3 id="q-what">What compiled code must match</h3>
+<ol class="outline" start="10">
+<li><b>String length in graphemes: intended?</b> <span class="muted">Our lean:</span> Keep it. Compiled code now counts as the interpreter does, with a fast path for ASCII. <span class="muted">It decides:</span> The meaning of <code>string_length</code> and <code>string_sub</code> for text beyond ASCII.</li>
+<li><b>Labeled tuples as JavaScript arrays carrying their labels: fine?</b> <span class="muted">Our lean:</span> Fine inside compiled code. Labels named <code>length</code>, <code>__proto__</code> or starting with <code>$</code> are stored under <code>$</code> + label. hazeljs gives a labeled tuple to JavaScript as an object, so the boundary converts. <span class="muted">It decides:</span> The shape of values between Hazel and JavaScript, in hazeljs and in mixed mode.</li>
+<li><b>The evaluator's ill-typed tests (27 stop at a failed run-time check; 3 fixpoints over <code>_</code>): keep them on a known list?</b> <span class="muted">Our lean:</span> Keep them: they test the interpreter's casts, which compiled code never needs, since it compiles no program with type errors. <span class="muted">It decides:</span> Whether the consistency sweep keeps a list of known exceptions.</li>
+</ol>
+<h3 id="q-landing">Landing and scope</h3>
+<ol class="outline" start="13">
+<li><b>How does hazel-jit reach dev?</b> <span class="muted">Our lean:</span> In small PRs, as report 053 proposes: the two fixes above; then the compiler with the consistency sweep in CI and no user-facing change; then mixed mode behind a setting; then livelit views on the main thread. <span class="muted">It decides:</span> The order of review, and when anyone outside the prototype branch sees compiled code.</li>
+<li><b>Should hazeljs ship the compiler?</b> <span class="muted">Our lean:</span> No: a tool at a site's build time, with only the runtime (about 17 kB) shipped to pages. hazeljs's library is already 2.8 MB. <span class="muted">It decides:</span> How an app like the oracles gets compiled code without CI's help.</li>
+<li><b>Undeclared result types cost a step 5 to 7 times (ticket 762): fix in elaboration?</b> <span class="muted">Our lean:</span> Yes: put the result's ascription once around the body, where the typed form has it. It changes where the interpreter inserts its run-time checks, so it needs an owner who knows elaboration. <span class="muted">It decides:</span> Whether every Hazel program, not only compiled ones, gets the speed.</li>
+</ol>
+
 <h2 id="next">What next</h2>
-<ol>
-<li>The last limits the sweep finds: labels that are not names, an expression as a module member, from_lvs; then probes.</li>
-<li>SInt at 32 bits: read CI, then propose the interpreter's half to dev as a PR of its own, since it changes the language.</li>
-<li>Work through the rest of the limits by the sweep's counts: fixpoints over other patterns, labels that are not names, string_sub, reverse application.</li>
-<li>Design probes for compiled code: what a probe's sample is when the code that made it has no steps.</li>
-<li>Bring the slides' programs into the consistency check, beside the evaluator's tests.</li>
-<li>Make the step counter cheaper: count only at calls that can recur.</li>
-<li>Check in the browser that a livelit in a probe drawer's stepper is drawn by the interpreter.</li>
-<li>Count the run-time type checks per call for an undeclared result type (ticket 762), and get hazelgrove/hazel#2825 reviewed.</li>
-<li>Mixed mode, a first step: a compiled-function value the interpreter can apply, for top-level functions with their whole types declared, behind a setting, falling back one call at a time.</li>
+<p><b>Today, before the meeting: ticket 761's last limits, and mixed mode's first step.</b> Then the rest, in order:</p>
+<ol class="outline">
+<li>The last limits the sweep finds (ticket 761): tuple labels that are not names, an expression as a module member, the builtin <code>from_lvs</code>, and a recursive definition of something other than functions.</li>
+<li>Mixed mode, a first step (ticket 766): a compiled function as a builtin made at run time, behind a setting, for let-bound functions with their whole types declared, falling back one call at a time.</li>
 <li>Mixed mode in the consistency sweep: each evaluator test run a third way, mixed, against the interpreter alone.</li>
-<li>The compiler inside hazeljs, so a site's build compiles without CI (both oracles now run compiled by default, built from CI's output).</li>
-<li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of report 050, or the Tarot deal of ticket 730), interpreter alone against mixed.</li>
+<li>Reviews for hazelgrove/hazel#2828 (SInt) and hazelgrove/hazel#2825 (modulo by zero).</li>
+<li>Probes in compiled code, after the team's answer on probes.</li>
+<li>The slides' programs in the consistency check, beside the evaluator's tests (ticket 756).</li>
+<li>A cheaper step counter: count only at calls that can recur (ticket 763).</li>
+<li>A check in the browser that a livelit in a probe drawer's stepper is drawn by the interpreter (ticket 760).</li>
+<li>The run-time type checks per call for an undeclared result type, counted (ticket 762).</li>
+<li>A build-time compiler for hazeljs apps, so a site compiles without CI (ticket 765).</li>
+<li>Mixed mode measured: a rule-heavy program in the worker (the Petri net rule of report 050, or the Tarot's deal), interpreter alone against mixed.</li>
 </ol>
 
 <h2 id="method">How this was put together</h2>

@@ -48,7 +48,7 @@ PLAN = [
     dict(t=757, short="Int and Nat exact", name="Int and Nat exact, as the interpreter's", sec="numbers", stage=4, st="done",
          status="On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch."),
     dict(t=758, short="overflow: a stuck term", name="Overflow stops at a stuck term", sec="overflow", stage=4, st="done",
-         status="On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter's half on a PR to dev, hazelgrove/hazel#2828: its CI green, waiting on review."),
+         status="On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter's half is on a PR to dev, hazelgrove/hazel#2828: CI green, its tests reaching 96% of the changed lines; waiting on review."),
     dict(t=759, short="divide by zero: a stuck term", name="Divide by zero stops at a stuck term", sec="errors", stage=4, st="done",
          status="On the branch: the compiled run stops, and the interpreter makes the stuck term."),
     dict(t=760, short="holes, the stepper: the interpreter's", name="Holes and the stepper stay with the interpreter", sec="rules", stage=4, st="done",
@@ -61,6 +61,10 @@ PLAN = [
          status="Fixed on a PR to dev, hazelgrove/hazel#2825, waiting for review."),
     dict(t=762, short="found: undeclared result types", name="Found: an undeclared result type costs a step 5 to 7 times", sec="found", stage=1, st="wait",
          status="Measured in Hazel's interpreter; the cause is where the ascriptions go. The fix is not begun."),
+    dict(t=765, short="found: slow on an older phone", name="Found: the oracles were slow on an older phone; compiled ahead of time", sec="ahead", stage=4, st="done",
+         status="Both oracles run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Left: the compiler inside hazeljs."),
+    dict(t=766, short="next: mixed mode", name="Chosen after the meeting: mixed mode", sec="mixed", stage=1, st="part",
+         status="Designed (sketched below): the interpreter runs the program and calls its complete functions compiled, as builtins. A first step begins 11-17."),
 ]
 STAGES = ["designed", "written", "CI green", "on the branch"]
 
@@ -116,7 +120,7 @@ def fig_board():
     H = top + rh * len(PLAN) + 14
     cols = {"done": "#15803d", "part": "#b45309", "wait": "#9ca3af", "pr": "#2563eb"}
     sx = lambda i: L + 20 + i * 108
-    out = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The plan, ticket by ticket, on 2026-11-16</text>',
+    out = [f'<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The plan, ticket by ticket, on {updated[:10]}</text>',
            '<text x="16" y="34" font-size="11" fill="var(--muted)">each dot a stage reached; for ticket 764 the last stage is a PR to dev, not the branch</text>']
     for i, s in enumerate(STAGES):
         out.append(f'<text x="{sx(i)}" y="{top - 6}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{esc(s)}</text>')
@@ -130,7 +134,8 @@ def fig_board():
                 out.append(f'<circle cx="{sx(i)}" cy="{y + 11}" r="7" fill="{c}"/>')
             else:
                 out.append(f'<circle cx="{sx(i)}" cy="{y + 11}" r="6" fill="none" stroke="{c}" stroke-width="1.6"/>')
-    cap = ("Tickets 756 to 763 are the meeting's items; 762 and 764 were found on the way. Green: done on "
+    cap = ("Tickets 756 to 763 are the meeting's items; 762, 764 and 765 were found on the way, and 766 is the direction chosen "
+           "after the meeting. For 765 the last stage is the oracles' pages running compiled code. Green: done on "
            "<code>trial/694-view-jit</code> (hazelgrove/hazel#2817, the hazel-jit prototype); amber: in progress; grey: "
            "waiting on a decision or not begun; blue: on a PR to dev. Not a build of the app: a status chart.")
     return (f'<figure class="f"><svg viewBox="0 0 {W} {H}" role="img" aria-label="Each ticket of the plan as a row of four stages, '
