@@ -155,7 +155,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-17 15:26 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-17 16:23 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -242,10 +242,11 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- listen: end -->
 <h1>Holes Across the Boundary</h1>
-<p class="sub">A starter project for hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript; when an argument holds a hole anywhere, the whole call goes back to the interpreter. Can such a value cross into compiled code and out again, unopened, and what do the checks that keep it unopened cost? Written for John, on the Hazel team, who offered on 2026-11-17 to take on the question of holes raised at the team's meeting that day.</p>
+<p class="sub">A starter project for hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript; when an argument holds a hole anywhere, the whole call goes back to the interpreter. Can such a value cross into compiled code and out again, unopened, and what do the checks that keep it unopened cost? Written for John, on the Hazel team, who offered on 2026-11-17 to take on the question of holes raised at the team's meeting that day, and for anyone else starting on hazel-jit, with notes on where it stands.</p>
 
 <h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
 <ol class="outline">
+<li><a href="#status">Where hazel-jit stands</a>, for anyone starting on it: how to try it, what compiles and what does not, the open PRs and branches, and working with CI. As of 2026-11-17.</li>
 <li><a href="#today">Where holes stand</a>: no code with a hole is compiled, by rule, and a value with a hole sends its whole call back to the interpreter.</li>
 <li><a href="#idea">The idea</a>: a hole as an opaque value, which compiled code may carry but never opens.</li>
 <li><a href="#looks">Where compiled code looks inside a value</a>, and why JavaScript will not stop it there by itself.</li>
@@ -256,6 +257,72 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#warmup">A warm-up on dev</a>: float literals that read back, <a href="https://github.com/hazelgrove/hazel/issues/2831">hazelgrove/hazel#2831</a>.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
+
+<h2 id="status">Where hazel-jit stands<a class="anchor" href="#status" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status" title="copy this section's address">copy link</button></h2>
+<p><b>As of 2026-11-17, hazel-jit lives on one prototype branch, build 49, with all of CI green. It compiles 260 of the evaluator's 313 test programs and gives the interpreter's answer on every one it can compare. It is not on dev, and three small PRs to dev are waiting for review.</b> This section is for anyone starting on it. <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> has the story and the numbers; <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a> explains how compiled livelit views work.</p>
+
+<h3 id="status-try">Trying it<a class="anchor" href="#status-try" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status-try" title="copy this section's address">copy link</button></h3>
+<p><b>The live build is <a href="https://build.hazel.org/trial/694-view-jit/">build.hazel.org/trial/694-view-jit/</a>, build 49.</b> Its app bundle carries commit <code>0e56bdbd0a</code>, deployed 2026-11-17 at 12:18 MST; CI deploys every push to the branch there. In the app:</p>
+<ul>
+<li><b>Compiled views</b>, in the nut menu, on by default on this branch; <code>?jit=off</code> or <code>?jit=on</code> in the address sets it for one visit, to compare.</li>
+<li><code>?hud</code> shows the frames drawn in the last second and two seconds of frame times against 16.7 ms.</li>
+<li>The browser's console says, once for each reason, why something was not compiled (<code>hazel-jit: ...</code>), and <code>globalThis.hazelJit</code> holds the counts.</li>
+</ul>
+<p><a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a>'s <a href="../051/#use">How to use it in your own PR</a> is still right about the setting, the OCaml calls, the command line (<code>./hazel jit FILE.hz</code>, with <code>--check</code>, <code>--views</code>, <code>--step</code>, <code>-n</code>), the <code>HazelJit</code> test group and the Firefox check, all checked against build 49. It is out of date on two points: <a href="https://github.com/hazelgrove/hazel/pull/2819">hazelgrove/hazel#2819</a> no longer hosts the same build (below), and its results are build 8's, where build 49's are those here.</p>
+
+<h3 id="status-numbers">What compiles<a class="anchor" href="#status-numbers" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status-numbers" title="copy this section's address">copy link</button></h3>
+<p><b>Of the evaluator's 313 test programs, 260 compile and 233 are compared with the interpreter, all agreeing; the other 80 are holes, type holes, free variables, four limits, and 27 ill-typed tests with nothing to compare.</b> The consistency check runs each evaluator test program through hazel-jit in CI, compares its answer with the interpreter's, and fails the build on a difference (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#consistency">The same answers, checked in CI</a>). On build 49 (CI run 44137711359):</p>
+<table class="vals">
+<tr><th>Programs</th><th>How many</th><th>Why</th></tr>
+<tr><td>Checked</td><td class="n">313</td><td>every program the evaluator's tests evaluate</td></tr>
+<tr><td>Not compiled, by rule</td><td class="n">49</td><td>a hole, among them a label that is a hole (15); a type hole (10); a free variable, the tests' own unbound names (24). The interpreter keeps these on purpose.</td></tr>
+<tr><td>Not compiled, a limit</td><td class="n">4</td><td>three ill-typed fixpoints over patterns that are not names (<code>fix _</code>, <code>fix ()</code>, <code>fix 0</code>), left so on purpose; one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile.</td></tr>
+<tr><td>Compiled</td><td class="n">260</td><td></td></tr>
+<tr><td>Compiled, nothing to compare</td><td class="n">27</td><td>ill-typed tests whose interpreter run stops at a failed run-time check, so its answer is not a value; listed by name.</td></tr>
+<tr><td>Compiled and compared</td><td class="n">233</td><td>all give the interpreter's answer; none differ. These are the programs timed in <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>'s <a href="../054/#timed">The same programs, timed</a>: run again and again, the median is 222 times as fast compiled; run once with its compile, 1.2 times.</td></tr>
+</table>
+<p>Beyond the evaluator's tests:</p>
+<ul>
+<li><b>The slides.</b> Of the 129 programs in <code>hazel-programs</code>, 15 compile on build 49 and all agree. On the slides' branch, 20 compile; 18 agree, and the two that did not found a bug, a projection through a list (below).</li>
+<li><b>A larger program.</b> The astrology oracle of hazeljs-oracles, eleven modules of floating-point code, compiles whole and runs one reading 170 times as fast as the interpreter, with the same answer (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#timed-astrology">A larger program</a>).</li>
+<li><b>The Witch slide</b>, compiled views on: 6.8 ms a frame over a slider drag in Firefox on GitHub's machines, build 49 (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#cost">What it all costs</a>).</li>
+</ul>
+
+<h3 id="status-limits">What it does not do yet<a class="anchor" href="#status-limits" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status-limits" title="copy this section's address">copy link</button></h3>
+<p><b>Some things stay with the interpreter by rule; the rest are limits, each a reason the compiler names.</b></p>
+<ul>
+<li><b>By rule</b> (Matthew and Cyrus, 2026-11-13): code with a hole or a type hole; a program with a static error, which keeps the whole program interpreted; the stepper's filters, and anything the stepper shows, which it steps with the interpreter.</li>
+<li><b>Limits the slides meet</b> (the slides' branch, CI run 44184122601): a type hole 29 times and a hole 28, both by rule; <b><code>test ... end</code></b> 28 times, a limit (<code>Test</code> and <code>HintedTest</code>, <code>HazelJit.re</code> line 1029), the largest one left on the slides and a contained piece of work; a splice pattern, the builtin <code>group_by_label</code>, and a closure with its own environment, once each; 21 slides have a static error.</li>
+<li><b>Holes at the boundary.</b> In mixed mode, a value with a hole in it cannot cross into compiled code, so its call goes back to the interpreter: the project in the sections below.</li>
+<li><b>Mixed mode</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-766"><code class="ref"><b>^ticket(</b>766<b>)</b></code></a>) runs only in the tests: there is no setting in the app yet. A module's member that calls another module's member is not compiled. A call across the boundary costs more than a tiny function saves: 500 calls of a one-line function took 27 ms mixed against 22 interpreted.</li>
+<li><b>Probes.</b> In mixed mode today, a compiled function's own probes record nothing, and the stepper does not see its calls (<code>HazelJitMixed.re</code>, its opening comment). Mixed mode runs only in the tests, so no one meets this yet. Probes in compiled code wait on step counts; until then, the plan is to leave a function with a probe uncompiled (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, question 5).</li>
+<li><b>Step counts</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-767"><code class="ref"><b>^ticket(</b>767<b>)</b></code></a>). The meeting of 2026-11-13 asked compiled code to count the interpreter's steps, so that probes and the stepper's budget mean the same compiled. The interpreter's costs are calibrated; compiled code does not count them yet.</li>
+<li><b>A budget.</b> A compiled run can be given a budget of calls and time (<code>Runtime.limit</code>); mixed mode gives each call 50 million calls and a second, and a run past it falls back. Whether mixed mode runs on the main thread or only in the evaluator's worker is an open question.</li>
+<li><b>hazeljs</b>, the library apps use, has the interpreter alone; two problems an app met there are filed, not fixed: float literals print with six decimals (<a href="https://github.com/hazelgrove/hazel/issues/2831">hazelgrove/hazel#2831</a>), and an answer that is a function grows past gigabytes (<a href="https://github.com/hazelgrove/hazel/issues/2832">hazelgrove/hazel#2832</a>).</li>
+</ul>
+
+<h3 id="status-prs">The PRs and branches<a class="anchor" href="#status-prs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status-prs" title="copy this section's address">copy link</button></h3>
+<p><b>Five PRs are open, none merged: the prototype as a draft, its stale twin, and three small PRs to dev waiting on a review. Two branches carry work not yet on the prototype.</b> As of 2026-11-17, 16:30 MST.</p>
+<table class="vals">
+<tr><th>PR or branch</th><th>What</th><th>State</th></tr>
+<tr><td><a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>, <code>trial/694-view-jit</code></td><td>hazel-jit, the prototype: compiled livelit views and a slide's whole run, the consistency check, mixed mode in the tests.</td><td>Draft, against <code>integration/livelits-modular-editors</code> (<a href="https://github.com/hazelgrove/hazel/pull/2635">hazelgrove/hazel#2635</a>), not dev. Build 49, <code>0e56bdbd0a</code>, all of CI green; previewed at build.hazel.org/trial/694-view-jit/. <a href="../053/"><code class="ref"><b>^report(</b>53<b>)</b></code></a> proposes redoing it by hand in small PRs to dev.</td></tr>
+<tr><td><a href="https://github.com/hazelgrove/hazel/pull/2819">hazelgrove/hazel#2819</a>, <code>livelits-x-jit</code></td><td>The same branch against dev, for trying.</td><td>Draft, stale: <code>c419e01559</code>, 2026-11-09, 117 commits behind build 49. Use the preview above instead.</td></tr>
+<tr><td><a href="https://github.com/hazelgrove/hazel/pull/2828">hazelgrove/hazel#2828</a>, <code>fix/758-sint-32-bits</code></td><td>SInt is 32 bits everywhere, and overflow an error.</td><td>To dev. All checks green, Codecov too; waiting for a review (hazel-core requested).</td></tr>
+<tr><td><a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a>, <code>fix/764-mod-by-zero</code></td><td>Modulo by zero stops at Divide by Zero instead of crashing the interpreter.</td><td>To dev. All checks green; waiting for a review (hazel-core requested).</td></tr>
+<tr><td><a href="https://github.com/hazelgrove/hazel/pull/2818">hazelgrove/hazel#2818</a>, <code>fps-hud</code></td><td>The frame-rate overlay, <code>?hud</code>, alone.</td><td>To dev. All checks green; waiting for a review (hazel-core requested).</td></tr>
+<tr><td><code>trial/761-slide-builtins</code>, no PR</td><td>Operators passed as functions, <code>to_lvs</code>, and a projection through a list compiled as the interpreter's (<code>t.col</code> over a list of rows); the slides' check in the full tests, with a budget on each compiled run; the full tests leave a trail.</td><td>Fast checks green; full tests 77 minutes; the list projection's fix, <code>bd08bb0872</code>, in CI (run 44197056910). Then onto the prototype.</td></tr>
+<tr><td><code>trial/768-astrology-timed</code>, no PR</td><td>The astrology oracle compiled whole and timed, on build 49.</td><td>Measured (above). Its quick tests still pass their 20 minutes, likely build 49's timing rule (below).</td></tr>
+</table>
+
+<h3 id="status-ci">Working with the tests and CI<a class="anchor" href="#status-ci" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status-ci" title="copy this section's address">copy link</button></h3>
+<p><b>CI is the place to run the suite, and its time limits are close: build 49's quick tests use about 15.4 of their 20 minutes.</b></p>
+<ul>
+<li><b>Two suites.</b> The quick tests (<code>make ci-quick</code>, run with <code>-q</code>) have 20 minutes, the full tests (<code>make ci</code>) 100. On build 49 they took 15.4 and 72 minutes. A test added to the quick suite can push it past: the astrology test did, four times. The likely cause, not yet checked: build 49's consistency check times each program it compares by running it at least ten more times in the interpreter, however long one run takes. The slides' branch runs a program that already takes 20 ms only once more, moves the slides' check to the full tests, and leaves the full tests' runs untimed; there the quick tests take 8 to 10 minutes and the full tests 77.</li>
+<li><b>A killed run says nothing.</b> Test output is printed at the end of a run, so a run stopped at its limit prints none of it. On the two trial branches above, the tests append to <code>hazel-jit-trail.txt</code> as they go, and a CI step prints it after the tests, pass or fail.</li>
+<li><b>Parsing big programs in a test.</b> The tests' <code>parse_exp</code> reads text by inserting it, as typing would, which is very slow for a large program; parse with FastParse instead, as hazeljs does (<code>parse_fast</code> on <code>trial/768-astrology-timed</code>).</li>
+<li><b>One group at a time.</b> <code>bash test/run_node.sh test HazelJit</code> runs the hazel-jit tests alone. Alcotest's <code>test</code> subcommand exits after the run, so a filtered run skips writing JUnit and coverage; reports printed at exit still print.</li>
+<li><b>The Firefox check.</b> <code>.github/workflows/jit.yml</code> loads the slides compiled and not, compares every livelit's drawing, and times the Witch slide's slider; <code>gh workflow run jit.yml --ref BRANCH -f only=Witch</code> runs it by hand.</li>
+</ul>
 
 <h2 id="today">Where holes stand<a class="anchor" href="#today" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="today" title="copy this section's address">copy link</button></h2>
 <p><b>No code with a hole is compiled, by rule, and today a value with a hole cannot cross into compiled code at all: the call goes back to the interpreter whole.</b></p>
@@ -536,7 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-17T20:21:39Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}}, BUILT = "2026-11-17";
+  const CACHED = {"hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-17T20:21:39Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2818": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:19:26Z", "kind": "pull", "state": "open", "title": "A frame-rate HUD, on with ?hud in the address", "updated": "2026-11-09T03:40:40Z", "base": "dev"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 0, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "open", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-15T22:38:11Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "open", "title": "SInt has 32 bits everywhere, and overflow is an error", "updated": "2026-11-17T01:06:34Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}}, BUILT = "2026-11-17";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -691,6 +758,93 @@ document.addEventListener("DOMContentLoaded", () => {
  ],
  "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
  "tables": [
+  {
+   "section": "What compiles",
+   "section_id": "status-numbers",
+   "columns": [
+    "Programs",
+    "How many",
+    "Why"
+   ],
+   "rows": [
+    [
+     "Checked",
+     "313",
+     "every program the evaluator's tests evaluate"
+    ],
+    [
+     "Not compiled, by rule",
+     "49",
+     "a hole, among them a label that is a hole (15); a type hole (10); a free variable, the tests' own unbound names (24). The interpreter keeps these on purpose."
+    ],
+    [
+     "Not compiled, a limit",
+     "4",
+     "three ill-typed fixpoints over patterns that are not names (fix _, fix (), fix 0), left so on purpose; one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile."
+    ],
+    [
+     "Compiled",
+     "260",
+     ""
+    ],
+    [
+     "Compiled, nothing to compare",
+     "27",
+     "ill-typed tests whose interpreter run stops at a failed run-time check, so its answer is not a value; listed by name."
+    ],
+    [
+     "Compiled and compared",
+     "233",
+     "all give the interpreter's answer; none differ. These are the programs timed in ^report(54)'s The same programs, timed: run again and again, the median is 222 times as fast compiled; run once with its compile, 1.2 times."
+    ]
+   ]
+  },
+  {
+   "section": "The PRs and branches",
+   "section_id": "status-prs",
+   "columns": [
+    "PR or branch",
+    "What",
+    "State"
+   ],
+   "rows": [
+    [
+     "hazelgrove/hazel#2817, trial/694-view-jit",
+     "hazel-jit, the prototype: compiled livelit views and a slide's whole run, the consistency check, mixed mode in the tests.",
+     "Draft, against integration/livelits-modular-editors (hazelgrove/hazel#2635), not dev. Build 49, 0e56bdbd0a, all of CI green; previewed at build.hazel.org/trial/694-view-jit/. ^report(53) proposes redoing it by hand in small PRs to dev."
+    ],
+    [
+     "hazelgrove/hazel#2819, livelits-x-jit",
+     "The same branch against dev, for trying.",
+     "Draft, stale: c419e01559, 2026-11-09, 117 commits behind build 49. Use the preview above instead."
+    ],
+    [
+     "hazelgrove/hazel#2828, fix/758-sint-32-bits",
+     "SInt is 32 bits everywhere, and overflow an error.",
+     "To dev. All checks green, Codecov too; waiting for a review (hazel-core requested)."
+    ],
+    [
+     "hazelgrove/hazel#2825, fix/764-mod-by-zero",
+     "Modulo by zero stops at Divide by Zero instead of crashing the interpreter.",
+     "To dev. All checks green; waiting for a review (hazel-core requested)."
+    ],
+    [
+     "hazelgrove/hazel#2818, fps-hud",
+     "The frame-rate overlay, ?hud, alone.",
+     "To dev. All checks green; waiting for a review (hazel-core requested)."
+    ],
+    [
+     "trial/761-slide-builtins, no PR",
+     "Operators passed as functions, to_lvs, and a projection through a list compiled as the interpreter's (t.col over a list of rows); the slides' check in the full tests, with a budget on each compiled run; the full tests leave a trail.",
+     "Fast checks green; full tests 77 minutes; the list projection's fix, bd08bb0872, in CI (run 44197056910). Then onto the prototype."
+    ],
+    [
+     "trial/768-astrology-timed, no PR",
+     "The astrology oracle compiled whole and timed, on build 49.",
+     "Measured (above). Its quick tests still pass their 20 minutes, likely build 49's timing rule (below)."
+    ]
+   ]
+  },
   {
    "section": "Where holes stand",
    "section_id": "today",

@@ -1,5 +1,92 @@
 [
  {
+  "section": "What compiles",
+  "section_id": "status-numbers",
+  "columns": [
+   "Programs",
+   "How many",
+   "Why"
+  ],
+  "rows": [
+   [
+    "Checked",
+    "313",
+    "every program the evaluator's tests evaluate"
+   ],
+   [
+    "Not compiled, by rule",
+    "49",
+    "a hole, among them a label that is a hole (15); a type hole (10); a free variable, the tests' own unbound names (24). The interpreter keeps these on purpose."
+   ],
+   [
+    "Not compiled, a limit",
+    "4",
+    "three ill-typed fixpoints over patterns that are not names (fix _, fix (), fix 0), left so on purpose; one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile."
+   ],
+   [
+    "Compiled",
+    "260",
+    ""
+   ],
+   [
+    "Compiled, nothing to compare",
+    "27",
+    "ill-typed tests whose interpreter run stops at a failed run-time check, so its answer is not a value; listed by name."
+   ],
+   [
+    "Compiled and compared",
+    "233",
+    "all give the interpreter's answer; none differ. These are the programs timed in ^report(54)'s The same programs, timed: run again and again, the median is 222 times as fast compiled; run once with its compile, 1.2 times."
+   ]
+  ]
+ },
+ {
+  "section": "The PRs and branches",
+  "section_id": "status-prs",
+  "columns": [
+   "PR or branch",
+   "What",
+   "State"
+  ],
+  "rows": [
+   [
+    "hazelgrove/hazel#2817, trial/694-view-jit",
+    "hazel-jit, the prototype: compiled livelit views and a slide's whole run, the consistency check, mixed mode in the tests.",
+    "Draft, against integration/livelits-modular-editors (hazelgrove/hazel#2635), not dev. Build 49, 0e56bdbd0a, all of CI green; previewed at build.hazel.org/trial/694-view-jit/. ^report(53) proposes redoing it by hand in small PRs to dev."
+   ],
+   [
+    "hazelgrove/hazel#2819, livelits-x-jit",
+    "The same branch against dev, for trying.",
+    "Draft, stale: c419e01559, 2026-11-09, 117 commits behind build 49. Use the preview above instead."
+   ],
+   [
+    "hazelgrove/hazel#2828, fix/758-sint-32-bits",
+    "SInt is 32 bits everywhere, and overflow an error.",
+    "To dev. All checks green, Codecov too; waiting for a review (hazel-core requested)."
+   ],
+   [
+    "hazelgrove/hazel#2825, fix/764-mod-by-zero",
+    "Modulo by zero stops at Divide by Zero instead of crashing the interpreter.",
+    "To dev. All checks green; waiting for a review (hazel-core requested)."
+   ],
+   [
+    "hazelgrove/hazel#2818, fps-hud",
+    "The frame-rate overlay, ?hud, alone.",
+    "To dev. All checks green; waiting for a review (hazel-core requested)."
+   ],
+   [
+    "trial/761-slide-builtins, no PR",
+    "Operators passed as functions, to_lvs, and a projection through a list compiled as the interpreter's (t.col over a list of rows); the slides' check in the full tests, with a budget on each compiled run; the full tests leave a trail.",
+    "Fast checks green; full tests 77 minutes; the list projection's fix, bd08bb0872, in CI (run 44197056910). Then onto the prototype."
+   ],
+   [
+    "trial/768-astrology-timed, no PR",
+    "The astrology oracle compiled whole and timed, on build 49.",
+    "Measured (above). Its quick tests still pass their 20 minutes, likely build 49's timing rule (below)."
+   ]
+  ]
+ },
+ {
   "section": "Where holes stand",
   "section_id": "today",
   "columns": [

@@ -3,7 +3,7 @@
 <h1>Hazel-JIT Status Report</h1>
 <p class="sub">hazel-jit compiles Hazel to JavaScript, and the browser runs it. What does it gain, and what does it cost? How can you use it in your own PR today? What has been added since its first version, three days ago? And what does it not do yet? Matthew, 2026-11-09: "a report for my colleagues to read (or have their agents read)". Everything here is on one branch, <code>trial/694-view-jit</code> (hazelgrove/hazel#2817), and every number names the build or the program it was measured on.</p>
 
-<div class="try" id="try"><p><b>Try it in your browser.</b> <a href="https://build.hazel.org/livelits-x-jit/?slide=livelit-playground-witch&amp;hud">The Witch slide, compiled</a>, with a frame-rate overlay at top right; and <a href="https://build.hazel.org/livelits-x-jit/?slide=livelit-playground-witch&amp;jit=off&amp;hud">the same with nothing compiled</a>. Drag a slider and watch the picture. Every slide of the Livelit Playground is linked the same way in hazelgrove/hazel#2819, which hosts this build (the branch at {{b8}}, build 8 of report 050).</p></div>
+<div class="try" id="try"><p><b>Try it in your browser.</b> <a href="https://build.hazel.org/livelits-x-jit/?slide=livelit-playground-witch&amp;hud">The Witch slide, compiled</a>, with a frame-rate overlay at top right; and <a href="https://build.hazel.org/livelits-x-jit/?slide=livelit-playground-witch&amp;jit=off&amp;hud">the same with nothing compiled</a>. Drag a slider and watch the picture. Every slide of the Livelit Playground is linked the same way in hazelgrove/hazel#2819, which hosts this build (the branch at {{b8}}, build 8 of report 050).</p><p class="note"><b>2026-11-17:</b> that build is from 2026-11-09. The current one is build 49, at <a href="https://build.hazel.org/trial/694-view-jit/?slide=livelit-playground-witch&amp;hud">build.hazel.org/trial/694-view-jit/</a> (the Witch, compiled, with the overlay); see the update below the outline.</p></div>
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
@@ -15,6 +15,7 @@
 <li><a href="#limits">Limitations</a>: JavaScript's numbers, no probes inside compiled code, the forms it does not compile, one browser, and not on <code>dev</code>.</li>
 <li><a href="#next">Next steps, ongoing now</a>: the five changes under way today, in Matthew's order, and what each would take away; and <a href="#method">how this was put together</a>.</li>
 </ol>
+<div class="try" id="update-2026-11-17"><p><b>Update, 2026-11-17: hazel-jit has moved on since this report; read the current reports.</b> Report 055, <a href="../055/#status">Where hazel-jit stands</a>, is the place to start: the live build, what compiles and what does not, the open PRs and branches, and working with CI, as of 2026-11-17. Report 054 has the story since this one, after Matthew and Cyrus's meeting of 2026-11-13: compiled code checked against the interpreter in CI on 313 programs, exact integers, errors, mixed mode, and the questions for the team. This report's <a href="#use">How to use it in your own PR</a> is still right about the setting, the OCaml calls, the command line, the tests and the Firefox check, except that hazelgrove/hazel#2819 no longer hosts the same build, and the results it quotes are build 8's.</p></div>
 
 <h2 id="what">What hazel-jit is</h2>
 <p><b>hazel-jit turns an elaborated Hazel term, the same term the interpreter runs, into the source text of a JavaScript function; the browser's own engine makes it a function with <code>new Function</code> and runs it.</b> It compiles once, and runs as often as it is called. Where it meets a form it does not compile, it says why, and that code runs on the interpreter instead: nothing is compiled wrongly to stay fast.</p>
@@ -65,6 +66,7 @@
 
 <h2 id="use">How to use it in your own PR</h2>
 <p><b>Base your branch on <code>trial/694-view-jit</code> (hazelgrove/hazel#2817), and every livelit's view and update compiles, with no change to your code. For anything else, call the compiler from OCaml, and check what it does with the command line, the tests and the Firefox check.</b> hazel-jit is not on <code>dev</code>: #2817 is a draft against <code>integration/livelits-modular-editors</code> (hazelgrove/hazel#2635), and hazelgrove/hazel#2819 (<code>livelits-x-jit</code>) hosts the same build for trying. The frame-rate overlay alone is hazelgrove/hazel#2818, for <code>dev</code>.</p>
+<p class="note"><b>2026-11-17:</b> #2819 has not followed the prototype since 2026-11-09 (117 commits behind build 49); try <a href="https://build.hazel.org/trial/694-view-jit/">build.hazel.org/trial/694-view-jit/</a> instead. The PRs as they stand now are in report 055, <a href="../055/#status-prs">The PRs and branches</a>.</p>
 <h3 id="use-app">In the app</h3>
 <ul>
 <li><b>The setting:</b> <i>Compiled views</i>, in the nut menu, on by default on this branch. <code>?jit=off</code> (or <code>?jit=on</code>) in the address sets it for one visit, to compare.</li>
