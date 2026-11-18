@@ -62,7 +62,7 @@ PLAN = [
     dict(t=762, short="found: undeclared result types", name="Found: an undeclared result type costs a step 5 to 7 times", sec="found", stage=1, st="wait",
          status="Measured in Hazel's interpreter; the cause is where the ascriptions go. The fix is not begun."),
     dict(t=765, short="found: slow on an older phone", name="Found: the oracles were slow on an older phone; compiled ahead of time", sec="ahead", stage=4, st="done",
-         status="Both oracles run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Left: the compiler inside hazeljs."),
+         status="The I Ching and the Tarot run compiled by default (hazeljs-oracles 0.0.13), each checked against hazeljs over thousands of answers: on the phone, ready in 0.8 s, not 3.7 s. Astrology too since 0.0.16 (11-18): a chart in about 1 ms, not 1.4 s, the same as hazeljs on 40 charts. Left: the compiler inside hazeljs."),
     dict(t=766, short="next: mixed mode", name="Chosen after the meeting: mixed mode", sec="mixed", stage=1, st="part",
          status="A first step is written, on its own branch, CI green 11-17: the interpreter runs the program and calls its functions with declared types, top-level and in modules, compiled, as builtins. The Petri net rule 22 times as fast, the I Ching's 4."),
     dict(t=767, short="next: steps and probes", name="Asked 11-13: the interpreter's step counts in compiled code, then probes", sec="steps", stage=1, st="part",
