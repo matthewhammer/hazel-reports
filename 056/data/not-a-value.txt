@@ -1,0 +1,25 @@
+(a=3 : Bool, b= "": Float) == (a=3, b="") : (c=Bool, d=Float)
+(a=1,b=2).c == (a=1,b=2).c
+Duplicate labels projected are indet
+mismatched types
+1 : String == case 1 | (x : String) =>x end
+case 1 | ("hello") => false | (x : String) => true end == case 1 | ("hello") => false | (x : String) => true end
+(case () | (1, 2) => true | _ => false end) == (case () | (1, 2) => true | _ => false end)
+[1 : String,2 : String,3 : String] == [1,2,3] : [String]
+[1 : String,2 : String,3 : String] == type T = [String] in [1,2,3] : T
+[1, "hello" : Int] == 1 :: ["hello"]
+4 : String == 4 : String
+true : String == true : String
+1. : String == 1. : String
+Nat
+SInt
+(4 : String) == let x : String = 4 in x
+1 + (4 : String) == 1 + (4 : String)
+Hidden containing arrow caught in dynamics
+Labeled tuple with different labels
+Labeled tuple with rearragned labels
+Typfun is not comparable
+A : (+A +B) : (+A +C)
+Indet when unboxing constructor as bool
+Indet when unboxing constructor as string
+Indet when unboxing constructor as int

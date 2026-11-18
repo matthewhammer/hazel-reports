@@ -1,0 +1,19 @@
+hazel-jit mixed measured, the I Ching's rules, 200 readings: the interpreter 1028.0 ms, mixed 197.1 ms (its rewrite and compile 4.9 ms); 13 functions compiled (nth_int nth_name nth_trigram coin modulo line_of value_of is_yang is_changing becomes bit changing_from length); 7800 calls compiled, 0 fell back
+hazel-jit mixed measured, the Petri net rule, whole types declared, 100 events: the interpreter 170.1 ms, mixed 19.0 ms (its rewrite and compile 6.2 ms); 12 functions compiled (nth len pick has enabled ready takes puts fire fire_at on_event a); 112 calls compiled, 0 fell back
+hazel-jit mixed measured, 500 calls across, from an interpreted loop: the interpreter 20.6 ms, mixed 21.8 ms (its rewrite and compile 0.2 ms); 1 functions compiled (sq); 500 calls compiled, 0 fell back
+hazel-jit mixed measured, fib(16), all compiled: the interpreter 66.5 ms, mixed 0.1 ms (its rewrite and compile 0.4 ms); 1 functions compiled (fib); 1 calls compiled, 0 fell back
+hazel-jit sweep (ticket 756): 313 evaluator checks; 260 compiled, 235 agreed, 0 differ, 0 threw, 25 with an interpreter result that is not a value; the sweep itself failed on 0
+  not compiled, 15: a hole
+  not compiled, 13: the free variable y
+  not compiled, 10: a type hole
+  not compiled, 6: the free variable s2
+  not compiled, 3: a recursive definition by a pattern that is not a name or a tuple of names
+  not compiled, 2: the free variable x
+  not compiled, 2: the free variable b2
+  not compiled, 1: the free variable a
+  not compiled, 1: a recursive definition of more than one name whose part that is not a function names one of them
+hazel-jit timing (ticket 756): 233 programs compiled whose values agree. A run's time, repeated (the interpreter until 20 ms, 10 to 1000 times; the JS until 5 ms): the interpreter 23.7 ms in all, the JS 0.163 ms; the median program's ratio 227. First runs: the interpreter 75.8 ms in all, hazel-jit compiling 22.5 ms, the JS parsed 2.3 ms and run 26.8 ms; the median program's ratio, the interpreter over the JS parsed and run, 4.6
+hazel-jit mixed (ticket 766): 6 programs with a function compiled (7 functions); 6 agreed, 0 differ, 0 failed; 16843 calls compiled, 2 fell back
+  mixed, not compiled, 29: its whole type is not declared
+  mixed, fell back, 1: the compiled run stopped: hazel-jit: invalid operation: DivideByZe...
+  mixed, fell back, 1: an argument that does not carry into JS

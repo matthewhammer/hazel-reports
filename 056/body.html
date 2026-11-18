@@ -1,0 +1,129 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 056 · hazel-jit · 2026-11-18, revised {{updated}} MST · <span class="wip">work in progress</span> · after reports 054 and 055</p>
+<h1>What Still Falls Back</h1>
+<p class="sub">hazel-jit compiles Hazel to JavaScript, and wherever it compiles a program it now gives the interpreter's answer, checked in CI (report 054, <a href="../054/#consistency">The same answers, checked in CI</a>). This report starts from that check, on build 50, and turns to the other side of it: every case where the interpreter still does the work, because hazel-jit does not compile the code or stops part way and falls back. It sorts those cases four ways: limits to lift now; decisions still open; holes, a project for John, kept apart from the rest; and stuck terms, later, which share machinery with holes. It also sets out the two uses of compiled code, livelit views and mixed mode, and how counting the interpreter's steps answers the worry about programs that never end.</p>
+
+<p><b>{{timing_lead}}</b></p>
+{{fig_timing}}
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#stands">Where the check stands</a>: on build 50, 233 of the evaluator's 313 test programs compile and give the interpreter's value; none differ.</li>
+<li><a href="#uses">Two uses, and programs that never end</a>: livelit views on the page's thread, mixed mode for all evaluation, and how step counts and a step limit keep a compiled run from running forever.</li>
+<li><a href="#limits">Limits to lift</a>: the {{not_handled}} evaluator programs compiled code does not handle, listed again from report 054, the slides' limits, and the rest, apart from holes and stuck terms.</li>
+<li><a href="#decisions">Open decisions</a>: the seventeen of report 054, the four of report 055, and four new ones, with our leans.</li>
+<li><a href="#holes">Holes in compiled code</a>: John's project, its edges drawn so it can go on beside the rest.</li>
+<li><a href="#stuck">Stuck terms in compiled code</a>: making the interpreter's stuck terms in JavaScript instead of stopping, the machinery holes need later too.</li>
+<li><a href="#next">What next</a>, by whom, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="stands">Where the check stands</h2>
+<p><b>On build 50, every one of the evaluator's 313 test programs also runs compiled in CI: 260 compile, 235 agree with the interpreter and none differ. Of those 235, 233 give the same value and 2 stop where the interpreter's answer is stuck; the other 25 compiled are ill-typed tests with nothing to compare, and 53 are not compiled.</b> (Ticket 756.)</p>
+{{fig_sweep}}
+<p>Build 50 is <code>55e4757a4b</code> on <code>trial/694-view-jit</code> (hazelgrove/hazel#2817), the prototype branch, since 2026-11-18: build 49 and the slides' builtins. All of CI passed at this commit before the branch moved to it (CI run 44211080673, on the slides' branch: static checks, fast checks, and the full tests in 92 minutes). On the prototype branch, its own CI (run 44319161267) has passed the static and fast checks with the same counts, the numbers quoted here; its full tests and the Firefox check of the Witch slide are running. Against build 49 (report 054), two programs moved: <code>(true).a</code> and the same with an ascription. The interpreter leaves these stuck. Compiled code once read <code>undefined</code> there and ran on, which the check counted as nothing to compare; it now stops, as the interpreter does, and the check counts that as agreeing.</p>
+<p>How the check compares, from report 054: numbers exactly (floats within a relative 10<sup>-9</sup>), lists, tuples, labels and constructors by structure, and a function only as being a function. A compiled run that stops at an invalid operation agrees with an interpreter result stuck at the same error. Anything else that parts from the interpreter fails its test, and so fails CI.</p>
+<p><b>The slides.</b> Of the 129 programs in <code>hazel-programs</code>, 20 compile on build 50, and all 20 agree (the full tests of CI run 44211080673, at the same commit). <b>Mixed mode.</b> The check also runs each evaluator program a third way, mixed: on build 50, 6 programs have a function to compile (7 functions), all 6 agree, 16,843 calls ran compiled and 2 fell back; 29 functions were left to the interpreter because their whole type is not declared.</p>
+
+<h2 id="uses">Two uses, and programs that never end</h2>
+<p><b>hazel-jit began as a way to draw livelits within a frame, on the page's own thread, and is becoming a way to run any complete function, called by the interpreter in its worker. A compiled run that never ends cannot freeze the page today, because its stack overflows within a millisecond or its budget stops it; once compiled code counts the interpreter's own steps, it will also stop where the interpreter stops, so even a run out of steps gives the same answer.</b></p>
+<h3 id="uses-views">The first use: livelit views</h3>
+<p>A livelit is drawn by a view function written in Hazel, over the livelit's model. Dragging a slider changes the model and calls for a new picture at every step. Hazel's interpreter runs in a web worker, and a run there, with the round trip, takes longer than a frame on a large slide. So hazel-jit compiles each view function once, with the model as a parameter, and the page runs the JavaScript on its own thread at each step: a step of the Witch's slider in 2 to 3 ms (report 050), and 6.8 ms a frame, about 147 fps, over a whole drag on build 49 (report 054, <a href="../054/#cost">What it all costs</a>). Report 052 added a slide's whole run, compiled. The compiled answer is a preview: the interpreter still runs every program, and its answer is the result, with the probes, the tests and the result panel. When hazel-jit does not compile something, or a compiled run stops, the page waits for the interpreter, as it did before hazel-jit.</p>
+<h3 id="uses-mixed">The latest idea: mixed mode, for all evaluation</h3>
+<p>Mixed mode (ticket 766, chosen after the meeting of 2026-11-13) keeps the interpreter in charge of every program, so holes, probes and the stepper work as they do, and gives its complete functions compiled speed. Each function bound at the program's top, or in a module there, whose whole type is declared (<code>let f : A -&gt; B = fun ...</code>) is compiled, and the interpreter calls it as it calls a builtin: the argument goes into JavaScript, the compiled function runs, and its answer comes back by the declared type. If the call stops for any reason, that call alone falls back: the interpreter applies its own closure to the same argument. Here the compiled answer is the answer, not a preview. It runs in the tests only, so far, with no setting in the app. On build 50, in Node:</p>
+{{tab_mixed}}
+<p>The last row is the crossing's cost: a call into a one-line function costs more than the function saves (<a href="#limits-mixed">a limit</a>).</p>
+<h3 id="uses-diverge">Programs that never end</h3>
+<p>Cyrus Omar's concern, at the meeting of 2026-11-13: <i>"We need a way to limit compiled hazel functions that diverge --- we need a step limit. esp if we continue to optimize by including certain jit-compiled hazel functions into the main thread"</i>. The interpreter has its own limits (report 054: a 20-second timer and 100 million transitions), but compiled code does not run through it.</p>
+<p><b>Today, a budget of calls and time.</b> (Ticket 763, on the prototype since build 46.) Hazel has no loops, so a program that never ends recurses forever. Every compiled function counts its calls, and every 16,384 calls reads the clock; a run past its budget stops, and the interpreter's run answers. Livelit views have 50 ms or 50 million calls a run, and a mixed-mode call a second or 50 million calls. Endless recursion turned out to be the smaller risk: JavaScript has no tail calls, so it overflows the stack in about a millisecond, and that error is caught like any other. The real risk is a run that ends, but late (fib(45)), and the clock catches that. In Node the counter costs 11 to 26%, and 20 to 33% with the clock. So a compiled run holds the page's thread for about its budget at most: the clock is read every 16,384 calls, and a builtin call, once begun, runs to its end. What it does not give is the interpreter's answer: a run the interpreter would finish, compiled code may give up on, and the reverse, because the two count different things.</p>
+<p><b>Next, the interpreter's own steps.</b> The meeting asked compiled code to count the steps the interpreter would take (ticket 767), and report 054 found it can: <a href="../054/#steps">step counts and probes, as the interpreter's</a>. hazel-jit translates construct by construct and runs in the interpreter's order, and most constructs take a fixed number of steps of their own, so the compiler adds the right number for each straight run of code, about what today's call counter costs. Then:</p>
+<ul>
+<li><b>One limit, in one unit.</b> The budget becomes the interpreter's step limit (decision 9, answered 2026-11-13). A program that never ends stops at the same step both ways, and so does a long one, so "ran out of steps" is part of the same answer, and the consistency check can cover it as it covers values.</li>
+<li><b>In mixed mode,</b> a compiled call adds its steps to the interpreter's count, so a program's count is the same mixed or not, and the interpreter's limit stops it wherever its steps are taken. Mixed mode is to run in the worker (decision 6's lean), where a long run makes results late but freezes nothing.</li>
+<li><b>On the page's thread,</b> steps alone do not bound time: a step that calls a builtin on a long list or string is one step, and a frame is 16.7 ms. So the lean is to keep the clock there too, set by the frame, beside the step limit (decision 20). If the clock stops a view, the page waits for the interpreter, whose answer is the same, as now.</li>
+<li><b>What it cannot do</b> is tell a program that never ends from one that ends late; no limit can. A step limit bounds both, and the same way in both, which is what the same answers need.</li>
+</ul>
+<p>The work: casts carried by functions, and the interpreter's own bookkeeping, are where counts need care, and a check in CI compares each evaluator program's count with the interpreter's (report 054 lists the steps). Probes follow from the counts.</p>
+
+<h2 id="limits">Limits to lift</h2>
+<p><b>Of the evaluator's 313 programs, compiled code does not handle {{not_handled}}, but only one of them meets a limit worth lifting; the rest are holes, ill-typed tests, unbound names and stuck terms, which the next sections take up. The limits that cost the most are elsewhere: tests in the slides (28 of 129), static errors anywhere in a program, the stack's depth, and how far mixed mode reaches.</b> The aim is to run compiled wherever the answer can be the interpreter's, and fall back only where it cannot. Holes and stuck terms are kept out of this section on purpose, so that work on them can go on apart.</p>
+
+<h3 id="limits-eval">The evaluator's test programs, again from report 054</h3>
+<p>Report 054's sweep table, brought to build 50, with each kind of program sent to the section that takes it up:</p>
+{{tab_eval}}
+{{eval_names}}
+<p>So the evaluator's tests hold one limit to lift: a recursive definition like <code>let (f, n) = (fun x -&gt; ..., ... f ...)</code>, whose part that is not a function mentions one of the names it defines inside a function it builds. Each name is assigned once, then the tuple of them, which is the interpreter's answer whenever no part reads a name before it is assigned; a finer check, that the mention is only inside a function, would compile it. The three fixpoints over <code>_</code>, <code>()</code> and <code>0</code> are ill-typed tests, whose interpreter answers are failed casts, so compiling them would only add partings.</p>
+
+<h3 id="limits-forms">The slides, and forms not yet compiled</h3>
+<p>The slides meet more. One reason a slide, the first it meets (build 50's commit, the full tests of CI run 44211080673):</p>
+{{tab_slides}}
+<ol class="outline">
+<li><b>Tests,</b> <code>test ... end</code>, on 28 slides: the largest limit left on the slides, and contained. Compiled code would record each test's outcome as the interpreter does (passed, failed, or indeterminate) and hand the outcomes back with the answer for the tests panel. It is the first of what the interpreter records (<a href="#limits-record">below</a>) and the simplest, since a test's outcome is a value.</li>
+<li><b>A splice in a pattern, the builtin <code>group_by_label</code>, and a closure with its own environment,</b> one slide each. The first two are small. The third is the assumption that a compiled program is closed; in mixed mode, free variables bound to the interpreter's values come in at the boundary, and an interpreter closure would have to be compiled too or called back.</li>
+<li><b>A static error anywhere</b> keeps the whole program interpreted (21 slides). In mixed mode the lean is per function: compile the functions that type well, and catch a value that does not fit where it crosses (decision 8).</li>
+<li><b>Forms neither the tests nor the slides meet today,</b> each a reason the compiler names (<code>HazelJit.re</code>): a tuple label that is not a name; an applied pattern that is not a constructor; a projection by something other than a label; a quotation; a module bound by a pattern that is not a name; a partial application's <code>_</code> outside one, or with a labeled argument; livelit names. Each is small, and none is urgent until a program meets it.</li>
+</ol>
+
+<h3 id="limits-run">At run time: the stack, and the budget</h3>
+<ol class="outline">
+<li><b>The stack.</b> JavaScript's stack holds thousands to tens of thousands of calls, depending on the browser, where the interpreter keeps its stack on the heap. A <code>List.map</code> over 100,000 elements works in the interpreter and overflows compiled; today that falls back, correct but slow. The common case is the list builtins, which the runtime could write as loops; a general fix (a trampoline, or code that keeps its own stack) costs every call.</li>
+<li><b>The budget.</b> A run past its budget falls back, correct and slower. With step counts it becomes the interpreter's limit (<a href="#uses-diverge">above</a>), and for a view, a frame's clock too.</li>
+</ol>
+
+<h3 id="limits-mixed">How far mixed mode reaches</h3>
+<ol class="outline">
+<li><b>Whole types declared.</b> 29 of the evaluator's functions were left out because only part of their type is declared. The elaborated type of any function would reach more, but it can hold unknowns, and the answer is converted back by that type (decision 3). Declaring whole types pays in the interpreter too: 5 to 7 times cheaper a step (ticket 762).</li>
+<li><b>Across modules.</b> A module's member that calls another module's member is not compiled yet, so the I Ching's rules do not compile whole.</li>
+<li><b>The crossing.</b> Converting values in and out costs more than a one-line function saves (500 calls of <code>sq</code>, 21.8 ms mixed against 20.6 ms interpreted, build 50). Convert a large value once and remember it, and leave very small functions to the interpreter.</li>
+<li><b>In the app.</b> No setting yet, and no hook where the worker evaluates.</li>
+</ol>
+
+<h3 id="limits-record">What the interpreter records</h3>
+<p>Tests (above), probes and the stepper. A probe shows the values that passed through it; today a probe always shows the interpreter's run, correct and never faster, and in mixed mode a compiled function's own probes record nothing (decision 5: until step counts land, a probe should take its function out of the compiled set). With the interpreter's step counts, compiled code can make the interpreter's own samples, with two limits (report 054, <a href="../054/#steps">steps</a>). The stepper shows the terms between steps, and compiled code has none, so it stays the interpreter's, by rule.</p>
+
+<h2 id="decisions">Open decisions</h2>
+<p><b>Twenty-five: report 054's seventeen, report 055's four, and four new ones here. Three were answered at the meeting of 2026-11-13; the rest were for the team's meeting of 2026-11-17, whose answers are not yet written down.</b> Numbers 1 to 17 are report 054's, 22 to 25 report 055's; 18 to 21 are new. Each lean is ours, for discussion; report 054's <a href="../054/#questions">Questions for the team</a> and report 055's <a href="../055/#settle">Questions to settle first</a> give each one's reasons and what it decides.</p>
+{{tab_decisions}}
+
+<h2 id="holes">Holes in compiled code</h2>
+<p><b>Holes are John's project, drawn so that it touches as little of the rest as it can: values with holes cross into compiled code and out again unopened (report 055), and code with holes stays with the interpreter, by the rule of 2026-11-13. The only thing it shares with the limit work is one contract: compiled code stops with <code>$R.indet</code>, and that call falls back.</b></p>
+<p><b>Where holes stand.</b> No code with a hole or a type hole is compiled: 25 of the evaluator's programs, and 57 of the slides' as the first thing they meet (<a href="#limits-eval">above</a>). That is the rule, and it stays: the interpreter evaluates around holes, and its indeterminate results are the point of them. Where holes meet compiled code is mixed mode, where a value with a hole in it arrives as an argument: today <code>to_js</code> cannot carry it, so the call falls back whole, even when the function never looks at the hole (<code>swap(1, ?)</code>, the length of <code>[1, ?, 3]</code>).</p>
+<p><b>The project</b> (report 055, <a href="../055/#idea">The idea</a>, ticket 769): carry such a value as an opaque JavaScript object; let compiled code store it, pass it and return it; stop the run wherever compiled code would look inside it; and give back the very term that went in. JavaScript will not stop by itself (a pattern test on an opaque object is simply false), so the checks have to be written, and the lean is a second, checked version of a function, compiled the first time a hole arrives, so that calls without holes cost what they cost today.</p>
+<p><b>Its edges.</b> To keep it apart from the limits Matthew is lifting:</p>
+<ul>
+<li><b>Its own branch,</b> from the newest prototype build, merging each new build in (no rebases of shared branches).</li>
+<li><b>Its files:</b> the boundary in <code>HazelJitValue.re</code> (<code>to_js</code>, <code>of_js</code>, the table of opaque terms); one runtime helper for the check, in <code>HazelJit.re</code>'s runtime; the checked version as a flag on code generation; mixed mode's choice of version in <code>HazelJitMixed.re</code>; and its tests in a group of their own beside the mixed-mode tests.</li>
+<li><b>Where it meets the limit work:</b> the checks sit in code generation for patterns (the empty list's <code>v === null</code> and a constructor's <code>v.c === ...</code>, <code>HazelJit.re</code> lines 570 and 618 on build 50), equality, arithmetic and a tuple's parts. The limit work touches patterns too (a splice pattern, above). So each check is one call to the runtime helper, written at those sites and nowhere else, and Matthew tells John before reshaping them.</li>
+<li><b>Not in it:</b> code with holes, step counts, the limits above, stuck terms (below), and how hazel-jit reaches dev.</li>
+<li><b>Measured by what already runs:</b> the mixed sweep counts calls that fall back because an argument does not carry (one on build 50), the timings above come from the quick tests on every push, and the Witch slide's frame time from the Firefox check (on the prototype branch's pushes, or started by hand), so the checks' cost shows.</li>
+</ul>
+<p><b>Before code:</b> the four questions of report 055 (decisions 22 to 25), with Cyrus and Matthew, first of all where the work lives. A warm-up PR to dev, independent of all this, is decision 17's float printing (hazelgrove/hazel#2831).</p>
+<p><b>Later, a second step that waits on stuck terms.</b> Opaque values fall back when looked inside: <code>inc(?)</code> still goes to the interpreter, to make <code>? + 1</code>. Compiling it, so that the run goes on around the hole as the interpreter's does, means making that term in compiled code, which is the next section's machinery.</p>
+
+<h2 id="stuck">Stuck terms in compiled code</h2>
+<p><b>Where the interpreter's answer would hold a stuck term, compiled code stops, and the interpreter's run answers: correct, and costing speed only when it happens. Making those terms in JavaScript instead, and evaluating around them, takes the same machinery as compiling around holes, so it is one piece of work for both, Matthew's, after more of the limits.</b></p>
+<p><b>Where compiled code stops today</b> (build 50; each stop is <code>$R.invalid</code> or <code>$R.indet</code> in <code>HazelJit.re</code>'s runtime, and in the evaluator's tests only the two stuck projections end this way):</p>
+{{tab_stops}}
+<p>Two more kinds of stuck term are kept out by rule rather than stopped at: a failed run-time check in an ill-typed program (25 evaluator programs; the page compiles no program with a static error), and a free variable (24). Overflow is the example to start from: since 2026-11-16 an SInt result past 32 bits is an error, a stuck term, in the interpreter (report 054, <a href="../054/#overflow">Overflow</a>). Compiled code checks every SInt result and stops; the interpreter's answer then holds the operation, its operands and the error.</p>
+<p><b>Why stopping is not enough for good.</b> For livelit views, the page waits for the interpreter, which is fine. In mixed mode, a call that stops is run again from the start in the interpreter, so an error deep in a long call costs the call twice. A program being edited meets errors often. And holes need the same thing: <code>? + 1</code> is a stuck term too.</p>
+<p><b>What it takes,</b> in order of difficulty:</p>
+<ol class="outline">
+<li><b>A stuck term as a JavaScript value.</b> Where an operation fails, compiled code builds the term the interpreter would: the operation (known when compiling, with its id in the source), its operands carried back to Hazel by their types (the operation says them: an SInt sum has SInt operands), and the error. <code>of_js</code> gives it back as is. Overflow and divide by zero need only this, since their operands are values.</li>
+<li><b>Going on around it.</b> An operation that meets a stuck term builds a larger one (<code>(7 / 0) + 1</code>), as the interpreter's evaluation does around anything indeterminate; a tuple or list holding one is still a value with a stuck part. This is the step that <code>? + 1</code> needs, and where an opaque hole of report 055 and a stuck term become one kind of value.</li>
+<li><b>Control that meets it.</b> A <code>case</code> on a stuck term, an <code>if</code> on one, a call of one: the interpreter's answer holds the rest of the code, the arms, with the environment they close over. Compiled code has erased both, so it must give back the source of the arms and the values of their free variables, carried back to Hazel. This is the hard part, and the reverse of the limit on a closure with its own environment.</li>
+<li><b>Ids and steps.</b> The interpreter's stuck terms carry ids that tie them to the source, which compiled code knows when compiling; and building them must count the interpreter's steps too.</li>
+<li><b>The check.</b> Once compiled code makes stuck terms, the consistency check should compare them with the interpreter's, not only that both stopped (decision 18).</li>
+</ol>
+<p>Overflow first, then the other invalid operations, then going on around them, then control. The first two are Matthew's after more limits are lifted; the second step of the holes work builds on the second and third.</p>
+
+<h2 id="next">What next</h2>
+<p><b>Matthew lifts limits and makes step counts; John starts on holes once four questions are settled; the team writes down its answers.</b></p>
+<ul>
+<li><b>Matthew, hazel-jit:</b> the 53 programs by name (CI running), then tests on the slides; mixed mode across modules and its crossing cost; step counts, checked against the interpreter's in CI, then the budget in steps (decisions 9, 19, 20); then probes. Stuck terms after that, overflow first (decision 21).</li>
+<li><b>Matthew and Cyrus:</b> write down the meeting of 2026-11-17's answers (decisions 3 to 17); settle report 055's four questions before John starts (22 to 25); decide how hazel-jit reaches dev (13).</li>
+<li><b>John:</b> after decisions 22 to 25, opaque values at the boundary, passing through only, with their tests; the warm-up PR, if wanted first.</li>
+<li><b>Anyone who knows the evaluator:</b> reviews of hazelgrove/hazel#2828 (SInt) and hazelgrove/hazel#2825 (modulo by zero).</li>
+</ul>
+
+<h2 id="method">How this was put together</h2>
+<p>Written on 2026-11-18 from build 50's CI at <code>55e4757a4b</code>: the sweep, the timings, the mixed-mode numbers and the ill-typed programs' names from the prototype branch's own fast checks (run 44319161267); the slides from the full tests of run 44211080673, on the slides' branch at the same commit, the other run's sweep giving the same counts; from the code of build 50, and from reports 054 and 055, whose questions are carried over with their leans unchanged. The names of the programs not compiled come from one more CI run, on a branch that only adds a line printing them. Nothing here is measured in a browser; the timings are Node's on GitHub's machines. The numbers are in <a href="https://github.com/matthewhammer/hazel-reports/tree/main/056/data">056/data</a>.</p>
+</main></body>

@@ -1,0 +1,23 @@
+{
+ "title": "What Still Falls Back",
+ "date": "2026-11-18",
+ "kind": "hazel-jit: a status report on the same-answers check, and every case where the interpreter still does the work",
+ "status": "work in progress",
+ "question": "Matthew Hammer, 2026-11-18: \"I'd like to create report 56 as focused on this status: https://matthewhammer.org/hazel/reports/054/#consistency\", with sections on the limitations to lift (\"use compiled code in as many cases as possible, without falling back to interpreter\"), the open decisions carried over from reports 054 and 055, compiled code with open holes (\"the carve out for John's contributions, which I will try to isolate from lifting the other limitations unrelated to holes\"), and compiled code with stuck terms (\"where some limitations like overflow overlap with some machinery we need for holes, since both require constructing terms in the compiled code\"); the log scatter plot at the start; the evaluator's test cases compiled code cannot handle, listed again from report 054; and the two uses, views and mixed mode, with how step counts and their limits answer Cyrus's concern about programs that diverge.",
+ "measurements": "Build 50's CI (run 44211080673 at 55e4757a4b): the sweep, the timings, mixed mode, the slides; Node on GitHub's machines, one run.",
+ "builds": [
+  {
+   "build": "50",
+   "branch": "trial/694-view-jit",
+   "pr": "hazelgrove/hazel#2817",
+   "commit": "55e4757a4b",
+   "date": "2026-11-18 06:58 MST"
+  }
+ ],
+ "files": [
+  "numbers.json",
+  "timing.tsv",
+  "not-a-value.txt",
+  "sweep-build-50.txt"
+ ]
+}

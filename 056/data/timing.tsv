@@ -1,0 +1,233 @@
+hazel-jit time	0.46014	0.05511	106	0.04382	0.00680	0.01202	0.000096	52181	2 == let x : (a=Int) -> Int = fun a -> a in x(2)
+hazel-jit time	0.07636	0.02859	542	0.03641	0.01005	0.00303	0.000060	82810	(a=1) == let x : (a=Int) = (a=1) in x
+hazel-jit time	0.03646	0.01617	1000	0.02712	0.00701	0.01693	0.000156	34524	1 == (a=1,b=2).a
+hazel-jit time	0.13571	0.04860	276	0.04078	0.00654	0.52012	0.000089	56230	5 == let fn : (a=String) -> Int =   fun (a=a : String) -> string_length(a) in fn("hello")
+hazel-jit time	0.08679	0.04744	264	0.05016	0.00776	0.00409	0.000142	35257	5 == let fn : (a=String) -> Int =             fun (a : String) -> string_length(a)           in fn("hello")
+hazel-jit time	0.07435	0.04690	466	0.09521	0.01089	0.00582	0.000176	28414	(1, 2, 3.0) == let (a=a', b=b', c) = (a=1, b=2, 3.0) in (a',b',c)
+hazel-jit time	1.23518	0.05137	461	0.01645	0.01382	1.29024	0.001500	4036	(a=1,b=2,c=3) == (a=1, b=2) ... (c=3)
+hazel-jit time	0.04331	0.02491	1000	0.02917	0.01170	2.02813	0.000468	10676	(1,2,3,4) == (1, 2) ... (3, 4)
+hazel-jit time	0.07756	0.02705	10	0.04027	0.00677	2.92358	0.000851	5878	(a=1, b=2, 3, c=4) == (a=0, b=2) ... (a=1, 3, c=4)
+hazel-jit time	0.11494	0.06294	316	0.07025	0.00931	0.21081	0.000437	12679	(a=1, b=2) == select_labels((a=1,b=2,c=3), `a`, `b`)
+hazel-jit time	0.08692	0.06106	324	0.04516	0.01105	0.14213	0.000221	22627	(3, 1, 3) == project_labels((a=1,b=2,c=3), `c`, `a`, `c`)
+hazel-jit time	0.65774	0.04570	276	0.07349	0.01012	0.23702	0.000868	7727	(c=3) == omit_labels((a=1,b=2,c=3), `a`, `b`)
+hazel-jit time	0.14343	0.03299	558	0.04383	0.00983	0.04580	0.000071	70750	(1,2,3,4) == omit_all_labels((a=1,b=2,3,c=4))
+hazel-jit time	0.05407	0.01518	1000	0.03826	0.00734	0.00099	0.000038	100000	1 == let (_=x) = (_=1) in x
+hazel-jit time	0.01645	0.00588	1000	0.01204	0.00509	0.00020	0.000039	100000	"" == ^js("1 + 1", "")
+hazel-jit time	0.05647	0.01269	987	0.05397	0.00616	0.00717	0.000039	100000	float_of_int(1)
+hazel-jit time	0.06960	0.01984	768	0.05485	0.00646	0.13514	0.000511	9788	string_compare(("Hello", "World"):(?, ?))
+hazel-jit time	0.05050	0.02478	882	0.02734	0.01377	0.10779	0.000173	28821	"hazel hello world" == string_join(" ", ["hazel", "hello", "world"])
+hazel-jit time	0.92678	0.02932	525	0.06182	0.01199	0.01517	0.002037	2455	string_compare(("Hello": ?, "World": ?):(?, ?))
+hazel-jit time	0.06234	0.01116	634	0.02884	0.00939	0.12585	0.000999	5368	"\\hello" == string_escaped("\hello")
+hazel-jit time	0.06101	0.00944	612	0.02633	0.00815	0.03469	0.000085	58892	"HELLO" == string_uppercase("hello")
+hazel-jit time	0.04152	0.01570	969	0.02632	0.00898	0.03218	0.000041	100000	"hello" == string_lowercase("HELLO")
+hazel-jit time	0.04622	0.01255	1000	0.02022	0.00698	0.14811	0.005346	936	"Hello" == string_capitalize("hello")
+hazel-jit time	0.03341	0.01204	1000	0.02013	0.00636	0.11086	0.005105	980	"hello" == string_uncapitalize("Hello")
+hazel-jit time	0.04914	0.01707	1000	0.02193	0.00703	0.08392	0.000177	28247	string_match(("hazel", "hazel"))
+hazel-jit time	0.03757	0.01526	950	0.02797	0.00549	0.00261	0.000087	57573	string_match(("hazel", "world"))
+hazel-jit time	0.09886	0.01570	1000	0.02324	0.00682	0.07502	0.000157	31755	string_replace(("ha+zel", "haazelhzel", "world"))
+hazel-jit time	0.12276	0.01553	499	0.03446	0.00536	0.18673	0.006277	797	string_search(("h.+z", "hazel", 0))
+hazel-jit time	0.05783	0.01337	624	0.03378	0.00514	0.03951	0.004843	1033	string_search(("foo", "hazel", 0))
+hazel-jit time	0.17085	0.03158	643	0.06558	0.00570	0.04507	0.000049	100000	true == atan2(0., -1.) ==. pi
+hazel-jit time	0.04852	0.02438	465	0.06909	0.00758	0.00342	0.000066	75981	true == atan2(1., 1.) ==. pi /. 4.
+hazel-jit time	0.10895	0.01680	872	0.05776	0.00645	0.00167	0.000039	100000	true == round(2.5) ==. 3.
+hazel-jit time	0.03486	0.01467	1000	0.05218	0.00620	0.00152	0.000038	100000	true == round(0.4) ==. 0.
+hazel-jit time	0.07534	0.01611	705	0.04873	0.00873	0.02051	0.000208	28550	"0.30" == to_fixed(0.1 +. 0.2, 2)
+hazel-jit time	0.04767	0.01141	1000	0.04364	0.00807	0.00317	0.000065	76486	"3" == to_fixed(3.14159, 0)
+hazel-jit time	1.04005	0.07723	219	0.08551	0.00864	0.01649	0.000084	59732	(1, 1, 1) == let j : JSON = Assoc([("k", String("v"))]) in let f = fun (v: JSON) -> case v | Assoc(_) => 1 | _ => 0 end in let n : JSON = Null in (f(j), case j | Assoc(_) => 1 | _ => 0 end, case n | Null => 1 | _ => 0 end)
+hazel-jit time	0.05416	0.02254	619	0.06641	0.00814	0.00763	0.000131	51866	0 == length([])
+hazel-jit time	0.09888	0.07609	339	0.06497	0.01330	0.01989	0.000127	39401	3 == length([1, 2, 3])
+hazel-jit time	0.15761	0.13302	170	0.10938	0.01074	0.01973	0.000380	19463	[1, 2, 3] == map([1, 2, 3], fun x -> x)
+hazel-jit time	0.15845	0.14115	152	0.07979	0.01372	0.02943	0.000545	14383	[2, 3, 4] == map([1, 2, 3], fun x -> x + 1)
+hazel-jit time	0.27000	0.21825	103	0.10238	0.01236	0.16272	0.001326	4345	[2, 4] == filter([1, 2, 3, 4], fun x -> int_mod(x, 2) == 0)
+hazel-jit time	0.14844	0.13296	166	0.10024	0.01988	0.02398	0.000975	6275	6 == fold_left([1, 2, 3], fun (acc, x) -> acc + x, 0)
+hazel-jit time	2.47165	0.16183	150	0.12897	0.01353	0.04795	0.000983	5416	[1, 1, 2, 2] == flat_map([1, 2], fun x -> [x, x])
+hazel-jit time	1.40409	0.11130	184	0.07777	0.01164	0.02313	0.000494	10116	[(1, 3), (2, 4)] == zip([1, 2], [3, 4])
+hazel-jit time	1.30945	0.10666	182	0.08042	0.01236	0.02133	0.000364	13730	([1, 2], [3, 4]) == unzip([(1, 3), (2, 4)])
+hazel-jit time	0.10826	0.07866	152	0.09468	0.00963	0.01724	0.000475	10522	[3, 2, 1] == reverse([1, 2, 3])
+hazel-jit time	1.32687	0.10603	190	0.07952	0.01593	0.02878	0.000373	15763	[1, 2] == take([1, 2, 3], 2)
+hazel-jit time	1.25586	0.08095	175	0.74610	0.01120	0.01494	0.000545	9176	[3] == drop([1, 2, 3], 2)
+hazel-jit time	0.12428	0.10530	227	0.05424	0.01078	0.01762	0.000135	36929	[1, 2, 3] == range(1, 3)
+hazel-jit time	1.43423	0.11202	188	0.07851	0.01216	0.02172	0.000392	13458	[(0, 10), (1, 20)] == enumerate([10, 20])
+hazel-jit time	0.14315	0.10068	169	0.10368	0.00826	0.01114	0.000164	30543	true == any([1, 2, 3], fun x -> x > 2)
+hazel-jit time	0.08271	0.04003	392	0.07803	0.00837	0.00934	0.000124	40366	false == all([1, 2, 3], fun x -> x > 5)
+hazel-jit time	0.10304	0.05595	305	0.13926	0.01013	0.01688	0.000224	31236	[1, 0, 2] == intersperse([1, 2], 0)
+hazel-jit time	0.07083	0.02968	332	0.06123	0.00973	0.01436	0.000202	31703	[1, 2, 3] == cons(1, [2, 3])
+hazel-jit time	0.07047	0.02224	541	0.06808	0.00823	0.00687	0.000219	22870	1 == head([1, 2, 3])
+hazel-jit time	0.05801	0.02808	613	0.05747	0.00872	0.00805	0.000137	40313	[2, 3] == tail([1, 2, 3])
+hazel-jit time	0.04571	0.01628	748	0.04764	0.00650	0.00379	0.000152	32959	true == is_empty([])
+hazel-jit time	0.11512	0.06032	308	0.07902	0.00918	0.01528	0.000311	22027	2 == nth([1, 2, 3], 1)
+hazel-jit time	0.17127	0.12491	161	0.11358	0.00956	0.01539	0.000695	8607	2 == fold_right([1, 2, 3], fun (x, acc) -> x - acc, 0)
+hazel-jit time	0.08142	0.04663	377	0.06994	0.00704	0.00981	0.000195	38412	[1, 2, 3, 4] == append([1, 2], [3, 4])
+hazel-jit time	0.16427	0.09255	121	0.07076	0.01020	0.01807	0.001171	4406	[1, 2, 3, 4, 5] == concat([[1, 2], [3], [4, 5]])
+hazel-jit time	0.17843	0.12687	163	0.09700	0.00958	0.03306	0.000686	9338	[10, 21] == mapi([10, 20], fun (i, x) -> i + x)
+hazel-jit time	0.93986	0.24894	88	0.13073	0.01066	0.04865	0.002696	1855	[1, 3] == filteri([1, 2, 3, 4], fun (i, x) -> int_mod(i, 2) == 0)
+hazel-jit time	0.72502	0.08100	237	0.08723	0.00892	0.01498	0.000505	12079	true == mem([1, 2, 3], 2)
+hazel-jit time	0.28476	0.25980	91	0.10758	0.01313	0.04390	0.000408	17411	([2, 4], [1, 3]) == partition([1, 2, 3, 4], fun x -> int_mod(x, 2) == 0)
+hazel-jit time	0.13198	0.07368	253	0.07998	0.00946	0.01802	0.000438	11404	[2, 1, 3, 4] == rev_append([1, 2], [3, 4])
+hazel-jit time	0.16787	0.12736	164	0.68256	0.01249	0.01808	0.000983	5089	10 == fold_left2([1, 2], [3, 4], fun (acc, x, y) -> acc + x + y, 0)
+hazel-jit time	0.21433	0.17579	111	0.11949	0.01262	0.01891	0.000325	15917	2 == fold_right2([2, 1], [4, 3], fun (x, y, acc) -> x + y - acc, 0)
+hazel-jit time	3.01471	0.11236	176	0.09628	0.01072	0.02149	0.000572	11000	[4, 6] == map2([1, 2], [3, 4], fun (x, y) -> x + y)
+hazel-jit time	0.14743	0.11455	146	0.11686	0.01046	0.01366	0.000329	20269	true == all2([1, 2], [3, 4], fun (x, y) -> x < y)
+hazel-jit time	0.14653	0.09214	208	0.08963	0.01001	0.01859	0.000415	13004	true == any2([1, 2], [3, 2], fun (x, y) -> x == y)
+hazel-jit time	0.16048	0.08614	213	0.09794	0.00933	0.01616	0.000380	14588	2 == find([1, 2, 3, 4], fun x -> int_mod(x, 2) == 0)
+hazel-jit time	0.14241	0.10088	197	0.10223	0.01032	0.02005	0.000473	10571	[1, 2] == take_while([1, 2, -3, 4], fun x -> x > 0)
+hazel-jit time	0.13291	0.10563	213	0.07951	0.01118	0.01944	0.000275	24842	[0, 4] == drop_while([1, 2, 0, 4], fun x -> x > 0)
+hazel-jit time	0.78435	0.12926	156	0.09417	0.01138	0.02219	0.000492	10168	[0, 1, 2] == init(3, fun i -> i)
+hazel-jit time	0.17147	0.17873	134	0.08079	0.01342	0.04130	0.000464	14689	[0, 1, 4, 9] == init(4, fun i -> i * i)
+hazel-jit time	0.08321	0.04123	410	0.08265	0.01051	0.01079	0.000128	38929	[] == init(0, fun i -> i)
+hazel-jit time	0.31410	0.16050	76	0.21923	0.00818	0.02426	0.000901	5549	[2, 3, 4] == slice(1, 4, [1, 2, 3, 4, 5])
+hazel-jit time	0.15802	0.15284	150	0.09977	0.01193	0.02263	0.000714	7730	[1, 2, 3] == slice(0, 3, [1, 2, 3, 4, 5])
+hazel-jit time	0.19055	0.20595	110	0.10100	0.01051	0.02309	0.000473	14588	[3, 4, 5] == slice(2, 5, [1, 2, 3, 4, 5])
+hazel-jit time	0.20275	0.19566	125	0.10625	0.01388	0.06203	0.000525	12857	[] == slice(5, 7, [1, 2, 3, 4, 5])
+hazel-jit time	0.16460	0.08416	214	0.14544	0.01120	0.01709	0.000562	8902	[] == slice(1, 1, [1, 2, 3, 4, 5])
+hazel-jit time	0.26043	0.21859	101	0.10797	0.01189	0.04829	0.000607	8244	[4, 8] == filter_map([1, 2, 3, 4], fun x -> if int_mod(x, 2) == 0 then Some(x * 2) else None)
+hazel-jit time	1.81634	0.07872	257	0.08729	0.00986	0.01891	0.000144	34780	Some(2) == nth_opt([1, 2, 3], 1)
+hazel-jit time	0.12039	0.10353	213	0.08718	0.01028	0.01597	0.000387	13247	None == nth_opt([1, 2, 3], 5)
+hazel-jit time	0.16210	0.09025	191	0.09784	0.00948	0.02278	0.000385	14329	Some(2) == find_opt([1, 2, 3, 4], fun x -> int_mod(x, 2) == 0)
+hazel-jit time	0.16819	0.12934	156	0.09732	0.00961	0.01961	0.000997	5015	None == find_opt([1, 3, 5], fun x -> int_mod(x, 2) == 0)
+hazel-jit time	0.77003	0.10651	174	0.10491	0.00984	0.02260	0.000787	6354	Some(1) == find_index([1, 2, 3, 4], fun x -> int_mod(x, 2) == 0)
+hazel-jit time	0.17067	0.17527	135	0.10361	0.01240	0.02400	0.000306	16347	None == find_index([1, 3, 5], fun x -> int_mod(x, 2) == 0)
+hazel-jit time	0.17390	0.10493	167	0.14871	0.01825	0.02665	0.000454	11386	Some(4) == find_map([1, 2, 3, 4], fun x -> if int_mod(x, 2) == 0 then Some(x * 2) else None)
+hazel-jit time	0.16509	0.15200	158	0.10711	0.01228	0.02473	0.000404	13894	None == find_map([1, 3, 5], fun x -> if int_mod(x, 2) == 0 then Some(x * 2) else None)
+hazel-jit time	0.82582	0.13455	141	0.12311	0.01069	0.02473	0.000793	6552	Some(1) == find_mapi([1, 2, 3, 4], fun (i, x) -> if int_mod(x, 2) == 0 then Some(i) else None)
+hazel-jit time	0.19064	0.22504	116	0.13813	0.01439	0.02517	0.000349	14346	None == find_mapi([1, 3, 5], fun (i, x) -> if int_mod(x, 2) == 0 then Some(i) else None)
+hazel-jit time	0.07073	0.03265	489	0.07111	0.01092	0.01528	0.000069	72336	Some(1) == hd_opt([1, 2, 3])
+hazel-jit time	0.04824	0.01907	741	0.05786	0.00984	0.00637	0.000117	52899	None == hd_opt([])
+hazel-jit time	0.06926	0.03114	485	0.08269	0.00860	0.01117	0.000155	34159	Some([2, 3]) == tl_opt([1, 2, 3])
+hazel-jit time	0.04595	0.01555	765	0.06809	0.00776	0.00628	0.000160	31191	None == tl_opt([])
+hazel-jit time	0.12425	0.06452	274	0.07979	0.00953	0.01458	0.000349	14338	42 == assoc([(1, 10), (2, 42), (3, 30)], 2)
+hazel-jit time	0.12054	0.07628	271	0.08934	0.01167	0.02282	0.000212	30340	Some(42) == assoc_opt([(1, 10), (2, 42), (3, 30)], 2)
+hazel-jit time	0.12952	0.10658	210	0.09212	0.01266	0.01666	0.000195	25592	None == assoc_opt([(1, 10), (2, 42), (3, 30)], 5)
+hazel-jit time	0.11663	0.06083	293	0.08450	0.01117	0.01255	0.000309	16180	true == mem_assoc([(1, 10), (2, 42), (3, 30)], 2)
+hazel-jit time	0.12074	0.11544	224	0.08505	0.01163	0.01468	0.000340	18219	false == mem_assoc([(1, 10), (2, 42), (3, 30)], 5)
+hazel-jit time	0.17660	0.11727	92	0.12873	0.00829	0.02026	0.000517	9666	[(1, 10), (3, 30)] == remove_assoc([(1, 10), (2, 42), (3, 30)], 2)
+hazel-jit time	0.17566	0.15713	147	0.08481	0.01028	0.03453	0.000562	8892	[(1, 10), (3, 30)] == remove_assoc([(1, 10), (2, 42), (2, 99), (3, 30)], 2)
+hazel-jit time	0.15396	0.13848	152	0.08464	0.01101	0.01950	0.000407	12280	[(1, 10), (2, 42), (3, 30)] == remove_assoc([(1, 10), (2, 42), (3, 30)], 5)
+hazel-jit time	0.30302	0.25958	90	0.11947	0.01129	0.04623	0.001071	5097	([2, 4], [1, 3]) == partition_map([1, 2, 3, 4], fun x -> if int_mod(x, 2) == 0 then Left(x) else Right(x))
+hazel-jit time	0.16028	0.17398	145	0.09446	0.01507	0.02774	0.000403	17551	([1, 2, 3], []) == partition_map([1, 2, 3], fun x -> Left(x))
+hazel-jit time	0.21550	0.17043	134	0.11815	0.01198	0.02642	0.000257	19546	([], [1, 2, 3]) == partition_map([1, 2, 3], fun x -> Right(x))
+hazel-jit time	0.05987	0.02895	498	0.07818	0.01007	0.00890	0.000098	50907	([], []) == partition_map([], fun x -> Left(x))
+hazel-jit time	0.79605	0.04780	220	1.51826	0.01112	0.01309	0.000491	10181	[] == sort(fun (x, y) -> if x == y then Eq else (if x < y then Lt else Gt), [])
+hazel-jit time	0.08566	0.05336	307	0.24110	0.00964	0.02062	0.000351	14260	[1] == sort(fun (x, y) -> if x == y then Eq else (if x < y then Lt else Gt), [1])
+hazel-jit time	0.32690	0.24800	79	2.53969	0.00919	0.03180	0.001446	4291	[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y then Lt else Gt), [1, 2])
+hazel-jit time	0.27744	0.27505	82	0.17485	0.01306	0.03586	0.000807	6197	[1, 2] == sort(fun (x, y) -> if x == y then Eq else (if x < y then Lt else Gt), [2, 1])
+hazel-jit time	0.55694	0.61165	43	0.20109	0.01435	0.08827	0.001859	2690	[1, 2, 3] == sort(fun (x, y) -> if x == y then Eq else (if x < y then Lt else Gt), [1, 3, 2])
+hazel-jit time	0.90347	1.13081	24	0.19600	0.01396	0.08539	0.005382	1190	[1, 1, 3, 4, 5] == sort(fun (x, y) -> if x == y then Eq else (if x < y then Lt else Gt), [3, 1, 4, 1, 5])
+hazel-jit time	0.93182	1.30182	23	0.19346	0.01370	0.07847	0.004008	1282	[5, 4, 3, 1, 1] == sort(fun (x, y) -> if x == y then Eq else (if x < y then Gt else Lt), [3, 1, 4, 1, 5])
+hazel-jit time	1.39170	0.76327	35	0.14143	0.01260	0.07854	0.003970	1274	[1, 2, 3] == unique([1, 2, 2, 3, 1, 3])
+hazel-jit time	1.14232	0.51377	52	0.13521	0.01475	0.07845	0.000981	5095	[(1, [1, 3]), (0, [2, 4])] == group_on_key([1, 2, 3, 4], fun x -> int_mod(x, 2))
+hazel-jit time	8.55910	4.77578	10	0.30418	0.02167	5.35252	0.034058	210	       [(index=true, `A`=60, `B`=30, `C`=0), (index=false, `A`=20, `B`=40, `C`=60)]        == pivot_table(   [     ("A", true, 10),     ("A", false, 20),     ("B", true, 30),     ("B", false, 40),     ("A", true, 50),     ("C", false, 60)   ...
+hazel-jit time	0.01985	0.00194	1000	0.01671	0.00498	0.00156	0.000040	100000	None == None
+hazel-jit time	0.03167	0.01149	1000	0.02394	0.00578	0.00243	0.000039	100000	Some(42) == Some(42)
+hazel-jit time	0.07505	0.01993	749	0.04933	0.00731	0.00337	0.000040	100000	42 == case Some(42) | None => 0 | Some(x) => x end
+hazel-jit time	0.11323	0.04045	273	0.12195	0.00944	0.01883	0.000639	8289	Some(84) == option_map(Some(42), fun x -> x * 2)
+hazel-jit time	0.06298	0.02211	508	0.09633	0.00865	0.01192	0.000243	26405	None == option_map(None, fun x -> x * 2)
+hazel-jit time	0.13256	0.04152	289	0.09721	0.01010	0.01892	0.000368	13600	Some(84) == option_bind(Some(42), fun x -> Some(x * 2))
+hazel-jit time	0.06374	0.02234	573	0.09723	0.01022	0.01155	0.000591	8869	None == option_bind(None, fun x -> Some(x * 2))
+hazel-jit time	0.06821	0.03125	409	0.08667	0.00711	0.01165	0.000420	12583	None == option_bind(Some(42), fun x -> None)
+hazel-jit time	0.06563	0.02911	586	0.06900	0.00611	0.00865	0.000060	82803	[42] == option_to_list(Some(42))
+hazel-jit time	0.04537	0.02245	647	0.05718	0.00616	0.00509	0.000056	89294	[] == option_to_list(None)
+hazel-jit time	0.10386	0.01624	533	0.04350	0.01031	0.00550	0.000038	100000	1 == type T = +A(String) in case A("yo")           | A(n) => 1         end
+hazel-jit time	0.14177	0.04090	426	0.02445	0.00778	0.00885	0.000053	93887	1 ==  type Exp = + Var(String) in let go: Exp -> Int =   fun e ->     case e       | Var(n) => 1  end in  go(Var("yo"))
+hazel-jit time	0.21087	0.03113	388	0.02280	0.00698	0.00313	0.000101	71020	1 ==  type Exp = + Var(String) +B(Exp) in let go: Exp -> Int =   fun e ->     case e       | Var(n) => 1  end in  go(Var("yo"))
+hazel-jit time	0.09774	0.03644	584	0.04363	0.00729	0.15719	0.006761	740	string_sub("hello", 1, _)(2)
+hazel-jit time	0.04413	0.02768	389	0.02079	0.00580	0.00440	0.000067	74833	let u = 5 in let f = fun () -> u in let u = 3 in f()
+hazel-jit time	2.18277	0.03718	512	0.02059	0.00717	0.00771	0.000053	94984	(typfun T -> fun x : T-> x)@<Int>(2)
+hazel-jit time	0.30902	0.10066	150	0.06521	0.01576	0.01157	0.000194	41254	(1,1) == let dub = typfun T -> fun x : T -> (x, x) : (T, T) in           let ascribed = dub : poly a -> a -> (a, a) in           ascribed@<Int>(1)
+hazel-jit time	0.51773	0.19405	106	0.12604	0.01208	0.01974	0.000553	13248	true == type Exp =   + Var(String)   + Lam(String, Exp) + Ap(Exp, Exp) in  let exp_equal: (Exp, Exp) -> Bool =   fun es ->     case es       | Var(x), Var(y) => x== y       | Lam(x1, e1), Lam(x2, e2) =>         x1== x2 && exp_equal(e1, e2)  ...
+hazel-jit time	0.04786	0.01680	833	0.06271	0.00940	0.00321	0.000418	11961	let f = fun x -> x in f(_)(42)
+hazel-jit time	0.04397	0.01555	1000	0.02028	0.01681	0.00137	0.000049	100000	true == fix f -> true || f
+hazel-jit time	0.25280	0.09217	174	0.08474	0.01359	0.01553	0.000088	56602	3 == (fix f -> fun i -> if i > 2 then i else f(i+1))(1)
+hazel-jit time	4.89574	0.08573	226	0.08777	0.01561	0.01730	0.006114	918	false == let (even, odd) = (fix (even, odd) -> (fun n -> if n == 0 then true else odd(n - 1), fun n -> if n == 0 then false else even(n - 1))) in even(1)
+hazel-jit time	0.14824	0.09018	314	0.05868	0.01591	0.01666	0.000082	61148	1 == let t =  1 in           let go =             fun i ->           if i > 1 then t else go(i+1) in           go(0)
+hazel-jit time	0.25744	0.17100	131	0.08119	0.01615	0.02092	0.000217	23022	1 == let t =  1 in           let (go, go') =             (fun i ->           if i > 3 then t else go'(i+1),fun i -> if i > 3 then t else go(i+1) ) in           go(0)
+hazel-jit time	0.09244	0.02609	729	0.05301	0.01499	0.00351	0.000041	100000	(1, 2) == let x = (1, 2) in fix f -> x
+hazel-jit time	0.01052	0.00731	1000	0.00527	0.00584	0.00028	0.000039	100000	8
+hazel-jit time	0.01156	0.00192	1000	0.00628	0.00200	0.00012	0.000036	100000	Nat
+hazel-jit time	0.01099	0.00191	1000	0.00403	0.00146	0.00011	0.000036	100000	SInt
+hazel-jit time	0.01566	0.00673	1000	0.00712	0.00300	0.00017	0.000037	100000	4 == 4 : Int
+hazel-jit time	0.01560	0.00687	1000	0.00844	0.00548	0.00032	0.000046	100000	"hello" == "hello" : String
+hazel-jit time	0.01726	0.00638	1000	0.00598	0.00263	0.00022	0.000037	100000	true == true : Bool
+hazel-jit time	0.01517	0.00294	1000	0.00627	0.00209	0.00013	0.000036	100000	SInt
+hazel-jit time	0.01314	0.00632	1000	0.01049	0.00460	0.00013	0.000036	100000	Nat
+hazel-jit time	0.09826	0.03099	502	0.03978	0.01258	0.00972	0.000061	81976	7 == let f(x: Int, y: Int) = x + y in f(3, 4)
+hazel-jit time	0.17907	0.03614	340	0.07619	0.01641	0.00978	0.000427	13389	7 == let f(x: Int, y: Int): Int = x + y in f(3, 4)
+hazel-jit time	0.06366	0.02546	655	0.04753	0.01331	0.00795	0.000069	72883	42 == let inc(x) = x + 1 in inc(41)
+hazel-jit time	0.16095	0.03916	365	0.07860	0.01396	0.01263	0.000116	43023	7 == let add(x)(y) = x + y in add(3)(4)
+hazel-jit time	0.32848	0.16251	150	0.06470	0.02397	0.03522	0.000300	27533	120 == let fact(n: Int): Int = if n == 0 then 1 else n * fact(n - 1) in fact(5)
+hazel-jit time	0.06409	0.02790	669	0.04831	0.01992	0.00968	0.000061	81514	3 == let f()(x) = x + 1 in f()(2)
+hazel-jit time	0.06092	0.02827	644	0.04990	0.00706	0.00637	0.000899	5561	10 == let f(x)() = x * 2 in f(5)()
+hazel-jit time	0.06940	0.05134	483	0.05113	0.01263	0.01331	0.000542	15585	123 == let f(a)(b)(c) = a * 100 + b * 10 + c in f(1)(2)(3)
+hazel-jit time	0.17869	0.03283	168	0.08768	0.01369	0.01462	0.000475	15152	11 == let f(x)(y) = x + y in let g = f(1) in g(10)
+hazel-jit time	0.25082	0.18916	152	0.06907	0.01117	0.04061	0.000554	14736	10 == let sum(n: Int)(acc: Int): Int = if n == 0 then acc else sum(n - 1)(acc + n) in sum(4)(0)
+hazel-jit time	0.07660	0.03630	441	0.05957	0.00991	0.00823	0.000086	57913	6 == let f((a, b))(c) = a + b + c in f((1, 2))(3)
+hazel-jit time	0.07556	0.02879	452	0.06937	0.01011	0.02018	0.000297	16828	3 == module M = { let f(x)(y) = x + y } in M.f(1)(2)
+hazel-jit time	0.02266	0.00792	1000	0.01915	0.01011	0.00130	0.000048	100000	4 + 5
+hazel-jit time	0.02763	0.00446	1000	0.02487	0.00598	0.00159	0.000038	100000	-8
+hazel-jit time	1.76168	0.02272	35	0.04262	0.00167	0.00036	0.000037	100000	true == -1.5 ==. 0. -. 1.5
+hazel-jit time	0.05239	0.01839	890	0.04925	0.00620	0.00058	0.000037	100000	true == let x = 2.5 in -x ==. 0. -. 2.5
+hazel-jit time	0.06712	0.01931	586	0.06686	0.00564	0.00048	0.000037	100000	true == let x: Float = -5 in x ==. 0. -. 5.
+hazel-jit time	0.03882	0.00915	803	0.01716	0.00562	0.00258	0.000038	100000	0 == -5 + 5
+hazel-jit time	0.12061	0.03597	611	0.05325	0.00695	0.00294	0.000038	100000	true == atan(0. -. 1.) ==. -(atan(1.))
+hazel-jit time	0.05236	0.01604	946	0.04179	0.00630	0.00277	0.000038	100000	0 == let n = (use Float in -3 : Int) in n + 3
+hazel-jit time	0.04155	0.01634	949	0.05407	0.00767	0.00048	0.000038	100000	true == let y = (use Float in -3) in y ==. 0. -. 3.
+hazel-jit time	0.04414	0.00783	885	0.67848	0.00476	0.00165	0.000038	100000	true == case -5 | -5 => true | _ => false end
+hazel-jit time	0.59550	0.00775	1000	0.04551	0.00407	0.00048	0.000037	100000	1 == case -2.5 | -2.5 => 1 | _ => 0 end
+hazel-jit time	0.02322	0.00859	1000	0.02001	0.00641	0.00052	0.000037	100000	0 == case 5 | -5 => 1 | _ => 0 end
+hazel-jit time	0.02615	0.00770	1000	0.04157	0.00542	0.00040	0.000037	100000	2 == case -1.5 | -2.5 => 1 | -1.5 => 2 | _ => 0 end
+hazel-jit time	0.03577	0.00772	1000	0.01089	0.00678	0.00179	0.000039	100000	Equal Integer
+hazel-jit time	0.60994	0.00604	1000	0.03086	0.00425	0.00121	0.000038	100000	Equal Float
+hazel-jit time	0.01599	0.00658	1000	0.00849	0.00524	0.00131	0.000038	100000	Equal Bool
+hazel-jit time	0.01598	0.00564	1000	0.00916	0.00422	0.00091	0.000038	100000	Equal String
+hazel-jit time	0.03038	0.01177	1000	0.01573	0.00549	0.60617	0.000045	100000	Equal List 1
+hazel-jit time	0.02405	0.01037	1000	0.00834	0.00510	0.55617	0.000055	90470	Equal List 2
+hazel-jit time	0.03198	0.01153	1000	0.01824	0.00501	0.62402	0.000054	92811	Equal Tuples 1
+hazel-jit time	0.02826	0.01197	1000	0.01779	0.00603	0.00238	0.000045	100000	Equal Tuples 2
+hazel-jit time	0.03892	0.01690	928	0.03580	0.00756	0.61255	0.000197	25344	Equal LabTuples 1
+hazel-jit time	0.03944	0.01935	922	0.05217	0.00903	0.60971	0.000100	49910	Equal LabTuples 2
+hazel-jit time	0.77678	0.04751	281	0.04948	0.00935	0.00671	0.000039	100000	TypFun Equality 1
+hazel-jit time	0.58510	0.01323	882	0.02830	0.00931	0.61511	0.000044	100000	Equal Type Constructors 1
+hazel-jit time	0.02326	0.00751	1000	0.04919	0.00618	0.60906	0.000051	97210	Equal Type Constructors 2
+hazel-jit time	0.60661	0.01443	829	0.03592	0.00674	0.59304	0.000049	100000	Equal Type Constructors 3
+hazel-jit time	0.03144	0.00576	1000	0.01469	0.00426	0.00285	0.000038	100000	A :(+A +B +C)
+hazel-jit time	1.76537	0.72835	44	0.11763	0.01702	0.03744	0.000636	11646	[5, 3] == type T=String in let map = typfun a ->typfun b -> fun f :(a ->b), as : [a] -> let bs : [b] =   case as     | [] => []     | (a :: as) => f(a) :: map@<a>@<b>(f, as)   end in bs in  map@<T>@<Int>(fun e -> string_length(e), ["hello", ...
+hazel-jit time	0.03019	0.00411	1000	0.01387	0.00989	0.62654	0.006400	1000	{} == {}
+hazel-jit time	0.04533	0.01701	832	0.04073	0.01943	0.00410	0.000058	85888	{ let x = 1 } == { let x = 1 }
+hazel-jit time	0.08508	0.03588	472	0.05129	0.01079	0.00750	0.000136	63687	{ let x = 1; let y = "hello" } == { let x = 1; let y = "hello" }
+hazel-jit time	0.06103	0.02550	633	0.04912	0.00819	0.00538	0.000130	51663	{ let x = "hello" } == { let x = 1; let x = "hello" }
+hazel-jit time	0.06416	0.03848	441	0.04789	0.00821	0.00440	0.000413	12239	{ let y = 2; let x = 3 } == { let x = 1; let y = 2; let x = 3 }
+hazel-jit time	0.03914	0.01457	902	0.04264	0.00562	0.00586	0.000057	87028	1 == { let x = 1 }.x
+hazel-jit time	0.08609	0.04217	287	0.05249	0.00555	0.00469	0.000086	57914	3 == let point = { let x = 1; let y = 2 } in point.x + point.y
+hazel-jit time	0.67248	0.02752	732	0.05234	0.01316	0.00901	0.000067	74311	{ let x = 2 } == { 1 + 1; let x = 2 }
+hazel-jit time	0.09517	0.03887	339	0.07219	0.00879	0.00993	0.000102	49055	11 == { let f = fun x -> x + 1; let result = f(10) }.result
+hazel-jit time	0.06785	0.04332	470	0.06166	0.00847	0.00305	0.000135	59104	11 == { let f(x) = x + 1; let result = f(10) }.result
+hazel-jit time	0.14610	0.04765	268	0.08323	0.00844	0.00913	0.000095	52453	11 == module M : { let f : Int -> Int } = { let f(x) = x + 1 } in M.f(10)
+hazel-jit time	0.06956	0.03403	449	0.04933	0.00988	0.00721	0.000138	49704	{ let x = 1; let y = 2 } == { let x = 1; let y = x + 1 }
+hazel-jit time	0.04879	0.01917	561	0.06695	0.00909	0.00473	0.000052	95382	{ let x = 42 } == { type T = Int; let x = 42 : T }
+hazel-jit time	0.06511	0.03250	521	0.05169	0.00795	0.00422	0.000062	80563	{ let a = 1; let b = 2 } == { let (a, b) = (1, 2) }
+hazel-jit time	0.08283	0.02612	547	0.05705	0.00828	0.01158	0.000132	60343	2 == { let f = fun x -> x + 1 }.f(1)
+hazel-jit time	0.06122	0.02679	577	0.04237	0.00930	0.00712	0.000245	24028	{ let m = { let y = 1 } } == { let m = { let y = 1 } }
+hazel-jit time	0.06159	0.02396	643	0.04717	0.00812	0.00677	0.000058	86504	1 == module m = { let x = 1 } in m.x
+hazel-jit time	0.10772	0.03508	224	0.06453	0.00933	0.00865	0.000870	5748	3 == module M = { let x = 1; let y = 2 } in M.x + M.y
+hazel-jit time	0.06095	0.03310	576	0.05364	0.01398	0.01314	0.000824	6922	42 == { module Inner = { let z = 42 }; let r = Inner.z }.r
+hazel-jit time	0.05359	0.03539	540	0.05529	0.06146	0.00928	0.000282	20970	10 == module Outer = { module Inner = { let x = 10 } } in Outer.Inner.x
+hazel-jit time	0.12820	0.04144	321	0.08114	0.00999	0.00348	0.000219	28353	3 == module M : { let x : Int; let y : Int } = { let x = 1; let y = 2 } in M.x + M.y
+hazel-jit time	0.06099	0.02290	588	0.06994	0.00828	0.00697	0.000109	68758	42 == module M : { let x : Int } = { let x = 42 } in M.x
+hazel-jit time	0.07092	0.02346	520	0.07743	0.00853	0.00234	0.000126	50551	1 == let m : { type T = Int; let x : T } = { type T = Int; let x = 1 } in m.x
+hazel-jit time	0.08051	0.03124	410	0.07022	0.00906	0.00581	0.000138	45440	{ let x = 1 } == module M : { let x : Int } = { let x = 1; let y = 2 } in M
+hazel-jit time	0.08919	0.05100	368	0.08779	0.01307	0.01376	0.000091	55221	{ let x = 1 } == module M : { module Inner : { let x : Int } } = { module Inner = { let x = 1; let y = 2 } } in M.Inner
+hazel-jit time	0.10145	0.03487	365	0.08453	0.00944	0.00764	0.000223	22414	{ let a = 1; let b = 2 } == module M : { let a : Int; let b : Int } = { let (a, b) = (1, 2) } in M
+hazel-jit time	0.09702	0.04053	452	0.06957	0.01073	0.00355	0.000063	79602	{ let y = 2; let x = 1 } == module M : { let y : Int; let x : Int } = { let x = 1; let y = 2 } in M
+hazel-jit time	0.10392	0.03839	348	0.08165	0.00838	0.00985	0.000210	23756	{ let x = 3 } == let f = fun (m : { let x : Int }) -> m in f({ let x = 3; let y = 4 })
+hazel-jit time	0.08538	0.03735	389	0.07771	0.00720	0.01221	0.000452	11068	3 == let f = fun (m : { let x : Int }) -> m.x in f({ let x = 3; let y = 4 })
+hazel-jit time	0.08390	0.04444	408	0.07001	0.00724	0.00595	0.000062	80508	{ let x = 1 } == let big = { let x = 1; let y = 2 } in let m : { let x : Int } = big in m
+hazel-jit time	0.14032	0.05151	243	0.12394	0.00706	0.01100	0.000216	30435	0 == module C : { type T; let zero : T; let get : T -> Int } = { type T = Int; let zero = 0; let get = fun t -> t } in C.get(C.zero)
+hazel-jit time	0.06782	0.02401	508	0.06580	0.00765	0.00427	0.000138	38303	{ let x = 1 } == module M : { type T; let x : T } = { type T = Int; let x = 1 } in M
+hazel-jit time	0.16518	0.05915	205	0.09272	0.00776	0.01210	0.000093	53574	20 == let f = fun (m : { type T; let x : T; let g : T -> Int }) -> m.g(m.x) in f({ type T = Int; let x = 2; let g = fun t -> t * 10 })
+hazel-jit time	0.22026	0.19441	139	0.07035	0.01848	0.03339	0.000178	28093	120 == let fact(n) = if n < 2 then 1 else n * fact(n - 1) in fact(5)
+hazel-jit time	0.14636	0.03574	414	0.06180	0.03136	0.01466	0.000077	65321	3 == let add(x, y) = x + y in add(1, 2)
+hazel-jit time	0.23902	0.10815	126	0.16069	0.02119	0.01931	0.000079	63457	100 == type DragAction = Press + MoveTo(Int, Int) + Release in let update(m, a) = let (x, y, held) = m in case a | Press => (x, y, true) | MoveTo(nx, ny) => if held then (nx, ny, true) else m | Release => (x, y, false) end in let (x, y, hel ...
+hazel-jit time	0.27781	0.11500	156	0.16559	0.01659	0.02059	0.001089	9136	8 == type DragAction = Press + MoveTo(Int, Int) + Release in let update(m, a) = let (x, y, held) = m in case a | Press => (x, y, true) | MoveTo(nx, ny) => if held then (nx, ny, true) else m | Release => (x, y, false) end in let (x, y, held) ...
+hazel-jit time	2.31683	0.02331	18	0.07307	0.00283	3.04654	0.000098	51167	1250496027 == let next(s) = int_mod(s * 1103515245 + 12345, 2147483648) in next(42)
+hazel-jit time	1.51588	0.16385	111	0.21113	0.01511	1.07974	0.002047	4459	1 == type SeqAction = Tick + Toggle in let notes = [262., 330., 392., 523.] in let update(m, a) = let (i, on) = m in case a | Toggle => ((i, if on then false else true), CmdNone) | Tick => if on then ((int_mod(i + 1, 4), on), PlayTone(nth(n ...
+hazel-jit time	0.23333	0.08993	183	0.23723	0.01168	0.02055	0.004461	1772	true == type SeqAction = Tick + Toggle in let notes = [262., 330., 392., 523.] in let update(m, a) = let (i, on) = m in case a | Toggle => ((i, if on then false else true), CmdNone) | Tick => if on then ((int_mod(i + 1, 4), on), PlayTone(nt ...

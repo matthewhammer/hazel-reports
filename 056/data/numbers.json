@@ -1,0 +1,389 @@
+{
+ "build": {
+  "b": "50",
+  "commit": "55e4757a4b",
+  "branch": "trial/694-view-jit",
+  "pr": "hazelgrove/hazel#2817",
+  "run": 44319161267,
+  "fast_job": 134853196883,
+  "branch_run": 44211080673,
+  "branch_full_job": 134489286397,
+  "note": "build 49 and the slides' builtins; CI passed on trial/761-slide-builtins at this commit (run 44211080673), then the prototype branch was fast-forwarded to it, and its own CI (run 44319161267) is the one quoted, apart from the slides"
+ },
+ "sweep": {
+  "checks": 313,
+  "compiled": 260,
+  "agreed": 235,
+  "values": 233,
+  "both_stuck": [
+   "(true) . a == (true) . a",
+   "((true) . a): Int == ((true) . a): Int"
+  ],
+  "differ": 0,
+  "threw": 0,
+  "not_a_value": [
+   "(a=3 : Bool, b= \"\": Float) == (a=3, b=\"\") : (c=Bool, d=Float)",
+   "(a=1,b=2).c == (a=1,b=2).c",
+   "Duplicate labels projected are indet",
+   "mismatched types",
+   "1 : String == case 1 | (x : String) =>x end",
+   "case 1 | (\"hello\") => false | (x : String) => true end == case 1 | (\"hello\") => false | (x : String) => true end",
+   "(case () | (1, 2) => true | _ => false end) == (case () | (1, 2) => true | _ => false end)",
+   "[1 : String,2 : String,3 : String] == [1,2,3] : [String]",
+   "[1 : String,2 : String,3 : String] == type T = [String] in [1,2,3] : T",
+   "[1, \"hello\" : Int] == 1 :: [\"hello\"]",
+   "4 : String == 4 : String",
+   "true : String == true : String",
+   "1. : String == 1. : String",
+   "Nat",
+   "SInt",
+   "(4 : String) == let x : String = 4 in x",
+   "1 + (4 : String) == 1 + (4 : String)",
+   "Hidden containing arrow caught in dynamics",
+   "Labeled tuple with different labels",
+   "Labeled tuple with rearragned labels",
+   "Typfun is not comparable",
+   "A : (+A +B) : (+A +C)",
+   "Indet when unboxing constructor as bool",
+   "Indet when unboxing constructor as string",
+   "Indet when unboxing constructor as int"
+  ],
+  "not_compiled": [
+   {
+    "reason": "a hole",
+    "programs": 15,
+    "kind": "hole"
+   },
+   {
+    "reason": "a type hole",
+    "programs": 10,
+    "kind": "hole"
+   },
+   {
+    "reason": "the free variable y",
+    "programs": 13,
+    "kind": "free"
+   },
+   {
+    "reason": "the free variable s2",
+    "programs": 6,
+    "kind": "free"
+   },
+   {
+    "reason": "the free variable x",
+    "programs": 2,
+    "kind": "free"
+   },
+   {
+    "reason": "the free variable b2",
+    "programs": 2,
+    "kind": "free"
+   },
+   {
+    "reason": "the free variable a",
+    "programs": 1,
+    "kind": "free"
+   },
+   {
+    "reason": "a recursive definition by a pattern that is not a name or a tuple of names",
+    "programs": 3,
+    "kind": "fix"
+   },
+   {
+    "reason": "a recursive definition of more than one name whose part that is not a function names one of them",
+    "programs": 1,
+    "kind": "rec"
+   }
+  ],
+  "not_compiled_by_name": [],
+  "names_from": {
+   "commit": "8d7694d9ff",
+   "branch": "trial/756-sweep-names",
+   "run": null,
+   "file": "/home/matthew/hazel-perf-report/056/data/not-compiled.tsv"
+  }
+ },
+ "slides": {
+  "programs": 129,
+  "compiled": 20,
+  "agreed": 20,
+  "not_compiled": [
+   {
+    "reason": "a static error (the page compiles no program with one)",
+    "slides": 21
+   },
+   {
+    "reason": "a type hole",
+    "slides": 29
+   },
+   {
+    "reason": "a hole",
+    "slides": 28
+   },
+   {
+    "reason": "a test, test ... end",
+    "slides": 28
+   },
+   {
+    "reason": "this kind of pattern (a splice)",
+    "slides": 1
+   },
+   {
+    "reason": "the builtin group_by_label",
+    "slides": 1
+   },
+   {
+    "reason": "a closure with its own environment",
+    "slides": 1
+   }
+  ]
+ },
+ "mixed": {
+  "measured": [
+   {
+    "program": "fib(16), all compiled",
+    "interpreter_ms": 66.5,
+    "mixed_ms": 0.1
+   },
+   {
+    "program": "the Petri net rule, whole types declared, 100 events",
+    "interpreter_ms": 170.1,
+    "mixed_ms": 19.0
+   },
+   {
+    "program": "the I Ching's rules, 200 readings",
+    "interpreter_ms": 1028.0,
+    "mixed_ms": 197.1
+   },
+   {
+    "program": "500 calls of a one-line function (sq) from an interpreted loop",
+    "interpreter_ms": 20.6,
+    "mixed_ms": 21.8
+   }
+  ],
+  "sweep": {
+   "programs": 6,
+   "functions": 7,
+   "agreed": 6,
+   "calls": 16843,
+   "fell": 2,
+   "undeclared": 29
+  }
+ },
+ "timing": {
+  "n": 233,
+  "interp": 23.74437,
+  "run": 0.163438,
+  "med": 226.68421052631575,
+  "lo": 0.6421874999999999,
+  "hi": 1368.987341772152,
+  "med_interp": 0.03644,
+  "med_run": 0.000194,
+  "med_c": 1.0665349143610015,
+  "slower1": 101,
+  "min_n": 10,
+  "max_n": 1000
+ },
+ "decisions": [
+  {
+   "n": 1,
+   "question": "SInt at 32 bits, and overflow an error (hazelgrove/hazel#2828): agreed?",
+   "lean": "Yes; wrapping would be cheaper compiled, but silent.",
+   "from": "054 q1",
+   "status": "PR waiting on a review",
+   "group": "same"
+  },
+  {
+   "n": 2,
+   "question": "Who reviews the fix for modulo by zero (hazelgrove/hazel#2825)?",
+   "lean": "Anyone who knows the evaluator; it is small.",
+   "from": "054 q2",
+   "status": "PR waiting on a review",
+   "group": "same"
+  },
+  {
+   "n": 10,
+   "question": "String length in graphemes: intended?",
+   "lean": "Keep it; compiled code counts as the interpreter does.",
+   "from": "054 q10",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "same"
+  },
+  {
+   "n": 11,
+   "question": "Labeled tuples as JavaScript arrays carrying their labels: fine?",
+   "lean": "Fine inside compiled code; the boundary converts.",
+   "from": "054 q11",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "same"
+  },
+  {
+   "n": 12,
+   "question": "The evaluator's ill-typed tests (25 on build 50, 27 on build 49): keep them on a known list?",
+   "lean": "Keep them: they test the interpreter's casts, and the page compiles no program with a type error.",
+   "from": "054 q12",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "same"
+  },
+  {
+   "n": 18,
+   "question": "The check counts a compiled run that stops where the interpreter's answer is stuck as agreeing (an invalid operation, undefined, a stuck projection). Keep that?",
+   "lean": "Keep it while compiled code makes no stuck terms; compare the terms themselves once it does (stuck terms).",
+   "from": "new",
+   "status": "open",
+   "group": "same"
+  },
+  {
+   "n": 3,
+   "question": "Which functions does mixed mode compile?",
+   "lean": "Let-bound, complete, whole type declared, no probe.",
+   "from": "054 q3",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "mixed"
+  },
+  {
+   "n": 4,
+   "question": "What does the stepper show for a compiled call?",
+   "lean": "Mixed mode off while the stepper is open.",
+   "from": "054 q4",
+   "status": "partly answered 2026-11-13: it counts the steps it would have taken",
+   "group": "mixed"
+  },
+  {
+   "n": 5,
+   "question": "Probes in compiled code?",
+   "lean": "Until step counts land, a probe takes its function out of the compiled set.",
+   "from": "054 q5",
+   "status": "answered 2026-11-13: count the interpreter's steps, and make its samples",
+   "group": "mixed"
+  },
+  {
+   "n": 6,
+   "question": "Main thread or worker?",
+   "lean": "Mixed mode in the worker; livelit views on the main thread, under a budget.",
+   "from": "054 q6",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "mixed"
+  },
+  {
+   "n": 7,
+   "question": "Falling back runs a call again from the start: safe for good?",
+   "lean": "Yes while evaluation has no effects.",
+   "from": "054 q7",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "mixed"
+  },
+  {
+   "n": 8,
+   "question": "A program with a type error elsewhere: compile its sound functions?",
+   "lean": "Yes, per function; a value that does not fit is caught where it crosses.",
+   "from": "054 q8",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "mixed"
+  },
+  {
+   "n": 9,
+   "question": "One step budget or two?",
+   "lean": "One, in the interpreter's steps.",
+   "from": "054 q9",
+   "status": "answered 2026-11-13: one, which compiled code will count exactly",
+   "group": "steps"
+  },
+  {
+   "n": 19,
+   "question": "Count every step, or only those that interpret the program?",
+   "lean": "Every step: probe samples' spans are in every step today.",
+   "from": "054 steps",
+   "status": "open",
+   "group": "steps"
+  },
+  {
+   "n": 20,
+   "question": "On the main thread, a step limit alone, or steps and a clock?",
+   "lean": "Both: the steps make the same answer as the interpreter's, the clock keeps a frame (below).",
+   "from": "new",
+   "status": "open",
+   "group": "steps"
+  },
+  {
+   "n": 21,
+   "question": "Stuck terms: should compiled code make them, instead of stopping?",
+   "lean": "Not yet: stopping is correct, and rare in finished programs. Begin with overflow, after the limits, when the holes work needs it (below).",
+   "from": "new",
+   "status": "open",
+   "group": "steps"
+  },
+  {
+   "n": 22,
+   "question": "Does the holes work live on the prototype branch?",
+   "lean": "Design and measure there; it lands on dev with mixed mode.",
+   "from": "055 q1",
+   "status": "open; settle before John starts",
+   "group": "holes"
+  },
+  {
+   "n": 23,
+   "question": "Which values are opaque: empty holes only, or every indeterminate term?",
+   "lean": "Every value to_js cannot represent.",
+   "from": "055 q2",
+   "status": "open",
+   "group": "holes"
+  },
+  {
+   "n": 24,
+   "question": "Must a hole keep its identity through compiled code?",
+   "lean": "Yes; the table gives back the very term that went in.",
+   "from": "055 q3",
+   "status": "open",
+   "group": "holes"
+  },
+  {
+   "n": 25,
+   "question": "The checked version: compiled up front, or the first time a hole arrives?",
+   "lean": "The first time.",
+   "from": "055 q4",
+   "status": "open",
+   "group": "holes"
+  },
+  {
+   "n": 13,
+   "question": "How does hazel-jit reach dev?",
+   "lean": "Small PRs (report 053): the two fixes; the compiler with the check in CI and nothing a user sees; mixed mode behind a setting; then livelit views.",
+   "from": "054 q13",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "landing"
+  },
+  {
+   "n": 14,
+   "question": "Should hazeljs ship the compiler?",
+   "lean": "No: a build-time tool; pages get only the runtime (about 17 kB).",
+   "from": "054 q14",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "landing"
+  },
+  {
+   "n": 15,
+   "question": "Undeclared result types cost a step 5 to 7 times (ticket 762): fix in elaboration?",
+   "lean": "Yes, with an owner who knows elaboration.",
+   "from": "054 q15",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "landing"
+  },
+  {
+   "n": 16,
+   "question": "An answer that is a function grows past gigabytes (hazelgrove/hazel#2832): fix Evaluator.finish?",
+   "lean": "Yes: leave a closure in the answer as a closure.",
+   "from": "054 q16",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "landing"
+  },
+  {
+   "n": 17,
+   "question": "Float literals print with six decimals (hazelgrove/hazel#2831): print them so they read back?",
+   "lean": "Yes, the shortest form that reads back; a warm-up PR for John (report 055).",
+   "from": "054 q17",
+   "status": "asked for 2026-11-17; the answer not yet written down",
+   "group": "landing"
+  }
+ ]
+}
