@@ -1,0 +1,211 @@
+[
+ {
+  "section": "What #2819 does not have",
+  "section_id": "lacks",
+  "columns": [
+   "Build",
+   "Commit",
+   "Date",
+   "What it is"
+  ],
+  "rows": [
+   [
+    "12",
+    "d9d63c13af",
+    "2026-11-09",
+    "the prototype when #2819 was cut: a drag's frames reuse each editor's decorations and probes' views; #2819's head is this and two commits (samples as data turned off, a formatting pass)"
+   ],
+   [
+    "38",
+    "19ecb75694",
+    "2026-11-10",
+    "^report(52)'s measurements: a step's picture 20 to 31 ms after the click, a drag 55.7 fps"
+   ],
+   [
+    "49",
+    "0e56bdbd0a",
+    "2026-11-17",
+    "^report(54)'s: the meeting's changes merged, all of CI green"
+   ],
+   [
+    "50",
+    "55e4757a4b",
+    "2026-11-18",
+    "today's prototype, trial/694-view-jit (hazelgrove/hazel#2817): build 49 and the slides' builtins"
+   ]
+  ]
+ },
+ {
+  "section": "What makes livelits responsive",
+  "section_id": "responsive",
+  "columns": [
+   "#",
+   "Change",
+   "Compiler?",
+   "Measured when it landed (^report(52))",
+   "In #2819"
+  ],
+  "rows": [
+   [
+    "What a user waits for: a step's picture, a drag's frame",
+    "What a user waits for: a step's picture, a drag's frame",
+    "What a user waits for: a step's picture, a drag's frame",
+    "What a user waits for: a step's picture, a drag's frame",
+    "What a user waits for: a step's picture, a drag's frame"
+   ],
+   [
+    "A1",
+    "Send the worker's answer without what the page does not read",
+    "no compiler",
+    "2.84 to 4.81 s off a step (builds 2, 3); the answer 590 KB to 198 KB (build 20)",
+    "partly (builds 2 and 3, not 20)"
+   ],
+   [
+    "A2",
+    "Compile the slide's whole run, each livelit's model a parameter",
+    "hazel-jit",
+    "1.09 to 1.50 s off a step (builds 4, 5): a step's picture 1.33 to 1.71 s, then 208 to 236 ms",
+    "yes (builds 4 and 5; not 18 (the first step like the others))"
+   ],
+   [
+    "A3",
+    "Draw first; make the edit after the paint",
+    "needs the compiled run",
+    "133 to 171 ms off a step (build 12): 152 to 195 ms, then 19 to 24",
+    "yes (build 12)"
+   ],
+   [
+    "A4",
+    "Compile each livelit's view",
+    "hazel-jit",
+    "84 ms off each render of the Witch's picture: 87 ms to 3.0",
+    "yes (before build 1)"
+   ],
+   [
+    "A5",
+    "A drag redraws only what changed",
+    "needs the compiled run",
+    "80 to 85 ms off each frame of a drag: 9.8 fps (build 5) to 57.6 (build 12)",
+    "yes (builds 6, 7, 8 and 12)"
+   ],
+   [
+    "The page's work after the picture, which can make the next frame late",
+    "The page's work after the picture, which can make the next frame late",
+    "The page's work after the picture, which can make the next frame late",
+    "The page's work after the picture, which can make the next frame late",
+    "The page's work after the picture, which can make the next frame late"
+   ],
+   [
+    "B1",
+    "Keep the livelits a change did not touch",
+    "no compiler",
+    "190 to 400 ms off the page's work after a step (builds 15 to 39)",
+    "no (builds 15 to 39)"
+   ],
+   [
+    "B2",
+    "Build the outline on its own, and only what changed",
+    "no compiler",
+    "128 to 201 ms off a step (builds 13 to 41)",
+    "no (builds 13 to 41)"
+   ],
+   [
+    "B3",
+    "Compile the run once; compare only what changed",
+    "hazel-jit",
+    "125 to 140 ms off a step: compiling again 126 to 141 ms (build 8), comparing 1 ms (build 17)",
+    "partly (builds 9 and 10, not 17)"
+   ],
+   [
+    "B4",
+    "Save without a redraw, printing only what changed",
+    "no compiler",
+    "77 to 96 ms off a step (builds 16, 23)",
+    "no (builds 16 and 23)"
+   ],
+   [
+    "B5",
+    "Draw the picture's probe row without rewriting its value",
+    "no compiler",
+    "38 to 85 ms off each answer (builds 14, 26)",
+    "no (builds 14 and 26)"
+   ]
+  ]
+ },
+ {
+  "section": "Reaching dev",
+  "section_id": "dev",
+  "columns": [
+   "Order",
+   "Increment",
+   "What it holds",
+   "Needs first",
+   "Where it is now"
+  ],
+  "rows": [
+   [
+    "0",
+    "The ruler",
+    "The Firefox check that drives the slides and times each step and drag, the page's timeline of marks, the worker's answer weighed by part. Nothing a user sees.",
+    "nothing",
+    "On the prototype; on #2819 as it was on 11-09."
+   ],
+   [
+    "1",
+    "The worker's answer, smaller",
+    "Ingredient A1: the worker and its messages only. Helps dev as much as livelits.",
+    "nothing",
+    "On the prototype; #2819 has its first two parts."
+   ],
+   [
+    "2",
+    "Page work every edit pays",
+    "B2, B4, B5: the outline on its own, the autosave without a redraw, the probe row. Each its own small PR.",
+    "the outline and autosave: livelits; the probe row: dev",
+    "On the prototype only."
+   ],
+   [
+    "3",
+    "Livelits kept",
+    "B1: a livelit's view, shape and applied definition kept, keyed on what it reads; one cache a PR, each with a test that it gives the same view.",
+    "livelits",
+    "On the prototype only."
+   ],
+   [
+    "4",
+    "The compiler",
+    "hazel-jit itself, a module at a time, and now its correctness (^report(54)): exact Int and Nat, SInt at 32 bits, invalid operations stopping, the rules for holes, type holes and type errors, and the consistency check in CI. Nothing a user sees.",
+    "nothing",
+    "On the prototype, build 50; its CI checks 313 evaluator programs and 129 slides both ways."
+   ],
+   [
+    "5",
+    "Compiled views",
+    "A4, with the step budget (^ticket(763)), since it runs compiled code on the page's thread.",
+    "4, livelits",
+    "#2819 has the views, without the budget; the prototype has both."
+   ],
+   [
+    "6",
+    "The run compiled in the page",
+    "A2 and B3: the slide's run compiled once, called at a slider's event, kept while only models change.",
+    "4, 5",
+    "#2819 has it as of 11-09; the prototype has it whole."
+   ],
+   [
+    "7",
+    "Draw first, edit after the paint",
+    "A3.",
+    "6",
+    "In both."
+   ],
+   [
+    "8",
+    "The drag fast path",
+    "A5: four changes, each its own PR.",
+    "6",
+    "In both."
+   ]
+  ]
+ }
+]

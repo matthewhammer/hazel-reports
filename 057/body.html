@@ -1,0 +1,116 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 057 · hazel-jit · 2026-11-18, revised {{updated}} MST · <span class="wip">work in progress</span> · after reports 052, 054 and 056</p>
+<h1>What the Livelits PR Compiles</h1>
+<p class="sub">Matthew Hammer asked, on 2026-11-18, to what extent hazelgrove/hazel#2819 uses hazel-jit: for livelit views only, or for anything else. This is the answer, read from the pull request's code, with a section for each use, written for his conversation with Cyrus Omar today about what makes livelits responsive, and how it reaches dev; the team's next mergeathon is tomorrow, 2026-11-19.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#short">In short</a>: in the app, hazel-jit serves livelits only, four ways; outside it, a command, tests and a browser check.</li>
+<li><a href="#app">In the app</a>: <a href="#views">livelit views</a>, <a href="#updates">livelit updates</a>, <a href="#run">the slide's whole run</a>, and <a href="#hold">the worker's request held</a>.</li>
+<li><a href="#outside">Outside the app</a>: the command line, a measuring page, the tests, the Firefox check.</li>
+<li><a href="#lacks">What #2819 does not have</a>: everything since the morning of 2026-11-09, the step budget and the consistency check among it.</li>
+<li><a href="#responsive">What makes livelits responsive</a>: the ten changes report 052 ranked, which of them are hazel-jit, and which #2819 holds.</li>
+<li><a href="#dev">Reaching dev</a>: report 052's nine increments, brought up to date; <a href="#mergeathon">for tomorrow's mergeathon</a>; and <a href="#decide">what to decide with Cyrus</a>.</li>
+</ol>
+
+<h2 id="short">In short</h2>
+<p><b>In the running app, #2819 uses hazel-jit only for livelits, but for more than their views: their updates, and each slide's whole run, which it compiles only to draw livelits sooner. The program's result, probes, tests and the stepper always come from the interpreter. Outside the app it adds a command, tests and a browser check.</b> Read from the pull request's code at <code>c419e01559</code> (2026-11-09), behind the Compiled views setting, which is on by default there.</p>
+<ol class="outline">
+<li><b>Livelit views.</b> A livelit's view function is compiled and run on the page's own thread with the livelit's model, and its answer drawn straight into the page, never made into a Hazel value; handlers that take a payload run compiled too.</li>
+<li><b>Livelit updates.</b> The definition's update function is compiled too: on an action, a new model comes back as a diff against the old one; any other answer goes to the interpreter.</li>
+<li><b>The slide's whole run.</b> The slide's program is compiled once, each livelit's model a parameter; at a livelit's event the whole program runs as JavaScript with the new model, and every livelit is drawn from that run before the worker's run returns. Its answer is used only to draw livelits.</li>
+<li><b>The worker waits.</b> When the compiled run has answered an event, the page holds its request to the interpreter for 400 ms, so a drag costs the worker one run, after its last step.</li>
+</ol>
+<p>Outside the app: <code>./hazel jit FILE.hz</code> to compile a file, check it against the interpreter, and count what it does not compile; a page that times values carried into JavaScript; the <code>HazelJit</code> tests; and the Firefox check that drives the slides and times them. Not in #2819: all the work since its head on the morning of 11-09, which is on the prototype branch (build 50, hazelgrove/hazel#2817).</p>
+
+<h2 id="app">In the app</h2>
+<p><b>All four uses sit behind one setting, Compiled views (<code>jit_views</code>, on by default on #2819), and each falls back to what the page did before hazel-jit when it meets something it does not compile.</b> The setting sets <code>HazelJitValue.enabled</code>; turned off, nothing is compiled, and every livelit is drawn through the interpreter's run, as on dev.</p>
+
+<h3 id="views">1. Livelit views, compiled</h3>
+<p><b>A livelit's view, a Hazel function from its model to HTML, is compiled once per definition and called on the page's own thread whenever the livelit is drawn: 3.0 ms a render of the Witch's picture against 87 ms through the interpreter.</b> (Report 046, in Firefox; report 052, ingredient A4.)</p>
+<ul>
+<li><b>How.</b> <code>LivelitProj</code> asks <code>HazelJitValue.view_of_def</code> for the definition's compiled view, and <code>call_view</code> runs it on the model, carried into JavaScript. <code>HazelJitDOM.go</code> draws the answer, the JavaScript values the compiled code made, straight into the page's virtual DOM: every view command (Pure, Bind, whose continuation is the compiled function, Editor, EvalSplice, ResultView) and every element, attribute and handler, as <code>HazelDOM</code> draws them from a Hazel value.</li>
+<li><b>Handlers.</b> A handler crosses into Hazel only when its event comes: a click's message is carried back then; a handler that takes a payload is the compiled function, called on the payload in JavaScript, and only its answer, the message, carried back.</li>
+<li><b>When it gives up.</b> A form hazel-jit does not compile, or an answer that is not well formed, raises <code>Unsupported</code>, and the page draws through Hazel as before. So do apps whose messages transform the program's syntax.</li>
+<li><b>Measured.</b> The Witch's picture: 87 ms a render on the interpreter, 3.0 ms compiled (report 046). A Polygons render in Node: 14.1 ms to 0.38 (report 045). In a drag, a livelit drawn from JavaScript takes about 1 ms, against 4.6 with nothing compiled (builds 30 to 39, report 052).</li>
+<li><b>Code.</b> 606 lines added outside the compiler, and the compiler's own 4,328 at that time (report 052's count).</li>
+</ul>
+
+<h3 id="updates">2. Livelit updates, compiled</h3>
+<p><b>The definition's update, compiled, runs on the model and the action; when it answers <code>Pure(new model)</code>, the new model comes back as a diff against the one it was given, so every part it did not change stays the very same Hazel value. Any other command goes to the interpreter.</b> (Ticket 715, report 045's second step; <code>HazelJitValue.call_update</code>, called from <code>LivelitProj</code>.)</p>
+<ul>
+<li><b>Why a diff.</b> Carrying a whole answer back costs time in its size. The compiled code builds a new model functionally, so a part it did not touch is the same JavaScript object, and the diff stops there without looking inside; the patch keeps the old Hazel value for it.</li>
+<li><b>When it gives up.</b> A command other than <code>Pure</code>, or a diff that does not fit the model's type, is an error, and the update runs on the interpreter as before.</li>
+<li><b>Measured.</b> Not on its own in reports 045 to 052, which timed slider steps and drags; a slider's step reaches the model through the compiled run (below) more than through the update.</li>
+</ul>
+
+<h3 id="run">3. The slide's whole run, compiled</h3>
+<p><b>This is what makes a slider's step show in about 20 ms: the slide's program, compiled once with each livelit use's model as a parameter, answers a livelit's event in 2 to 3 ms as JavaScript, and every livelit draws from that answer before the worker's run comes back.</b> (Ticket 722, report 052's ingredients A2 and B3; <code>HazelJitRun</code>.)</p>
+<ul>
+<li><b>How.</b> The page tells <code>HazelJitRun</code> the program it draws livelits from (<code>note_program</code>, from <code>ProjectorView</code>); it is compiled soon after, or at the first event that needs it. At an event (<code>step</code>), the program runs with the new model given to its parameter, no new code, and each livelit's view answer is kept for the page to draw straight from JavaScript.</li>
+<li><b>Compiled once.</b> A new program is compared with the compiled one with the models left out (<code>erase</code>); while only models change, the compiled function is kept. Comparing takes about 1 ms a step (build 17); compiling again took 126 to 141 ms (build 8).</li>
+<li><b>When it gives up.</b> A form hazel-jit does not compile becomes a stub that throws if the run reaches it (<code>HazelJit.survey</code>); then, or on any other failure, there are no answers, and the page draws from the run's samples as before.</li>
+<li><b>Measured.</b> A step's picture 1.33 to 1.71 s on build 3, 208 to 236 ms on build 5 when the run was compiled (report 049); in Node, a slider's step 684 ms on the interpreter, 2.3 to 2.5 ms compiled (report 045).</li>
+<li><b>What rides on it.</b> Two changes that need the compiled run to have answered: <i>draw first, edit after the paint</i> (A3: the step's picture 152 to 195 ms on build 11, 19 to 24 on build 12), and <i>a drag redraws only what changed</i> (A5: a 3-second drag 9.8 fps on build 5, 57.6 on build 12).</li>
+<li><b>Its answer is only for livelits.</b> The result panel, probes and tests come from the interpreter's run in the worker, as always.</li>
+</ul>
+
+<h3 id="hold">4. The worker's request, held</h3>
+<p><b>When the compiled run has just answered a livelit's event, the page holds the request it would send the worker for 400 ms, replacing it by any newer one, so a drag costs the worker one run, after its last step, not one a step.</b> (Report 050's fourth step; <code>WorkerClient.hold_if_answered</code>, asking <code>HazelJitRun.take_answered</code>.)</p>
+<ul>
+<li><b>Why.</b> The page's livelits are already drawn from the compiled run; the worker's answer would only draw them again, to the same picture, and the page would spend each step decoding it.</li>
+<li><b>The cost.</b> Probes, tests and every other cell still get the worker's answer, later: 400 ms after the last step, plus the worker's run.</li>
+</ul>
+
+<h2 id="outside">Outside the app</h2>
+<p><b>Four tools, none of which a user of the app meets.</b></p>
+<ul>
+<li><b>The command line:</b> <code>./hazel jit FILE.hz</code> compiles a file, with <code>--check</code> runs it both ways and compares, and counts by reason the forms it would not compile (<code>HazelJit.survey</code>; <code>src/CLI/Cli.re</code>).</li>
+<li><b>A measuring page:</b> the data experiment times carrying a value into JavaScript (<code>DataExperiment</code>, <code>HazelJitValue.to_js</code>).</li>
+<li><b>The tests:</b> <code>test/Test_HazelJit.re</code>, each compiled program run both ways and its answer compared with the interpreter's.</li>
+<li><b>The Firefox check:</b> <code>.github/workflows/jit.yml</code> and <code>scripts/jit_slides.py</code> drive six slides in Firefox on GitHub's machines and time each slider step and drag, compiled views on and off. Report 052 calls it the ruler.</li>
+</ul>
+
+<h2 id="lacks">What #2819 does not have</h2>
+<p><b>#2819's head is the prototype's build 12 and two commits, from the morning of 2026-11-09; everything since, 123 commits to build 50, is on the prototype branch only, including the step budget that answers Cyrus's concern about compiled code on the page's thread.</b></p>
+{{tab_builds}}
+<ul>
+<li><b>Page work that needs no compiler</b> (report 052's B1, B2, B4, B5, builds 13 to 41): livelits kept across an edit, the outline on its own, the autosave without a redraw, the probe row. Together about 0.4 to 0.8 s off the page's work after a step, as each was measured when it landed.</li>
+<li><b>Correctness</b> (report 054, builds 46 to 50): the consistency check in CI, every evaluator test program run both ways; Int and Nat exact past 2<sup>53</sup>; SInt at 32 bits with overflow an error; divide by zero and other invalid operations stopping, for the interpreter's answer; the rules that keep holes, type holes and type errors with the interpreter; the step budget; the slides' builtins.</li>
+<li><b>The step budget</b> (ticket 763) in particular: on #2819, a compiled view or run on the page's thread has no limit, so a Hazel function that never ends, or ends late, would hold the page until JavaScript's stack overflows or it ends. On the prototype, a run past 50 ms or 50 million calls stops, and the interpreter answers (report 056, <a href="../056/#uses-diverge">Programs that never end</a>).</li>
+<li><b>Mixed mode</b>, the step toward compiling any complete function, not only livelits' code: in the tests only, on the prototype.</li>
+</ul>
+<p>The prototype's preview is <a href="https://build.hazel.org/trial/694-view-jit/">build.hazel.org/trial/694-view-jit/</a>; reports 051 and 055 point there instead of #2819.</p>
+
+<h2 id="responsive">What makes livelits responsive</h2>
+<p><b>Two changes did most of it: the worker's answer sent without what the page does not read, which needs no compiler, and the slide's whole run compiled. Of the ten changes report 052 ranked, five are hazel-jit or ride on it, and five need no compiler at all; #2819 holds the five, and the answer's trimming, but none of the page work.</b> Report 052 measured each when it landed, on the Witch slide in Firefox, one run a build; the two groups measure different things and are not added.</p>
+{{tab_ranked}}
+<p><b>Today, on build 50</b> (the Firefox check, run 44319161252), with compiled views on: a 3-second drag of the Witch's neck slider at 54.3 frames a second, the page's view 6.5 ms a frame (about 154 fps); a step's first redraw 27 to 30 ms after the click (89 ms for the slide's first step), hazel-jit's own run 5 to 11 ms of it. With compiled views off, the same drag runs at 42.0 frames a second, the view 15.4 ms a frame (about 65 fps), and its longest frame is 133 ms against 34.</p>
+
+<h2 id="dev">Reaching dev</h2>
+<p><b>User-defined livelits are not on dev yet, and #2819 is 1,680 commits ahead of dev, the whole livelits stack with hazel-jit on it; so hazel-jit's livelit uses reach dev after the livelits do, in report 052's increments, carrying the correctness work done since.</b> Livelits going into dev was settled with Cyrus on 2026-11-05; how, in what pieces and in what order with hazelgrove/hazel#2469, is still open. dev has <code>LivelitProj</code> today, for the built-in livelits; the user-defined ones, whose views and runs hazel-jit compiles, come with hazelgrove/hazel#2597's stack.</p>
+{{tab_redo}}
+<p>Report 053 explains why the prototype is to be redone by hand rather than merged: its 120 commits came with few tests of their own, and some only fixed the one before. Report 052's plan holds, with two updates. The compiler's increment now has its correctness work and the consistency check in CI to carry, which make it reviewable: every program it compiles is checked against the interpreter on every push. And the step budget should land with the first increment that runs compiled code on the page's thread, the views.</p>
+
+<h3 id="mergeathon">For tomorrow's mergeathon</h3>
+<p><b>What could be opened or merged on 2026-11-19 without waiting on livelits.</b></p>
+<ol class="outline">
+<li><b>The two interpreter fixes,</b> already open, CI green, waiting on a review: hazelgrove/hazel#2828 (SInt at 32 bits, overflow an error) and hazelgrove/hazel#2825 (modulo by zero crashed the interpreter).</li>
+<li><b>The ruler</b> (increment 0): the Firefox check and the page's timeline of marks, which change nothing a user sees and let every later increment be measured.</li>
+<li><b>The worker's answer, smaller</b> (increment 1, ingredient A1): the worker and its messages only, helping dev as much as livelits.</li>
+<li><b>The compiler, a module at a time</b> (increment 4), with its tests and the consistency check in CI, and nothing a user sees: it can land before livelits, since it compiles any closed program and checks itself against the interpreter.</li>
+<li><b>#2819:</b> closed, or marked as superseded, with a pointer to the preview and to these increments, so no one reviews a stale branch.</li>
+</ol>
+
+<h3 id="decide">To decide with Cyrus</h3>
+<ol class="outline">
+<li><b>Which comes first for responsive livelits?</b> <span class="muted">Our lean:</span> the page work that needs no compiler (A1, B1, B2, B4, B5) lands with or right after the livelits, as it helps every edit; then compiled views; then the compiled run. The run is what makes a step show in 20 ms; views alone make drags and redraws fast.</li>
+<li><b>Compiled views on dev: on by default, or behind a setting that starts off?</b> <span class="muted">Our lean:</span> off at first, on once the consistency check and the step budget have run a while in CI.</li>
+<li><b>Is the step budget a condition for compiled code on the page's thread?</b> <span class="muted">Our lean:</span> yes; it is Cyrus's concern of 11-13, and #2819 has none.</li>
+<li><b>What becomes of #2819?</b> <span class="muted">Our lean:</span> close it in favor of the increments, keeping the preview build for trying.</li>
+<li><b>The compiler before livelits?</b> <span class="muted">Our lean:</span> yes, as a library with its check in CI and nothing a user sees, so its review is not tied to the livelits' landing.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>Written on 2026-11-18 from #2819's code at <code>c419e01559</code> (each file that calls into hazel-jit, read for what it calls: <code>LivelitProj</code>, <code>HazelJitDOM</code>, <code>HazelJitRun</code>, <code>WorkerClient</code>, <code>ProjectorView</code>, <code>Settings</code>, <code>Cli</code>, <code>DataExperiment</code>), its ancestry checked against each numbered build's commit, and from reports 045 to 056, whose measurements are quoted with their builds. Today's numbers are build 50's Firefox check (run 44319161252). Nothing new was measured for this report.</p>
+</main></body>

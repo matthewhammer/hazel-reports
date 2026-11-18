@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What the Livelits PR Compiles</title>
+<meta name="description" content="hazelgrove/hazel#2819 uses hazel-jit for livelits only: their views, their updates, and each slide&#x27;s whole run, to draw them sooner. What each use does, what makes livelits responsive, and how it reaches dev.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  table.vals { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.88em; }
+  table.vals th, table.vals td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; } table.vals th { font-weight: 600; }
+  table.vals td:first-child { min-width: 3ch; }
+  code { overflow-wrap: anywhere; }
+  .yes { color: #15803d; font-weight: 600; } .no { color: #b91c1c; font-weight: 600; } .part { color: #b45309; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .yes { color: #4ade80; } :root:not([data-theme="light"]) .no { color: #f87171; } :root:not([data-theme="light"]) .part { color: #fbbf24; } }
+  :root[data-theme="dark"] .yes { color: #4ade80; } :root[data-theme="dark"] .no { color: #f87171; } :root[data-theme="dark"] .part { color: #fbbf24; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>57<b>)</b></code> · hazel-jit · 2026-11-18, revised 2026-11-18 09:58 MST · <span class="wip">work in progress</span> · after reports 052, 054 and 056</p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>What the Livelits PR Compiles</h1>
+<p class="sub">Matthew Hammer asked, on 2026-11-18, to what extent <a href="https://github.com/hazelgrove/hazel/pull/2819">hazelgrove/hazel#2819</a> uses hazel-jit: for livelit views only, or for anything else. This is the answer, read from the pull request's code, with a section for each use, written for his conversation with Cyrus Omar today about what makes livelits responsive, and how it reaches dev; the team's next mergeathon is tomorrow, 2026-11-19.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#short">In short</a>: in the app, hazel-jit serves livelits only, four ways; outside it, a command, tests and a browser check.</li>
+<li><a href="#app">In the app</a>: <a href="#views">livelit views</a>, <a href="#updates">livelit updates</a>, <a href="#run">the slide's whole run</a>, and <a href="#hold">the worker's request held</a>.</li>
+<li><a href="#outside">Outside the app</a>: the command line, a measuring page, the tests, the Firefox check.</li>
+<li><a href="#lacks">What #2819 does not have</a>: everything since the morning of 2026-11-09, the step budget and the consistency check among it.</li>
+<li><a href="#responsive">What makes livelits responsive</a>: the ten changes <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a> ranked, which of them are hazel-jit, and which <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> holds.</li>
+<li><a href="#dev">Reaching dev</a>: <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>'s nine increments, brought up to date; <a href="#mergeathon">for tomorrow's mergeathon</a>; and <a href="#decide">what to decide with Cyrus</a>.</li>
+</ol>
+
+<h2 id="short">In short<a class="anchor" href="#short" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="short" title="copy this section's address">copy link</button></h2>
+<p><b>In the running app, <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> uses hazel-jit only for livelits, but for more than their views: their updates, and each slide's whole run, which it compiles only to draw livelits sooner. The program's result, probes, tests and the stepper always come from the interpreter. Outside the app it adds a command, tests and a browser check.</b> Read from the pull request's code at <code>c419e01559</code> (2026-11-09), behind the Compiled views setting, which is on by default there.</p>
+<ol class="outline">
+<li><b>Livelit views.</b> A livelit's view function is compiled and run on the page's own thread with the livelit's model, and its answer drawn straight into the page, never made into a Hazel value; handlers that take a payload run compiled too.</li>
+<li><b>Livelit updates.</b> The definition's update function is compiled too: on an action, a new model comes back as a diff against the old one; any other answer goes to the interpreter.</li>
+<li><b>The slide's whole run.</b> The slide's program is compiled once, each livelit's model a parameter; at a livelit's event the whole program runs as JavaScript with the new model, and every livelit is drawn from that run before the worker's run returns. Its answer is used only to draw livelits.</li>
+<li><b>The worker waits.</b> When the compiled run has answered an event, the page holds its request to the interpreter for 400 ms, so a drag costs the worker one run, after its last step.</li>
+</ol>
+<p>Outside the app: <code>./hazel jit FILE.hz</code> to compile a file, check it against the interpreter, and count what it does not compile; a page that times values carried into JavaScript; the <code>HazelJit</code> tests; and the Firefox check that drives the slides and times them. Not in <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>: all the work since its head on the morning of 11-09, which is on the prototype branch (build 50, <a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>).</p>
+
+<h2 id="app">In the app<a class="anchor" href="#app" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="app" title="copy this section's address">copy link</button></h2>
+<p><b>All four uses sit behind one setting, Compiled views (<code>jit_views</code>, on by default on <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>), and each falls back to what the page did before hazel-jit when it meets something it does not compile.</b> The setting sets <code>HazelJitValue.enabled</code>; turned off, nothing is compiled, and every livelit is drawn through the interpreter's run, as on dev.</p>
+
+<h3 id="views">1. Livelit views, compiled<a class="anchor" href="#views" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="views" title="copy this section's address">copy link</button></h3>
+<p><b>A livelit's view, a Hazel function from its model to HTML, is compiled once per definition and called on the page's own thread whenever the livelit is drawn: 3.0 ms a render of the Witch's picture against 87 ms through the interpreter.</b> (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>, in Firefox; <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>, ingredient A4.)</p>
+<ul>
+<li><b>How.</b> <code>LivelitProj</code> asks <code>HazelJitValue.view_of_def</code> for the definition's compiled view, and <code>call_view</code> runs it on the model, carried into JavaScript. <code>HazelJitDOM.go</code> draws the answer, the JavaScript values the compiled code made, straight into the page's virtual DOM: every view command (Pure, Bind, whose continuation is the compiled function, Editor, EvalSplice, ResultView) and every element, attribute and handler, as <code>HazelDOM</code> draws them from a Hazel value.</li>
+<li><b>Handlers.</b> A handler crosses into Hazel only when its event comes: a click's message is carried back then; a handler that takes a payload is the compiled function, called on the payload in JavaScript, and only its answer, the message, carried back.</li>
+<li><b>When it gives up.</b> A form hazel-jit does not compile, or an answer that is not well formed, raises <code>Unsupported</code>, and the page draws through Hazel as before. So do apps whose messages transform the program's syntax.</li>
+<li><b>Measured.</b> The Witch's picture: 87 ms a render on the interpreter, 3.0 ms compiled (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>). A Polygons render in Node: 14.1 ms to 0.38 (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>). In a drag, a livelit drawn from JavaScript takes about 1 ms, against 4.6 with nothing compiled (builds 30 to 39, <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>).</li>
+<li><b>Code.</b> 606 lines added outside the compiler, and the compiler's own 4,328 at that time (<a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>'s count).</li>
+</ul>
+
+<h3 id="updates">2. Livelit updates, compiled<a class="anchor" href="#updates" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="updates" title="copy this section's address">copy link</button></h3>
+<p><b>The definition's update, compiled, runs on the model and the action; when it answers <code>Pure(new model)</code>, the new model comes back as a diff against the one it was given, so every part it did not change stays the very same Hazel value. Any other command goes to the interpreter.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-715"><code class="ref"><b>^ticket(</b>715<b>)</b></code></a>, <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>'s second step; <code>HazelJitValue.call_update</code>, called from <code>LivelitProj</code>.)</p>
+<ul>
+<li><b>Why a diff.</b> Carrying a whole answer back costs time in its size. The compiled code builds a new model functionally, so a part it did not touch is the same JavaScript object, and the diff stops there without looking inside; the patch keeps the old Hazel value for it.</li>
+<li><b>When it gives up.</b> A command other than <code>Pure</code>, or a diff that does not fit the model's type, is an error, and the update runs on the interpreter as before.</li>
+<li><b>Measured.</b> Not on its own in <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> to <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>, which timed slider steps and drags; a slider's step reaches the model through the compiled run (below) more than through the update.</li>
+</ul>
+
+<h3 id="run">3. The slide's whole run, compiled<a class="anchor" href="#run" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="run" title="copy this section's address">copy link</button></h3>
+<p><b>This is what makes a slider's step show in about 20 ms: the slide's program, compiled once with each livelit use's model as a parameter, answers a livelit's event in 2 to 3 ms as JavaScript, and every livelit draws from that answer before the worker's run comes back.</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-722"><code class="ref"><b>^ticket(</b>722<b>)</b></code></a>, <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>'s ingredients A2 and B3; <code>HazelJitRun</code>.)</p>
+<ul>
+<li><b>How.</b> The page tells <code>HazelJitRun</code> the program it draws livelits from (<code>note_program</code>, from <code>ProjectorView</code>); it is compiled soon after, or at the first event that needs it. At an event (<code>step</code>), the program runs with the new model given to its parameter, no new code, and each livelit's view answer is kept for the page to draw straight from JavaScript.</li>
+<li><b>Compiled once.</b> A new program is compared with the compiled one with the models left out (<code>erase</code>); while only models change, the compiled function is kept. Comparing takes about 1 ms a step (build 17); compiling again took 126 to 141 ms (build 8).</li>
+<li><b>When it gives up.</b> A form hazel-jit does not compile becomes a stub that throws if the run reaches it (<code>HazelJit.survey</code>); then, or on any other failure, there are no answers, and the page draws from the run's samples as before.</li>
+<li><b>Measured.</b> A step's picture 1.33 to 1.71 s on build 3, 208 to 236 ms on build 5 when the run was compiled (<a href="../049/"><code class="ref"><b>^report(</b>49<b>)</b></code></a>); in Node, a slider's step 684 ms on the interpreter, 2.3 to 2.5 ms compiled (<a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a>).</li>
+<li><b>What rides on it.</b> Two changes that need the compiled run to have answered: <i>draw first, edit after the paint</i> (A3: the step's picture 152 to 195 ms on build 11, 19 to 24 on build 12), and <i>a drag redraws only what changed</i> (A5: a 3-second drag 9.8 fps on build 5, 57.6 on build 12).</li>
+<li><b>Its answer is only for livelits.</b> The result panel, probes and tests come from the interpreter's run in the worker, as always.</li>
+</ul>
+
+<h3 id="hold">4. The worker's request, held<a class="anchor" href="#hold" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="hold" title="copy this section's address">copy link</button></h3>
+<p><b>When the compiled run has just answered a livelit's event, the page holds the request it would send the worker for 400 ms, replacing it by any newer one, so a drag costs the worker one run, after its last step, not one a step.</b> (<a href="../050/"><code class="ref"><b>^report(</b>50<b>)</b></code></a>'s fourth step; <code>WorkerClient.hold_if_answered</code>, asking <code>HazelJitRun.take_answered</code>.)</p>
+<ul>
+<li><b>Why.</b> The page's livelits are already drawn from the compiled run; the worker's answer would only draw them again, to the same picture, and the page would spend each step decoding it.</li>
+<li><b>The cost.</b> Probes, tests and every other cell still get the worker's answer, later: 400 ms after the last step, plus the worker's run.</li>
+</ul>
+
+<h2 id="outside">Outside the app<a class="anchor" href="#outside" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outside" title="copy this section's address">copy link</button></h2>
+<p><b>Four tools, none of which a user of the app meets.</b></p>
+<ul>
+<li><b>The command line:</b> <code>./hazel jit FILE.hz</code> compiles a file, with <code>--check</code> runs it both ways and compares, and counts by reason the forms it would not compile (<code>HazelJit.survey</code>; <code>src/CLI/Cli.re</code>).</li>
+<li><b>A measuring page:</b> the data experiment times carrying a value into JavaScript (<code>DataExperiment</code>, <code>HazelJitValue.to_js</code>).</li>
+<li><b>The tests:</b> <code>test/Test_HazelJit.re</code>, each compiled program run both ways and its answer compared with the interpreter's.</li>
+<li><b>The Firefox check:</b> <code>.github/workflows/jit.yml</code> and <code>scripts/jit_slides.py</code> drive six slides in Firefox on GitHub's machines and time each slider step and drag, compiled views on and off. <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a> calls it the ruler.</li>
+</ul>
+
+<h2 id="lacks">What <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> does not have<a class="anchor" href="#lacks" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lacks" title="copy this section's address">copy link</button></h2>
+<p><b><a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>'s head is the prototype's build 12 and two commits, from the morning of 2026-11-09; everything since, 123 commits to build 50, is on the prototype branch only, including the step budget that answers Cyrus's concern about compiled code on the page's thread.</b></p>
+<table class="vals"><tr><th>Build</th><th>Commit</th><th>Date</th><th>What it is</th></tr><tr><td><b>12</b></td><td><code>d9d63c13af</code></td><td>2026-11-09</td><td>the prototype when <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> was cut: a drag&#x27;s frames reuse each editor&#x27;s decorations and probes&#x27; views; <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>&#x27;s head is this and two commits (samples as data turned off, a formatting pass)</td></tr><tr><td><b>38</b></td><td><code>19ecb75694</code></td><td>2026-11-10</td><td><a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>&#x27;s measurements: a step&#x27;s picture 20 to 31 ms after the click, a drag 55.7 fps</td></tr><tr><td><b>49</b></td><td><code>0e56bdbd0a</code></td><td>2026-11-17</td><td><a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>&#x27;s: the meeting&#x27;s changes merged, all of CI green</td></tr><tr><td><b>50</b></td><td><code>55e4757a4b</code></td><td>2026-11-18</td><td>today&#x27;s prototype, trial/694-view-jit (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>): build 49 and the slides&#x27; builtins</td></tr></table>
+<ul>
+<li><b>Page work that needs no compiler</b> (<a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>'s B1, B2, B4, B5, builds 13 to 41): livelits kept across an edit, the outline on its own, the autosave without a redraw, the probe row. Together about 0.4 to 0.8 s off the page's work after a step, as each was measured when it landed.</li>
+<li><b>Correctness</b> (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, builds 46 to 50): the consistency check in CI, every evaluator test program run both ways; Int and Nat exact past 2<sup>53</sup>; SInt at 32 bits with overflow an error; divide by zero and other invalid operations stopping, for the interpreter's answer; the rules that keep holes, type holes and type errors with the interpreter; the step budget; the slides' builtins.</li>
+<li><b>The step budget</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a>) in particular: on <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>, a compiled view or run on the page's thread has no limit, so a Hazel function that never ends, or ends late, would hold the page until JavaScript's stack overflows or it ends. On the prototype, a run past 50 ms or 50 million calls stops, and the interpreter answers (<a href="../056/"><code class="ref"><b>^report(</b>56<b>)</b></code></a>, <a href="../056/#uses-diverge">Programs that never end</a>).</li>
+<li><b>Mixed mode</b>, the step toward compiling any complete function, not only livelits' code: in the tests only, on the prototype.</li>
+</ul>
+<p>The prototype's preview is <a href="https://build.hazel.org/trial/694-view-jit/">build.hazel.org/trial/694-view-jit/</a>; <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a> and <a href="../055/"><code class="ref"><b>^report(</b>55<b>)</b></code></a> point there instead of <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>.</p>
+
+<h2 id="responsive">What makes livelits responsive<a class="anchor" href="#responsive" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="responsive" title="copy this section's address">copy link</button></h2>
+<p><b>Two changes did most of it: the worker's answer sent without what the page does not read, which needs no compiler, and the slide's whole run compiled. Of the ten changes <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a> ranked, five are hazel-jit or ride on it, and five need no compiler at all; <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> holds the five, and the answer's trimming, but none of the page work.</b> <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a> measured each when it landed, on the Witch slide in Firefox, one run a build; the two groups measure different things and are not added.</p>
+<table class="vals"><tr><th>#</th><th>Change</th><th>Compiler?</th><th>Measured when it landed (<a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>)</th><th>In <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a></th></tr><tr><td colspan="5"><b>What a user waits for: a step&#x27;s picture, a drag&#x27;s frame</b></td></tr><tr><td>A1</td><td>Send the worker&#x27;s answer without what the page does not read</td><td>no compiler</td><td>2.84 to 4.81 s off a step (builds 2, 3); the answer 590 KB to 198 KB (build 20)</td><td><span class="part">partly</span> <span class="muted">(builds 2 and 3, not 20)</span></td></tr><tr><td>A2</td><td>Compile the slide&#x27;s whole run, each livelit&#x27;s model a parameter</td><td><span class="yes">hazel-jit</span></td><td>1.09 to 1.50 s off a step (builds 4, 5): a step&#x27;s picture 1.33 to 1.71 s, then 208 to 236 ms</td><td><span class="yes">yes</span> <span class="muted">(builds 4 and 5; not 18 (the first step like the others))</span></td></tr><tr><td>A3</td><td>Draw first; make the edit after the paint</td><td><span class="part">needs the compiled run</span></td><td>133 to 171 ms off a step (build 12): 152 to 195 ms, then 19 to 24</td><td><span class="yes">yes</span> <span class="muted">(build 12)</span></td></tr><tr><td>A4</td><td>Compile each livelit&#x27;s view</td><td><span class="yes">hazel-jit</span></td><td>84 ms off each render of the Witch&#x27;s picture: 87 ms to 3.0</td><td><span class="yes">yes</span> <span class="muted">(before build 1)</span></td></tr><tr><td>A5</td><td>A drag redraws only what changed</td><td><span class="part">needs the compiled run</span></td><td>80 to 85 ms off each frame of a drag: 9.8 fps (build 5) to 57.6 (build 12)</td><td><span class="yes">yes</span> <span class="muted">(builds 6, 7, 8 and 12)</span></td></tr><tr><td colspan="5"><b>The page&#x27;s work after the picture, which can make the next frame late</b></td></tr><tr><td>B1</td><td>Keep the livelits a change did not touch</td><td>no compiler</td><td>190 to 400 ms off the page&#x27;s work after a step (builds 15 to 39)</td><td><span class="no">no</span> <span class="muted">(builds 15 to 39)</span></td></tr><tr><td>B2</td><td>Build the outline on its own, and only what changed</td><td>no compiler</td><td>128 to 201 ms off a step (builds 13 to 41)</td><td><span class="no">no</span> <span class="muted">(builds 13 to 41)</span></td></tr><tr><td>B3</td><td>Compile the run once; compare only what changed</td><td><span class="yes">hazel-jit</span></td><td>125 to 140 ms off a step: compiling again 126 to 141 ms (build 8), comparing 1 ms (build 17)</td><td><span class="part">partly</span> <span class="muted">(builds 9 and 10, not 17)</span></td></tr><tr><td>B4</td><td>Save without a redraw, printing only what changed</td><td>no compiler</td><td>77 to 96 ms off a step (builds 16, 23)</td><td><span class="no">no</span> <span class="muted">(builds 16 and 23)</span></td></tr><tr><td>B5</td><td>Draw the picture&#x27;s probe row without rewriting its value</td><td>no compiler</td><td>38 to 85 ms off each answer (builds 14, 26)</td><td><span class="no">no</span> <span class="muted">(builds 14 and 26)</span></td></tr></table>
+<p><b>Today, on build 50</b> (the Firefox check, run 44319161252), with compiled views on: a 3-second drag of the Witch's neck slider at 54.3 frames a second, the page's view 6.5 ms a frame (about 154 fps); a step's first redraw 27 to 30 ms after the click (89 ms for the slide's first step), hazel-jit's own run 5 to 11 ms of it. With compiled views off, the same drag runs at 42.0 frames a second, the view 15.4 ms a frame (about 65 fps), and its longest frame is 133 ms against 34.</p>
+
+<h2 id="dev">Reaching dev<a class="anchor" href="#dev" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="dev" title="copy this section's address">copy link</button></h2>
+<p><b>User-defined livelits are not on dev yet, and <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> is 1,680 commits ahead of dev, the whole livelits stack with hazel-jit on it; so hazel-jit's livelit uses reach dev after the livelits do, in <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>'s increments, carrying the correctness work done since.</b> Livelits going into dev was settled with Cyrus on 2026-11-05; how, in what pieces and in what order with <a href="https://github.com/hazelgrove/hazel/pull/2469">hazelgrove/hazel#2469</a>, is still open. dev has <code>LivelitProj</code> today, for the built-in livelits; the user-defined ones, whose views and runs hazel-jit compiles, come with <a href="https://github.com/hazelgrove/hazel/pull/2597">hazelgrove/hazel#2597</a>'s stack.</p>
+<table class="vals"><tr><th>Order</th><th>Increment</th><th>What it holds</th><th>Needs first</th><th>Where it is now</th></tr><tr><td class="n">0</td><td><b>The ruler</b></td><td>The Firefox check that drives the slides and times each step and drag, the page&#x27;s timeline of marks, the worker&#x27;s answer weighed by part. Nothing a user sees.</td><td>nothing</td><td>On the prototype; on <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> as it was on 11-09.</td></tr><tr><td class="n">1</td><td><b>The worker&#x27;s answer, smaller</b></td><td>Ingredient A1: the worker and its messages only. Helps dev as much as livelits.</td><td>nothing</td><td>On the prototype; <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> has its first two parts.</td></tr><tr><td class="n">2</td><td><b>Page work every edit pays</b></td><td>B2, B4, B5: the outline on its own, the autosave without a redraw, the probe row. Each its own small PR.</td><td>the outline and autosave: livelits; the probe row: dev</td><td>On the prototype only.</td></tr><tr><td class="n">3</td><td><b>Livelits kept</b></td><td>B1: a livelit&#x27;s view, shape and applied definition kept, keyed on what it reads; one cache a PR, each with a test that it gives the same view.</td><td>livelits</td><td>On the prototype only.</td></tr><tr><td class="n">4</td><td><b>The compiler</b></td><td>hazel-jit itself, a module at a time, and now its correctness (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>): exact Int and Nat, SInt at 32 bits, invalid operations stopping, the rules for holes, type holes and type errors, and the consistency check in CI. Nothing a user sees.</td><td>nothing</td><td>On the prototype, build 50; its CI checks 313 evaluator programs and 129 slides both ways.</td></tr><tr><td class="n">5</td><td><b>Compiled views</b></td><td>A4, with the step budget (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-763"><code class="ref"><b>^ticket(</b>763<b>)</b></code></a>), since it runs compiled code on the page&#x27;s thread.</td><td>4, livelits</td><td><a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> has the views, without the budget; the prototype has both.</td></tr><tr><td class="n">6</td><td><b>The run compiled in the page</b></td><td>A2 and B3: the slide&#x27;s run compiled once, called at a slider&#x27;s event, kept while only models change.</td><td>4, 5</td><td><a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> has it as of 11-09; the prototype has it whole.</td></tr><tr><td class="n">7</td><td><b>Draw first, edit after the paint</b></td><td>A3.</td><td>6</td><td>In both.</td></tr><tr><td class="n">8</td><td><b>The drag fast path</b></td><td>A5: four changes, each its own PR.</td><td>6</td><td>In both.</td></tr></table>
+<p><a href="../053/"><code class="ref"><b>^report(</b>53<b>)</b></code></a> explains why the prototype is to be redone by hand rather than merged: its 120 commits came with few tests of their own, and some only fixed the one before. <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a>'s plan holds, with two updates. The compiler's increment now has its correctness work and the consistency check in CI to carry, which make it reviewable: every program it compiles is checked against the interpreter on every push. And the step budget should land with the first increment that runs compiled code on the page's thread, the views.</p>
+
+<h3 id="mergeathon">For tomorrow's mergeathon<a class="anchor" href="#mergeathon" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="mergeathon" title="copy this section's address">copy link</button></h3>
+<p><b>What could be opened or merged on 2026-11-19 without waiting on livelits.</b></p>
+<ol class="outline">
+<li><b>The two interpreter fixes,</b> already open, CI green, waiting on a review: <a href="https://github.com/hazelgrove/hazel/pull/2828">hazelgrove/hazel#2828</a> (SInt at 32 bits, overflow an error) and <a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a> (modulo by zero crashed the interpreter).</li>
+<li><b>The ruler</b> (increment 0): the Firefox check and the page's timeline of marks, which change nothing a user sees and let every later increment be measured.</li>
+<li><b>The worker's answer, smaller</b> (increment 1, ingredient A1): the worker and its messages only, helping dev as much as livelits.</li>
+<li><b>The compiler, a module at a time</b> (increment 4), with its tests and the consistency check in CI, and nothing a user sees: it can land before livelits, since it compiles any closed program and checks itself against the interpreter.</li>
+<li><b><a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>:</b> closed, or marked as superseded, with a pointer to the preview and to these increments, so no one reviews a stale branch.</li>
+</ol>
+
+<h3 id="decide">To decide with Cyrus<a class="anchor" href="#decide" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="decide" title="copy this section's address">copy link</button></h3>
+<ol class="outline">
+<li><b>Which comes first for responsive livelits?</b> <span class="muted">Our lean:</span> the page work that needs no compiler (A1, B1, B2, B4, B5) lands with or right after the livelits, as it helps every edit; then compiled views; then the compiled run. The run is what makes a step show in 20 ms; views alone make drags and redraws fast.</li>
+<li><b>Compiled views on dev: on by default, or behind a setting that starts off?</b> <span class="muted">Our lean:</span> off at first, on once the consistency check and the step budget have run a while in CI.</li>
+<li><b>Is the step budget a condition for compiled code on the page's thread?</b> <span class="muted">Our lean:</span> yes; it is Cyrus's concern of 11-13, and <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a> has none.</li>
+<li><b>What becomes of <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>?</b> <span class="muted">Our lean:</span> close it in favor of the increments, keeping the preview build for trying.</li>
+<li><b>The compiler before livelits?</b> <span class="muted">Our lean:</span> yes, as a library with its check in CI and nothing a user sees, so its review is not tied to the livelits' landing.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>Written on 2026-11-18 from <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>'s code at <code>c419e01559</code> (each file that calls into hazel-jit, read for what it calls: <code>LivelitProj</code>, <code>HazelJitDOM</code>, <code>HazelJitRun</code>, <code>WorkerClient</code>, <code>ProjectorView</code>, <code>Settings</code>, <code>Cli</code>, <code>DataExperiment</code>), its ancestry checked against each numbered build's commit, and from <a href="../045/"><code class="ref"><b>^report(</b>45<b>)</b></code></a> to <a href="../056/"><code class="ref"><b>^report(</b>56<b>)</b></code></a>, whose measurements are quoted with their builds. Today's numbers are build 50's Firefox check (run 44319161252). Nothing new was measured for this report.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/057/data"><code>057/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-11-10T04:57:00Z", "base": "dev"}, "hazelgrove/hazel#2597": {"author": "matthewhammer", "comments": 3, "created": "2026-09-23T15:18:28Z", "kind": "pull", "state": "open", "title": "User-Defined Livelits, as in PLDI '21, and beyond.", "updated": "2026-10-26T18:19:39Z", "base": "integration/livelits-splicerefs"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-18T15:34:08Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 0, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "open", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-15T22:38:11Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "open", "title": "SInt has 32 bits everywhere, and overflow is an error", "updated": "2026-11-17T01:06:34Z", "base": "dev"}}, BUILT = "2026-11-18";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 57,
+ "title": "What the Livelits PR Compiles",
+ "date": "2026-11-18",
+ "kind": "hazel-jit: what hazelgrove/hazel#2819 compiles, read from its code, for a conversation with Cyrus Omar and the next mergeathon",
+ "status": "work in progress",
+ "question": "Matthew Hammer, 2026-11-18: \"to what extent is https://github.com/hazelgrove/hazel/pull/2819 using hazel-jit, for livelit views only? for anything else?\", then \"please write a new report with what you just told me, and sections with more details for each point. I want to talk to Cyrus today about what features we are using for responsive livelit performance, and think about how to merge into dev. Another mergeathon tomorrow\".",
+ "measurements": "None new: report 052's measurements, as it quotes them with their builds, and build 50's Firefox check (run 44319161252).",
+ "builds": [
+  {
+   "build": "12",
+   "commit": "d9d63c13af",
+   "note": "#2819's head is this and two commits (c419e01559)"
+  },
+  {
+   "build": "50",
+   "branch": "trial/694-view-jit",
+   "pr": "hazelgrove/hazel#2817",
+   "commit": "55e4757a4b",
+   "date": "2026-11-18"
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/numbers.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "What #2819 does not have",
+   "section_id": "lacks",
+   "columns": [
+    "Build",
+    "Commit",
+    "Date",
+    "What it is"
+   ],
+   "rows": [
+    [
+     "12",
+     "d9d63c13af",
+     "2026-11-09",
+     "the prototype when #2819 was cut: a drag's frames reuse each editor's decorations and probes' views; #2819's head is this and two commits (samples as data turned off, a formatting pass)"
+    ],
+    [
+     "38",
+     "19ecb75694",
+     "2026-11-10",
+     "^report(52)'s measurements: a step's picture 20 to 31 ms after the click, a drag 55.7 fps"
+    ],
+    [
+     "49",
+     "0e56bdbd0a",
+     "2026-11-17",
+     "^report(54)'s: the meeting's changes merged, all of CI green"
+    ],
+    [
+     "50",
+     "55e4757a4b",
+     "2026-11-18",
+     "today's prototype, trial/694-view-jit (hazelgrove/hazel#2817): build 49 and the slides' builtins"
+    ]
+   ]
+  },
+  {
+   "section": "What makes livelits responsive",
+   "section_id": "responsive",
+   "columns": [
+    "#",
+    "Change",
+    "Compiler?",
+    "Measured when it landed (^report(52))",
+    "In #2819"
+   ],
+   "rows": [
+    [
+     "What a user waits for: a step's picture, a drag's frame",
+     "What a user waits for: a step's picture, a drag's frame",
+     "What a user waits for: a step's picture, a drag's frame",
+     "What a user waits for: a step's picture, a drag's frame",
+     "What a user waits for: a step's picture, a drag's frame"
+    ],
+    [
+     "A1",
+     "Send the worker's answer without what the page does not read",
+     "no compiler",
+     "2.84 to 4.81 s off a step (builds 2, 3); the answer 590 KB to 198 KB (build 20)",
+     "partly (builds 2 and 3, not 20)"
+    ],
+    [
+     "A2",
+     "Compile the slide's whole run, each livelit's model a parameter",
+     "hazel-jit",
+     "1.09 to 1.50 s off a step (builds 4, 5): a step's picture 1.33 to 1.71 s, then 208 to 236 ms",
+     "yes (builds 4 and 5; not 18 (the first step like the others))"
+    ],
+    [
+     "A3",
+     "Draw first; make the edit after the paint",
+     "needs the compiled run",
+     "133 to 171 ms off a step (build 12): 152 to 195 ms, then 19 to 24",
+     "yes (build 12)"
+    ],
+    [
+     "A4",
+     "Compile each livelit's view",
+     "hazel-jit",
+     "84 ms off each render of the Witch's picture: 87 ms to 3.0",
+     "yes (before build 1)"
+    ],
+    [
+     "A5",
+     "A drag redraws only what changed",
+     "needs the compiled run",
+     "80 to 85 ms off each frame of a drag: 9.8 fps (build 5) to 57.6 (build 12)",
+     "yes (builds 6, 7, 8 and 12)"
+    ],
+    [
+     "The page's work after the picture, which can make the next frame late",
+     "The page's work after the picture, which can make the next frame late",
+     "The page's work after the picture, which can make the next frame late",
+     "The page's work after the picture, which can make the next frame late",
+     "The page's work after the picture, which can make the next frame late"
+    ],
+    [
+     "B1",
+     "Keep the livelits a change did not touch",
+     "no compiler",
+     "190 to 400 ms off the page's work after a step (builds 15 to 39)",
+     "no (builds 15 to 39)"
+    ],
+    [
+     "B2",
+     "Build the outline on its own, and only what changed",
+     "no compiler",
+     "128 to 201 ms off a step (builds 13 to 41)",
+     "no (builds 13 to 41)"
+    ],
+    [
+     "B3",
+     "Compile the run once; compare only what changed",
+     "hazel-jit",
+     "125 to 140 ms off a step: compiling again 126 to 141 ms (build 8), comparing 1 ms (build 17)",
+     "partly (builds 9 and 10, not 17)"
+    ],
+    [
+     "B4",
+     "Save without a redraw, printing only what changed",
+     "no compiler",
+     "77 to 96 ms off a step (builds 16, 23)",
+     "no (builds 16 and 23)"
+    ],
+    [
+     "B5",
+     "Draw the picture's probe row without rewriting its value",
+     "no compiler",
+     "38 to 85 ms off each answer (builds 14, 26)",
+     "no (builds 14 and 26)"
+    ]
+   ]
+  },
+  {
+   "section": "Reaching dev",
+   "section_id": "dev",
+   "columns": [
+    "Order",
+    "Increment",
+    "What it holds",
+    "Needs first",
+    "Where it is now"
+   ],
+   "rows": [
+    [
+     "0",
+     "The ruler",
+     "The Firefox check that drives the slides and times each step and drag, the page's timeline of marks, the worker's answer weighed by part. Nothing a user sees.",
+     "nothing",
+     "On the prototype; on #2819 as it was on 11-09."
+    ],
+    [
+     "1",
+     "The worker's answer, smaller",
+     "Ingredient A1: the worker and its messages only. Helps dev as much as livelits.",
+     "nothing",
+     "On the prototype; #2819 has its first two parts."
+    ],
+    [
+     "2",
+     "Page work every edit pays",
+     "B2, B4, B5: the outline on its own, the autosave without a redraw, the probe row. Each its own small PR.",
+     "the outline and autosave: livelits; the probe row: dev",
+     "On the prototype only."
+    ],
+    [
+     "3",
+     "Livelits kept",
+     "B1: a livelit's view, shape and applied definition kept, keyed on what it reads; one cache a PR, each with a test that it gives the same view.",
+     "livelits",
+     "On the prototype only."
+    ],
+    [
+     "4",
+     "The compiler",
+     "hazel-jit itself, a module at a time, and now its correctness (^report(54)): exact Int and Nat, SInt at 32 bits, invalid operations stopping, the rules for holes, type holes and type errors, and the consistency check in CI. Nothing a user sees.",
+     "nothing",
+     "On the prototype, build 50; its CI checks 313 evaluator programs and 129 slides both ways."
+    ],
+    [
+     "5",
+     "Compiled views",
+     "A4, with the step budget (^ticket(763)), since it runs compiled code on the page's thread.",
+     "4, livelits",
+     "#2819 has the views, without the budget; the prototype has both."
+    ],
+    [
+     "6",
+     "The run compiled in the page",
+     "A2 and B3: the slide's run compiled once, called at a slider's event, kept while only models change.",
+     "4, 5",
+     "#2819 has it as of 11-09; the prototype has it whole."
+    ],
+    [
+     "7",
+     "Draw first, edit after the paint",
+     "A3.",
+     "6",
+     "In both."
+    ],
+    [
+     "8",
+     "The drag fast path",
+     "A5: four changes, each its own PR.",
+     "6",
+     "In both."
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/057/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
