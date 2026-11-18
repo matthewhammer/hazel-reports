@@ -77,7 +77,7 @@
    [
     "trial/761-slide-builtins, no PR",
     "Operators passed as functions, to_lvs, and a projection through a list compiled as the interpreter's (t.col over a list of rows); the slides' check in the full tests, with a budget on each compiled run; the full tests leave a trail.",
-    "Fast checks green; full tests 77 minutes; the list projection's fix, bd08bb0872, in CI (run 44197056910). Then onto the prototype."
+    "With the list projection's fix (bd08bb0872, CI run 44197056910), all 20 compiled slides agree with the interpreter, and none stops at the budget. One evaluator test then parted, (true).a: the interpreter leaves it stuck, and the compiled run now stops as indeterminate where it once read undefined and carried on; the check now counts that as agreeing (55e4757a4b, CI run 44211080673, running). Then onto the prototype."
    ],
    [
     "trial/768-astrology-timed, no PR",

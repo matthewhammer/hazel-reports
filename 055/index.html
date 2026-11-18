@@ -155,7 +155,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-17 16:23 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-17 17:51 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -283,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </table>
 <p>Beyond the evaluator's tests:</p>
 <ul>
-<li><b>The slides.</b> Of the 129 programs in <code>hazel-programs</code>, 15 compile on build 49 and all agree. On the slides' branch, 20 compile; 18 agree, and the two that did not found a bug, a projection through a list (below).</li>
+<li><b>The slides.</b> Of the 129 programs in <code>hazel-programs</code>, 15 compile on build 49 and all agree. On the slides' branch, 20 compile, and all 20 agree since a bug the check found there was fixed: a projection through a list (below).</li>
 <li><b>A larger program.</b> The astrology oracle of hazeljs-oracles, eleven modules of floating-point code, compiles whole and runs one reading 170 times as fast as the interpreter, with the same answer (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#timed-astrology">A larger program</a>).</li>
 <li><b>The Witch slide</b>, compiled views on: 6.8 ms a frame over a slider drag in Firefox on GitHub's machines, build 49 (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, <a href="../054/#cost">What it all costs</a>).</li>
 </ul>
@@ -310,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <tr><td><a href="https://github.com/hazelgrove/hazel/pull/2828">hazelgrove/hazel#2828</a>, <code>fix/758-sint-32-bits</code></td><td>SInt is 32 bits everywhere, and overflow an error.</td><td>To dev. All checks green, Codecov too; waiting for a review (hazel-core requested).</td></tr>
 <tr><td><a href="https://github.com/hazelgrove/hazel/pull/2825">hazelgrove/hazel#2825</a>, <code>fix/764-mod-by-zero</code></td><td>Modulo by zero stops at Divide by Zero instead of crashing the interpreter.</td><td>To dev. All checks green; waiting for a review (hazel-core requested).</td></tr>
 <tr><td><a href="https://github.com/hazelgrove/hazel/pull/2818">hazelgrove/hazel#2818</a>, <code>fps-hud</code></td><td>The frame-rate overlay, <code>?hud</code>, alone.</td><td>To dev. All checks green; waiting for a review (hazel-core requested).</td></tr>
-<tr><td><code>trial/761-slide-builtins</code>, no PR</td><td>Operators passed as functions, <code>to_lvs</code>, and a projection through a list compiled as the interpreter's (<code>t.col</code> over a list of rows); the slides' check in the full tests, with a budget on each compiled run; the full tests leave a trail.</td><td>Fast checks green; full tests 77 minutes; the list projection's fix, <code>bd08bb0872</code>, in CI (run 44197056910). Then onto the prototype.</td></tr>
+<tr><td><code>trial/761-slide-builtins</code>, no PR</td><td>Operators passed as functions, <code>to_lvs</code>, and a projection through a list compiled as the interpreter's (<code>t.col</code> over a list of rows); the slides' check in the full tests, with a budget on each compiled run; the full tests leave a trail.</td><td>With the list projection's fix (<code>bd08bb0872</code>, CI run 44197056910), all 20 compiled slides agree with the interpreter, and none stops at the budget. One evaluator test then parted, <code>(true).a</code>: the interpreter leaves it stuck, and the compiled run now stops as indeterminate where it once read <code>undefined</code> and carried on; the check now counts that as agreeing (<code>55e4757a4b</code>, CI run 44211080673, running). Then onto the prototype.</td></tr>
 <tr><td><code>trial/768-astrology-timed</code>, no PR</td><td>The astrology oracle compiled whole and timed, on build 49.</td><td>Measured (above). Its quick tests still pass their 20 minutes, likely build 49's timing rule (below).</td></tr>
 </table>
 
@@ -836,7 +836,7 @@ document.addEventListener("DOMContentLoaded", () => {
     [
      "trial/761-slide-builtins, no PR",
      "Operators passed as functions, to_lvs, and a projection through a list compiled as the interpreter's (t.col over a list of rows); the slides' check in the full tests, with a budget on each compiled run; the full tests leave a trail.",
-     "Fast checks green; full tests 77 minutes; the list projection's fix, bd08bb0872, in CI (run 44197056910). Then onto the prototype."
+     "With the list projection's fix (bd08bb0872, CI run 44197056910), all 20 compiled slides agree with the interpreter, and none stops at the budget. One evaluator test then parted, (true).a: the interpreter leaves it stuck, and the compiled run now stops as indeterminate where it once read undefined and carried on; the check now counts that as agreeing (55e4757a4b, CI run 44211080673, running). Then onto the prototype."
     ],
     [
      "trial/768-astrology-timed, no PR",
