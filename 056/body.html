@@ -45,13 +45,13 @@
 <p>The work: casts carried by functions, and the interpreter's own bookkeeping, are where counts need care, and a check in CI compares each evaluator program's count with the interpreter's (report 054 lists the steps). Probes follow from the counts.</p>
 
 <h2 id="limits">Limits to lift</h2>
-<p><b>Of the evaluator's 313 programs, compiled code does not handle {{not_handled}}, but only one of them meets a limit worth lifting; the rest are holes, ill-typed tests, unbound names and stuck terms, which the next sections take up. The limits that cost the most are elsewhere: tests in the slides (28 of 129), static errors anywhere in a program, the stack's depth, and how far mixed mode reaches.</b> The aim is to run compiled wherever the answer can be the interpreter's, and fall back only where it cannot. Holes and stuck terms are kept out of this section on purpose, so that work on them can go on apart.</p>
+<p><b>Of the evaluator's 313 programs, compiled code does not handle {{not_handled}}, and none of them meets a limit worth lifting: they are holes, ill-typed tests, unbound names and stuck terms, which the next sections take up. The limits that cost the most are elsewhere: tests in the slides (28 of 129), static errors anywhere in a program, the stack's depth, and how far mixed mode reaches.</b> The aim is to run compiled wherever the answer can be the interpreter's, and fall back only where it cannot. Holes and stuck terms are kept out of this section on purpose, so that work on them can go on apart.</p>
 
 <h3 id="limits-eval">The evaluator's test programs, again from report 054</h3>
 <p>Report 054's sweep table, brought to build 50, with each kind of program sent to the section that takes it up:</p>
 {{tab_eval}}
 {{eval_names}}
-<p>So the evaluator's tests hold one limit to lift: a recursive definition like <code>let (f, n) = (fun x -&gt; ..., ... f ...)</code>, whose part that is not a function mentions one of the names it defines inside a function it builds. Each name is assigned once, then the tuple of them, which is the interpreter's answer whenever no part reads a name before it is assigned; a finer check, that the mention is only inside a function, would compile it. The three fixpoints over <code>_</code>, <code>()</code> and <code>0</code> are ill-typed tests, whose interpreter answers are failed casts, so compiling them would only add partings.</p>
+<p>So the evaluator's tests hold no limit worth lifting. The four that meet one are ill-typed fixpoints over a pattern that is not a name, whose interpreter answers are failed casts, so compiling them would only add partings. One of them, <code>fix () -&gt; []</code>, the compiler reports as a recursive definition of more than one name, since <code>()</code> is a tuple of no names; reports 054 and 055 took it for a recursive definition a finer check could compile, which the names show it is not (corrected there). The 24 programs with an unbound name are the evaluator's tests of indeterminate evaluation, such as <code>x + y == (x + y) : Int</code>: their answer is the stuck term itself.</p>
 
 <h3 id="limits-forms">The slides, and forms not yet compiled</h3>
 <p>The slides meet more. One reason a slide, the first it meets (build 50's commit, the full tests of CI run 44211080673):</p>
@@ -118,7 +118,7 @@
 <h2 id="next">What next</h2>
 <p><b>Matthew lifts limits and makes step counts; John starts on holes once four questions are settled; the team writes down its answers.</b></p>
 <ul>
-<li><b>Matthew, hazel-jit:</b> the 53 programs by name (CI running), then tests on the slides; mixed mode across modules and its crossing cost; step counts, checked against the interpreter's in CI, then the budget in steps (decisions 9, 19, 20); then probes. Stuck terms after that, overflow first (decision 21).</li>
+<li><b>Matthew, hazel-jit:</b> tests on the slides; mixed mode across modules and its crossing cost; step counts, checked against the interpreter's in CI, then the budget in steps (decisions 9, 19, 20); then probes. Stuck terms after that, overflow first (decision 21).</li>
 <li><b>Matthew and Cyrus:</b> write down the meeting of 2026-11-17's answers (decisions 3 to 17); settle report 055's four questions before John starts (22 to 25); decide how hazel-jit reaches dev (13).</li>
 <li><b>John:</b> after decisions 22 to 25, opaque values at the boundary, passing through only, with their tests; the warm-up PR, if wanted first.</li>
 <li><b>Anyone who knows the evaluator:</b> reviews of hazelgrove/hazel#2828 (SInt) and hazelgrove/hazel#2825 (modulo by zero).</li>

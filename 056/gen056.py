@@ -42,7 +42,7 @@ NOT_COMPILED = [  # (reason as the sweep prints it, programs, kind)
     ("the free variable y", 13, "free"), ("the free variable s2", 6, "free"), ("the free variable x", 2, "free"),
     ("the free variable b2", 2, "free"), ("the free variable a", 1, "free"),
     ("a recursive definition by a pattern that is not a name or a tuple of names", 3, "fix"),
-    ("a recursive definition of more than one name whose part that is not a function names one of them", 1, "rec"),
+    ("a recursive definition of more than one name whose part that is not a function names one of them", 1, "fix"),  # fix () -> [], a tuple of no names
 ]
 NC = sum(n for _, n, _ in NOT_COMPILED)
 assert SWEEP["checks"] == SWEEP["compiled"] + NC
@@ -53,7 +53,7 @@ NOT_A_VALUE = [l.strip() for l in open(os.path.join(HERE, "data", "not-a-value.t
 assert len(NOT_A_VALUE) == SWEEP["not_a_value"], len(NOT_A_VALUE)
 
 # each program not compiled, by name: the sweep prints them since 8d7694d9ff (trial/756-sweep-names), "  NOT COMPILED  test: reason"
-NAMES = dict(commit="8d7694d9ff", branch="trial/756-sweep-names", run=None, file=os.path.join(HERE, "data", "not-compiled.tsv"))
+NAMES = dict(commit="8d7694d9ff", branch="trial/756-sweep-names", run=None, job=134862413770, file=os.path.join(HERE, "data", "not-compiled.tsv"))
 NC_NAMES = []
 if os.path.exists(NAMES["file"]):
     for l in open(NAMES["file"]):
@@ -176,7 +176,7 @@ def timing_lead():
 def fig_sweep():
     W, L, R = 700, 16, 16
     by_rule = sum(n for _, n, k in NOT_COMPILED if k in ("hole", "free"))
-    by_limit = sum(n for _, n, k in NOT_COMPILED if k in ("fix", "rec"))
+    by_limit = sum(n for _, n, k in NOT_COMPILED if k == "fix")
     parts = [("the same value", SWEEP["values"], "#15803d"), ("both stop, stuck", SWEEP["both_stuck"], "#0e7490"),
              ("ill-typed: nothing to compare", SWEEP["not_a_value"], "#b45309"), ("not compiled: holes, unbound names", by_rule, "#9ca3af"),
              ("not compiled: a limit", by_limit, "#7c3aed")]
@@ -218,10 +218,8 @@ EVAL = [  # (what the program meets, programs, what happens today, where its lif
     ("a type hole, <code>?</code> in a type", 10, "not compiled, by rule", f"{SEC['holes']}: the rule stands"),
     ("a free variable: the test's own unbound name (<code>y</code> 13, <code>s2</code> 6, <code>x</code> 2, <code>b2</code> 2, <code>a</code> 1)", 24,
      "not compiled: a static error; the interpreter's answer holds the variable, stuck", f"{SEC['stuck']}; {SEC['q8']}"),
-    ("a fixpoint over a pattern that is not a name: <code>fix _</code>, <code>fix ()</code>, <code>fix 0</code>", 3,
+    ("a fixpoint over a pattern that is not a name: <code>fix _ : ()</code>, <code>fix (_ : Bool)</code>, <code>fix 0</code> and <code>fix ()</code>", 4,
      "not compiled, a limit; ill-typed tests, left so on purpose", f"{SEC['limits']}: none planned"),
-    ("a recursive definition of more than one name whose part that is not a function names one of them, inside a function it builds", 1,
-     "not compiled, a limit", f"{SEC['limits']}: a finer check"),
     ("an ill-typed program: the interpreter stops at a failed run-time check", 25,
      "compiled by the sweep; compiled code runs past the check, so there is nothing to compare; the page compiles none of these", f"{SEC['stuck']}; {SEC['q8']}, {SEC['q12']}"),
     ("a projection the interpreter leaves stuck: <code>(true).a</code>, and the same with an ascription", 2,

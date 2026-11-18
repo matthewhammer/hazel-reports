@@ -92,14 +92,228 @@
    {
     "reason": "a recursive definition of more than one name whose part that is not a function names one of them",
     "programs": 1,
-    "kind": "rec"
+    "kind": "fix"
    }
   ],
-  "not_compiled_by_name": [],
+  "not_compiled_by_name": [
+   {
+    "test": "3 == let (a,b,c) = (?=1, 2, b=3) in c",
+    "reason": "a hole"
+   },
+   {
+    "test": "(a=1, b=2, c=?).a",
+    "reason": "a hole"
+   },
+   {
+    "test": "?.a == ?.a",
+    "reason": "a hole"
+   },
+   {
+    "test": "let x = 5 in if ? then x else x",
+    "reason": "a hole"
+   },
+   {
+    "test": "if ? then ? : String else ? : String == (if ? then ? else ?) : String : String",
+    "reason": "a hole"
+   },
+   {
+    "test": "(case ? | 1 => true : String | _ => false : String end) == (case ? | 1 => true | _ => false end) : String",
+    "reason": "a hole"
+   },
+   {
+    "test": "2 == ((fun a -> a): ? -> ? )(2: ?): Int",
+    "reason": "a type hole"
+   },
+   {
+    "test": "2 == (fun (a=a): ((a=Int)) -> a: ?)(a=2)",
+    "reason": "a type hole"
+   },
+   {
+    "test": "?(_, _, 3)(1., true)",
+    "reason": "a hole"
+   },
+   {
+    "test": "\"llo\" == (string_sub : ?)(_, 2, 3)(\"hello\")",
+    "reason": "a type hole"
+   },
+   {
+    "test": "[] == let f : ? -> ? = map(_, fun _ -> 1) in f([])",
+    "reason": "a type hole"
+   },
+   {
+    "test": "[1.0 : Int, 2.0 : Int] == let f : [Int] -> ? = map(_, fun i -> i) in f([1.0, 2.0] : ?)",
+    "reason": "a type hole"
+   },
+   {
+    "test": "[1.0 : Int, 2.0 : Int] == let f : ? -> [Int] = map(_, fun i -> i) in f([1.0, 2.0] : ?)",
+    "reason": "a type hole"
+   },
+   {
+    "test": "(fun x -> x)(x)",
+    "reason": "the free variable x"
+   },
+   {
+    "test": "[] : () == fix () -> []",
+    "reason": "a recursive definition of more than one name whose part that is not a function names one of them"
+   },
+   {
+    "test": "() == fix _ : () -> test B end",
+    "reason": "a recursive definition by a pattern that is not a name or a tuple of names"
+   },
+   {
+    "test": "() : Bool == fix (_ : Bool) -> test false end",
+    "reason": "a recursive definition by a pattern that is not a name or a tuple of names"
+   },
+   {
+    "test": "() : Int == fix 0 -> ()",
+    "reason": "a recursive definition by a pattern that is not a name or a tuple of names"
+   },
+   {
+    "test": "? : [Int] == let x :: y = ((1 :: ?): [Int]) in y",
+    "reason": "a hole"
+   },
+   {
+    "test": "(x : Int) :: (y : [Int]) == (x :: y) : [Int]",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "(x : [Int]) @ (y : [Int]) == (x @ y) : [Int]",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x + y == (x + y) : Int",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x - y == (x - y) : Int",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x * y == (x * y) : Int",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x ** y == (x ** y) : Int",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x / y == (x / y) : Int",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x < y == (x < y) : Bool",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x <= y == (x <= y) : Bool",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x > y == (x > y) : Bool",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x >= y == (x >= y) : Bool",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x == y == (x == y) : Bool",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "x != y == (x != y) : Bool",
+    "reason": "the free variable y"
+   },
+   {
+    "test": "s1 ++ s2 == (s1 ++ s2) : String",
+    "reason": "the free variable s2"
+   },
+   {
+    "test": "s1 +. s2 == (s1 +. s2) : Float",
+    "reason": "the free variable s2"
+   },
+   {
+    "test": "s1 -. s2 == (s1 -. s2) : Float",
+    "reason": "the free variable s2"
+   },
+   {
+    "test": "s1 *. s2 == (s1 *. s2) : Float",
+    "reason": "the free variable s2"
+   },
+   {
+    "test": "s1 **. s2 == (s1 **. s2) : Float",
+    "reason": "the free variable s2"
+   },
+   {
+    "test": "s1 /. s2 == (s1 /. s2) : Float",
+    "reason": "the free variable s2"
+   },
+   {
+    "test": "b1 && b2 == (b1 && b2) : Bool",
+    "reason": "the free variable b2"
+   },
+   {
+    "test": "b1 || b2 == (b1 || b2) : Bool",
+    "reason": "the free variable b2"
+   },
+   {
+    "test": "Indet Variables in sum constructors",
+    "reason": "the free variable x"
+   },
+   {
+    "test": "Hidden inconsistency caught in dynamics",
+    "reason": "a type hole"
+   },
+   {
+    "test": "Hidden containing arrow in tuple caught in dynamics",
+    "reason": "a type hole"
+   },
+   {
+    "test": "A : (+A +B) : (+A + ?)",
+    "reason": "a type hole"
+   },
+   {
+    "test": "Ascriptions don't do unnecessary unrolling",
+    "reason": "a hole"
+   },
+   {
+    "test": "let T = 1 in ?",
+    "reason": "a hole"
+   },
+   {
+    "test": "Indet when unboxing constructor with payload without payload",
+    "reason": "a hole"
+   },
+   {
+    "test": "Indet when unboxing constructor as list",
+    "reason": "a hole"
+   },
+   {
+    "test": "Indet when unboxing constructor as cons",
+    "reason": "a hole"
+   },
+   {
+    "test": "Indet when unboxing constructor as tuple",
+    "reason": "a hole"
+   },
+   {
+    "test": "Indet when unboxing constructor as typfun",
+    "reason": "a type hole"
+   },
+   {
+    "test": "Indet when unboxing constructor as float",
+    "reason": "the free variable a"
+   },
+   {
+    "test": "typfun y -> (?:y) == type y = Int in typfun y -> (? : y)",
+    "reason": "a hole"
+   }
+  ],
   "names_from": {
    "commit": "8d7694d9ff",
    "branch": "trial/756-sweep-names",
-   "run": null,
+   "run": 44321800774,
+   "job": 134862413770,
    "file": "/home/matthew/hazel-perf-report/056/data/not-compiled.tsv"
   }
  },

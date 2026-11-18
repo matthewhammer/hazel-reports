@@ -54,7 +54,7 @@ PLAN = [
     dict(t=760, short="holes, the stepper: the interpreter's", name="Holes and the stepper stay with the interpreter", sec="rules", stage=4, st="done",
          status="On the branch, with two rules the sweep found: no program with type errors, and no type hole. Left: a check in the browser."),
     dict(t=761, short="the other limits, one at a time", name="The other limits, one at a time", sec="limits", stage=4, st="part",
-         status="On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, three of them ill-typed tests. Probes not begun."),
+         status="On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, all four ill-typed tests. Probes not begun."),
     dict(t=763, short="a step budget", name="A step budget for compiled code", sec="budget", stage=4, st="done",
          status="On the branch: 50 ms or 50M calls a run, then the interpreter. Left: a cheaper counter."),
     dict(t=764, short="found: modulo by zero crashed", name="Found: modulo by zero crashed the interpreter", sec="found", stage=4, st="pr",
@@ -75,8 +75,8 @@ SWEEP = dict(build="49", commit="0e56bdbd0a", job=134231714506, run=44137711359,
 NOT_COMPILED = [  # reason, count, rule or limit
     ("a hole (a label that is a hole among them)", 15, "rule"), ("a type hole", 10, "rule"),
     ("a free variable (the tests' own unbound names: y 13, s2 6, x 2, b2 2, a 1)", 24, "rule"),
-    ("a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0; ill-typed tests)", 3, "limit"),
-    ("a recursive definition whose value part names one of its names, inside a function it builds", 1, "limit"),
+    ("a fixpoint over a pattern that is not a name or a tuple of names (fix _ : (), fix (_ : Bool), fix 0; ill-typed tests)", 3, "limit"),
+    ("a fixpoint over (), a tuple of no names, whose body is not a function (fix () -> []; an ill-typed test; corrected 11-18, once CI named it)", 1, "limit"),
 ]
 SWEEP_47 = dict(build="47", commit="f4f969588b", run=43887985051, checks=313, compiled=243, agreed=216, not_a_value=27)
 BY_RULE = sum(n for _, n, k in NOT_COMPILED if k == "rule")

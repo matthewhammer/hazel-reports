@@ -95,7 +95,7 @@
    "sec": "limits",
    "stage": 4,
    "st": "part",
-   "status": "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, three of them ill-typed tests. Probes not begun.",
+   "status": "On the branch: 20 builtins, partial application, mutual recursion, undefined, tuple extension and labels, strings in graphemes, reverse application. On their own branch, CI green 11-17: an unlabeled entry, from_lvs, a module member that is an expression, a value in a recursive definition; four programs of 313 still meet a limit, all four ill-typed tests. Probes not begun.",
    "stages_reached": [
     "designed",
     "written",
@@ -222,12 +222,12 @@
     "kind": "rule"
    },
    {
-    "reason": "a fixpoint over a pattern that is not a name or a tuple of names (fix _, fix (), fix 0; ill-typed tests)",
+    "reason": "a fixpoint over a pattern that is not a name or a tuple of names (fix _ : (), fix (_ : Bool), fix 0; ill-typed tests)",
     "programs": 3,
     "kind": "limit"
    },
    {
-    "reason": "a recursive definition whose value part names one of its names, inside a function it builds",
+    "reason": "a fixpoint over (), a tuple of no names, whose body is not a function (fix () -> []; an ill-typed test; corrected 11-18, once CI named it)",
     "programs": 1,
     "kind": "limit"
    }

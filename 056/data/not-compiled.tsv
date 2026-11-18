@@ -1,0 +1,53 @@
+3 == let (a,b,c) = (?=1, 2, b=3) in c	a hole
+(a=1, b=2, c=?).a	a hole
+?.a == ?.a	a hole
+let x = 5 in if ? then x else x	a hole
+if ? then ? : String else ? : String == (if ? then ? else ?) : String : String	a hole
+(case ? | 1 => true : String | _ => false : String end) == (case ? | 1 => true | _ => false end) : String	a hole
+2 == ((fun a -> a): ? -> ? )(2: ?): Int	a type hole
+2 == (fun (a=a): ((a=Int)) -> a: ?)(a=2)	a type hole
+?(_, _, 3)(1., true)	a hole
+"llo" == (string_sub : ?)(_, 2, 3)("hello")	a type hole
+[] == let f : ? -> ? = map(_, fun _ -> 1) in f([])	a type hole
+[1.0 : Int, 2.0 : Int] == let f : [Int] -> ? = map(_, fun i -> i) in f([1.0, 2.0] : ?)	a type hole
+[1.0 : Int, 2.0 : Int] == let f : ? -> [Int] = map(_, fun i -> i) in f([1.0, 2.0] : ?)	a type hole
+(fun x -> x)(x)	the free variable x
+[] : () == fix () -> []	a recursive definition of more than one name whose part that is not a function names one of them
+() == fix _ : () -> test B end	a recursive definition by a pattern that is not a name or a tuple of names
+() : Bool == fix (_ : Bool) -> test false end	a recursive definition by a pattern that is not a name or a tuple of names
+() : Int == fix 0 -> ()	a recursive definition by a pattern that is not a name or a tuple of names
+? : [Int] == let x :: y = ((1 :: ?): [Int]) in y	a hole
+(x : Int) :: (y : [Int]) == (x :: y) : [Int]	the free variable y
+(x : [Int]) @ (y : [Int]) == (x @ y) : [Int]	the free variable y
+x + y == (x + y) : Int	the free variable y
+x - y == (x - y) : Int	the free variable y
+x * y == (x * y) : Int	the free variable y
+x ** y == (x ** y) : Int	the free variable y
+x / y == (x / y) : Int	the free variable y
+x < y == (x < y) : Bool	the free variable y
+x <= y == (x <= y) : Bool	the free variable y
+x > y == (x > y) : Bool	the free variable y
+x >= y == (x >= y) : Bool	the free variable y
+x == y == (x == y) : Bool	the free variable y
+x != y == (x != y) : Bool	the free variable y
+s1 ++ s2 == (s1 ++ s2) : String	the free variable s2
+s1 +. s2 == (s1 +. s2) : Float	the free variable s2
+s1 -. s2 == (s1 -. s2) : Float	the free variable s2
+s1 *. s2 == (s1 *. s2) : Float	the free variable s2
+s1 **. s2 == (s1 **. s2) : Float	the free variable s2
+s1 /. s2 == (s1 /. s2) : Float	the free variable s2
+b1 && b2 == (b1 && b2) : Bool	the free variable b2
+b1 || b2 == (b1 || b2) : Bool	the free variable b2
+Indet Variables in sum constructors	the free variable x
+Hidden inconsistency caught in dynamics	a type hole
+Hidden containing arrow in tuple caught in dynamics	a type hole
+A : (+A +B) : (+A + ?)	a type hole
+Ascriptions don't do unnecessary unrolling	a hole
+let T = 1 in ?	a hole
+Indet when unboxing constructor with payload without payload	a hole
+Indet when unboxing constructor as list	a hole
+Indet when unboxing constructor as cons	a hole
+Indet when unboxing constructor as tuple	a hole
+Indet when unboxing constructor as typfun	a type hole
+Indet when unboxing constructor as float	the free variable a
+typfun y -> (?:y) == type y = Int in typfun y -> (? : y)	a hole

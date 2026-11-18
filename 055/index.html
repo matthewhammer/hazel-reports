@@ -155,7 +155,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-18 07:06 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-18 07:26 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -276,7 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <tr><th>Programs</th><th>How many</th><th>Why</th></tr>
 <tr><td>Checked</td><td class="n">313</td><td>every program the evaluator's tests evaluate</td></tr>
 <tr><td>Not compiled, by rule</td><td class="n">49</td><td>a hole, among them a label that is a hole (15); a type hole (10); a free variable, the tests' own unbound names (24). The interpreter keeps these on purpose.</td></tr>
-<tr><td>Not compiled, a limit</td><td class="n">4</td><td>three ill-typed fixpoints over patterns that are not names (<code>fix _</code>, <code>fix ()</code>, <code>fix 0</code>), left so on purpose; one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile.</td></tr>
+<tr><td>Not compiled, a limit</td><td class="n">4</td><td>four ill-typed fixpoints over a pattern that is not a name (<code>fix _ : ()</code>, <code>fix (_ : Bool)</code>, <code>fix 0</code>, <code>fix ()</code>), left so on purpose. <span class="muted">Corrected 2026-11-18:</span> this said one was a recursive definition a finer check could compile; CI, printing each program by name (<a href="../056/"><code class="ref"><b>^report(</b>56<b>)</b></code></a>), shows it is <code>fix () -&gt; []</code>.</td></tr>
 <tr><td>Compiled</td><td class="n">260</td><td></td></tr>
 <tr><td>Compiled, nothing to compare</td><td class="n">25</td><td>ill-typed tests whose interpreter run stops at a failed run-time check, so its answer is not a value; listed by name. On build 49, 27.</td></tr>
 <tr><td>Compiled and compared</td><td class="n">235</td><td>all give the interpreter's answer; none differ. 233 give the same value. The other two are ill-typed projections, such as <code>(true).a</code>, which the interpreter leaves stuck and the compiled run stops at as indeterminate; build 49 counted them with nothing to compare. The 233 with a value are the programs timed in <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>'s <a href="../054/#timed">The same programs, timed</a>: run again and again, the median is 222 times as fast compiled; run once with its compile, 1.2 times.</td></tr>
@@ -780,7 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
     [
      "Not compiled, a limit",
      "4",
-     "three ill-typed fixpoints over patterns that are not names (fix _, fix (), fix 0), left so on purpose; one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile."
+     "four ill-typed fixpoints over a pattern that is not a name (fix _ : (), fix (_ : Bool), fix 0, fix ()), left so on purpose. Corrected 2026-11-18: this said one was a recursive definition a finer check could compile; CI, printing each program by name (^report(56)), shows it is fix () -> []."
     ],
     [
      "Compiled",

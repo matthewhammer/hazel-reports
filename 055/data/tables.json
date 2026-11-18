@@ -21,7 +21,7 @@
    [
     "Not compiled, a limit",
     "4",
-    "three ill-typed fixpoints over patterns that are not names (fix _, fix (), fix 0), left so on purpose; one recursive definition whose value part names one of its names inside a function it builds, which a finer check could compile."
+    "four ill-typed fixpoints over a pattern that is not a name (fix _ : (), fix (_ : Bool), fix 0, fix ()), left so on purpose. Corrected 2026-11-18: this said one was a recursive definition a finer check could compile; CI, printing each program by name (^report(56)), shows it is fix () -> []."
    ],
    [
     "Compiled",
