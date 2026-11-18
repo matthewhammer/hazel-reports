@@ -104,7 +104,7 @@ BUILDS = [
     dict(b="49", name="this morning's branches", commit="0e56bdbd0a", run=44137800916, when="11-17", adds="Build 48 and the last limits (761), mixed mode's first step (766), the timing and the slides' check (756), the step calibration (767); trial/694-view-jit since 11-17, all of CI green.",
          step=[8, 12, 5, 4], view=6.8, jit=1.5, fps=53.7, draws=30),
     dict(b="50", name="the slides' builtins", commit="55e4757a4b", run=44319161252, when="11-18", adds="Build 49 and operators passed as functions, to_lvs, a projection through a list as the interpreter's, and the checks' trail (761, 756); trial/694-view-jit since 11-18.",
-         step=[0], view=None, jit=None, fps=None, draws=None),
+         step=[11, 11, 5, 5], view=6.5, jit=1.7, fps=54.3, draws=30),
 ]
 SLIDES_760 = [("Full Body", 30, 30, 30, 30), ("Hands", 30, 30, 28, 28), ("Scenes", 36, 36, 36, 36), ("Witch", 30, 28, 30, 30)]
 
