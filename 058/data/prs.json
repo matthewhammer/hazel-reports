@@ -1,0 +1,1975 @@
+{
+ "dev": {
+  "commit": "782249bbd0",
+  "date": "2026-11-06",
+  "last_merge": "Substitution: a let's definition sees the outer binding, not its own (#2605)"
+ },
+ "prs": {
+  "2577": {
+   "title": "Serve the release web build from an Internet Computer canister",
+   "draft": true,
+   "base": "dev",
+   "head": "ic-canister",
+   "add": 164,
+   "del": 0,
+   "nfiles": 4,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-09-16",
+   "updated": "2026-09-22",
+   "labels": [
+    "backburner"
+   ],
+   "ncommits": 1,
+   "sha": "a7b2500364",
+   "checks": {
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "Quick Test Report": "SUCCESS",
+    "Test Report": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    ".gitignore",
+    "docs/internet-computer.md",
+    "icp.yaml",
+    "src/web/www/_headers"
+   ],
+   "head_date": "2026-09-16",
+   "behind_dev": 1145,
+   "into_dev": "conflict",
+   "conflicts": [
+    ".gitignore"
+   ],
+   "recent_authors": []
+  },
+  "2583": {
+   "title": "Deep links: the URL can say which slide, which panel, and where the cursor is",
+   "draft": false,
+   "base": "dev",
+   "head": "deep-links",
+   "add": 881,
+   "del": 51,
+   "nfiles": 12,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "CHANGES_REQUESTED",
+   "requested": [
+    "cyrus-"
+   ],
+   "created": "2026-09-17",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 4,
+   "sha": "077a68f9f8",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [
+    {
+     "by": "7h3kk1d",
+     "state": "CHANGES_REQUESTED",
+     "on": "2026-09-23"
+    }
+   ],
+   "files": [
+    "src/util/JsUtil.re",
+    "src/web/DeepLink.re",
+    "src/web/Main.re",
+    "src/web/app/Page.re",
+    "src/web/app/editors/Editors.re",
+    "src/web/app/editors/code/CodeEditable.re",
+    "src/web/app/editors/code/ContextMenu.re",
+    "src/web/app/globals/Globals.re",
+    "src/web/app/sidebar/SidebarModel.re",
+    "src/web/view/ScratchMode.re",
+    "test/Test_DeepLink.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 169,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": []
+  },
+  "2592": {
+   "title": "Report each error once, not once per wrapper",
+   "draft": true,
+   "base": "dev",
+   "head": "error-dedup-wrappers",
+   "add": 146,
+   "del": 2,
+   "nfiles": 2,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-09-22",
+   "updated": "2026-09-23",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "89076f6991",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/haz3lcore/ProblemCollection.re",
+    "test/Test_ProblemCollection.re"
+   ],
+   "head_date": "2026-09-22",
+   "behind_dev": 462,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "7h3kk1d",
+     17
+    ],
+    [
+     "disconcision",
+     1
+    ]
+   ]
+  },
+  "2603": {
+   "title": "Statics: a let is analyzed once unless it refers to itself, plus three smaller speedups",
+   "draft": false,
+   "base": "dev",
+   "head": "dev-statics-perf",
+   "add": 563,
+   "del": 67,
+   "nfiles": 10,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-09-26",
+   "updated": "2026-09-26",
+   "labels": [],
+   "ncommits": 5,
+   "sha": "4aa493c05a",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/haz3lcore/TyDi/TyDi.re",
+    "src/haz3lcore/TyDi/TyDiCtx.re",
+    "src/language/builtins/Builtins.re",
+    "src/language/statics/Ctx.re",
+    "src/language/statics/Statics.re",
+    "src/language/statics/StaticsBase.re",
+    "test/Test_CtxIndex.re",
+    "test/Test_TyDi.re",
+    "test/haz3ltest.re",
+    "test/statics/Test_Statics_Let.re"
+   ],
+   "head_date": "2026-09-26",
+   "behind_dev": 462,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     61
+    ],
+    [
+     "7h3kk1d",
+     18
+    ],
+    [
+     "Negabinary",
+     7
+    ]
+   ]
+  },
+  "2606": {
+   "title": "Keep the incremental cache in the eval worker",
+   "draft": false,
+   "base": "dev",
+   "head": "eval-worker-held-cache",
+   "add": 300,
+   "del": 9,
+   "nfiles": 6,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-09-28",
+   "updated": "2026-09-30",
+   "labels": [],
+   "ncommits": 3,
+   "sha": "1b5de419b3",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/web/app/editors/result/EvalResult.re",
+    "src/web/util/WorkerServer.re",
+    "src/web/view/CodeExerciseMode.re",
+    "src/web/view/ScratchMode.re",
+    "src/web/view/TutorialMode.re",
+    "test/Test_WorkerServer.re"
+   ],
+   "head_date": "2026-09-30",
+   "behind_dev": 248,
+   "into_dev": "conflict",
+   "conflicts": [
+    "test/Test_WorkerServer.re"
+   ],
+   "recent_authors": [
+    [
+     "disconcision",
+     50
+    ],
+    [
+     "7h3kk1d",
+     36
+    ],
+    [
+     "Negabinary",
+     26
+    ]
+   ]
+  },
+  "2608": {
+   "title": "Leave the source's whitespace and comments out of elaborations",
+   "draft": false,
+   "base": "dev",
+   "head": "elab-no-secondary",
+   "add": 83,
+   "del": 3,
+   "nfiles": 4,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "CHANGES_REQUESTED",
+   "requested": [],
+   "created": "2026-09-28",
+   "updated": "2026-10-21",
+   "labels": [],
+   "ncommits": 2,
+   "sha": "66f789d916",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [
+    {
+     "by": "7h3kk1d",
+     "state": "CHANGES_REQUESTED",
+     "on": "2026-10-21"
+    }
+   ],
+   "files": [
+    "src/language/statics/Statics.re",
+    "src/language/term/IdTagged.re",
+    "test/Test_ElabSize.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-09-29",
+   "behind_dev": 248,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     42
+    ],
+    [
+     "7h3kk1d",
+     15
+    ],
+    [
+     "Negabinary",
+     7
+    ]
+   ]
+  },
+  "2610": {
+   "title": "Parse the load fallback with the segmented parser, projectors kept",
+   "draft": false,
+   "base": "dev",
+   "head": "parse-fallback-segmented",
+   "add": 296,
+   "del": 3,
+   "nfiles": 4,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-09-28",
+   "updated": "2026-10-20",
+   "labels": [],
+   "ncommits": 4,
+   "sha": "0f14ab555c",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/haz3lcore/zipper/MarkerParse.re",
+    "src/haz3lcore/zipper/Parser.re",
+    "test/Test_ParseSegmented.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 192,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     19
+    ]
+   ]
+  },
+  "2613": {
+   "title": "Colors: every var() a stylesheet reads is one the theme defines",
+   "draft": false,
+   "base": "dev",
+   "head": "configuration-undefined-colors",
+   "add": 23,
+   "del": 25,
+   "nfiles": 9,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "APPROVED",
+   "requested": [],
+   "created": "2026-09-28",
+   "updated": "2026-11-07",
+   "labels": [],
+   "ncommits": 5,
+   "sha": "8ca7a15634",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-19"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-19"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "CHANGES_REQUESTED",
+     "on": "2026-10-19"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "APPROVED",
+     "on": "2026-11-07"
+    }
+   ],
+   "files": [
+    "scripts/lint_css_roles.py",
+    "src/web/www/style.css",
+    "src/web/www/style/agent/agent-chat-messages.css",
+    "src/web/www/style/assistant.css",
+    "src/web/www/style/cell.css",
+    "src/web/www/style/cursor-inspector.css",
+    "src/web/www/style/exercise-mode.css",
+    "src/web/www/style/probesystem.css",
+    "src/web/www/style/sidebar.css"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 169,
+   "into_dev": "conflict",
+   "conflicts": [
+    "scripts/lint_css_roles.py",
+    "src/web/www/style/assistant.css"
+   ],
+   "recent_authors": [
+    [
+     "7h3kk1d",
+     62
+    ],
+    [
+     "disconcision",
+     59
+    ],
+    [
+     "cyrus-",
+     4
+    ]
+   ]
+  },
+  "2614": {
+   "title": "Load text about 2.5\u00d7 faster: whole tokens, one re-grout",
+   "draft": false,
+   "base": "dev",
+   "head": "parser-perf",
+   "add": 292,
+   "del": 46,
+   "nfiles": 9,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "cyrus-"
+   ],
+   "created": "2026-09-28",
+   "updated": "2026-09-29",
+   "labels": [],
+   "ncommits": 8,
+   "sha": "b4e3914b03",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/haz3lcore/tiles/Segment.re",
+    "src/haz3lcore/tiles/Tile.re",
+    "src/haz3lcore/zipper/MarkerParse.re",
+    "src/haz3lcore/zipper/Parser.re",
+    "src/haz3lcore/zipper/Siblings.re",
+    "src/haz3lcore/zipper/Zipper.re",
+    "src/haz3lcore/zipper/action/Insert.re",
+    "test/Test_LoadPath.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-09-29",
+   "behind_dev": 440,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     90
+    ],
+    [
+     "7h3kk1d",
+     5
+    ],
+    [
+     "cyrus-",
+     2
+    ]
+   ]
+  },
+  "2651": {
+   "title": "Statics: a module binding analyzes its definition once, not twice",
+   "draft": false,
+   "base": "dev",
+   "head": "statics-module-def-once",
+   "add": 54,
+   "del": 5,
+   "nfiles": 3,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-10-05",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 4,
+   "sha": "b5a3e1d90a",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-21"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-21"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-21"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-21"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-21"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-21"
+    },
+    {
+     "by": "disconcision",
+     "state": "COMMENTED",
+     "on": "2026-10-23"
+    },
+    {
+     "by": "7h3kk1d",
+     "state": "COMMENTED",
+     "on": "2026-10-23"
+    }
+   ],
+   "files": [
+    "src/language/statics/Statics.re",
+    "test/evaluator/Test_Evaluator_Modules.re",
+    "test/statics/Test_Statics_Modules.re"
+   ],
+   "head_date": "2026-10-21",
+   "behind_dev": 188,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     36
+    ],
+    [
+     "7h3kk1d",
+     11
+    ],
+    [
+     "Negabinary",
+     7
+    ]
+   ]
+  },
+  "2652": {
+   "title": "Eval worker in Firefox: start it at load, and do not time out a reply that is queued",
+   "draft": false,
+   "base": "dev",
+   "head": "eval-worker-start-at-load",
+   "add": 69,
+   "del": 39,
+   "nfiles": 2,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-10-06",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "9de67fdf30",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/web/Main.re",
+    "src/web/util/WorkerClient.re"
+   ],
+   "head_date": "2026-10-05",
+   "behind_dev": 188,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     21
+    ],
+    [
+     "Negabinary",
+     17
+    ],
+    [
+     "7h3kk1d",
+     15
+    ]
+   ]
+  },
+  "2661": {
+   "title": "Types get a Merkle hash; the evaluator asks is_consistent once per pair",
+   "draft": false,
+   "base": "dev",
+   "head": "typ-hash-consistent",
+   "add": 424,
+   "del": 1,
+   "nfiles": 4,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-10-10",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 4,
+   "sha": "09b8af372f",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/dynamics/transition/Ascriptions.re",
+    "src/language/term/TypHash.re",
+    "test/Test_TypHash.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 169,
+   "into_dev": "conflict",
+   "conflicts": [
+    "src/language/dynamics/transition/Ascriptions.re"
+   ],
+   "recent_authors": [
+    [
+     "disconcision",
+     9
+    ],
+    [
+     "7h3kk1d",
+     6
+    ],
+    [
+     "cyrus-",
+     1
+    ]
+   ]
+  },
+  "2671": {
+   "title": "MapPiece keeps unchanged pieces as the same objects",
+   "draft": false,
+   "base": "dev",
+   "head": "mappiece-keep-identity",
+   "add": 173,
+   "del": 6,
+   "nfiles": 3,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-10",
+   "updated": "2026-10-10",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "04e1c6c362",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/haz3lcore/zipper/ZipperBase.re",
+    "test/Test_MapPieceIdentity.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-10",
+   "behind_dev": 184,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     12
+    ],
+    [
+     "7h3kk1d",
+     3
+    ],
+    [
+     "Negabinary",
+     1
+    ]
+   ]
+  },
+  "2673": {
+   "title": "Incremental evaluation recognizes an unchanged expression by its Merkle hash",
+   "draft": false,
+   "base": "dev",
+   "head": "reuse-check-merkle-hash",
+   "add": 832,
+   "del": 7,
+   "nfiles": 8,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-10",
+   "updated": "2026-10-20",
+   "labels": [],
+   "ncommits": 5,
+   "sha": "541db88885",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/dynamics/IncrEval.re",
+    "src/language/term/Equality.re",
+    "src/language/term/Exp.re",
+    "src/util/Util.re",
+    "src/util/ValueHash.re",
+    "test/Test_ValueHash.re",
+    "test/evaluator/Test_Evaluator_Incremental.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 184,
+   "into_dev": "conflict",
+   "conflicts": [
+    "src/language/dynamics/IncrEval.re"
+   ],
+   "recent_authors": [
+    [
+     "disconcision",
+     26
+    ],
+    [
+     "Negabinary",
+     24
+    ],
+    [
+     "7h3kk1d",
+     9
+    ]
+   ]
+  },
+  "2675": {
+   "title": "Incremental evaluation reuses expressions around a recursive let",
+   "draft": false,
+   "base": "dev",
+   "head": "recursive-let-reuse",
+   "add": 90,
+   "del": 1,
+   "nfiles": 2,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-10-12",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "1e5207494a",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/statics/Statics.re",
+    "test/evaluator/Test_Evaluator_Incremental.re"
+   ],
+   "head_date": "2026-10-12",
+   "behind_dev": 184,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     36
+    ],
+    [
+     "7h3kk1d",
+     11
+    ],
+    [
+     "Negabinary",
+     7
+    ]
+   ]
+  },
+  "2676": {
+   "title": "The cursor inspector can show a long type whole, on several lines",
+   "draft": false,
+   "base": "dev",
+   "head": "cursor-inspector-full-types",
+   "add": 372,
+   "del": 11,
+   "nfiles": 6,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-10-12",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 4,
+   "sha": "31ad35d388",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/statics/Message.re",
+    "src/language/statics/Statics.re",
+    "src/web/Settings.re",
+    "src/web/app/Page.re",
+    "src/web/app/inspector/CursorInspector.re",
+    "src/web/www/style/cursor-inspector.css"
+   ],
+   "head_date": "2026-10-19",
+   "behind_dev": 184,
+   "into_dev": "conflict",
+   "conflicts": [
+    "src/language/statics/Statics.re",
+    "src/web/app/inspector/CursorInspector.re"
+   ],
+   "recent_authors": [
+    [
+     "disconcision",
+     94
+    ],
+    [
+     "7h3kk1d",
+     80
+    ],
+    [
+     "Negabinary",
+     40
+    ]
+   ]
+  },
+  "2681": {
+   "title": "A value known to have a type is not walked again for it",
+   "draft": false,
+   "base": "dev",
+   "head": "ascriptions-has-type",
+   "add": 687,
+   "del": 49,
+   "nfiles": 7,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-10-13",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 7,
+   "sha": "a4fee77a63",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/dynamics/transition/Ascriptions.re",
+    "src/language/term/TypHash.re",
+    "src/util/IdentityTable.re",
+    "src/util/Util.re",
+    "test/Test_TypHash.re",
+    "test/evaluator/Test_Ascriptions.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 183,
+   "into_dev": "conflict",
+   "conflicts": [
+    "src/language/dynamics/transition/Ascriptions.re"
+   ],
+   "recent_authors": [
+    [
+     "disconcision",
+     18
+    ],
+    [
+     "7h3kk1d",
+     10
+    ],
+    [
+     "Negabinary",
+     2
+    ]
+   ]
+  },
+  "2689": {
+   "title": "Test: statics analyzes each expression within a budget",
+   "draft": true,
+   "base": "dev",
+   "head": "ci/statics-passes-dev",
+   "add": 1038,
+   "del": 74,
+   "nfiles": 12,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-17",
+   "updated": "2026-10-17",
+   "labels": [],
+   "ncommits": 10,
+   "sha": "0d5d015eff",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/CLI/Cli.re",
+    "src/haz3lcore/TyDi/TyDi.re",
+    "src/haz3lcore/TyDi/TyDiCtx.re",
+    "src/language/builtins/Builtins.re",
+    "src/language/statics/Ctx.re",
+    "src/language/statics/Statics.re",
+    "src/language/statics/StaticsBase.re",
+    "test/Test_CtxIndex.re",
+    "test/Test_StaticsPasses.re",
+    "test/Test_TyDi.re",
+    "test/haz3ltest.re",
+    "test/statics/Test_Statics_Let.re"
+   ],
+   "head_date": "2026-10-15",
+   "behind_dev": 184,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": []
+  },
+  "2690": {
+   "title": "Test: a re-run beside a library with recursive members stays within its step budget",
+   "draft": true,
+   "base": "dev",
+   "head": "ci/recursive-let-budget",
+   "add": 351,
+   "del": 9,
+   "nfiles": 9,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-17",
+   "updated": "2026-10-21",
+   "labels": [],
+   "ncommits": 6,
+   "sha": "5c8cd5f345",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    ".github/workflows/bench-compare.yml",
+    ".github/workflows/perf.yml",
+    "src/language/dynamics/Evaluator.re",
+    "src/language/dynamics/Evaluator.rei",
+    "src/language/dynamics/evaluation/Trampoline.re",
+    "src/language/statics/Statics.re",
+    "test/evaluator/Test_Evaluator_Incremental.re",
+    "test/evaluator/Test_PerfBudgets.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 168,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": []
+  },
+  "2691": {
+   "title": "Test: what the eval worker sends and gets back stays within a byte budget",
+   "draft": true,
+   "base": "dev",
+   "head": "ci/byte-budgets",
+   "add": 535,
+   "del": 12,
+   "nfiles": 11,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-17",
+   "updated": "2026-10-17",
+   "labels": [],
+   "ncommits": 8,
+   "sha": "35edf2d1d8",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/statics/Statics.re",
+    "src/language/term/IdTagged.re",
+    "src/web/app/editors/result/EvalResult.re",
+    "src/web/util/WorkerServer.re",
+    "src/web/view/CodeExerciseMode.re",
+    "src/web/view/ScratchMode.re",
+    "src/web/view/TutorialMode.re",
+    "test/Test_ByteBudgets.re",
+    "test/Test_ElabSize.re",
+    "test/Test_WorkerServer.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-15",
+   "behind_dev": 184,
+   "into_dev": "conflict",
+   "conflicts": [
+    "test/Test_WorkerServer.re"
+   ],
+   "recent_authors": []
+  },
+  "2697": {
+   "title": "Test: the nodes an evaluation builds, held to budgets beside its steps",
+   "draft": true,
+   "base": "dev",
+   "head": "ci/node-budgets",
+   "add": 423,
+   "del": 70,
+   "nfiles": 10,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-19",
+   "updated": "2026-10-19",
+   "labels": [],
+   "ncommits": 4,
+   "sha": "7f1343268d",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    ".github/workflows/bench-compare.yml",
+    ".github/workflows/perf.yml",
+    "src/language/dynamics/Evaluator.re",
+    "src/language/dynamics/Evaluator.rei",
+    "src/language/dynamics/evaluation/Trampoline.re",
+    "src/language/dynamics/transition/Ascriptions.re",
+    "src/language/term/IdTagged.re",
+    "test/evaluator/Test_Ascriptions.re",
+    "test/evaluator/Test_PerfBudgets.re",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-16",
+   "behind_dev": 182,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     41
+    ],
+    [
+     "Negabinary",
+     26
+    ],
+    [
+     "7h3kk1d",
+     20
+    ]
+   ]
+  },
+  "2698": {
+   "title": "non-`dev` (`cursor-inspector-full-types`): Gamma can show a long type whole, on several lines",
+   "draft": true,
+   "base": "cursor-inspector-full-types",
+   "head": "context-inspector-long-types",
+   "add": 224,
+   "del": 50,
+   "nfiles": 6,
+   "mergeable": "MERGEABLE",
+   "mstate": "CLEAN",
+   "decision": "",
+   "requested": [],
+   "created": "2026-10-19",
+   "updated": "2026-10-19",
+   "labels": [
+    "non-dev"
+   ],
+   "ncommits": 3,
+   "sha": "4c9cc34d3b",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/web/app/Page.re",
+    "src/web/app/editors/code/CodeViewable.re",
+    "src/web/app/globals/Globals.re",
+    "src/web/app/inspector/CursorInspector.re",
+    "src/web/view/ContextInspector.re",
+    "src/web/www/style/cursor-inspector.css"
+   ],
+   "recent_authors": []
+  },
+  "2711": {
+   "title": "Hazel as a JS library: analyze and run programs from any page",
+   "draft": true,
+   "base": "dev",
+   "head": "js-library",
+   "add": 510,
+   "del": 3,
+   "nfiles": 8,
+   "mergeable": "CONFLICTING",
+   "mstate": "DIRTY",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-20",
+   "updated": "2026-10-23",
+   "labels": [],
+   "ncommits": 6,
+   "sha": "77059807e9",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "docs/hazel-as-a-js-library.md",
+    "src/web/HazelLib.re",
+    "src/web/HazelLibCore.re",
+    "src/web/dune",
+    "src/web/www/dune",
+    "test/Test_HazelLib.re",
+    "test/dune",
+    "test/haz3ltest.re"
+   ],
+   "head_date": "2026-10-20",
+   "behind_dev": 169,
+   "into_dev": "conflict",
+   "conflicts": [
+    "src/web/dune"
+   ],
+   "recent_authors": []
+  },
+  "2717": {
+   "title": "Statics: a module binding is a non-recursive let",
+   "draft": true,
+   "base": "dev",
+   "head": "module-let-nonrec",
+   "add": 473,
+   "del": 14,
+   "nfiles": 3,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-10-21",
+   "updated": "2026-10-21",
+   "labels": [],
+   "ncommits": 7,
+   "sha": "ea23dd4930",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/statics/Statics.re",
+    "test/evaluator/Test_Evaluator_Modules.re",
+    "test/statics/Test_Statics_Modules.re"
+   ],
+   "head_date": "2026-10-21",
+   "behind_dev": 188,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     36
+    ],
+    [
+     "7h3kk1d",
+     11
+    ],
+    [
+     "Negabinary",
+     7
+    ]
+   ]
+  },
+  "2719": {
+   "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)",
+   "draft": true,
+   "base": "js-library",
+   "head": "js-library-embed",
+   "add": 4168,
+   "del": 109,
+   "nfiles": 22,
+   "mergeable": "MERGEABLE",
+   "mstate": "CLEAN",
+   "decision": "",
+   "requested": [],
+   "created": "2026-10-21",
+   "updated": "2026-11-15",
+   "labels": [],
+   "ncommits": 9,
+   "sha": "2ab33ebd90",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    ".github/workflows/deploy.yml",
+    "docs/hazel-as-a-js-library.md",
+    "src/haz3lcore/FastParse.re",
+    "src/haz3lcore/TyDi/ErrorPrint.re",
+    "src/haz3lcore/derived/ModuleProgram.re",
+    "src/haz3lcore/lang/MakeTerm.re",
+    "src/language/dynamics/transition/Ascriptions.re",
+    "src/web/HazelLib.re",
+    "src/web/HazelLibCore.re",
+    "src/web/Main.re",
+    "src/web/dune",
+    "src/web/embed/EmbedLink.re",
+    "src/web/embed/EmbedMain.re",
+    "src/web/embed/EmbedModel.re",
+    "src/web/embed/EmbedProtocol.re",
+    "src/web/www/style.css",
+    "src/web/www/style/embed.css",
+    "test/Test_Embed.re",
+    "test/Test_FastParse.re",
+    "test/Test_HazelLib.re",
+    "test/Test_ModuleProgram.re",
+    "test/haz3ltest.re"
+   ],
+   "recent_authors": []
+  },
+  "2729": {
+   "title": "A module's sum types are usable after it: their names and constructors",
+   "draft": false,
+   "base": "dev",
+   "head": "module-exports-ctrs",
+   "add": 106,
+   "del": 8,
+   "nfiles": 3,
+   "mergeable": "MERGEABLE",
+   "mstate": "BEHIND",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "7h3kk1d"
+   ],
+   "created": "2026-10-23",
+   "updated": "2026-10-30",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "92b491cec8",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/statics/Statics.re",
+    "test/evaluator/Test_Evaluator_Modules.re",
+    "test/statics/Test_Statics_Modules.re"
+   ],
+   "head_date": "2026-10-23",
+   "behind_dev": 169,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     36
+    ],
+    [
+     "7h3kk1d",
+     11
+    ],
+    [
+     "Negabinary",
+     7
+    ]
+   ]
+  },
+  "2749": {
+   "title": "Tests: a module's sum types at the edges (signatures, shadowing, nesting)",
+   "draft": false,
+   "base": "module-exports-ctrs",
+   "head": "module-exports-ctrs-edge-tests",
+   "add": 82,
+   "del": 0,
+   "nfiles": 2,
+   "mergeable": "MERGEABLE",
+   "mstate": "UNSTABLE",
+   "decision": "",
+   "requested": [],
+   "created": "2026-10-29",
+   "updated": "2026-10-29",
+   "labels": [],
+   "ncommits": 2,
+   "sha": "3abddbf787",
+   "checks": {
+    "Deploy branch preview": "FAILURE",
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": false,
+   "reviews": [],
+   "files": [
+    "test/evaluator/Test_Evaluator_Modules.re",
+    "test/statics/Test_Statics_Modules.re"
+   ],
+   "recent_authors": []
+  },
+  "2793": {
+   "title": "Fewer trampoline bounces: half the evaluator's steps on the PerfBudgets program",
+   "draft": false,
+   "base": "dev",
+   "head": "perf/fewer-trampoline-bounces",
+   "add": 200,
+   "del": 139,
+   "nfiles": 4,
+   "mergeable": "MERGEABLE",
+   "mstate": "BLOCKED",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [],
+   "created": "2026-11-03",
+   "updated": "2026-11-03",
+   "labels": [],
+   "ncommits": 3,
+   "sha": "ba17c53036",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Static checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [
+    {
+     "by": "Negabinary",
+     "state": "COMMENTED",
+     "on": "2026-11-03"
+    }
+   ],
+   "files": [
+    "src/language/dynamics/Evaluator.re",
+    "src/language/dynamics/evaluation/Trampoline.re",
+    "test/evaluator/Test_Evaluator_Performance.re",
+    "test/evaluator/Test_PerfBudgets.re"
+   ],
+   "head_date": "2026-11-03",
+   "behind_dev": 10,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "Negabinary",
+     25
+    ],
+    [
+     "disconcision",
+     23
+    ]
+   ]
+  },
+  "2807": {
+   "title": "non-`dev` (`js-library-embed`): Library calls bind their argument in the environment, so it is not stepped again",
+   "draft": false,
+   "base": "js-library-embed",
+   "head": "lib-floor",
+   "add": 18,
+   "del": 1,
+   "nfiles": 1,
+   "mergeable": "MERGEABLE",
+   "mstate": "CLEAN",
+   "decision": "",
+   "requested": [],
+   "created": "2026-11-04",
+   "updated": "2026-11-04",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "409e8f2116",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/web/HazelLibCore.re"
+   ],
+   "recent_authors": []
+  },
+  "2808": {
+   "title": "non-`dev` (`lib-floor`): A function the library hands back keeps its closure, and a test holds a call's cost to what it does",
+   "draft": false,
+   "base": "lib-floor",
+   "head": "lib-complexity-552",
+   "add": 242,
+   "del": 15,
+   "nfiles": 5,
+   "mergeable": "MERGEABLE",
+   "mstate": "CLEAN",
+   "decision": "",
+   "requested": [],
+   "created": "2026-11-04",
+   "updated": "2026-11-04",
+   "labels": [],
+   "ncommits": 3,
+   "sha": "9799f24179",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/dynamics/Evaluator.re",
+    "src/language/dynamics/Evaluator.rei",
+    "src/web/HazelLib.re",
+    "src/web/HazelLibCore.re",
+    "test/Test_HazelLib.re"
+   ],
+   "recent_authors": []
+  },
+  "2809": {
+   "title": "non-`dev` (`lib-complexity-552`): Hazel.value: a JS value converted once, as a handle a call takes in its place",
+   "draft": false,
+   "base": "lib-complexity-552",
+   "head": "lib-handles",
+   "add": 50,
+   "del": 0,
+   "nfiles": 3,
+   "mergeable": "MERGEABLE",
+   "mstate": "UNSTABLE",
+   "decision": "",
+   "requested": [],
+   "created": "2026-11-04",
+   "updated": "2026-11-04",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "5311165b20",
+   "checks": {
+    "Deploy branch preview": "FAILURE",
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": false,
+   "reviews": [],
+   "files": [
+    "src/web/HazelLib.re",
+    "src/web/HazelLibCore.re",
+    "test/Test_HazelLib.re"
+   ],
+   "recent_authors": []
+  },
+  "2812": {
+   "title": "README: link the experimental hazeljs npm package",
+   "draft": false,
+   "base": "dev",
+   "head": "docs/readme-hazeljs",
+   "add": 9,
+   "del": 0,
+   "nfiles": 1,
+   "mergeable": "MERGEABLE",
+   "mstate": "BLOCKED",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-11-06",
+   "updated": "2026-11-06",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "c99572b870",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Static checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "README.md"
+   ],
+   "head_date": "2026-11-06",
+   "behind_dev": 0,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "cyrus-",
+     4
+    ],
+    [
+     "7h3kk1d",
+     1
+    ]
+   ]
+  },
+  "2814": {
+   "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells",
+   "draft": true,
+   "base": "js-library-embed",
+   "head": "embed-editable",
+   "add": 948,
+   "del": 72,
+   "nfiles": 10,
+   "mergeable": "MERGEABLE",
+   "mstate": "CLEAN",
+   "decision": "",
+   "requested": [],
+   "created": "2026-11-06",
+   "updated": "2026-11-06",
+   "labels": [],
+   "ncommits": 19,
+   "sha": "9d4667762e",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Fast checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "docs/hazel-as-a-js-library.md",
+    "src/util/Menu.re",
+    "src/web/app/editors/code/CodeEditable.re",
+    "src/web/app/editors/code/ContextMenu.re",
+    "src/web/embed/EmbedLink.re",
+    "src/web/embed/EmbedMain.re",
+    "src/web/embed/EmbedModel.re",
+    "src/web/embed/EmbedProtocol.re",
+    "src/web/www/style/embed.css",
+    "test/Test_Embed.re"
+   ],
+   "recent_authors": []
+  },
+  "2815": {
+   "title": "Goto first use and Goto next use, in the context menu",
+   "draft": false,
+   "base": "dev",
+   "head": "goto-uses",
+   "add": 277,
+   "del": 2,
+   "nfiles": 6,
+   "mergeable": "MERGEABLE",
+   "mstate": "BLOCKED",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-11-06",
+   "updated": "2026-11-06",
+   "labels": [],
+   "ncommits": 2,
+   "sha": "339790ae98",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Static checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/haz3lcore/zipper/Uses.re",
+    "src/haz3lcore/zipper/action/Action.re",
+    "src/haz3lcore/zipper/action/Move.re",
+    "src/web/app/editors/code/ContextMenu.re",
+    "src/web/app/editors/code/ContextMenu.rei",
+    "test/Test_Editing.re"
+   ],
+   "head_date": "2026-11-06",
+   "behind_dev": 0,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     62
+    ],
+    [
+     "7h3kk1d",
+     24
+    ],
+    [
+     "Negabinary",
+     4
+    ]
+   ]
+  },
+  "2816": {
+   "title": "Ids: minted and compared as strings, one concatenation an id (evaluation ~13% faster on the heaviest programs)",
+   "draft": false,
+   "base": "dev",
+   "head": "perf/id-mk-strings",
+   "add": 54,
+   "del": 24,
+   "nfiles": 2,
+   "mergeable": "MERGEABLE",
+   "mstate": "BLOCKED",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-11-07",
+   "updated": "2026-11-07",
+   "labels": [],
+   "ncommits": 2,
+   "sha": "496c9f79b7",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Static checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/util/Id.re",
+    "src/util/Maps.re"
+   ],
+   "head_date": "2026-11-07",
+   "behind_dev": 0,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     5
+    ],
+    [
+     "7h3kk1d",
+     2
+    ],
+    [
+     "Negabinary",
+     1
+    ]
+   ]
+  },
+  "2818": {
+   "title": "A frame-rate HUD, on with ?hud in the address",
+   "draft": false,
+   "base": "dev",
+   "head": "fps-hud",
+   "add": 60,
+   "del": 0,
+   "nfiles": 1,
+   "mergeable": "MERGEABLE",
+   "mstate": "BLOCKED",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-11-09",
+   "updated": "2026-11-09",
+   "labels": [],
+   "ncommits": 1,
+   "sha": "25ad3217eb",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Static checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/web/www/index.html"
+   ],
+   "head_date": "2026-11-08",
+   "behind_dev": 0,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "7h3kk1d",
+     2
+    ],
+    [
+     "cyrus-",
+     1
+    ]
+   ]
+  },
+  "2825": {
+   "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter",
+   "draft": false,
+   "base": "dev",
+   "head": "fix/764-mod-by-zero",
+   "add": 43,
+   "del": 5,
+   "nfiles": 3,
+   "mergeable": "MERGEABLE",
+   "mstate": "BLOCKED",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-11-15",
+   "updated": "2026-11-15",
+   "labels": [],
+   "ncommits": 4,
+   "sha": "14d3ffeaaf",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Static checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/builtins/BuiltinsBase.re",
+    "src/language/dynamics/transition/Transition.re",
+    "test/evaluator/Test_Evaluator_Builtins.re"
+   ],
+   "head_date": "2026-11-15",
+   "behind_dev": 0,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "disconcision",
+     23
+    ],
+    [
+     "7h3kk1d",
+     10
+    ],
+    [
+     "Negabinary",
+     5
+    ]
+   ]
+  },
+  "2828": {
+   "title": "SInt has 32 bits everywhere, and overflow is an error",
+   "draft": false,
+   "base": "dev",
+   "head": "fix/758-sint-32-bits",
+   "add": 139,
+   "del": 11,
+   "nfiles": 4,
+   "mergeable": "MERGEABLE",
+   "mstate": "BLOCKED",
+   "decision": "REVIEW_REQUIRED",
+   "requested": [
+    "hazel-core"
+   ],
+   "created": "2026-11-16",
+   "updated": "2026-11-17",
+   "labels": [],
+   "ncommits": 2,
+   "sha": "3c305e05f3",
+   "checks": {
+    "checks": "SKIPPED",
+    "checks / Static checks": "SUCCESS",
+    "Deploy branch preview": "SUCCESS",
+    "checks / Fast checks": "SUCCESS",
+    "checks / Full tests": "SUCCESS",
+    "codecov/patch": "SUCCESS",
+    "codecov/project": "SUCCESS"
+   },
+   "checks_green": true,
+   "reviews": [],
+   "files": [
+    "src/language/term/Atom.re",
+    "src/language/term/InvalidOperationError.re",
+    "src/language/term/Operators.re",
+    "test/evaluator/Test_Evaluator_Atom.re"
+   ],
+   "head_date": "2026-11-16",
+   "behind_dev": 0,
+   "into_dev": "clean",
+   "conflicts": [],
+   "recent_authors": [
+    [
+     "7h3kk1d",
+     5
+    ],
+    [
+     "disconcision",
+     4
+    ],
+    [
+     "cyrus-",
+     2
+    ]
+   ]
+  }
+ }
+}

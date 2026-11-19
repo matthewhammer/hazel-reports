@@ -1,0 +1,296 @@
+{
+ "dev": {
+  "commit": "782249bbd0",
+  "date": "2026-11-06",
+  "last_merge": "Substitution: a let's definition sees the outer binding, not its own (#2605)"
+ },
+ "tiers": {
+  "ready": [
+   {
+    "pr": 2812,
+    "name": "README: link the hazeljs npm package",
+    "what": "A short README section pointing to the experimental hazeljs package, saying it is a 0.0.x prototype that does not track dev yet.",
+    "before_merge": "An approval."
+   },
+   {
+    "pr": 2825,
+    "name": "Modulo by zero: an error, not a crash",
+    "what": "int_mod(7, 0), and the SInt, Nat and Float modulos, crashed the interpreter: they named a builtin, mod, that does not exist. Now each gives Divide by Zero, as 7 / 0 does.",
+    "before_merge": "An approval."
+   },
+   {
+    "pr": 2818,
+    "name": "A frame-rate HUD, with ?hud",
+    "what": "Frames a second and frame times, in a corner, only when the address has ?hud. One file, index.html.",
+    "before_merge": "An approval."
+   },
+   {
+    "pr": 2816,
+    "name": "Ids minted and compared as strings",
+    "what": "An id is built by joining one-byte strings and compared as a string, not through Uuidm's buffer: evaluation about 13% faster on the heaviest programs (the PR's own measurement). On the livelits branch since 2026-10-10.",
+    "before_merge": "An approval."
+   },
+   {
+    "pr": 2652,
+    "name": "The eval worker in Firefox, started at load",
+    "what": "Firefox showed Evaluation timed out for answers the worker could give at once, when the page's thread was busy: the worker now starts at load, and a reply waiting in the queue is not timed out. Finding 8 on #2609.",
+    "before_merge": "An approval."
+   },
+   {
+    "pr": 2671,
+    "name": "MapPiece keeps unchanged pieces",
+    "what": "A projector update away from the caret copied the whole program; now every piece with nothing changed under it stays the same object. 3.12 to 1.92 ms an update on a 2,000-let program (its benchmark).",
+    "before_merge": "An approval."
+   },
+   {
+    "pr": 2675,
+    "name": "Incremental evaluation around a recursive let",
+    "what": "Fixes the free variables statics reports for a recursive let, so an expression with one inside (a module with a recursive member, a function with a recursive helper) is reused, not run again.",
+    "before_merge": "An approval. Alexander noted on 10-29 that #2431 (Matt Keenan's property tests, open) changes this code too: review them side by side."
+   },
+   {
+    "pr": 2651,
+    "name": "A module binding analyzes its definition once",
+    "what": "Statics analyzed a module's definition twice, once as a let and once directly; now it reads back the elaboration the let recorded. Finding 7 on #2609.",
+    "before_merge": "An approval. Alexander's review of 10-21 is answered, in three commits that day. #2717, below, is an optional follow-up."
+   },
+   {
+    "pr": 2815,
+    "name": "Goto first use, Goto next use",
+    "what": "Two moves in the context menu, the reverse of Goto definition: to a definition's first use, and from each use to the next. With tests.",
+    "before_merge": "An approval."
+   },
+   {
+    "pr": 2603,
+    "name": "Statics: a let analyzed once unless it refers to itself",
+    "what": "Four statics and completion speedups, found by profiling the livelits branch, each its own commit with tests. The big one: a let-bound function no longer takes the recursive path's four passes, which multiplied with nesting. Byte-identical hazel analyze -W output on dev's 72 programs when it was made.",
+    "before_merge": "An approval. Its CI ran on 09-26, 462 commits of dev ago; the merge queue runs it again on today's dev."
+   },
+   {
+    "pr": 2697,
+    "name": "Test: the nodes an evaluation builds, held to budgets",
+    "what": "Counts the terms an evaluation builds, beside its steps, so copies like those #2679 removed cannot come back unseen. A draft only because it waited on #2678 and #2679, both merged (10-29, 10-19); its own commit is 118 lines added and 29 removed, in 2 files.",
+    "before_merge": "Merge dev in, so its diff is its own commit, and mark it ready."
+   }
+  ],
+  "conflict": [
+   {
+    "pr": 2613,
+    "name": "Colors: every var() is one the theme defines",
+    "what": "Eleven var() names that nothing defined, so those colors ignored the Colors slide, dark mode and high contrast; each now reads a theme role, and a lint keeps it so. Approved by Alexander on 11-07.",
+    "before_merge": "dev deleted assistant.css (#2438, dead stylesheets) after this PR edited it: drop that edit, and the file's entry in the lint's list. Alexander left one visible change, the probe stack's focus pill, as Andrew's call."
+   },
+   {
+    "pr": 2606,
+    "name": "Keep the incremental cache in the eval worker",
+    "what": "The worker's answer carried its whole incremental cache to the page, and the next request carried it back, on every run; now the worker keeps it.",
+    "before_merge": "test/Test_WorkerServer.re: #2660 (Matt Keenan's, keep incremental evaluation for expensive small programs, merged 11-05) added tests beside these; keep both. Both change the worker's incremental path, so Matt Keenan is the natural reviewer."
+   },
+   {
+    "pr": 2661,
+    "name": "Types get a Merkle hash",
+    "what": "The evaluator asks is_consistent once per pair of types, not once per copy of them, keyed by a hash kept for each type object.",
+    "before_merge": "Ascriptions.re, against #2734 (Typ.unroll, Alexander's, merged 11-03). #2681 builds on this PR."
+   }
+  ],
+  "decide": [
+   {
+    "pr": 2828,
+    "name": "SInt at 32 bits everywhere; overflow an error",
+    "what": "use SInt in 2147483647 + 1 was -2147483648 in the browser and 2147483648 natively; now it is an error, everywhere. Small, clean and green, but it changes what programs mean.",
+    "before_merge": "Cyrus: is SInt overflow an error, or a wrap at 32 bits everywhere?"
+   },
+   {
+    "pr": 2793,
+    "name": "Fewer trampoline bounces",
+    "what": "Two small changes to the evaluator's trampoline: half the steps on the PerfBudgets program (206,834 to 96,438), and its budgets lowered to match.",
+    "before_merge": "Matt Keenan, 11-03: 15% faster and 4% less memory, a little less readable, and \u201cambivalent\u201d. Take it, or close it."
+   },
+   {
+    "pr": 2592,
+    "name": "Report each error once, not once per wrapper",
+    "what": "An error inside parentheses was listed once for each layer: (((y))) made four rows in the problems sidebar. A draft.",
+    "before_merge": "How it goes with issue #2561 (a type mismatch reported on every enclosing form): first, after, or folded in."
+   },
+   {
+    "pr": 2614,
+    "name": "Load text about 2.5\u00d7 faster",
+    "what": "The recovering parser (MarkerParse.of_text, for a text FastParse rejects) inserted the text a character at a time, re-grouting each time: now whole tokens, and one re-grout.",
+    "before_merge": "It and #2610 both rewrite that parser's path and conflict with each other in MarkerParse.re; each merges into dev alone. Which first, or one only?"
+   },
+   {
+    "pr": 2610,
+    "name": "The load fallback through the segmented parser",
+    "what": "The same fallback through Parser.to_segment, which splits the text at safe points to avoid the quadratic cost, keeping projectors.",
+    "before_merge": "See #2614."
+   },
+   {
+    "pr": 2717,
+    "name": "A module binding is a non-recursive let",
+    "what": "A draft follow-up to #2651: it tells the let up front that a module is not recursive, instead of #2651's check afterwards.",
+    "before_merge": "Take it after #2651, or close it. It conflicts with #2603 in Statics.re."
+   },
+   {
+    "pr": 2608,
+    "name": "Elaborations without the source's whitespace and comments",
+    "what": "Elaborations, sent to the worker with every request, carried each node's whitespace and comments.",
+    "before_merge": "Alexander requested changes on 10-21, not yet answered: 13.5% of it is left (types through Typ.normalize, labels, builtins), and he offered two fixes: cover those paths, with a test over the docs corpus, or strip once at the worker's boundary (17.7 ms over the whole corpus). Pick one."
+   },
+   {
+    "pr": 2729,
+    "name": "A module's sum types usable after it",
+    "what": "A sum type declared in a module can be built and matched outside it, not only inside. It came up in Messed Up Dress Up's scripts. #2749 adds tests at its edges, into this branch.",
+    "before_merge": "Alexander said on 10-30 he would review it once his #2493 (Modules II, part 1) merges. Wait for #2493, or review it now."
+   },
+   {
+    "pr": 2749,
+    "name": "Tests: a module's sum types at the edges",
+    "what": "Tests only, for #2729: a signature that leaves the sum out, shadowing, nesting. Into #2729's branch.",
+    "before_merge": "With #2729."
+   }
+  ],
+  "later": [
+   {
+    "pr": 2673,
+    "name": "Incremental evaluation: an unchanged expression by its hash",
+    "what": "The largest of the evaluator changes (832 lines).",
+    "before_merge": "Conflicts with #2660 in IncrEval.re."
+   },
+   {
+    "pr": 2681,
+    "name": "A value known to have a type is not walked again",
+    "what": "Builds on #2661.",
+    "before_merge": "Alexander, 10-19: still thinking about it."
+   },
+   {
+    "pr": 2676,
+    "name": "The cursor inspector shows a long type whole",
+    "what": "A panel over the inspector's bar (issue #2674). #2698 is stacked on it.",
+    "before_merge": "Conflicts with four of Alexander's commits in Statics.re and CursorInspector.re; a change to try in the app."
+   },
+   {
+    "pr": 2698,
+    "name": "Gamma's long types",
+    "what": "Stacked on #2676.",
+    "before_merge": "With #2676."
+   },
+   {
+    "pr": 2689,
+    "name": "Test: statics within a budget",
+    "what": "Counts statics' passes, held to budgets.",
+    "before_merge": "After #2603 and #2651."
+   },
+   {
+    "pr": 2690,
+    "name": "Test: a re-run beside a recursive library",
+    "what": "A step budget for an edit beside a library with recursive members.",
+    "before_merge": "After #2675."
+   },
+   {
+    "pr": 2691,
+    "name": "Test: the worker's bytes within a budget",
+    "what": "Byte budgets for what the page sends the worker and gets back.",
+    "before_merge": "After #2606 and #2608."
+   },
+   {
+    "pr": 2583,
+    "name": "Deep links",
+    "what": "The address says which slide, panel and caret.",
+    "before_merge": "Cyrus deferred it on 10-29, until modular editors and the \u201cworld tree\u201d change."
+   },
+   {
+    "pr": 2577,
+    "name": "Serve the web build from an Internet Computer canister",
+    "what": "A second deploy target. A draft.",
+    "before_merge": "A decision for the team, not a merge."
+   },
+   {
+    "pr": 2711,
+    "name": "Hazel as a JS library",
+    "what": "hazeljs's source; stacked on it, #2719, #2807, #2808, #2809 and #2814.",
+    "before_merge": "A new public surface, drafts, with its own review."
+   },
+   {
+    "pr": 2719,
+    "name": "Hazel in another page's frame",
+    "what": "Stacked on #2711.",
+    "before_merge": "With #2711."
+   },
+   {
+    "pr": 2807,
+    "name": "Library calls bind their argument",
+    "what": "Stacked on #2719.",
+    "before_merge": "With #2711."
+   },
+   {
+    "pr": 2808,
+    "name": "A function the library hands back keeps its closure",
+    "what": "Stacked on #2807.",
+    "before_merge": "With #2711."
+   },
+   {
+    "pr": 2809,
+    "name": "Hazel.value: a JS value converted once",
+    "what": "Stacked on #2808.",
+    "before_merge": "With #2711."
+   },
+   {
+    "pr": 2814,
+    "name": "Embed mode: editable cells",
+    "what": "Stacked on #2719.",
+    "before_merge": "With #2711."
+   },
+   {
+    "pr": 2490,
+    "name": "Spike: the evaluator through wasm_of_ocaml",
+    "what": "A benchmark.",
+    "before_merge": "Not for merging."
+   }
+  ]
+ },
+ "livelits_left_out": [
+  2536,
+  2597,
+  2616,
+  2635,
+  2650,
+  2806,
+  2810,
+  2817,
+  2819
+ ],
+ "queue": [
+  {
+   "group": 1,
+   "prs": [
+    2812,
+    2825,
+    2818,
+    2816,
+    2652
+   ],
+   "why": "The five smallest, 9 to 108 lines, in files no other candidate touches."
+  },
+  {
+   "group": 2,
+   "prs": [
+    2671,
+    2675,
+    2651,
+    2815,
+    2603
+   ],
+   "why": "The rest of the ready ones. #2651 and #2675 both touch Statics.re, as #2603 does, without conflicting."
+  },
+  {
+   "group": 3,
+   "prs": [
+    2697,
+    2613,
+    2606,
+    2661
+   ],
+   "why": "#2697 once ready, and the three with a conflict once resolved. #2661 and #2671 both add to the tests' list, test/haz3ltest.re: merge dev into #2661 after the second group."
+  }
+ ]
+}

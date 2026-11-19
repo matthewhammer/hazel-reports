@@ -1,0 +1,362 @@
+[
+ {
+  "section": "Ready for a review now",
+  "section_id": "ready",
+  "columns": [
+   "PR",
+   "What it is",
+   "Size",
+   "Into today's dev",
+   "Reviews",
+   "Before it merges",
+   "Its files, lately"
+  ],
+  "rows": [
+   [
+    "#2812",
+    "README: link the hazeljs npm package. A short README section pointing to the experimental hazeljs package, saying it is a 0.0.x prototype that does not track dev yet.",
+    "+9 −01 files",
+    "merges cleanly; CI green at its head, 11-06",
+    "none yet",
+    "An approval.",
+    "Cyrus 4, Alexander 1"
+   ],
+   [
+    "#2825",
+    "Modulo by zero: an error, not a crash. int_mod(7, 0), and the SInt, Nat and Float modulos, crashed the interpreter: they named a builtin, mod, that does not exist. Now each gives Divide by Zero, as 7 / 0 does.",
+    "+43 −53 files",
+    "merges cleanly; CI green at its head, 11-15",
+    "none yet",
+    "An approval.",
+    "Andrew 23, Alexander 10"
+   ],
+   [
+    "#2818",
+    "A frame-rate HUD, with ?hud. Frames a second and frame times, in a corner, only when the address has ?hud. One file, index.html.",
+    "+60 −01 files",
+    "merges cleanly; CI green at its head, 11-08",
+    "none yet",
+    "An approval.",
+    "Alexander 2, Cyrus 1"
+   ],
+   [
+    "#2816",
+    "Ids minted and compared as strings. An id is built by joining one-byte strings and compared as a string, not through Uuidm's buffer: evaluation about 13% faster on the heaviest programs (the PR's own measurement). On the livelits branch since 2026-10-10.",
+    "+54 −242 files",
+    "merges cleanly; CI green at its head, 11-07",
+    "none yet",
+    "An approval.",
+    "Andrew 5, Alexander 2"
+   ],
+   [
+    "#2652",
+    "The eval worker in Firefox, started at load. Firefox showed Evaluation timed out for answers the worker could give at once, when the page's thread was busy: the worker now starts at load, and a reply waiting in the queue is not timed out. Finding 8 on #2609.",
+    "+69 −392 files",
+    "merges cleanly; CI green at its head, 10-05",
+    "none yet",
+    "An approval.",
+    "Andrew 21, Matt Keenan 17"
+   ],
+   [
+    "#2671",
+    "MapPiece keeps unchanged pieces. A projector update away from the caret copied the whole program; now every piece with nothing changed under it stays the same object. 3.12 to 1.92 ms an update on a 2,000-let program (its benchmark).",
+    "+173 −63 files",
+    "merges cleanly; CI green at its head, 10-10",
+    "none yet",
+    "An approval.",
+    "Andrew 12, Alexander 3"
+   ],
+   [
+    "#2675",
+    "Incremental evaluation around a recursive let. Fixes the free variables statics reports for a recursive let, so an expression with one inside (a module with a recursive member, a function with a recursive helper) is reused, not run again.",
+    "+90 −12 files",
+    "merges cleanly; CI green at its head, 10-12",
+    "none yet",
+    "An approval. Alexander noted on 10-29 that #2431 (Matt Keenan's property tests, open) changes this code too: review them side by side.",
+    "Andrew 36, Alexander 11"
+   ],
+   [
+    "#2651",
+    "A module binding analyzes its definition once. Statics analyzed a module's definition twice, once as a let and once directly; now it reads back the elaboration the let recorded. Finding 7 on #2609.",
+    "+54 −53 files",
+    "merges cleanly; CI green at its head, 10-21",
+    "comments by Alexander, Andrew",
+    "An approval. Alexander's review of 10-21 is answered, in three commits that day. #2717, below, is an optional follow-up.",
+    "Andrew 36, Alexander 11"
+   ],
+   [
+    "#2815",
+    "Goto first use, Goto next use. Two moves in the context menu, the reverse of Goto definition: to a definition's first use, and from each use to the next. With tests.",
+    "+277 −26 files",
+    "merges cleanly; CI green at its head, 11-06",
+    "none yet",
+    "An approval.",
+    "Andrew 62, Alexander 24"
+   ],
+   [
+    "#2603",
+    "Statics: a let analyzed once unless it refers to itself. Four statics and completion speedups, found by profiling the livelits branch, each its own commit with tests. The big one: a let-bound function no longer takes the recursive path's four passes, which multiplied with nesting. Byte-identical hazel analyze -W output on dev's 72 programs when it was made.",
+    "+563 −6710 files",
+    "merges cleanly; CI green at its head, 09-26",
+    "none yet",
+    "An approval. Its CI ran on 09-26, 462 commits of dev ago; the merge queue runs it again on today's dev.",
+    "Andrew 61, Alexander 18"
+   ],
+   [
+    "#2697 (draft)",
+    "Test: the nodes an evaluation builds, held to budgets. Counts the terms an evaluation builds, beside its steps, so copies like those #2679 removed cannot come back unseen. A draft only because it waited on #2678 and #2679, both merged (10-29, 10-19); its own commit is 118 lines added and 29 removed, in 2 files.",
+    "+423 −7010 files",
+    "merges cleanly; CI green at its head, 10-16",
+    "none yet",
+    "Merge dev in, so its diff is its own commit, and mark it ready.",
+    "Andrew 41, Matt Keenan 26"
+   ]
+  ]
+ },
+ {
+  "section": "One conflict to resolve first",
+  "section_id": "conflict",
+  "columns": [
+   "PR",
+   "What it is",
+   "Size",
+   "Into today's dev",
+   "Reviews",
+   "Before it merges",
+   "Its files, lately"
+  ],
+  "rows": [
+   [
+    "#2613",
+    "Colors: every var() is one the theme defines. Eleven var() names that nothing defined, so those colors ignored the Colors slide, dark mode and high contrast; each now reads a theme role, and a lint keeps it so. Approved by Alexander on 11-07.",
+    "+23 −259 files",
+    "conflicts: lint_css_roles.py, assistant.css; CI green at its head, 10-20",
+    "Alexander: approved 11-07",
+    "dev deleted assistant.css (#2438, dead stylesheets) after this PR edited it: drop that edit, and the file's entry in the lint's list. Alexander left one visible change, the probe stack's focus pill, as Andrew's call.",
+    "Alexander 62, Andrew 59"
+   ],
+   [
+    "#2606",
+    "Keep the incremental cache in the eval worker. The worker's answer carried its whole incremental cache to the page, and the next request carried it back, on every run; now the worker keeps it.",
+    "+300 −96 files",
+    "conflicts: Test_WorkerServer.re; CI green at its head, 09-30",
+    "none yet",
+    "test/Test_WorkerServer.re: #2660 (Matt Keenan's, keep incremental evaluation for expensive small programs, merged 11-05) added tests beside these; keep both. Both change the worker's incremental path, so Matt Keenan is the natural reviewer.",
+    "Andrew 50, Alexander 36"
+   ],
+   [
+    "#2661",
+    "Types get a Merkle hash. The evaluator asks is_consistent once per pair of types, not once per copy of them, keyed by a hash kept for each type object.",
+    "+424 −14 files",
+    "conflicts: Ascriptions.re; CI green at its head, 10-20",
+    "none yet",
+    "Ascriptions.re, against #2734 (Typ.unroll, Alexander's, merged 11-03). #2681 builds on this PR.",
+    "Andrew 9, Alexander 6"
+   ]
+  ]
+ },
+ {
+  "section": "A decision first",
+  "section_id": "decide",
+  "columns": [
+   "PR",
+   "What it is",
+   "Size",
+   "Into today's dev",
+   "Reviews",
+   "Before it merges",
+   "Its files, lately"
+  ],
+  "rows": [
+   [
+    "#2828",
+    "SInt at 32 bits everywhere; overflow an error. use SInt in 2147483647 + 1 was -2147483648 in the browser and 2147483648 natively; now it is an error, everywhere. Small, clean and green, but it changes what programs mean.",
+    "+139 −114 files",
+    "merges cleanly; CI green at its head, 11-16",
+    "none yet",
+    "Cyrus: is SInt overflow an error, or a wrap at 32 bits everywhere?",
+    "Alexander 5, Andrew 4"
+   ],
+   [
+    "#2793",
+    "Fewer trampoline bounces. Two small changes to the evaluator's trampoline: half the steps on the PerfBudgets program (206,834 to 96,438), and its budgets lowered to match.",
+    "+200 −1394 files",
+    "merges cleanly; CI green at its head, 11-03",
+    "comments by Matt Keenan",
+    "Matt Keenan, 11-03: 15% faster and 4% less memory, a little less readable, and “ambivalent”. Take it, or close it.",
+    "Matt Keenan 25, Andrew 23"
+   ],
+   [
+    "#2592 (draft)",
+    "Report each error once, not once per wrapper. An error inside parentheses was listed once for each layer: (((y))) made four rows in the problems sidebar. A draft.",
+    "+146 −22 files",
+    "merges cleanly; CI green at its head, 09-22",
+    "none yet",
+    "How it goes with issue #2561 (a type mismatch reported on every enclosing form): first, after, or folded in.",
+    "Alexander 17, Andrew 1"
+   ],
+   [
+    "#2614",
+    "Load text about 2.5× faster. The recovering parser (MarkerParse.of_text, for a text FastParse rejects) inserted the text a character at a time, re-grouting each time: now whole tokens, and one re-grout.",
+    "+292 −469 files",
+    "merges cleanly; CI green at its head, 09-29",
+    "none yet",
+    "It and #2610 both rewrite that parser's path and conflict with each other in MarkerParse.re; each merges into dev alone. Which first, or one only?",
+    "Andrew 90, Alexander 5"
+   ],
+   [
+    "#2610",
+    "The load fallback through the segmented parser. The same fallback through Parser.to_segment, which splits the text at safe points to avoid the quadratic cost, keeping projectors.",
+    "+296 −34 files",
+    "merges cleanly; CI green at its head, 10-20",
+    "none yet",
+    "See #2614.",
+    "Andrew 19"
+   ],
+   [
+    "#2717 (draft)",
+    "A module binding is a non-recursive let. A draft follow-up to #2651: it tells the let up front that a module is not recursive, instead of #2651's check afterwards.",
+    "+473 −143 files",
+    "merges cleanly; CI green at its head, 10-21",
+    "none yet",
+    "Take it after #2651, or close it. It conflicts with #2603 in Statics.re.",
+    "Andrew 36, Alexander 11"
+   ],
+   [
+    "#2608",
+    "Elaborations without the source's whitespace and comments. Elaborations, sent to the worker with every request, carried each node's whitespace and comments.",
+    "+83 −34 files",
+    "merges cleanly; CI green at its head, 09-29",
+    "Alexander: changes requested 10-21",
+    "Alexander requested changes on 10-21, not yet answered: 13.5% of it is left (types through Typ.normalize, labels, builtins), and he offered two fixes: cover those paths, with a test over the docs corpus, or strip once at the worker's boundary (17.7 ms over the whole corpus). Pick one.",
+    "Andrew 42, Alexander 15"
+   ],
+   [
+    "#2729",
+    "A module's sum types usable after it. A sum type declared in a module can be built and matched outside it, not only inside. It came up in Messed Up Dress Up's scripts. #2749 adds tests at its edges, into this branch.",
+    "+106 −83 files",
+    "merges cleanly; CI green at its head, 10-23",
+    "none yet",
+    "Alexander said on 10-30 he would review it once his #2493 (Modules II, part 1) merges. Wait for #2493, or review it now.",
+    "Andrew 36, Alexander 11"
+   ],
+   [
+    "#2749",
+    "Tests: a module's sum types at the edges. Tests only, for #2729: a signature that leaves the sum out, shadowing, nesting. Into #2729's branch.",
+    "+82 −02 files",
+    "into module-exports-ctrs; CI: Deploy branch preview failed at its head",
+    "none yet",
+    "With #2729.",
+    "—"
+   ]
+  ]
+ },
+ {
+  "section": "Not today",
+  "section_id": "later",
+  "columns": [
+   "PR",
+   "What it is",
+   "Size",
+   "Why not today"
+  ],
+  "rows": [
+   [
+    "#2673",
+    "Incremental evaluation: an unchanged expression by its hash. The largest of the evaluator changes (832 lines).",
+    "+832 −7",
+    "Conflicts with #2660 in IncrEval.re."
+   ],
+   [
+    "#2681",
+    "A value known to have a type is not walked again. Builds on #2661.",
+    "+687 −49",
+    "Alexander, 10-19: still thinking about it."
+   ],
+   [
+    "#2676",
+    "The cursor inspector shows a long type whole. A panel over the inspector's bar (issue #2674). #2698 is stacked on it.",
+    "+372 −11",
+    "Conflicts with four of Alexander's commits in Statics.re and CursorInspector.re; a change to try in the app."
+   ],
+   [
+    "#2698 (draft)",
+    "Gamma's long types. Stacked on #2676.",
+    "+224 −50",
+    "With #2676."
+   ],
+   [
+    "#2689 (draft)",
+    "Test: statics within a budget. Counts statics' passes, held to budgets.",
+    "+1038 −74",
+    "After #2603 and #2651."
+   ],
+   [
+    "#2690 (draft)",
+    "Test: a re-run beside a recursive library. A step budget for an edit beside a library with recursive members.",
+    "+351 −9",
+    "After #2675."
+   ],
+   [
+    "#2691 (draft)",
+    "Test: the worker's bytes within a budget. Byte budgets for what the page sends the worker and gets back.",
+    "+535 −12",
+    "After #2606 and #2608."
+   ],
+   [
+    "#2583",
+    "Deep links. The address says which slide, panel and caret.",
+    "+881 −51",
+    "Cyrus deferred it on 10-29, until modular editors and the “world tree” change."
+   ],
+   [
+    "#2577 (draft)",
+    "Serve the web build from an Internet Computer canister. A second deploy target. A draft.",
+    "+164 −0",
+    "A decision for the team, not a merge."
+   ],
+   [
+    "#2711 (draft)",
+    "Hazel as a JS library. hazeljs's source; stacked on it, #2719, #2807, #2808, #2809 and #2814.",
+    "+510 −3",
+    "A new public surface, drafts, with its own review."
+   ],
+   [
+    "#2719 (draft)",
+    "Hazel in another page's frame. Stacked on #2711.",
+    "+4168 −109",
+    "With #2711."
+   ],
+   [
+    "#2807",
+    "Library calls bind their argument. Stacked on #2719.",
+    "+18 −1",
+    "With #2711."
+   ],
+   [
+    "#2808",
+    "A function the library hands back keeps its closure. Stacked on #2807.",
+    "+242 −15",
+    "With #2711."
+   ],
+   [
+    "#2809",
+    "Hazel.value: a JS value converted once. Stacked on #2808.",
+    "+50 −0",
+    "With #2711."
+   ],
+   [
+    "#2814 (draft)",
+    "Embed mode: editable cells. Stacked on #2719.",
+    "+948 −72",
+    "With #2711."
+   ],
+   [
+    "#2490",
+    "Spike: the evaluator through wasm_of_ocaml. A benchmark.",
+    "—",
+    "Not for merging."
+   ]
+  ]
+ }
+]
