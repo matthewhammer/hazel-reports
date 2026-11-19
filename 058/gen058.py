@@ -230,8 +230,19 @@ def queue_list():
     return "".join(out)
 
 
+# dated updates since the first version, newest last, each shown under the outline (the tables stay as gathered that morning)
+UPDATES = [
+    ("2026-11-19 08:16 MST",
+     "the three conflicts are resolved, each by merging dev into its branch, and CI is green on all three, full tests included. "
+     "#2613 (colors) drops its edit to the deleted <code>assistant.css</code>, and its lint list keeps only <code>font-mono</code>; it is still approved, "
+     "and can go into the merge queue now. #2606 (the worker keeps its cache) keeps both sets of tests, and #2660's test requests carry the two fields it adds; "
+     "the cost gate still sees the previous run's steps, since the worker resolves the kept cache before it asks. #2661 (types get a Merkle hash) "
+     "remembers dev's new unrolled check by hash. #2697 has dev merged in, so its diff is its own commit (2 files), its CI is green, "
+     "and it is marked ready. So 14 PRs now need only an approval, one of them already approved (#2613). The tables below are as gathered at 07:35."),
+]
+updates_html = "".join(f'<p class="note"><b>Update, {esc(when)}:</b> {text}</p>\n' for when, text in UPDATES)
 ready_lines = sum(size(p[0]) for p in by["ready"])
-FIGS = {"updated": updated, "fig_counts": fig_counts(), "fig_sizes": fig_sizes(), "tab_ready": table("ready"), "tab_conflict": table("conflict"),
+FIGS = {"updated": updated, "updates": updates_html,"fig_counts": fig_counts(), "fig_sizes": fig_sizes(), "tab_ready": table("ready"), "tab_conflict": table("conflict"),
         "tab_decide": table("decide"), "tab_later": later_table(), "queue": queue_list(), "ready_lines": f"{ready_lines:,}",
         "n_ready": str(len(by["ready"])), "n_conflict": str(len(by["conflict"])), "n_decide": str(len(by["decide"])), "n_later": str(len(by["later"])),
         "livelits": ", ".join("#" + str(n) for n in LIVELITS), "dev_commit": D["dev"]["commit"]}
@@ -247,6 +258,6 @@ head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<met
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
 json.dump({"dev": D["dev"], "tiers": {t: [dict(pr=n, name=nm, what=re.sub("<[^>]+>", "", w), before_merge=re.sub("<[^>]+>", "", nd)) for n, nm, _, w, nd in by[t]] for t, _ in TIERS},
-           "livelits_left_out": LIVELITS, "queue": [dict(group=i, prs=ns, why=re.sub("<[^>]+>", "", w)) for i, (ns, w) in enumerate(QUEUE, 1)]},
+           "livelits_left_out": LIVELITS, "updates": [dict(when=w, text=re.sub("<[^>]+>", "", t)) for w, t in UPDATES], "queue": [dict(group=i, prs=ns, why=re.sub("<[^>]+>", "", w)) for i, (ns, w) in enumerate(QUEUE, 1)]},
           open(os.path.join(HERE, "data", "tiers.json"), "w"), indent=1)
 print("wrote 058/index.html;", updated, {t: len(by[t]) for t, _ in TIERS}, "ready lines", ready_lines)
