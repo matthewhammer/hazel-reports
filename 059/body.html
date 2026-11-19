@@ -1,0 +1,58 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 059 · interface font · 2026-11-19, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 058</p>
+<h1>An Open Font for Hazel’s Interface</h1>
+<p class="sub">Hazel’s interface font was Helvetica Neue, a commercial typeface, from a copy Hazel served with every build, with no license for it on record. Since hazelgrove/hazel#2837, Hazel ships no copy: the interface takes Helvetica Neue from the reader’s own machine if it has one (a Mac does), and otherwise Helvetica or Arial’s stand-ins, so it looks different on Linux and Windows. Matthew Hammer asked, on 2026-11-19, for an open font Hazel can ship with itself, so the interface looks the same everywhere: a choice for the team. This page lays out {{n}} candidates, all under the SIL Open Font License 1.1, side by side in pieces of Hazel’s interface, measured against Helvetica Neue.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#see">The candidates, side by side</a>: each font drawing the same pieces of Hazel’s interface, with your own text if you like.</li>
+<li><a href="#metrics">How each measures against Helvetica Neue</a>: the width it sets Hazel’s words at, its x-height, and its files’ size.</li>
+<li><a href="#lean">Our lean</a>: Inter; Roboto for the least change; Source Sans 3 to match the code font.</li>
+<li><a href="#adopt">What adopting one takes</a>: two files, two rules, one variable, and the license.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="see">The candidates, side by side</h2>
+<p><b>Each card draws the same pieces of Hazel’s interface in one font: a right-click menu, a panel’s heading and text, a type error, two buttons and a line of numbers, with a line of code in Source Code Pro, Hazel’s code font, under them.</b> The first card is what Hazel showed until #2837: Helvetica Neue, here only if your machine has it. Each candidate loads from Fontsource under a name of its own, so a copy installed on your machine is never used instead.</p>
+<div class="controls">
+<label>Size <input type="range" id="sample-size" min="13" max="24" value="17"> <span id="sample-size-out">17 px</span></label>
+<label>Your own text <input type="text" id="sample-text" placeholder="Show each step of the evaluation, and keep the probes’ samples."></label>
+</div>
+{{cards}}
+<p class="muted">17 px is about Hazel’s own interface size (its base size is 13 pt). The code line is the same in every card; the menu, panel and buttons are in the card’s font.</p>
+
+<h2 id="metrics">How each measures against Helvetica Neue</h2>
+<p><b>IBM Plex Sans, Roboto and Arimo set Hazel’s interface words within 2% of Helvetica Neue’s width, with x-heights within 2% of its own; Inter sets them 5% wider and looks about 6% larger. Every candidate’s regular and bold, for the Latin alphabet, are 22 to 67 KB together, where Helvetica Neue’s two files were {{hn_kb}} KB.</b> Width decides whether a label still fits where it fit; x-height, the height of small letters, decides how large text looks at the same size.</p>
+{{chart}}
+{{table}}
+<p class="muted">Width is the advance widths of a sample of Hazel’s interface words (menu items, panel names, an error message), summed; x-height and cap height are the fonts’ own (OS/2 table); all three against Helvetica Neue’s, so 1.00 is the same. The sizes are Fontsource’s Latin files, enough for Hazel’s English interface; a whole font, with other alphabets, is larger.</p>
+
+<h2 id="lean">Our lean</h2>
+<p><b>Inter: a neutral grotesque in Helvetica’s line, designed for screens and interfaces, and among the most used open fonts for them; its cost is text about 5% wider, so a tight label or button may need a look.</b> Three others, each for a reason the team may weigh more:</p>
+<ul>
+<li><b>Roboto, for the least change.</b> Neutral, and within 2% of Helvetica Neue in width and x-height: the interface would look much as it does on a Mac today, everywhere.</li>
+<li><b>Source Sans 3, to match the code font.</b> It is Adobe’s companion to Source Code Pro, by the same designer; it runs small (0.92 wide, 0.94 tall), so Hazel would raise its size about 6%.</li>
+<li><b>Atkinson Hyperlegible, for legibility.</b> Designed for readers with low vision, its letters harder to confuse (I, l, 1; O, 0); a choice that says something about who Hazel is for.</li>
+</ul>
+<p>The choice is the team’s, and the cards are the way to make it: the numbers say what will shift, not what reads well.</p>
+
+<h2 id="adopt">What adopting one takes</h2>
+<p><b>Four small changes on top of #2837, in one pull request.</b></p>
+<ol>
+<li><b>The font’s two files</b> (regular and bold), in <code>src/web/www/style/fonts/</code>: Fontsource’s Latin <code>.woff2</code>, or the font’s own release, for more alphabets.</li>
+<li><b>Two <code>@font-face</code> rules</b> in <code>style/fonts.css</code>, as Source Code Pro has.</li>
+<li><b>The variable</b>, in <code>style/variables.css</code>: for Inter, <code>--ui-font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif</code>, so a page that cannot load the file still falls back as it does now.</li>
+<li><b>The licenses</b>, in <code>licenses/</code>: the SIL Open Font License’s text, for the new font and for Source Code Pro, whose copy Hazel already ships without it.</li>
+</ol>
+<p>hazelgrove/hazeljs, whose package now holds Hazel’s editor (hazelgrove/hazeljs#2), takes the same files with its next build.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>The team chooses a font, with the cards above.</li>
+<li>A pull request adds it, on top of hazelgrove/hazel#2837: the files, the rules, the variable and both licenses.</li>
+<li>hazeljs’s package and the Hazel build on fumola.org follow with their next builds.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>On 2026-11-19. The candidates are the sans-serif fonts on Fontsource that are common choices for interfaces, each under the SIL Open Font License 1.1 as its npm package (<code>@fontsource/&lt;name&gt;</code>) declares, at the versions in the table. <code>059/drivers/measure059.py</code> fetches each one’s Latin regular and bold <code>.woff2</code> from jsDelivr and reads them with fontTools: x-height and cap height from the OS/2 table, and the width of a fixed sample of Hazel’s interface words from the advance widths; Helvetica Neue’s numbers come from the file Hazel shipped until #2837, read locally and not kept here. The page loads each candidate from the same addresses. Whether your machine has Helvetica Neue is measured in the page: a line of text in Helvetica Neue and in a fallback, compared by width. The numbers are in <code>059/data/fonts.json</code>.</p>
+</main></body>
