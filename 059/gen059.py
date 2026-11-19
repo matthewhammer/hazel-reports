@@ -50,6 +50,13 @@ EXTRA = """
   figure.chart figcaption { color: var(--muted); font-size: 0.88em; }
   svg .pt { fill: var(--accent); } svg .pt.hn { fill: var(--ink); } svg .lbl { fill: var(--ink); font: 12px system-ui, sans-serif; }
   svg .ax { stroke: var(--line); } svg .axl { fill: var(--muted); font: 11px system-ui, sans-serif; } svg .band { fill: color-mix(in srgb, var(--good) 12%, transparent); }
+  .ui .tell { grid-column: 1 / -1; font-size: 2.1em; line-height: 1.1; letter-spacing: 0.01em; }
+  .ui .probe { position: absolute; left: 0; top: 0; visibility: hidden; white-space: nowrap; font-size: 40px; letter-spacing: 0; font-weight: 400;
+    font-kerning: none; font-variant-ligatures: none; font-feature-settings: "kern" 0, "liga" 0, "calt" 0; }
+  .card .ui button, .card .ui button.primary { font-family: inherit; }
+  .card { position: relative; } .card.fallback { border-style: dotted; }
+  .proof { font: 0.78em/1.45 ui-monospace, "Source Code Pro", monospace; color: var(--muted); margin: 8px 0 0; padding-top: 6px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  .proof b { color: var(--ink); } .proof .yes { color: var(--good); font-weight: 700; } .proof .no { color: var(--bad); font-weight: 700; }
 """
 
 
@@ -60,18 +67,25 @@ def sample(family_css):
             '<p class="err">Expected <code>Int</code> but found <code>Bool</code></p>'
             '<div class="btns"><button>Show as text</button><button class="primary">Edit in Hazel</button></div>'
             '<p class="nums">12 samples · 3.5 ms · 1,024 steps</p></div>'
-            '<div class="code">let area : Shape -&gt; Float = fun s -&gt; ...</div></div>')
+            '<div class="tell">Rag 1Il Qy G&amp;t</div>'
+            '<div class="code">let area : Shape -&gt; Float = fun s -&gt; ...</div>'
+            f'<span class="probe" aria-hidden="true">{esc(D["sample"])}</span></div>')
 
 
 def cards():
     out = ['<div class="cards">',
            '<div class="card today"><h3>Helvetica Neue, from your machine <span class="muted" id="hn-here"></span></h3>'
            '<div class="meta">What Hazel showed until #2837, where it shipped the file; a Mac has its own copy. Without one, this card falls back to Helvetica, Arial or sans-serif.</div>'
-           + sample("'Helvetica Neue', Helvetica, Arial, sans-serif") + '</div>']
+           + sample("'Helvetica Neue', Helvetica, Arial, sans-serif")
+           + f'<p class="proof" data-font="Helvetica Neue" data-family="Helvetica Neue" data-em="{HN["width_em"]:.4f}">measuring… (needs JavaScript)</p></div>',
+           '<div class="card fallback" id="font-fallback"><h3>The fallback alone: <code>sans-serif</code></h3>'
+           '<div class="meta">What a card would show if its font had not loaded: your browser\u2019s default sans-serif. Every candidate below should look, and measure, unlike it.</div>'
+           + sample("sans-serif") + '<p class="proof" data-font="" data-family="" data-em="">measuring… (needs JavaScript)</p></div>']
     for c in C:
         out.append(f'<div class="card" id="font-{c["fontsource"]}"><h3 style="font-family: \'{fam(c)}\', sans-serif">{esc(c["name"])}</h3>'
                    f'<div class="meta">{esc(c["what"])} · SIL OFL 1.1 · width {c["width_vs_hn"]:.2f}, x-height {c["x_vs_hn"]:.2f} · {c["bytes_400_700"] / 1024:.0f} KB</div>'
-                   + sample(f"'{fam(c)}', sans-serif") + '</div>')
+                   + sample(f"'{fam(c)}', sans-serif")
+                   + f'<p class="proof" data-font="{esc(c["name"])}" data-family="{fam(c)}" data-em="{c["width_em"]:.4f}" data-src="@fontsource/{c["fontsource"]}@{c["version"]}">measuring… (needs JavaScript)</p></div>')
     out.append("</div>")
     return "".join(out)
 
@@ -117,6 +131,31 @@ SCRIPT = """
   const size = document.getElementById("sample-size"), out = document.getElementById("sample-size-out"), say = document.getElementById("sample-text");
   if (size) size.addEventListener("input", () => { root.style.setProperty("--sample", size.value + "px"); out.textContent = size.value + " px"; });
   if (say) say.addEventListener("input", () => { const t = say.value || say.placeholder; document.querySelectorAll(".ui .free").forEach(p => { p.textContent = t; }); });
+  // (each card's proof: what its CSS asks for, whether its font's files loaded, and how wide a hidden line of Hazel's
+  // words, drawn by the card's own CSS at 40 px with no kerning or ligatures, really is, against the width the font's own
+  // advance widths predict and against the fallback's. A browser does not say which font drew a text; widths do.)
+  const prove = () => {
+    for (const p of document.querySelectorAll(".proof")) {
+      const card = p.closest(".card"), ui = card.querySelector(".ui"), probe = ui.querySelector(".probe");
+      const asked = getComputedStyle(ui).fontFamily, family = p.dataset.family, name = p.dataset.font, em = parseFloat(p.dataset.em);
+      const w = probe.getBoundingClientRect().width;
+      const fb = probe.cloneNode(true); fb.style.fontFamily = "sans-serif"; ui.append(fb); const wf = fb.getBoundingClientRect().width; fb.remove();
+      const faces = family ? [...document.fonts].filter(f => f.family.replace(/["']/g, "") === family) : [];
+      const files = !family ? "none: the browser's default sans-serif"
+        : faces.length ? faces.map(f => `${f.weight} ${f.status}`).join(", ") + (p.dataset.src ? ` (from cdn.jsdelivr.net, ${p.dataset.src})` : "")
+        : "none declared: from your machine, if it has it";
+      const pred = em ? em * 40 : NaN, near = em ? Math.abs(w - pred) / pred : NaN, likeFallback = Math.abs(w - wf) / wf < 0.002;
+      const px = v => v.toFixed(1) + " px";
+      const verdict = !family ? `<span class="yes">the fallback</span>: every other card should measure unlike ${px(w)}`
+        : near < 0.006 && likeFallback ? `<span class="yes">\u2713 measures as ${name}</span>, but so would the fallback here, within 0.2%: width cannot tell them apart in this browser; the large letters, or the browser's own font panel, can`
+        : near < 0.006 ? `<span class="yes">\u2713 drawn in ${name}</span>: within ${(near * 100).toFixed(1)}% of its metrics, and ${(Math.abs(w - wf) / wf * 100).toFixed(1)}% from the fallback`
+        : likeFallback ? `<span class="no">\u2717 not ${name}</span>: this box measures like the fallback`
+        : `<span class="no">? not clearly ${name}</span>: ${(near * 100).toFixed(1)}% from its metrics`;
+      p.innerHTML = `CSS asks for: <b>${asked.replace(/</g, "&lt;")}</b><br>Font files: ${files}<br>` +
+        `Hazel's sample words at 40 px: this box <b>${px(w)}</b>` + (em ? ` \u00b7 ${name}'s own metrics ${px(pred)}` : "") + ` \u00b7 the fallback ${px(wf)}<br>${verdict}`;
+    }
+  };
+  document.fonts.ready.then(() => setTimeout(prove, 300));
   // (is Helvetica Neue on this machine? a text measured in it and in a fallback differs in width when it is)
   const c = document.createElement("canvas").getContext("2d"), probe = "Hamburgefonstiv 0123456789";
   const w = f => { c.font = "40px " + f; return c.measureText(probe).width; };
