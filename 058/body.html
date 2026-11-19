@@ -6,8 +6,7 @@
 <h2 id="outline">Outline</h2>
 <ol class="outline">
 <li><a href="#dev">Where dev stands</a>: no merge since 2026-11-06; the merge queue's rules; our 48 open PRs, by what each needs.</li>
-<li><a href="#ready">Ready for a review now</a>: {{n_ready}} PRs that merge cleanly into today's dev, CI green, needing only an approval.</li>
-<li><a href="#conflict">One conflict to resolve first</a>: {{n_conflict}} PRs, one of them already approved.</li>
+<li><a href="#ready">Ready for a review now</a>: {{n_ready}} PRs that merge cleanly into today's dev, CI green, needing only an approval; one is already approved.</li>
 <li><a href="#decide">A decision first</a>: {{n_decide}} PRs that wait on a question for the team.</li>
 <li><a href="#later">Not today</a>: {{n_later}} PRs that wait on others, or are larger than a day.</li>
 <li><a href="#queue">An order for the queue</a>: three groups of up to five, then the decisions.</li>
@@ -16,43 +15,37 @@
 {{updates}}
 
 <h2 id="dev">Where dev stands</h2>
-<p><b>dev has had no merge since 2026-11-06, thirteen days, when hazelgrove/hazel#2605 (a let's definition sees the outer binding) went in at <code>{{dev_commit}}</code>. Of our 48 open PRs, {{n_ready}} could merge today with only an approval, and {{n_conflict}} more after resolving one conflict each.</b> The last merge-a-thon, on 2026-10-29, merged 20 PRs into dev in a day.</p>
+<p><b>dev has had no merge since 2026-11-06, thirteen days, when hazelgrove/hazel#2605 (a let's definition sees the outer binding) went in at <code>{{dev_commit}}</code>. Of our 48 open PRs, {{n_ready}} could merge today with only an approval, and one of them, #2613, already has it.</b> The last merge-a-thon, on 2026-10-29, merged 20 PRs into dev in a day.</p>
 {{fig_counts}}
 <p><b>How a PR reaches dev now.</b> dev takes PRs through GitHub's merge queue, which builds up to five at a time, together, on top of dev, and merges them only if all are green. Two checks are required, <i>Fast checks</i> and <i>Static checks</i>, and one approving review from a code owner: every file's owner is the hazel-core team (Cyrus Omar, Alexander Bandukwala, Andrew Blinn, Thomas Porter, Matt Keenan and Matthew Hammer), and an author cannot approve their own PR. A PR's CI takes about 17 to 21 minutes (hazelgrove/hazel#2828's last two runs). Because the queue tests each group on the latest dev, a PR that is behind dev but merges cleanly needs no update first; one that conflicts must be resolved by hand.</p>
-<p><b>The candidates, by size.</b> Of the 215 open PRs on hazelgrove/hazel, 48 are ours. Nine are livelits work and left out here ({{livelits}}). The other 39 are below; the 23 in the first three groups are drawn here, by the lines each changes.</p>
+<p><b>The candidates, by size.</b> Of the 215 open PRs on hazelgrove/hazel, 48 are ours. Nine are livelits work and left out here ({{livelits}}). The other 39 are below; the candidates of the first two groups are drawn here, by the lines each changes.</p>
 {{fig_sizes}}
 
 <h2 id="ready">Ready for a review now</h2>
-<p><b>{{n_ready}} PRs, {{ready_lines}} lines in all, merge cleanly into today's dev, and into each other one after another in the queue's order below; CI is green at each head; and nothing is asked of them but an approval</b> (#2697 must first be marked ready). The trial merge is of the text only: building and testing them together is the queue's job. The last column counts the commits to dev, since 2025-11-01, that touched each PR's existing source files, by members of hazel-core other than Matthew: the people who know that code best, a hint for whom to ask.</p>
+<p><b>{{n_ready}} PRs, {{ready_lines}} lines in all, merge cleanly into today's dev, and all but the last, #2661, into each other one after another in the queue's order below; CI is green at each head; and nothing is asked of them but an approval.</b> Three of them conflicted with dev when this report was first written, at 07:35: #2613, #2606 and #2661. Each was resolved, between 07:49 and 07:51, by merging dev into its branch, and CI, full tests included, is green on each. #2697, a draft that had waited on two PRs since merged, has dev merged in too and was marked ready at 08:16. The trial merge is of the text only: building and testing them together is the queue's job. The last column counts the commits to dev, since 2025-11-01, that touched each PR's existing source files, by members of hazel-core other than Matthew: the people who know that code best, a hint for whom to ask.</p>
 {{tab_ready}}
 
-<h2 id="conflict">One conflict to resolve first</h2>
-<p><b>Three PRs conflict with today's dev in one or two files each, from changes merged since they were last updated; #2613 is already approved.</b> Each is resolved by merging dev into its branch and keeping both sides, then CI runs again.</p>
-{{tab_conflict}}
-
 <h2 id="decide">A decision first</h2>
-<p><b>{{n_decide}} PRs wait on a question rather than a review: what a program means (#2828), whether a gain is worth its cost (#2793), which of two goes first (#2614 and #2610), whether a follow-up is wanted (#2717), how a fix should be finished (#2608, #2592), and what to wait for (#2729 and its tests, #2749).</b> Most are small; once decided, they can go in the same day.</p>
+<p><b>{{n_decide}} PRs wait on a question rather than a review: whether a gain is worth its cost (#2793), which of two goes first (#2614 and #2610), whether a follow-up is wanted (#2717), how a fix should be finished (#2608, #2592), and what to wait for (#2729 and its tests, #2749).</b> Most are small; once decided, they can go in the same day.</p>
 {{tab_decide}}
-<p><span class="muted">Our lean:</span> take #2828, so a program means the same in the browser and natively; take #2793, whose budgets now hold its gain in CI; merge #2614 first, then merge it into #2610 and keep #2610 only if it still adds something measurable; merge #2651 today and leave #2717 for after.</p>
+<p><span class="muted">Our lean:</span> take #2793, whose budgets now hold its gain in CI; merge #2614 first, then merge it into #2610 and keep #2610 only if it still adds something measurable; merge #2651 today and leave #2717 for after.</p>
 
 <h2 id="later">Not today</h2>
-<p><b>{{n_later}} PRs wait on something else: a PR under them, a conflict larger than a day's, a deferral, or a decision about a new surface.</b> The three test PRs, #2689, #2690 and #2691, each hold a fix to a budget in CI, so each lands after the fixes it tests.</p>
+<p><b>{{n_later}} PRs wait on something else: a PR under them, a conflict larger than a day's, a deferral, a decision about a new surface, or a rework: #2828, whose question Cyrus answered (an SInt has 64 bits, not 32).</b> The three test PRs, #2689, #2690 and #2691, each hold a fix to a budget in CI, so each lands after the fixes it tests.</p>
 {{tab_later}}
 
 <h2 id="queue">An order for the queue</h2>
-<p><b>Three groups of up to five, the queue's limit, chosen so that no two PRs in a group conflict; the first two groups are the ready PRs, and merge one after another without conflicts in a trial on today's dev.</b></p>
+<p><b>Three groups of up to five, the queue's limit, chosen so that no two PRs in a group conflict; all three groups are ready PRs, and in a trial on today's dev they merge one after another in this order with one conflict, #2661's, in the tests' list.</b></p>
 {{queue}}
 
 <h2 id="next">What next</h2>
 <ol>
-<li>Ask for a review on each ready PR, naming a reviewer from the last column of its row.</li>
-<li>Merge dev into #2697, so its diff is its own commit, and mark it ready.</li>
-<li>Resolve #2613's conflict: drop its edit to the deleted <code>assistant.css</code>, and the file's entry in the lint's list.</li>
-<li>Resolve #2606's and #2661's conflicts, and ask Matt Keenan to review #2606, which sits beside his #2660.</li>
-<li>Bring the decisions to the meeting: #2828 (to Cyrus), #2793, #2614 and #2610, #2717, #2592, #2729 with #2493; and answer Alexander's review of #2608 with the fix chosen.</li>
+<li>Ask for a review on each ready PR, naming a reviewer from the last column of its row; Matt Keenan for #2606, which sits beside his #2660.</li>
+<li>Bring the decisions to the meeting: #2793, #2614 and #2610, #2717, #2592, #2729 with #2493; and answer Alexander's review of #2608 with the fix chosen.</li>
+<li>Rework #2828 for SInt at 64 bits, as Cyrus answered: first, whether that is 63 bits (OCaml's own int) or 64, and whether overflow is an error or wraps.</li>
 <li>After the merge-a-thon, gather again: mark this report with what merged, and move each test PR forward whose fixes landed.</li>
 </ol>
 
 <h2 id="method">How this was put together</h2>
-<p>Gathered on 2026-11-19 between 07:15 and 07:35 MST. GitHub's view of each of Matthew Hammer's open PRs (<code>gh pr list --author matthewhammer</code>, then <code>gh pr view</code> for its size, draft state, base, head, checks at the head, reviews and comments), with each PR's description, reviews and comments read for what it needs. Each PR into dev was fetched (<code>refs/pull/N/head</code>) and merged into dev at <code>{{dev_commit}}</code> with <code>git merge-tree --write-tree</code>, which merges without a checkout and names the files that conflict; the ready PRs were then merged one after another, in the queue's order, the same way, each on the result of the last, and all merged cleanly. Pairs of candidates were merged the same way to find the conflicts between them. dev's rules are its ruleset and branch protection, read from GitHub's API, and its <code>.github/CODEOWNERS</code>. The last column of the tables counts non-merge commits on dev since 2025-11-01 that touch the PR's source files, by author, for the members of hazel-core other than Matthew. Nothing was built or tested for this report, and no PR was changed. The driver is <code>058/drivers/prep058.py</code>; its output, <code>058/data/prs.json</code>, and the tiers, <code>058/data/tiers.json</code>, are with the report.</p>
+<p>Gathered on 2026-11-19 between 07:15 and 07:35 MST, and again at 09:05, after dev was merged into four of the branches (#2613 <code>86316c1277</code>, #2606 <code>29beeb41d4</code>, #2661 <code>6bc326c750</code>, #2697 <code>808d469394</code>; CI runs 44548016193, 44548236959, 44548378828 and 44548426433, all green); dev had not moved. GitHub's view of each of Matthew Hammer's open PRs (<code>gh pr list --author matthewhammer</code>, then <code>gh pr view</code> for its size, draft state, base, head, checks at the head, reviews and comments), with each PR's description, reviews and comments read for what it needs. Each PR into dev was fetched (<code>refs/pull/N/head</code>) and merged into dev at <code>{{dev_commit}}</code> with <code>git merge-tree --write-tree</code>, which merges without a checkout and names the files that conflict; the ready PRs were then merged one after another, in the queue's order, the same way, each on the result of the last: all merged cleanly but #2661, the last, in <code>test/haz3ltest.re</code>, the tests' list. Pairs of candidates were merged the same way to find the conflicts between them. dev's rules are its ruleset and branch protection, read from GitHub's API, and its <code>.github/CODEOWNERS</code>. The last column of the tables counts non-merge commits on dev since 2025-11-01 that touch the PR's source files, by author, for the members of hazel-core other than Matthew. Nothing was built or tested for this report, and no PR was changed. The driver is <code>058/drivers/prep058.py</code>; its output, <code>058/data/prs.json</code>, and the tiers, <code>058/data/tiers.json</code>, are with the report.</p>
 </main></body>

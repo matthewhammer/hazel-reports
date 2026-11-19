@@ -69,37 +69,29 @@
    {
     "pr": 2697,
     "name": "Test: the nodes an evaluation builds, held to budgets",
-    "what": "Counts the terms an evaluation builds, beside its steps, so copies like those #2679 removed cannot come back unseen. A draft only because it waited on #2678 and #2679, both merged (10-29, 10-19); its own commit is 118 lines added and 29 removed, in 2 files.",
-    "before_merge": "Merge dev in, so its diff is its own commit, and mark it ready."
-   }
-  ],
-  "conflict": [
+    "what": "Counts the terms an evaluation builds, beside its steps, so copies like those #2679 removed cannot come back unseen. It waited, as a draft, on #2678 and #2679, both merged (10-29, 10-19).",
+    "before_merge": "An approval. Dev was merged in at 07:51, so its diff is its own commit, and its CI on today's dev holds the budgets; marked ready at 08:16."
+   },
    {
     "pr": 2613,
     "name": "Colors: every var() is one the theme defines",
     "what": "Eleven var() names that nothing defined, so those colors ignored the Colors slide, dark mode and high contrast; each now reads a theme role, and a lint keeps it so. Approved by Alexander on 11-07.",
-    "before_merge": "dev deleted assistant.css (#2438, dead stylesheets) after this PR edited it: drop that edit, and the file's entry in the lint's list. Alexander left one visible change, the probe stack's focus pill, as Andrew's call."
+    "before_merge": "Nothing more: it is approved. Dev was merged in at 07:49: dev had deleted assistant.css (#2438, dead stylesheets), and this PR's edit to it went with the file. Alexander left one visible change, the probe stack's focus pill, as Andrew's call."
    },
    {
     "pr": 2606,
     "name": "Keep the incremental cache in the eval worker",
     "what": "The worker's answer carried its whole incremental cache to the page, and the next request carried it back, on every run; now the worker keeps it.",
-    "before_merge": "test/Test_WorkerServer.re: #2660 (Matt Keenan's, keep incremental evaluation for expensive small programs, merged 11-05) added tests beside these; keep both. Both change the worker's incremental path, so Matt Keenan is the natural reviewer."
+    "before_merge": "An approval; Matt Keenan is the natural reviewer, as it sits beside his #2660 (keep incremental evaluation for expensive small programs). Dev was merged in at 07:51, keeping #2660's tests beside these; #2660's cost gate still sees the previous run's steps, since the worker fills in the kept cache before it asks."
    },
    {
     "pr": 2661,
     "name": "Types get a Merkle hash",
     "what": "The evaluator asks is_consistent once per pair of types, not once per copy of them, keyed by a hash kept for each type object.",
-    "before_merge": "Ascriptions.re, against #2734 (Typ.unroll, Alexander's, merged 11-03). #2681 builds on this PR."
+    "before_merge": "An approval. Dev was merged in at 07:51: the hash now remembers the check #2734 (Typ.unroll, Alexander's) gave a constructor's sum type. #2681 builds on this PR."
    }
   ],
   "decide": [
-   {
-    "pr": 2828,
-    "name": "SInt at 32 bits everywhere; overflow an error",
-    "what": "use SInt in 2147483647 + 1 was -2147483648 in the browser and 2147483648 natively; now it is an error, everywhere. Small, clean and green, but it changes what programs mean.",
-    "before_merge": "Cyrus: is SInt overflow an error, or a wrap at 32 bits everywhere?"
-   },
    {
     "pr": 2793,
     "name": "Fewer trampoline bounces",
@@ -150,6 +142,12 @@
    }
   ],
   "later": [
+   {
+    "pr": 2828,
+    "name": "SInt at 32 bits everywhere; overflow an error",
+    "what": "use SInt in 2147483647 + 1 was -2147483648 in the browser and 2147483648 natively; the PR makes it an error, at 32 bits everywhere.",
+    "before_merge": "Rework first. Cyrus's answer, through Matthew (11-18): an SInt is a fixed-precision 64-bit integer (perhaps 63 bits, as OCaml's own int), not 32. In the browser that needs more than an OCaml int, which has 32 bits there."
+   },
    {
     "pr": 2673,
     "name": "Incremental evaluation: an unchanged expression by its hash",
@@ -259,12 +257,7 @@
   2817,
   2819
  ],
- "updates": [
-  {
-   "when": "2026-11-19 08:16 MST",
-   "text": "the three conflicts are resolved, each by merging dev into its branch, and CI is green on all three, full tests included. #2613 (colors) drops its edit to the deleted assistant.css, and its lint list keeps only font-mono; it is still approved, and can go into the merge queue now. #2606 (the worker keeps its cache) keeps both sets of tests, and #2660's test requests carry the two fields it adds; the cost gate still sees the previous run's steps, since the worker resolves the kept cache before it asks. #2661 (types get a Merkle hash) remembers dev's new unrolled check by hash. #2697 has dev merged in, so its diff is its own commit (2 files), its CI is green, and it is marked ready. So 14 PRs now need only an approval, one of them already approved (#2613). The tables below are as gathered at 07:35."
-  }
- ],
+ "updates": [],
  "queue": [
   {
    "group": 1,
@@ -296,7 +289,7 @@
     2606,
     2661
    ],
-   "why": "#2697 once ready, and the three with a conflict once resolved. #2661 and #2671 both add to the tests' list, test/haz3ltest.re: merge dev into #2661 after the second group."
+   "why": "#2613 is already approved. #2661 and #2671 both add to the tests' list, test/haz3ltest.re, so once the second group is in, #2661 needs dev merged in again: the one conflict among the fourteen, in a trial merging them in this order on today's dev."
   }
  ]
 }

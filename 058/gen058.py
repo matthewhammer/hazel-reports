@@ -38,7 +38,7 @@ WHO = {"cyrus-": "Cyrus", "7h3kk1d": "Alexander", "disconcision": "Andrew", "Neg
 
 # Each PR: number, a short name, its tier, what it is, and what it needs before it merges. Read 2026-11-19 from each PR's
 # description, reviews and comments. Tiers: ready (merges cleanly into today's dev, CI green, nothing asked of it but a
-# review), conflict (one conflict with today's dev to resolve first), decide (a question for the team first), later (not today).
+# review; three of them since dev was merged in at 07:49 to 07:51 to resolve a conflict), decide (a question for the team first), later (not today).
 PRS = [
     # ready
     (2812, "README: link the hazeljs npm package", "ready",
@@ -72,22 +72,22 @@ PRS = [
      "Four statics and completion speedups, found by profiling the livelits branch, each its own commit with tests. The big one: a let-bound function no longer takes the recursive path's four passes, which multiplied with nesting. Byte-identical <code>hazel analyze -W</code> output on dev's 72 programs when it was made.",
      "An approval. Its CI ran on 09-26, 462 commits of dev ago; the merge queue runs it again on today's dev."),
     (2697, "Test: the nodes an evaluation builds, held to budgets", "ready",
-     "Counts the terms an evaluation builds, beside its steps, so copies like those #2679 removed cannot come back unseen. A draft only because it waited on #2678 and #2679, both merged (10-29, 10-19); its own commit is 118 lines added and 29 removed, in 2 files.",
-     "Merge dev in, so its diff is its own commit, and mark it ready."),
-    # one conflict first
-    (2613, "Colors: every var() is one the theme defines", "conflict",
+     "Counts the terms an evaluation builds, beside its steps, so copies like those #2679 removed cannot come back unseen. It waited, as a draft, on #2678 and #2679, both merged (10-29, 10-19).",
+     "An approval. Dev was merged in at 07:51, so its diff is its own commit, and its CI on today's dev holds the budgets; marked ready at 08:16."),
+    # ready since 07:49 to 07:51, when dev was merged in to resolve a conflict, CI green
+    (2613, "Colors: every var() is one the theme defines", "ready",
      "Eleven <code>var()</code> names that nothing defined, so those colors ignored the Colors slide, dark mode and high contrast; each now reads a theme role, and a lint keeps it so. <b>Approved by Alexander on 11-07.</b>",
-     "dev deleted <code>assistant.css</code> (#2438, dead stylesheets) after this PR edited it: drop that edit, and the file's entry in the lint's list. Alexander left one visible change, the probe stack's focus pill, as Andrew's call."),
-    (2606, "Keep the incremental cache in the eval worker", "conflict",
+     "Nothing more: it is approved. Dev was merged in at 07:49: dev had deleted <code>assistant.css</code> (#2438, dead stylesheets), and this PR's edit to it went with the file. Alexander left one visible change, the probe stack's focus pill, as Andrew's call."),
+    (2606, "Keep the incremental cache in the eval worker", "ready",
      "The worker's answer carried its whole incremental cache to the page, and the next request carried it back, on every run; now the worker keeps it.",
-     "<code>test/Test_WorkerServer.re</code>: #2660 (Matt Keenan's, keep incremental evaluation for expensive small programs, merged 11-05) added tests beside these; keep both. Both change the worker's incremental path, so Matt Keenan is the natural reviewer."),
-    (2661, "Types get a Merkle hash", "conflict",
+     "An approval; Matt Keenan is the natural reviewer, as it sits beside his #2660 (keep incremental evaluation for expensive small programs). Dev was merged in at 07:51, keeping #2660's tests beside these; #2660's cost gate still sees the previous run's steps, since the worker fills in the kept cache before it asks."),
+    (2661, "Types get a Merkle hash", "ready",
      "The evaluator asks <code>is_consistent</code> once per pair of types, not once per copy of them, keyed by a hash kept for each type object.",
-     "<code>Ascriptions.re</code>, against #2734 (Typ.unroll, Alexander's, merged 11-03). #2681 builds on this PR."),
+     "An approval. Dev was merged in at 07:51: the hash now remembers the check #2734 (Typ.unroll, Alexander's) gave a constructor's sum type. #2681 builds on this PR."),
     # a decision first
-    (2828, "SInt at 32 bits everywhere; overflow an error", "decide",
-     "<code>use SInt in 2147483647 + 1</code> was -2147483648 in the browser and 2147483648 natively; now it is an error, everywhere. Small, clean and green, but it changes what programs mean.",
-     "Cyrus: is SInt overflow an error, or a wrap at 32 bits everywhere?"),
+    (2828, "SInt at 32 bits everywhere; overflow an error", "later",
+     "<code>use SInt in 2147483647 + 1</code> was -2147483648 in the browser and 2147483648 natively; the PR makes it an error, at 32 bits everywhere.",
+     "Rework first. Cyrus's answer, through Matthew (11-18): an SInt is a fixed-precision 64-bit integer (perhaps 63 bits, as OCaml's own int), not 32. In the browser that needs more than an OCaml int, which has 32 bits there."),
     (2793, "Fewer trampoline bounces", "decide",
      "Two small changes to the evaluator's trampoline: half the steps on the PerfBudgets program (206,834 to 96,438), and its budgets lowered to match.",
      "Matt Keenan, 11-03: 15% faster and 4% less memory, a little less readable, and “ambivalent”. Take it, or close it."),
@@ -134,9 +134,9 @@ LIVELITS = [2536, 2597, 2616, 2635, 2650, 2806, 2810, 2817, 2819]
 QUEUE = [
     ([2812, 2825, 2818, 2816, 2652], "The five smallest, 9 to 108 lines, in files no other candidate touches."),
     ([2671, 2675, 2651, 2815, 2603], "The rest of the ready ones. #2651 and #2675 both touch <code>Statics.re</code>, as #2603 does, without conflicting."),
-    ([2697, 2613, 2606, 2661], "#2697 once ready, and the three with a conflict once resolved. #2661 and #2671 both add to the tests' list, <code>test/haz3ltest.re</code>: merge dev into #2661 after the second group."),
+    ([2697, 2613, 2606, 2661], "#2613 is already approved. #2661 and #2671 both add to the tests' list, <code>test/haz3ltest.re</code>, so once the second group is in, #2661 needs dev merged in again: the one conflict among the fourteen, in a trial merging them in this order on today's dev."),
 ]
-TIERS = [("ready", "Ready for a review now"), ("conflict", "One conflict to resolve first"), ("decide", "A decision first"), ("later", "Not today")]
+TIERS = [("ready", "Ready for a review now"), ("decide", "A decision first"), ("later", "Not today")]
 by = {t: [p for p in PRS if p[2] == t] for t, _ in TIERS}
 assert len(PRS) + len(LIVELITS) == 48, len(PRS) + len(LIVELITS)
 size = lambda n: P[str(n)]["add"] + P[str(n)]["del"] if str(n) in P else None
@@ -193,18 +193,19 @@ def fig_counts():
         g.append(f'<text class="cnt{" dk" if t in ("later", "out") else ""}" x="{x + w / 2 - 1:.1f}" y="32" text-anchor="middle">{k}</text>')
         g.append(f'<text class="lbl" x="{x + 2:.1f}" y="62">{esc(lab)}</text>' if w > 110 else f'<text class="lbl" x="{x + 2:.1f}" y="62">{esc(lab.split(",")[0].split(" ")[0])}</text>')
         x += w
-    return (f'<figure class="chart"><svg viewBox="0 0 {W} 72" role="img" aria-label="Our 48 open PRs: 11 ready for a review, 3 with a conflict to resolve, 9 waiting on a decision, 16 not for today, and 9 livelits PRs left out.">'
-            + "".join(g) + "</svg><figcaption>Our 48 open PRs on hazelgrove/hazel, by what each needs before it can merge into dev, on the morning of 2026-11-19.</figcaption></figure>")
+    label = f"Our 48 open PRs: {len(by['ready'])} ready for a review, {len(by['decide'])} waiting on a decision, {len(by['later'])} not for today, and {len(LIVELITS)} livelits PRs left out."
+    return (f'<figure class="chart"><svg viewBox="0 0 {W} 72" role="img" aria-label="{label}">'
+            + "".join(g) + f"</svg><figcaption>Our 48 open PRs on hazelgrove/hazel, by what each needs before it can merge into dev, as of {updated} MST.</figcaption></figure>")
 
 
 def fig_sizes():
     """each candidate of the first three tiers, its lines changed on a log scale"""
-    rows = [(t, p) for t, _ in TIERS[:3] for p in by[t]]
+    shown = TIERS[:2]
     W, LX, BX, BW, RH = 760, 8, 330, 360, 19
     lo, hi = math.log10(5), math.log10(1500)
     sx = lambda v: BX + (math.log10(max(v, 5)) - lo) / (hi - lo) * BW
     g, y = [], 8
-    for t, lab in TIERS[:3]:
+    for t, lab in shown:
         g.append(f'<text class="grp" x="{LX}" y="{y + 12}">{esc(lab)}</text>')
         y += RH
         for n, name, _, _, _ in by[t]:
@@ -217,7 +218,7 @@ def fig_sizes():
         y += 6
     for v in (10, 100, 1000):
         g.insert(0, f'<line class="ax" x1="{sx(v):.1f}" y1="4" x2="{sx(v):.1f}" y2="{y - 4}"/><text class="val" x="{sx(v):.1f}" y="{y + 8}" text-anchor="middle">{v} lines</text>')
-    return (f'<figure class="chart"><svg viewBox="0 0 {W} {y + 14}" role="img" aria-label="The 23 candidates for today, each with the lines it adds and removes, on a log scale, from 9 lines for the README change to 1,038 for the largest decision.">'
+    return (f'<figure class="chart"><svg viewBox="0 0 {W} {y + 14}" role="img" aria-label="The {sum(len(by[t]) for t, _ in shown)} candidates for today, each with the lines it adds and removes, on a log scale.">'
             + "".join(g) + "</svg><figcaption>The candidates for today, each bar the lines its PR adds and removes on GitHub, on a log scale. Most of the ready ones are under 200 lines. A stacked PR's count includes the PRs under it until those merge.</figcaption></figure>")
 
 
@@ -226,25 +227,17 @@ def queue_list():
     for i, (ns, why) in enumerate(QUEUE, 1):
         tot = sum(size(n) for n in ns)
         out.append(f"<li><b>Group {i}:</b> {', '.join('#' + str(n) for n in ns)} ({tot:,} lines in all). {why}</li>")
-    out.append("<li><b>Then,</b> as the team decides: #2828, #2793, #2614 and #2610 in the chosen order, #2717, #2592; and each test PR once the fixes it holds to budgets are in (#2689 after #2603 and #2651, #2690 after #2675, #2691 after #2606 and #2608).</li></ol>")
+    out.append("<li><b>Then,</b> as the team decides: #2793, #2614 and #2610 in the chosen order, #2717, #2592; and each test PR once the fixes it holds to budgets are in (#2689 after #2603 and #2651, #2690 after #2675, #2691 after #2606 and #2608).</li></ol>")
     return "".join(out)
 
 
 # dated updates since the first version, newest last, each shown under the outline (the tables stay as gathered that morning)
-UPDATES = [
-    ("2026-11-19 08:16 MST",
-     "the three conflicts are resolved, each by merging dev into its branch, and CI is green on all three, full tests included. "
-     "#2613 (colors) drops its edit to the deleted <code>assistant.css</code>, and its lint list keeps only <code>font-mono</code>; it is still approved, "
-     "and can go into the merge queue now. #2606 (the worker keeps its cache) keeps both sets of tests, and #2660's test requests carry the two fields it adds; "
-     "the cost gate still sees the previous run's steps, since the worker resolves the kept cache before it asks. #2661 (types get a Merkle hash) "
-     "remembers dev's new unrolled check by hash. #2697 has dev merged in, so its diff is its own commit (2 files), its CI is green, "
-     "and it is marked ready. So 14 PRs now need only an approval, one of them already approved (#2613). The tables below are as gathered at 07:35."),
-]
+UPDATES = []
 updates_html = "".join(f'<p class="note"><b>Update, {esc(when)}:</b> {text}</p>\n' for when, text in UPDATES)
 ready_lines = sum(size(p[0]) for p in by["ready"])
-FIGS = {"updated": updated, "updates": updates_html,"fig_counts": fig_counts(), "fig_sizes": fig_sizes(), "tab_ready": table("ready"), "tab_conflict": table("conflict"),
+FIGS = {"updated": updated, "updates": updates_html,"fig_counts": fig_counts(), "fig_sizes": fig_sizes(), "tab_ready": table("ready"),
         "tab_decide": table("decide"), "tab_later": later_table(), "queue": queue_list(), "ready_lines": f"{ready_lines:,}",
-        "n_ready": str(len(by["ready"])), "n_conflict": str(len(by["conflict"])), "n_decide": str(len(by["decide"])), "n_later": str(len(by["later"])),
+        "n_ready": str(len(by["ready"])), "n_decide": str(len(by["decide"])), "n_later": str(len(by["later"])),
         "livelits": ", ".join("#" + str(n) for n in LIVELITS), "dev_commit": D["dev"]["commit"]}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in FIGS.items():
@@ -253,7 +246,7 @@ left = re.findall(r"\{\{(\w+)\}\}", body)
 assert not left, left
 TITLE = "What Could Merge Today"
 DESC = ("For the Hazel team's merge-a-thon of 2026-11-19: our 39 open PRs that are not livelits, sorted by what each needs. "
-        "Eleven merge cleanly into today's dev with CI green and need only a review; three need one conflict resolved; nine need a decision first.")
+        "Fourteen merge cleanly into today's dev with CI green and need only a review, one of them already approved; eight need a decision first.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
