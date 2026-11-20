@@ -182,6 +182,7 @@ def builds():
 
 EXTRA = """
   ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  ol.costs > li { margin: 0.55em 0; } ol.costs code { font-size: 0.9em; }
   :root { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #8a63d2; --s5: #c06a9a; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #9b7be0; --s5: #cf7aa9; } }
   :root[data-theme="dark"] { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #9b7be0; --s5: #cf7aa9; }

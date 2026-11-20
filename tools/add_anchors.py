@@ -36,12 +36,18 @@ a, b = s.index("<main>"), s.index("</main>")
 s = s[:a] + re.sub(r'(<div class="listing" id="([^"]+)"><div class="lh">)(.*?)(</div>)',
     lambda m: m.group(1) + m.group(3) + f'<a class="anchor" href="#{m.group(2)}" aria-label="a link to this listing">#</a><button type="button" class="copyanchor" data-id="{m.group(2)}" title="copy this listing\'s address">copy link</button>' + m.group(4),
     s[a:b], flags=re.S) + s[b:]
+# (Matthew, 2026-11-20, on ^report(60): "list in an itemized [list], with 'copy link' chips, each of the overheads") an
+# anchored item (<li class="anchored" id="..."><b>its name</b> ...): its own # and copy link after its bold name
+s = s[:a] + re.sub(r'(<li class="anchored" id="([^"]+)">\s*<b>.*?</b>)',
+    lambda m: m.group(1) + f'<a class="anchor" href="#{m.group(2)}" aria-label="a link to this item">#</a><button type="button" class="copyanchor" data-id="{m.group(2)}" title="copy this item\'s address">copy link</button>',
+    s[a:b], flags=re.S) + s[b:]
 a, b = s.index("<main>"), s.index("</main>")
 s = s[:a] + re.sub(r"<(h[23])([^>]*)>(.*?)</\1>", head, s[a:b], flags=re.S) + s[b:]
 
 CSS = """<style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
 h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+li.anchored .anchor { margin-left: 6px; color: var(--muted); text-decoration: none; opacity: 0.5; } li.anchored .copyanchor { opacity: 0.8; }
 .copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
   border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
 h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
