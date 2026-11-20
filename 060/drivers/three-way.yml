@@ -1,0 +1,32 @@
+# (ticket 797) each game timed three ways, hazeljs, hazel-jit and plain JS (node/three-way.mjs), on one GitHub runner, the games
+# one after another so all are timed on the same machine; the results (JSON and the printed lines) as the artifact three-way
+name: three-way timing
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["node/three-way.mjs", "*/plain.js", "*/compiled.js", "*/rules/*.hz", ".github/workflows/three-way.yml"]
+jobs:
+  time:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: The machine
+        run: |
+          mkdir -p three-way
+          { nproc; grep -m1 'model name' /proc/cpuinfo; node --version; } | tee three-way/machine.txt
+      - name: The three ways, game by game
+        run: |
+          for g in solitaire minesweeper mahjong go checkers; do
+            node node/three-way.mjs $g three-way/$g.json | tee three-way/$g.txt
+          done
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: three-way
+          path: three-way/

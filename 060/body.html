@@ -1,0 +1,117 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 060 · Hazel’s speed · 2026-11-20, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 054</p>
+<h1>How Fast Is Hazel? Five Games, Three Ways</h1>
+<p class="sub">Cyrus asked how fast Hazel is: interpreted, compiled by hazel-jit, and against plain JavaScript. Five games from the Hazel activities answer it here. Each game’s rules and strategy are a Hazel program, run three ways: interpreted by hazeljs, compiled ahead of time by hazel-jit, and rewritten in plain JavaScript, a version written to give the same answers in the same order. All three are timed on one machine, operation by operation and over whole games that Hazel plays against itself.</p>
+{{cards}}
+<p class="muted">Geometric means over the five games of each game’s own geometric mean over its operations, measured in Node on one GitHub runner (<a href="#method">how</a>). The spread inside each game is wide: see the figures.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#three">Every operation, three ways</a>: the {{n_ops}} operations of the five games, on one scale.</li>
+<li><a href="#faster">How much faster, game by game</a>: compiled over interpreted, and plain JavaScript over compiled.</li>
+<li><a href="#where">Where hazel-jit’s time goes</a>: its step budget, its exact integers, the page boundary, and the shape of the program itself.</li>
+<li><a href="#games">The games, one by one</a>: each strategy, where randomness enters it, what its work grows with, and its numbers.</li>
+<li><a href="#same">The same answers, three ways</a>: how we know the three versions play the same game.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="three">Every operation, three ways</h2>
+<p><b>{{lead_three}}</b> {{lead_three_more}}</p>
+<figure class="chart">
+{{legend}}
+{{dots}}
+<figcaption>Builds 1, 2 and 3 (named in <a href="#method">How this was put together</a>): each operation’s median time per call, on a log scale where each grid line is ten times the one before. Hover over a mark for its time. Measured in Node 22, not in a browser. An empty row for hazeljs means it was not timed there: a call would take too long (Checkers looking 5 or 6 moves ahead, whole expert boards).</figcaption>
+</figure>
+
+<h2 id="faster">How much faster, game by game</h2>
+<p><b>{{lead_faster}}</b> {{lead_faster_more}}</p>
+<figure class="chart">
+{{speedups}}
+<figcaption>Builds 1, 2 and 3: for each game, the geometric mean over its operations of hazeljs’s time ÷ hazel-jit’s (orange) and hazel-jit’s ÷ plain JavaScript’s (aqua), on a log scale. Each game’s table, under <a href="#games">The games</a>, has every operation’s own ratio.</figcaption>
+</figure>
+
+<h2 id="where">Where hazel-jit’s time goes</h2>
+<p><b>{{lead_where}}</b> {{lead_where_more}}</p>
+<figure class="chart">
+{{variants}}
+<figcaption>Builds 2a and 2b against build 2: each game’s geometric mean, over its operations, of a variant’s time ÷ hazel-jit’s own (1.0, dashed). Below 1, the variant is faster. Both variants are made from <code>compiled.js</code> only for this measurement. The answers stay the same, as each table row checks.</figcaption>
+</figure>
+<p><b>Every compiled function starts by counting a step.</b> hazel-jit keeps the interpreter’s step limit: each compiled function begins with <code>if (--$R.fuel &lt; 0 || (($R.fuel &amp; 16383) === 0 &amp;&amp; performance.now() &gt; $R.deadline)) $R.out();</code>, so a run that loops can be stopped, as the interpreter’s can (^report(54)). Build 2a takes that line out of every function.</p>
+<p><b>Every <code>+</code>, <code>-</code>, <code>*</code> and <code>/</code> on Hazel’s <code>Int</code>s is a call into hazel-jit’s runtime.</b> <code>$R.iadd</code>, <code>$R.isub</code>, <code>$R.imul</code> and <code>$R.idiv</code> keep Hazel’s integers exact past 2<sup>53</sup>, where JavaScript’s numbers stop being exact, by switching to a <code>BigInt</code> there, as the interpreter’s integers are exact (^ticket(757)). Build 2b replaces them with plain number arithmetic, which these games can stand: their numbers stay far below 2<sup>53</sup>.</p>
+<p><b>{{lead_shape}}</b> {{lead_shape_more}}</p>
+<p><b>{{lead_boundary}}</b> {{lead_boundary_more}}</p>
+
+<h2 id="games">The games, one by one</h2>
+<p>For each game: what the program decides, where randomness enters, what makes its work grow, and its numbers. Randomness in all five works the same way: Hazel has no random numbers of its own, so the page passes them in, a list of numbers drawn by JavaScript’s <code>Math.random()</code> as an argument. That makes every function a pure function of its arguments. Seeded numbers make whole games repeat exactly, which is how all three versions were timed playing the same games, move for move.</p>
+
+<h3 id="solitaire">Solitaire (Klondike)</h3>
+<p><b>{{lead_solitaire}}</b></p>
+<p><b>The program.</b> Three modules (<code>Cards</code>, <code>Deal</code>, <code>Moves</code>; 244 lines with its vocabulary): the deck, the deal, every legal move in a fixed order, a move made, and the win. There is no opponent: the program’s work is the rules.</p>
+<p><b>Randomness.</b> Only the deal: 52 numbers from the page, each taking a card from those left at the place it falls. Every move after the deal is the player’s.</p>
+<p><b>What the work grows with.</b> Listing every legal move tries each card that can move against each of the seven piles and its foundation: the waste’s top card, each run of face-up cards in each pile, and each foundation’s top card, so about (1 + the face-up cards) × 8 checks. The Hazel walks lists to reach the n-th pile or foundation. The deal takes each card from the list of those left, walking it to the card’s place.</p>
+{{table_solitaire}}
+{{whole_solitaire}}
+
+<h3 id="minesweeper">Minesweeper</h3>
+<p><b>{{lead_minesweeper}}</b></p>
+<p><b>The program.</b> Three modules (<code>Board</code>, <code>Play</code>, <code>Hint</code>; 212 lines with its vocabulary): the mines laid after the first tap (never in its 3 by 3), each cell’s count, a cell opened (and the empty region around it), flags, a number’s neighbours opened at once, and the 💡 hint: a sure move worked out from the open numbers alone. 🤖 plays the hint’s sure moves one after another.</p>
+<p><b>Randomness.</b> The mines: one number from the page for each cell outside the first tap’s 3 by 3, by Knuth’s selection sampling, so exactly the mines asked for, each place as likely as any other. The hint is deterministic: the same board always gives the same sure move. When no number shows a sure move, the hint says so, and 🤖 guesses a closed cell picked at random by the page, not by Hazel, whose rules have no guessing.</p>
+<p><b>What the work grows with.</b> The board’s size and how much of it is open. The hint reads the board once, row by row, making each open cell with closed neighbours a number to reason from. It makes two passes over those numbers to find the mines they force, checking each number’s closed cells against the mines known so far, a list it walks. Then it looks for a number whose mines are all known. So its work grows with the numbers × their cells × the mines known, and so with the board’s size. Opening an empty cell sweeps the whole board, again and again, until no more cells open.</p>
+{{table_minesweeper}}
+{{whole_minesweeper}}
+
+<h3 id="go">Go</h3>
+<p><b>{{lead_go}}</b></p>
+<p><b>The program.</b> One module (<code>Go.hz</code>; 235 lines with its vocabulary): the board as rows of points, a group of stones and its liberties, a move (its captures, no suicide, the ko), a pass, Tromp and Taylor’s area score, and the opponent.</p>
+<p><b>The strategy.</b> Hazel values every empty point as its move, in tenths of a point: what the move takes (20 a stone), saves (15 a stone of its own groups in atari), threatens (6 a stone left in atari) and risks (−12 a stone of a group left with one liberty), its liberties, and where it is (the third line best, the edge worst). It plays the best one, or passes when none is worth more than −3 points, or when the other side has passed and it is ahead.</p>
+<p><b>Randomness.</b> Each point’s worth gets one of the page’s random numbers added before the best is picked, drawn fresh for every move, from 0 up to the most set by the Go page’s randomness slider (2 points by default; 0 to 10). It varies Hazel’s play, breaks ties, and can tip a choice between moves within that many points of each other, or tip a weak move over the −3 point floor where Hazel would have passed. At 0 Hazel plays its best move every time: two games it plays against itself at 0 come out the same, stone for stone.</p>
+<p><b>What the work grows with.</b> The points on the board, for each move. Hazel traces the board’s groups once a turn, then values each of the 81 points (49 on 7 by 7), looking up the groups beside it. A capture is valued by playing it on a copy of the board. In the Hazel, the stone at a point is found by walking the rows to its row, then along that row, so each lookup costs about as many steps as the point is far from the corner. The plain JavaScript reads the stone at a point from an array, in one step. Counting the score floods each empty region.</p>
+{{table_go}}
+{{whole_go}}
+
+<h3 id="checkers">Checkers (English draughts)</h3>
+<p><b>{{lead_checkers}}</b></p>
+<p><b>The program.</b> One module (<code>Checkers.hz</code>; 141 lines with its vocabulary): each side’s pieces as a set of the 32 dark squares kept in a number’s bits, the moves (jumps are compulsory and go on while they can), kings, the end (no move loses, 80 moves with no capture and no man moving draws), and the opponent.</p>
+<p><b>The strategy.</b> Alpha-beta search: Hazel tries each of its moves, then each answer, and so on, as many moves ahead as chosen, valuing the position at the end by material (a man 100, and 2 for each row it has come; a king 160) for the side to move.</p>
+<p><b>Randomness.</b> Ties only. The page passes 48 numbers, one for each move tried at the top. Of the moves with the best value, the one paired with the largest number is played. The search itself is deterministic.</p>
+<p><b>What the work grows with.</b> The search’s depth. With about 8 moves a position, looking one more move ahead costs several times as much, fewer than 8 because alpha-beta cuts off branches that cannot matter. The compiled times grow from {{ck_d1}} looking 1 ahead to {{ck_d6}} looking 6 ahead, at the position 8 moves in. Each position’s moves are found from the sets of squares. The Hazel has no bit operations, so it tests a square by dividing the set by a power of two, where the plain JavaScript shifts and masks.</p>
+{{table_checkers}}
+{{whole_checkers}}
+
+<h3 id="mahjong">Mahjong (Hong Kong rules)</h3>
+<p><b>{{lead_mahjong}}</b></p>
+<p><b>The program.</b> One module (<code>Mahjong.hz</code>; 316 lines with its vocabulary): the deal, a turn (a draw and a discard), the claims on a discard (a chow, a pung, a kong, a win) and which comes first, a winning hand and its faan, the points, and what each Hazel player discards and claims. 🤖 plays your seat by the step’s kind 9, as the Hazel players play theirs.</p>
+<p><b>The strategy.</b> A Hazel player wins when it can, declares a kong when it has one, and otherwise discards the tile that helps its hand least: its other copies, its neighbours in its suit, and a little for the middle of the suit or a scoring honour. On another seat’s discard it claims a win, a kong of three, a pung of a pair that is an honour or has few neighbours, or, as the next seat, a chow that breaks no pair.</p>
+<p><b>Randomness.</b> Only the shuffle: 136 numbers from the page, one a tile as its sort key. The players are deterministic: the same table always gives the same discard and the same claims.</p>
+<p><b>What the work grows with.</b> Whether a hand wins, asked again and again. Every step on another seat’s discard asks, for each of the three other seats, whether that discard would complete its hand. That means trying every way the hand makes a pair and four sets, a recursive search over pungs and chows. A player’s own turn asks it once more, then weighs each kind of tile in its hand.</p>
+{{table_mahjong}}
+{{whole_mahjong}}
+
+<h2 id="same">The same answers, three ways</h2>
+<p><b>The three versions of each game give the same answers, value for value, and in the same order where the order matters: the moves listed, the move chosen, the faan counted.</b> Two Node scripts in hazeljs-examples checked it before anything was timed. <code>node/compare-compiled.mjs</code> plays seeded games and compares every answer of the compiled rules with hazeljs’s, and, with <code>--plain</code>, with the plain JavaScript’s:</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Game</th><th>hazel-jit against hazeljs</th><th>plain JS against hazel-jit</th><th>What the plain check covers</th></tr></thead><tbody>
+<tr><td>Checkers</td><td class="n">469 answers, 0 differ</td><td class="n">8,969 answers, 0 differ</td><td>30 random games: every position’s moves, Hazel’s choice looking 1 and 2 ahead (3 and 4 every tenth move), each move made</td></tr>
+<tr><td>Solitaire</td><td class="n">722 answers, 0 differ</td><td class="n">48,040 answers, 0 differ</td><td>40 deals, drawing one and three: every position’s moves, the moves from every place, each move made, the win</td></tr>
+<tr><td>Minesweeper</td><td class="n">571 answers, 0 differ</td><td class="n">15,137 answers, 0 differ</td><td>90 boards at the three levels: every hint (all four kinds of answer, 125 of them “take this flag off”), each move it names, random flags kept, chords</td></tr>
+<tr><td>Go</td><td class="n">157 answers, 0 differ</td><td class="n">5,160 answers, 0 differ</td><td>20 games of Hazel against itself on 9 by 9: every choice, a random point played (legal or not), each move or pass, the score every tenth turn</td></tr>
+<tr><td>Mahjong</td><td class="n">1,719 answers, 0 differ</td><td class="n">15,386 answers, 0 differ</td><td>80 hands: every step and your options, with you discarding at random, making claims, or played by Hazel; every third deal with tied shuffle keys</td></tr>
+</tbody></table></div>
+<p>Then the timing script checked again as it went: each operation’s answer the same all three ways (and both variants), and each whole game ending in the same state. {{same_line}}</p>
+<p><b>The plain JavaScript keeps the Hazel’s algorithms and its order, not its data structures.</b> Where the Hazel walks a list, the JavaScript indexes an array. Where it divides by a power of two, the JavaScript shifts. Where it looks a value up in a list, the JavaScript uses a <code>Set</code> or a <code>Map</code>. A JavaScript programmer writing the same game would make those choices, and Matthew asked for the JavaScript to be equivalent in the game, its logic and its strategy. Two places keep Hazel’s exact order where a simpler JavaScript would differ. Mahjong’s shuffle sorts the keys with the Hazel’s own merge sort, whose halves are taken alternately and reversed, so tied keys fall the same way. Minesweeper’s hint keeps the order in which the Hazel lists each number’s closed neighbours, because the first sure move found is the one it names.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li><b>Time every hazel-jit change this way.</b> The workflow <code>three-way timing</code> in hazeljs-examples runs on every change to the rules, the compiled programs or the plain JavaScript. Run against each new hazel-jit commit, its results would chart how the distance to plain JavaScript closes, as Matthew put it: “now, and in the future, as the hazel components become better in performance”.</li>
+<li><b>Split the program’s shape from the compiler.</b> A third JavaScript version of one game, written the Hazel’s way (lists of cons cells, division for bits, a tuple for each call), would show how much of the gap to plain JavaScript is Hazel’s vocabulary and how much is hazel-jit’s code. Checkers and Go are the clearest cases.</li>
+<li><b>Calls without a tuple.</b> Every multi-argument call in the compiled code allocates an array for its arguments and reads them back out. Compiling a known function of n arguments to a JavaScript function of n parameters would remove that allocation.</li>
+<li><b>A cheaper page boundary for big values.</b> {{next_boundary}}</li>
+<li><b>The same three ways in a browser, and on a phone.</b> Each page’s ⚙️ Advanced already times its rules, interpreted or compiled. Adding plain JavaScript there would give these numbers on the devices the activities are played on.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>On 2026-11-20, for ^ticket(797). The five games are hazeljs-examples’ own: their rules are the <code>rules/*.hz</code> the pages run, compiled for 0.0.34 (^ticket(794)). The plain JavaScript (<code>&lt;game&gt;/plain.js</code>) was written for this report and is never loaded by the pages.</p>
+{{builds}}
+<p><b>The machine.</b> {{machine}}: one GitHub-hosted runner, all five games one after another in one job, so all builds were timed on the same machine: <a href="{{run_url}}">run {{run}}</a> of the workflow <code>three-way timing</code>, {{when}}.</p>
+<p><b>The timing.</b> <code>node/three-way.mjs &lt;game&gt;</code> builds the rules with hazeljs as the page does, loads <code>compiled.js</code> and <code>plain.js</code>, and makes the two variants of <code>compiled.js</code> by text replacement. It plays a seeded game to make each operation’s positions (with the compiled rules; all ways answer the same there). Then it times each operation each way: a call too fast for the clock is run in batches of as many calls as take at least a millisecond, and the median batch, per call, is reported. hazeljs is timed at least 3 times and for at least 1.5 s, the others at least 30 times and for at least 0.3 s, after 20 calls to warm up. Whole games are played from the same seed each way: hazeljs once, the others 5 times, keeping the median. Every operation goes through the same functions the page calls, with the page’s values. For hazel-jit that includes converting them in and out (the page boundary, timed by itself on its own rows).</p>
+<p><b>Not timed in a browser.</b> These are Node numbers, on a server processor. Chrome runs the same JavaScript engine as Node (V8); Firefox and Safari have their own, and on a phone every time will be several times longer. The ratios between the three ways are what this report is about.</p>
+</main></body>

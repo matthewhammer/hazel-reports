@@ -1,0 +1,894 @@
+[
+ {
+  "section": "Solitaire (Klondike)",
+  "section_id": "solitaire",
+  "columns": [
+   "Operation",
+   "Position",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "hazeljs ÷ hazel-jit",
+   "hazel-jit ÷ plain JS"
+  ],
+  "rows": [
+   [
+    "a deal",
+    "a new game",
+    "71 ms",
+    "0.013 ms",
+    "0.013 ms",
+    "0.012 ms",
+    "2.29 µs",
+    "5,317×",
+    "5.8×"
+   ],
+   [
+    "every legal move",
+    "25 moves in",
+    "160 ms",
+    "0.016 ms",
+    "0.015 ms",
+    "0.015 ms",
+    "0.931 µs",
+    "10,082×",
+    "17×"
+   ],
+   [
+    "a move made",
+    "25 moves in",
+    "11 ms",
+    "7.34 µs",
+    "6.42 µs",
+    "6.40 µs",
+    "0.194 µs",
+    "1,450×",
+    "38×"
+   ],
+   [
+    "the moves from a pile",
+    "25 moves in",
+    "11 ms",
+    "4.54 µs",
+    "4.25 µs",
+    "4.30 µs",
+    "0.075 µs",
+    "2,322×",
+    "60×"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "25 moves in",
+    "—",
+    "4.09 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ]
+  ]
+ },
+ {
+  "section": "Solitaire (Klondike)",
+  "section_id": "solitaire",
+  "columns": [
+   "Whole game",
+   "Moves",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "Same end"
+  ],
+  "rows": [
+   [
+    "300 random moves",
+    "300",
+    "66.2 s",
+    "9.4 ms",
+    "9.5 ms",
+    "9.2 ms",
+    "1.8 ms",
+    "yes"
+   ]
+  ]
+ },
+ {
+  "section": "Minesweeper",
+  "section_id": "minesweeper",
+  "columns": [
+   "Operation",
+   "Position",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "hazeljs ÷ hazel-jit",
+   "hazel-jit ÷ plain JS"
+  ],
+  "rows": [
+   [
+    "the mines laid",
+    "beginner, 9 by 9",
+    "83 ms",
+    "0.028 ms",
+    "0.025 ms",
+    "0.023 ms",
+    "2.64 µs",
+    "2,953×",
+    "11×"
+   ],
+   [
+    "a cell opened",
+    "beginner, 9 by 9",
+    "7.6 ms",
+    "7.61 µs",
+    "7.56 µs",
+    "7.55 µs",
+    "0.121 µs",
+    "1,004×",
+    "63×"
+   ],
+   [
+    "the hint (a sure move)",
+    "beginner, 9 by 9",
+    "122 ms",
+    "0.031 ms",
+    "0.030 ms",
+    "0.027 ms",
+    "4.31 µs",
+    "3,966×",
+    "7.1×"
+   ],
+   [
+    "the mines laid",
+    "intermediate, 16 by 16",
+    "290 ms",
+    "0.090 ms",
+    "0.082 ms",
+    "0.075 ms",
+    "8.85 µs",
+    "3,242×",
+    "10×"
+   ],
+   [
+    "a cell opened",
+    "intermediate, 16 by 16",
+    "20 ms",
+    "0.022 ms",
+    "0.022 ms",
+    "0.022 ms",
+    "0.219 µs",
+    "921×",
+    "101×"
+   ],
+   [
+    "the hint (a sure move)",
+    "intermediate, 16 by 16",
+    "363 ms",
+    "0.133 ms",
+    "0.130 ms",
+    "0.118 ms",
+    "8.66 µs",
+    "2,740×",
+    "15×"
+   ],
+   [
+    "the mines laid",
+    "expert, 16 by 30",
+    "504 ms",
+    "0.173 ms",
+    "0.155 ms",
+    "0.142 ms",
+    "0.017 ms",
+    "2,911×",
+    "10.0×"
+   ],
+   [
+    "a cell opened",
+    "expert, 16 by 30",
+    "39 ms",
+    "0.046 ms",
+    "0.040 ms",
+    "0.041 ms",
+    "0.336 µs",
+    "841×",
+    "137×"
+   ],
+   [
+    "the hint (a sure move)",
+    "expert, 16 by 30",
+    "583 ms",
+    "0.227 ms",
+    "0.237 ms",
+    "0.161 ms",
+    "5.11 µs",
+    "2,568×",
+    "44×"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "beginner, 9 by 9",
+    "—",
+    "6.90 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "intermediate, 16 by 16",
+    "—",
+    "0.021 ms",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "expert, 16 by 30",
+    "—",
+    "0.040 ms",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ]
+  ]
+ },
+ {
+  "section": "Minesweeper",
+  "section_id": "minesweeper",
+  "columns": [
+   "Whole game",
+   "Moves",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "Same end"
+  ],
+  "rows": [
+   [
+    "Hazel sweeping a board, beginner, 9 by 9",
+    "15",
+    "2.76 s",
+    "1.1 ms",
+    "1.1 ms",
+    "1.0 ms",
+    "1.1 ms",
+    "yes"
+   ],
+   [
+    "Hazel sweeping a board, intermediate, 16 by 16",
+    "115",
+    "121.7 s",
+    "35 ms",
+    "36 ms",
+    "32 ms",
+    "4.1 ms",
+    "yes"
+   ],
+   [
+    "Hazel sweeping a board, expert, 16 by 30",
+    "252",
+    "—",
+    "228 ms",
+    "222 ms",
+    "214 ms",
+    "14 ms",
+    "yes"
+   ]
+  ]
+ },
+ {
+  "section": "Go",
+  "section_id": "go",
+  "columns": [
+   "Operation",
+   "Position",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "hazeljs ÷ hazel-jit",
+   "hazel-jit ÷ plain JS"
+  ],
+  "rows": [
+   [
+    "a move played",
+    "6 moves in",
+    "17 ms",
+    "4.49 µs",
+    "4.15 µs",
+    "3.83 µs",
+    "1.47 µs",
+    "3,885×",
+    "3.1×"
+   ],
+   [
+    "Hazel's choice of move",
+    "6 moves in",
+    "588 ms",
+    "0.105 ms",
+    "0.093 ms",
+    "0.077 ms",
+    "7.63 µs",
+    "5,611×",
+    "14×"
+   ],
+   [
+    "the score",
+    "6 moves in",
+    "755 ms",
+    "0.138 ms",
+    "0.110 ms",
+    "0.105 ms",
+    "5.69 µs",
+    "5,452×",
+    "24×"
+   ],
+   [
+    "a move played",
+    "40 moves in",
+    "188 ms",
+    "0.029 ms",
+    "0.026 ms",
+    "0.023 ms",
+    "3.89 µs",
+    "6,370×",
+    "7.6×"
+   ],
+   [
+    "Hazel's choice of move",
+    "40 moves in",
+    "913 ms",
+    "0.162 ms",
+    "0.152 ms",
+    "0.166 ms",
+    "0.016 ms",
+    "5,638×",
+    "10×"
+   ],
+   [
+    "the score",
+    "40 moves in",
+    "260 ms",
+    "0.048 ms",
+    "0.043 ms",
+    "0.039 ms",
+    "3.71 µs",
+    "5,462×",
+    "13×"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "6 moves in",
+    "—",
+    "1.39 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "40 moves in",
+    "—",
+    "1.40 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ]
+  ]
+ },
+ {
+  "section": "Go",
+  "section_id": "go",
+  "columns": [
+   "Whole game",
+   "Moves",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "Same end"
+  ],
+  "rows": [
+   [
+    "Hazel against Hazel on 7 by 7",
+    "42",
+    "17.2 s",
+    "5.8 ms",
+    "4.9 ms",
+    "4.6 ms",
+    "0.687 ms",
+    "yes"
+   ],
+   [
+    "Hazel against Hazel on 9 by 9",
+    "89",
+    "71.2 s",
+    "17 ms",
+    "16 ms",
+    "15 ms",
+    "5.5 ms",
+    "yes"
+   ]
+  ]
+ },
+ {
+  "section": "Checkers (English draughts)",
+  "section_id": "checkers",
+  "columns": [
+   "Operation",
+   "Position",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "hazeljs ÷ hazel-jit",
+   "hazel-jit ÷ plain JS"
+  ],
+  "rows": [
+   [
+    "the moves",
+    "the start",
+    "37 ms",
+    "0.012 ms",
+    "0.012 ms",
+    "8.89 µs",
+    "0.572 µs",
+    "3,049×",
+    "21×"
+   ],
+   [
+    "the moves",
+    "8 moves in",
+    "37 ms",
+    "0.012 ms",
+    "0.012 ms",
+    "9.66 µs",
+    "0.607 µs",
+    "3,031×",
+    "20×"
+   ],
+   [
+    "the moves",
+    "30 moves in",
+    "27 ms",
+    "9.09 µs",
+    "9.11 µs",
+    "7.43 µs",
+    "0.569 µs",
+    "2,933×",
+    "16×"
+   ],
+   [
+    "Hazel's move, looking 1 ahead",
+    "8 moves in",
+    "130 ms",
+    "0.046 ms",
+    "0.049 ms",
+    "0.039 ms",
+    "1.75 µs",
+    "2,815×",
+    "26×"
+   ],
+   [
+    "Hazel's move, looking 1 ahead",
+    "30 moves in",
+    "109 ms",
+    "0.039 ms",
+    "0.042 ms",
+    "0.034 ms",
+    "1.55 µs",
+    "2,810×",
+    "25×"
+   ],
+   [
+    "Hazel's move, looking 2 ahead",
+    "8 moves in",
+    "635 ms",
+    "0.226 ms",
+    "0.237 ms",
+    "0.187 ms",
+    "0.013 ms",
+    "2,812×",
+    "18×"
+   ],
+   [
+    "Hazel's move, looking 2 ahead",
+    "30 moves in",
+    "498 ms",
+    "0.180 ms",
+    "0.187 ms",
+    "0.152 ms",
+    "0.010 ms",
+    "2,759×",
+    "18×"
+   ],
+   [
+    "Hazel's move, looking 3 ahead",
+    "8 moves in",
+    "2.12 s",
+    "0.729 ms",
+    "0.762 ms",
+    "0.604 ms",
+    "0.045 ms",
+    "2,907×",
+    "16×"
+   ],
+   [
+    "Hazel's move, looking 3 ahead",
+    "30 moves in",
+    "1.86 s",
+    "0.649 ms",
+    "0.689 ms",
+    "0.559 ms",
+    "0.044 ms",
+    "2,856×",
+    "15×"
+   ],
+   [
+    "Hazel's move, looking 4 ahead",
+    "8 moves in",
+    "6.20 s",
+    "2.2 ms",
+    "2.2 ms",
+    "1.7 ms",
+    "0.139 ms",
+    "2,856×",
+    "16×"
+   ],
+   [
+    "Hazel's move, looking 4 ahead",
+    "30 moves in",
+    "—",
+    "2.3 ms",
+    "2.3 ms",
+    "1.8 ms",
+    "0.156 ms",
+    "—",
+    "15×"
+   ],
+   [
+    "Hazel's move, looking 5 ahead",
+    "8 moves in",
+    "—",
+    "6.1 ms",
+    "6.7 ms",
+    "5.2 ms",
+    "0.428 ms",
+    "—",
+    "14×"
+   ],
+   [
+    "Hazel's move, looking 5 ahead",
+    "30 moves in",
+    "—",
+    "6.9 ms",
+    "7.2 ms",
+    "5.9 ms",
+    "0.407 ms",
+    "—",
+    "17×"
+   ],
+   [
+    "Hazel's move, looking 6 ahead",
+    "8 moves in",
+    "—",
+    "19 ms",
+    "20 ms",
+    "16 ms",
+    "1.5 ms",
+    "—",
+    "12×"
+   ],
+   [
+    "Hazel's move, looking 6 ahead",
+    "30 moves in",
+    "—",
+    "20 ms",
+    "21 ms",
+    "18 ms",
+    "1.6 ms",
+    "—",
+    "13×"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "the start",
+    "—",
+    "0.141 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "8 moves in",
+    "—",
+    "0.224 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "30 moves in",
+    "—",
+    "0.221 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ]
+  ]
+ },
+ {
+  "section": "Checkers (English draughts)",
+  "section_id": "checkers",
+  "columns": [
+   "Whole game",
+   "Moves",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "Same end"
+  ],
+  "rows": [
+   [
+    "Hazel against Hazel, looking 2 ahead (to 60 moves)",
+    "60",
+    "24.7 s",
+    "9.8 ms",
+    "11 ms",
+    "9.9 ms",
+    "0.855 ms",
+    "yes"
+   ],
+   [
+    "Hazel against Hazel, looking 4 ahead (a whole game)",
+    "185",
+    "—",
+    "760 ms",
+    "825 ms",
+    "697 ms",
+    "58 ms",
+    "yes"
+   ],
+   [
+    "Hazel against Hazel, looking 6 ahead (a whole game)",
+    "213",
+    "—",
+    "5.38 s",
+    "5.38 s",
+    "4.54 s",
+    "385 ms",
+    "yes"
+   ]
+  ]
+ },
+ {
+  "section": "Mahjong (Hong Kong rules)",
+  "section_id": "mahjong",
+  "columns": [
+   "Operation",
+   "Position",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "hazeljs ÷ hazel-jit",
+   "hazel-jit ÷ plain JS"
+  ],
+  "rows": [
+   [
+    "a hand dealt",
+    "the first hand",
+    "180 ms",
+    "0.042 ms",
+    "0.039 ms",
+    "0.039 ms",
+    "0.021 ms",
+    "4,255×",
+    "2.0×"
+   ],
+   [
+    "a Hazel player's turn (a step)",
+    "early in the hand",
+    "63 ms",
+    "0.023 ms",
+    "0.014 ms",
+    "0.014 ms",
+    "2.34 µs",
+    "2,777×",
+    "9.7×"
+   ],
+   [
+    "your options",
+    "your turn",
+    "28 ms",
+    "9.39 µs",
+    "6.67 µs",
+    "7.14 µs",
+    "1.60 µs",
+    "2,962×",
+    "5.9×"
+   ],
+   [
+    "your turn, played by Hazel (a step)",
+    "your turn",
+    "62 ms",
+    "0.019 ms",
+    "0.015 ms",
+    "0.016 ms",
+    "2.46 µs",
+    "3,246×",
+    "7.8×"
+   ],
+   [
+    "the claims on a discard (a step)",
+    "another's discard",
+    "60 ms",
+    "0.021 ms",
+    "0.016 ms",
+    "0.016 ms",
+    "8.80 µs",
+    "2,890×",
+    "2.4×"
+   ],
+   [
+    "the page boundary: the game in and out",
+    "early in the hand",
+    "—",
+    "2.62 µs",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+    "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+   ]
+  ]
+ },
+ {
+  "section": "Mahjong (Hong Kong rules)",
+  "section_id": "mahjong",
+  "columns": [
+   "Whole game",
+   "Moves",
+   "hazeljs",
+   "hazel-jit",
+   "no step budget",
+   "and plain numbers",
+   "plain JS",
+   "Same end"
+  ],
+  "rows": [
+   [
+    "Hazel playing all four seats, one hand",
+    "101",
+    "4.62 s",
+    "5.6 ms",
+    "4.5 ms",
+    "5.2 ms",
+    "2.1 ms",
+    "yes"
+   ],
+   [
+    "Hazel playing all four seats, eight hands",
+    "746",
+    "35.6 s",
+    "20 ms",
+    "22 ms",
+    "23 ms",
+    "10 ms",
+    "yes"
+   ]
+  ]
+ },
+ {
+  "section": "The same answers, three ways",
+  "section_id": "same",
+  "columns": [
+   "Game",
+   "hazel-jit against hazeljs",
+   "plain JS against hazel-jit",
+   "What the plain check covers"
+  ],
+  "rows": [
+   [
+    "Checkers",
+    "469 answers, 0 differ",
+    "8,969 answers, 0 differ",
+    "30 random games: every position’s moves, Hazel’s choice looking 1 and 2 ahead (3 and 4 every tenth move), each move made"
+   ],
+   [
+    "Solitaire",
+    "722 answers, 0 differ",
+    "48,040 answers, 0 differ",
+    "40 deals, drawing one and three: every position’s moves, the moves from every place, each move made, the win"
+   ],
+   [
+    "Minesweeper",
+    "571 answers, 0 differ",
+    "15,137 answers, 0 differ",
+    "90 boards at the three levels: every hint (all four kinds of answer, 125 of them “take this flag off”), each move it names, random flags kept, chords"
+   ],
+   [
+    "Go",
+    "157 answers, 0 differ",
+    "5,160 answers, 0 differ",
+    "20 games of Hazel against itself on 9 by 9: every choice, a random point played (legal or not), each move or pass, the score every tenth turn"
+   ],
+   [
+    "Mahjong",
+    "1,719 answers, 0 differ",
+    "15,386 answers, 0 differ",
+    "80 hands: every step and your options, with you discarding at random, making claims, or played by Hazel; every third deal with tied shuffle keys"
+   ]
+  ]
+ },
+ {
+  "section": "How this was put together",
+  "section_id": "method",
+  "columns": [
+   "Build",
+   "What runs the rules",
+   "From"
+  ],
+  "rows": [
+   [
+    "1 · hazeljs",
+    "Hazel’s interpreter, as the pages ran their rules until 0.0.34: the game’s rules/*.hz built by Hazel.runProgram",
+    "hazeljs 0.0.4 from npm"
+   ],
+   [
+    "2 · hazel-jit",
+    "The same Hazel compiled ahead of time to JavaScript by hazel-jit, wrapped by tools/make-compiled.py with adapters for the page’s values (compiled.js)",
+    "hazelgrove/hazel trial/794-games-aot: Solitaire 5405a2e87d, Minesweeper 5405a2e87d, Go 5405a2e87d, Checkers d15466c7b1, Mahjong 70d0178872"
+   ],
+   [
+    "2a · no step budget",
+    "Build 2 with the step budget’s check taken out of every compiled function",
+    "made from build 2 by node/three-way.mjs, for timing only"
+   ],
+   [
+    "2b · and plain numbers",
+    "Build 2a with Hazel’s exact-integer + - * / replaced by plain number arithmetic",
+    "made from build 2a likewise"
+   ],
+   [
+    "3 · plain JS",
+    "The same game, rules and strategy written in plain JavaScript (plain.js)",
+    "hazeljs-examples 40fd48b"
+   ]
+  ]
+ }
+]

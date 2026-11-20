@@ -1,0 +1,1533 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Fast Is Hazel? Five Games, Three Ways</title>
+<meta name="description" content="Cyrus asked how fast Hazel is. Five games of the Hazel activities, each run three ways with the same rules and strategy: interpreted by hazeljs, compiled ahead of time by hazel-jit (about 3,300 times as fast), and written in plain JavaScript (about 13 times as fast again).">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  ol.outline > li { margin: 4px 0; } .muted { color: var(--muted); }
+  :root { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #8a63d2; --s5: #c06a9a; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #9b7be0; --s5: #cf7aa9; } }
+  :root[data-theme="dark"] { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #9b7be0; --s5: #cf7aa9; }
+  .scroll { overflow-x: auto; max-width: 100%; }
+  table.vals { border-collapse: collapse; margin: 0.6em 0 1em; font-size: 0.86em; }
+  table.vals th, table.vals td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; } table.vals th { font-weight: 600; }
+  table.vals tr.bound td { color: var(--muted); font-size: 0.95em; }
+  figure.chart { margin: 1em 0 1.4em; } figure.chart svg { width: 100%; height: auto; display: block; }
+  figure.chart figcaption { color: var(--muted); font-size: 0.88em; margin-top: 4px; }
+  svg .s1 { fill: var(--s1); } svg .s2 { fill: var(--s2); } svg .s3 { fill: var(--s3); } svg .s4 { fill: var(--s4); } svg .s5 { fill: var(--s5); }
+  svg circle.s1, svg rect.s2, svg path.s3 { stroke: var(--bg); stroke-width: 1.5; }
+  svg .hit { fill: transparent; } svg .mk:hover > :not(.hit) { stroke: var(--ink); stroke-width: 1.5; }
+  svg .lbl { fill: var(--ink); font: 11.5px system-ui, sans-serif; } svg .gh { fill: var(--ink); font: 600 12.5px system-ui, sans-serif; }
+  svg .ax { stroke: var(--line); } svg .ax.one { stroke: var(--muted); stroke-dasharray: 3 3; } svg .axl { fill: var(--muted); font: 11px system-ui, sans-serif; }
+  svg .row { stroke: var(--line); stroke-opacity: 0.5; }
+  figure.chart p.legend svg { width: 12px; height: 12px; display: inline-block; flex: none; }
+  p.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.88em; margin: 0.4em 0; } p.legend span { display: inline-flex; gap: 6px; align-items: center; }
+  .cards3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 0.8em 0 1.2em; }
+  .cards3 .card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--paper); }
+  .cards3 .big { font-size: 1.9em; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; } .cards3 .what { color: var(--muted); font-size: 0.88em; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>60<b>)</b></code> · Hazel’s speed · 2026-11-20, revised 2026-11-20 13:52 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>How Fast Is Hazel? Five Games, Three Ways</h1>
+<p class="sub">Cyrus asked how fast Hazel is: interpreted, compiled by hazel-jit, and against plain JavaScript. Five games from the Hazel activities answer it here. Each game’s rules and strategy are a Hazel program, run three ways: interpreted by hazeljs, compiled ahead of time by hazel-jit, and rewritten in plain JavaScript, a version written to give the same answers in the same order. All three are timed on one machine, operation by operation and over whole games that Hazel plays against itself.</p>
+<div class="cards3"><div class="card"><div class="big">3,257×</div><div class="what">hazel-jit over hazeljs: the compiled Hazel against the interpreter</div></div><div class="card"><div class="big">13×</div><div class="what">plain JavaScript over hazel-jit: the same game written in JavaScript</div></div><div class="card"><div class="big">44,642×</div><div class="what">plain JavaScript over hazeljs</div></div></div>
+<p class="muted">Geometric means over the five games of each game’s own geometric mean over its operations, measured in Node on one GitHub runner (<a href="#method">how</a>). The spread inside each game is wide: see the figures.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#three">Every operation, three ways</a>: the 39 operations of the five games, on one scale.</li>
+<li><a href="#faster">How much faster, game by game</a>: compiled over interpreted, and plain JavaScript over compiled.</li>
+<li><a href="#where">Where hazel-jit’s time goes</a>: its step budget, its exact integers, the page boundary, and the shape of the program itself.</li>
+<li><a href="#games">The games, one by one</a>: each strategy, where randomness enters it, what its work grows with, and its numbers.</li>
+<li><a href="#same">The same answers, three ways</a>: how we know the three versions play the same game.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="three">Every operation, three ways<a class="anchor" href="#three" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="three" title="copy this section's address">copy link</button></h2>
+<p><b>Compiled by hazel-jit, the five games’ rules run about 3,300 times as fast as hazeljs interprets them; written in plain JavaScript, the same games run about 13 times as fast again.</b> So plain JavaScript is about 45,000 times as fast as Hazel’s interpreter on these games, and hazel-jit closes all but a factor of about 13 of that distance. Operation by operation the factors spread: compiled over interpreted from 841× (opening a cell on an expert Minesweeper board) to 10,082× (listing Solitaire’s legal moves), and plain JavaScript over compiled from 2× (dealing a Mahjong hand) to 137× (opening that Minesweeper cell).</p>
+<figure class="chart">
+<p class="legend"><span><svg width="12" height="12"><circle class="s1" cx="6" cy="6" r="4.5"/></svg> hazeljs, interpreting the Hazel (build 1)</span> <span><svg width="12" height="12"><rect class="s2" x="2" y="2" width="8" height="8" rx="1"/></svg> hazel-jit, the Hazel compiled (build 2)</span> <span><svg width="12" height="12"><path class="s3" d="M6 0.5l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/></svg> plain JavaScript (build 3)</span></p>
+<svg viewBox="0 0 780 798" role="img" aria-labelledby="f1t"><title id="f1t">Every operation of the five games, timed three ways: hazeljs, hazel-jit, plain JavaScript; a log scale from 0.1 microseconds to 100 seconds</title><line class="ax" x1="360.0" x2="360.0" y1="28" y2="786"/><text class="axl" x="360.0" y="22" text-anchor="middle">0.1 µs</text><line class="ax" x1="405.1" x2="405.1" y1="28" y2="786"/><text class="axl" x="405.1" y="22" text-anchor="middle">1 µs</text><line class="ax" x1="450.2" x2="450.2" y1="28" y2="786"/><text class="axl" x="450.2" y="22" text-anchor="middle">10 µs</text><line class="ax" x1="495.3" x2="495.3" y1="28" y2="786"/><text class="axl" x="495.3" y="22" text-anchor="middle">0.1 ms</text><line class="ax" x1="540.4" x2="540.4" y1="28" y2="786"/><text class="axl" x="540.4" y="22" text-anchor="middle">1 ms</text><line class="ax" x1="585.6" x2="585.6" y1="28" y2="786"/><text class="axl" x="585.6" y="22" text-anchor="middle">10 ms</text><line class="ax" x1="630.7" x2="630.7" y1="28" y2="786"/><text class="axl" x="630.7" y="22" text-anchor="middle">0.1 s</text><line class="ax" x1="675.8" x2="675.8" y1="28" y2="786"/><text class="axl" x="675.8" y="22" text-anchor="middle">1 s</text><line class="ax" x1="720.9" x2="720.9" y1="28" y2="786"/><text class="axl" x="720.9" y="22" text-anchor="middle">10 s</text><line class="ax" x1="766.0" x2="766.0" y1="28" y2="786"/><text class="axl" x="766.0" y="22" text-anchor="middle">100 s</text><text class="gh" x="4" y="46">Solitaire</text><text class="lbl" x="352" y="63" text-anchor="end">a deal · a new game</text><line class="row" x1="360" x2="766" y1="59.5" y2="59.5"/><g class="mk"><title>a deal · a new game: hazeljs 71 ms</title><circle class="s1" cx="623.9" cy="59.5" r="4.5"/><circle class="hit" cx="623.9" cy="59.5" r="9"/></g><g class="mk"><title>a deal · a new game: hazel-jit 0.013 ms</title><rect class="s2" x="451.8" y="55.5" width="8" height="8" rx="1"/><circle class="hit" cx="455.8" cy="59.5" r="9"/></g><g class="mk"><title>a deal · a new game: plain JS 2.29 µs</title><path class="s3" d="M421.4 54.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="421.4" cy="59.5" r="9"/></g><text class="lbl" x="352" y="80" text-anchor="end">every legal move · 25 moves in</text><line class="row" x1="360" x2="766" y1="76.5" y2="76.5"/><g class="mk"><title>every legal move · 25 moves in: hazeljs 160 ms</title><circle class="s1" cx="639.8" cy="76.5" r="4.5"/><circle class="hit" cx="639.8" cy="76.5" r="9"/></g><g class="mk"><title>every legal move · 25 moves in: hazel-jit 0.016 ms</title><rect class="s2" x="455.2" y="72.5" width="8" height="8" rx="1"/><circle class="hit" cx="459.2" cy="76.5" r="9"/></g><g class="mk"><title>every legal move · 25 moves in: plain JS 0.931 µs</title><path class="s3" d="M403.7 71.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="403.7" cy="76.5" r="9"/></g><text class="lbl" x="352" y="97" text-anchor="end">a move made · 25 moves in</text><line class="row" x1="360" x2="766" y1="93.5" y2="93.5"/><g class="mk"><title>a move made · 25 moves in: hazeljs 11 ms</title><circle class="s1" cx="586.8" cy="93.5" r="4.5"/><circle class="hit" cx="586.8" cy="93.5" r="9"/></g><g class="mk"><title>a move made · 25 moves in: hazel-jit 7.34 µs</title><rect class="s2" x="440.2" y="89.5" width="8" height="8" rx="1"/><circle class="hit" cx="444.2" cy="93.5" r="9"/></g><g class="mk"><title>a move made · 25 moves in: plain JS 0.194 µs</title><path class="s3" d="M373.0 88.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="373.0" cy="93.5" r="9"/></g><text class="lbl" x="352" y="114" text-anchor="end">the moves from a pile · 25 moves in</text><line class="row" x1="360" x2="766" y1="110.5" y2="110.5"/><g class="mk"><title>the moves from a pile · 25 moves in: hazeljs 11 ms</title><circle class="s1" cx="586.6" cy="110.5" r="4.5"/><circle class="hit" cx="586.6" cy="110.5" r="9"/></g><g class="mk"><title>the moves from a pile · 25 moves in: hazel-jit 4.54 µs</title><rect class="s2" x="430.7" y="106.5" width="8" height="8" rx="1"/><circle class="hit" cx="434.7" cy="110.5" r="9"/></g><g class="mk"><title>the moves from a pile · 25 moves in: plain JS 0.075 µs</title><path class="s3" d="M354.4 105.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="354.4" cy="110.5" r="9"/></g><text class="gh" x="4" y="131">Minesweeper</text><text class="lbl" x="352" y="148" text-anchor="end">the mines laid · beginner, 9 by 9</text><line class="row" x1="360" x2="766" y1="144.5" y2="144.5"/><g class="mk"><title>the mines laid · beginner, 9 by 9: hazeljs 83 ms</title><circle class="s1" cx="627.1" cy="144.5" r="4.5"/><circle class="hit" cx="627.1" cy="144.5" r="9"/></g><g class="mk"><title>the mines laid · beginner, 9 by 9: hazel-jit 0.028 ms</title><rect class="s2" x="466.6" y="140.5" width="8" height="8" rx="1"/><circle class="hit" cx="470.6" cy="144.5" r="9"/></g><g class="mk"><title>the mines laid · beginner, 9 by 9: plain JS 2.64 µs</title><path class="s3" d="M424.1 139.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="424.1" cy="144.5" r="9"/></g><text class="lbl" x="352" y="165" text-anchor="end">a cell opened · beginner, 9 by 9</text><line class="row" x1="360" x2="766" y1="161.5" y2="161.5"/><g class="mk"><title>a cell opened · beginner, 9 by 9: hazeljs 7.6 ms</title><circle class="s1" cx="580.3" cy="161.5" r="4.5"/><circle class="hit" cx="580.3" cy="161.5" r="9"/></g><g class="mk"><title>a cell opened · beginner, 9 by 9: hazel-jit 7.61 µs</title><rect class="s2" x="440.9" y="157.5" width="8" height="8" rx="1"/><circle class="hit" cx="444.9" cy="161.5" r="9"/></g><g class="mk"><title>a cell opened · beginner, 9 by 9: plain JS 0.121 µs</title><path class="s3" d="M363.7 156.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="363.7" cy="161.5" r="9"/></g><text class="lbl" x="352" y="182" text-anchor="end">the hint (a sure move) · beginner, 9 by 9</text><line class="row" x1="360" x2="766" y1="178.5" y2="178.5"/><g class="mk"><title>the hint (a sure move) · beginner, 9 by 9: hazeljs 122 ms</title><circle class="s1" cx="634.5" cy="178.5" r="4.5"/><circle class="hit" cx="634.5" cy="178.5" r="9"/></g><g class="mk"><title>the hint (a sure move) · beginner, 9 by 9: hazel-jit 0.031 ms</title><rect class="s2" x="468.2" y="174.5" width="8" height="8" rx="1"/><circle class="hit" cx="472.2" cy="178.5" r="9"/></g><g class="mk"><title>the hint (a sure move) · beginner, 9 by 9: plain JS 4.31 µs</title><path class="s3" d="M433.7 173.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="433.7" cy="178.5" r="9"/></g><text class="lbl" x="352" y="199" text-anchor="end">the mines laid · intermediate, 16 by 16</text><line class="row" x1="360" x2="766" y1="195.5" y2="195.5"/><g class="mk"><title>the mines laid · intermediate, 16 by 16: hazeljs 290 ms</title><circle class="s1" cx="651.5" cy="195.5" r="4.5"/><circle class="hit" cx="651.5" cy="195.5" r="9"/></g><g class="mk"><title>the mines laid · intermediate, 16 by 16: hazel-jit 0.090 ms</title><rect class="s2" x="489.2" y="191.5" width="8" height="8" rx="1"/><circle class="hit" cx="493.2" cy="195.5" r="9"/></g><g class="mk"><title>the mines laid · intermediate, 16 by 16: plain JS 8.85 µs</title><path class="s3" d="M447.8 190.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="447.8" cy="195.5" r="9"/></g><text class="lbl" x="352" y="216" text-anchor="end">a cell opened · intermediate, 16 by 16</text><line class="row" x1="360" x2="766" y1="212.5" y2="212.5"/><g class="mk"><title>a cell opened · intermediate, 16 by 16: hazeljs 20 ms</title><circle class="s1" cx="599.5" cy="212.5" r="4.5"/><circle class="hit" cx="599.5" cy="212.5" r="9"/></g><g class="mk"><title>a cell opened · intermediate, 16 by 16: hazel-jit 0.022 ms</title><rect class="s2" x="461.8" y="208.5" width="8" height="8" rx="1"/><circle class="hit" cx="465.8" cy="212.5" r="9"/></g><g class="mk"><title>a cell opened · intermediate, 16 by 16: plain JS 0.219 µs</title><path class="s3" d="M375.4 207.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="375.4" cy="212.5" r="9"/></g><text class="lbl" x="352" y="233" text-anchor="end">the hint (a sure move) · intermediate, 16 by 16</text><line class="row" x1="360" x2="766" y1="229.5" y2="229.5"/><g class="mk"><title>the hint (a sure move) · intermediate, 16 by 16: hazeljs 363 ms</title><circle class="s1" cx="655.9" cy="229.5" r="4.5"/><circle class="hit" cx="655.9" cy="229.5" r="9"/></g><g class="mk"><title>the hint (a sure move) · intermediate, 16 by 16: hazel-jit 0.133 ms</title><rect class="s2" x="496.8" y="225.5" width="8" height="8" rx="1"/><circle class="hit" cx="500.8" cy="229.5" r="9"/></g><g class="mk"><title>the hint (a sure move) · intermediate, 16 by 16: plain JS 8.66 µs</title><path class="s3" d="M447.4 224.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="447.4" cy="229.5" r="9"/></g><text class="lbl" x="352" y="250" text-anchor="end">the mines laid · expert, 16 by 30</text><line class="row" x1="360" x2="766" y1="246.5" y2="246.5"/><g class="mk"><title>the mines laid · expert, 16 by 30: hazeljs 504 ms</title><circle class="s1" cx="662.3" cy="246.5" r="4.5"/><circle class="hit" cx="662.3" cy="246.5" r="9"/></g><g class="mk"><title>the mines laid · expert, 16 by 30: hazel-jit 0.173 ms</title><rect class="s2" x="502.1" y="242.5" width="8" height="8" rx="1"/><circle class="hit" cx="506.1" cy="246.5" r="9"/></g><g class="mk"><title>the mines laid · expert, 16 by 30: plain JS 0.017 ms</title><path class="s3" d="M461.0 241.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="461.0" cy="246.5" r="9"/></g><text class="lbl" x="352" y="267" text-anchor="end">a cell opened · expert, 16 by 30</text><line class="row" x1="360" x2="766" y1="263.5" y2="263.5"/><g class="mk"><title>a cell opened · expert, 16 by 30: hazeljs 39 ms</title><circle class="s1" cx="612.1" cy="263.5" r="4.5"/><circle class="hit" cx="612.1" cy="263.5" r="9"/></g><g class="mk"><title>a cell opened · expert, 16 by 30: hazel-jit 0.046 ms</title><rect class="s2" x="476.1" y="259.5" width="8" height="8" rx="1"/><circle class="hit" cx="480.1" cy="263.5" r="9"/></g><g class="mk"><title>a cell opened · expert, 16 by 30: plain JS 0.336 µs</title><path class="s3" d="M383.8 258.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="383.8" cy="263.5" r="9"/></g><text class="lbl" x="352" y="284" text-anchor="end">the hint (a sure move) · expert, 16 by 30</text><line class="row" x1="360" x2="766" y1="280.5" y2="280.5"/><g class="mk"><title>the hint (a sure move) · expert, 16 by 30: hazeljs 583 ms</title><circle class="s1" cx="665.2" cy="280.5" r="4.5"/><circle class="hit" cx="665.2" cy="280.5" r="9"/></g><g class="mk"><title>the hint (a sure move) · expert, 16 by 30: hazel-jit 0.227 ms</title><rect class="s2" x="507.4" y="276.5" width="8" height="8" rx="1"/><circle class="hit" cx="511.4" cy="280.5" r="9"/></g><g class="mk"><title>the hint (a sure move) · expert, 16 by 30: plain JS 5.11 µs</title><path class="s3" d="M437.1 275.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="437.1" cy="280.5" r="9"/></g><text class="gh" x="4" y="301">Go</text><text class="lbl" x="352" y="318" text-anchor="end">a move played · 6 moves in</text><line class="row" x1="360" x2="766" y1="314.5" y2="314.5"/><g class="mk"><title>a move played · 6 moves in: hazeljs 17 ms</title><circle class="s1" cx="596.4" cy="314.5" r="4.5"/><circle class="hit" cx="596.4" cy="314.5" r="9"/></g><g class="mk"><title>a move played · 6 moves in: hazel-jit 4.49 µs</title><rect class="s2" x="430.5" y="310.5" width="8" height="8" rx="1"/><circle class="hit" cx="434.5" cy="314.5" r="9"/></g><g class="mk"><title>a move played · 6 moves in: plain JS 1.47 µs</title><path class="s3" d="M412.6 309.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="412.6" cy="314.5" r="9"/></g><text class="lbl" x="352" y="335" text-anchor="end">Hazel&#x27;s choice of move · 6 moves in</text><line class="row" x1="360" x2="766" y1="331.5" y2="331.5"/><g class="mk"><title>Hazel&#x27;s choice of move · 6 moves in: hazeljs 588 ms</title><circle class="s1" cx="665.4" cy="331.5" r="4.5"/><circle class="hit" cx="665.4" cy="331.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s choice of move · 6 moves in: hazel-jit 0.105 ms</title><rect class="s2" x="492.3" y="327.5" width="8" height="8" rx="1"/><circle class="hit" cx="496.3" cy="331.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s choice of move · 6 moves in: plain JS 7.63 µs</title><path class="s3" d="M444.9 326.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="444.9" cy="331.5" r="9"/></g><text class="lbl" x="352" y="352" text-anchor="end">the score · 6 moves in</text><line class="row" x1="360" x2="766" y1="348.5" y2="348.5"/><g class="mk"><title>the score · 6 moves in: hazeljs 755 ms</title><circle class="s1" cx="670.3" cy="348.5" r="4.5"/><circle class="hit" cx="670.3" cy="348.5" r="9"/></g><g class="mk"><title>the score · 6 moves in: hazel-jit 0.138 ms</title><rect class="s2" x="497.7" y="344.5" width="8" height="8" rx="1"/><circle class="hit" cx="501.7" cy="348.5" r="9"/></g><g class="mk"><title>the score · 6 moves in: plain JS 5.69 µs</title><path class="s3" d="M439.2 343.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="439.2" cy="348.5" r="9"/></g><text class="lbl" x="352" y="369" text-anchor="end">a move played · 40 moves in</text><line class="row" x1="360" x2="766" y1="365.5" y2="365.5"/><g class="mk"><title>a move played · 40 moves in: hazeljs 188 ms</title><circle class="s1" cx="643.0" cy="365.5" r="4.5"/><circle class="hit" cx="643.0" cy="365.5" r="9"/></g><g class="mk"><title>a move played · 40 moves in: hazel-jit 0.029 ms</title><rect class="s2" x="467.4" y="361.5" width="8" height="8" rx="1"/><circle class="hit" cx="471.4" cy="365.5" r="9"/></g><g class="mk"><title>a move played · 40 moves in: plain JS 3.89 µs</title><path class="s3" d="M431.7 360.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="431.7" cy="365.5" r="9"/></g><text class="lbl" x="352" y="386" text-anchor="end">Hazel&#x27;s choice of move · 40 moves in</text><line class="row" x1="360" x2="766" y1="382.5" y2="382.5"/><g class="mk"><title>Hazel&#x27;s choice of move · 40 moves in: hazeljs 913 ms</title><circle class="s1" cx="674.0" cy="382.5" r="4.5"/><circle class="hit" cx="674.0" cy="382.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s choice of move · 40 moves in: hazel-jit 0.162 ms</title><rect class="s2" x="500.8" y="378.5" width="8" height="8" rx="1"/><circle class="hit" cx="504.8" cy="382.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s choice of move · 40 moves in: plain JS 0.016 ms</title><path class="s3" d="M459.0 377.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="459.0" cy="382.5" r="9"/></g><text class="lbl" x="352" y="403" text-anchor="end">the score · 40 moves in</text><line class="row" x1="360" x2="766" y1="399.5" y2="399.5"/><g class="mk"><title>the score · 40 moves in: hazeljs 260 ms</title><circle class="s1" cx="649.4" cy="399.5" r="4.5"/><circle class="hit" cx="649.4" cy="399.5" r="9"/></g><g class="mk"><title>the score · 40 moves in: hazel-jit 0.048 ms</title><rect class="s2" x="476.8" y="395.5" width="8" height="8" rx="1"/><circle class="hit" cx="480.8" cy="399.5" r="9"/></g><g class="mk"><title>the score · 40 moves in: plain JS 3.71 µs</title><path class="s3" d="M430.8 394.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="430.8" cy="399.5" r="9"/></g><text class="gh" x="4" y="420">Checkers</text><text class="lbl" x="352" y="437" text-anchor="end">the moves · the start</text><line class="row" x1="360" x2="766" y1="433.5" y2="433.5"/><g class="mk"><title>the moves · the start: hazeljs 37 ms</title><circle class="s1" cx="611.1" cy="433.5" r="4.5"/><circle class="hit" cx="611.1" cy="433.5" r="9"/></g><g class="mk"><title>the moves · the start: hazel-jit 0.012 ms</title><rect class="s2" x="449.9" y="429.5" width="8" height="8" rx="1"/><circle class="hit" cx="453.9" cy="433.5" r="9"/></g><g class="mk"><title>the moves · the start: plain JS 0.572 µs</title><path class="s3" d="M394.2 428.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="394.2" cy="433.5" r="9"/></g><text class="lbl" x="352" y="454" text-anchor="end">the moves · 8 moves in</text><line class="row" x1="360" x2="766" y1="450.5" y2="450.5"/><g class="mk"><title>the moves · 8 moves in: hazeljs 37 ms</title><circle class="s1" cx="611.2" cy="450.5" r="4.5"/><circle class="hit" cx="611.2" cy="450.5" r="9"/></g><g class="mk"><title>the moves · 8 moves in: hazel-jit 0.012 ms</title><rect class="s2" x="450.1" y="446.5" width="8" height="8" rx="1"/><circle class="hit" cx="454.1" cy="450.5" r="9"/></g><g class="mk"><title>the moves · 8 moves in: plain JS 0.607 µs</title><path class="s3" d="M395.3 445.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="395.3" cy="450.5" r="9"/></g><text class="lbl" x="352" y="471" text-anchor="end">the moves · 30 moves in</text><line class="row" x1="360" x2="766" y1="467.5" y2="467.5"/><g class="mk"><title>the moves · 30 moves in: hazeljs 27 ms</title><circle class="s1" cx="604.8" cy="467.5" r="4.5"/><circle class="hit" cx="604.8" cy="467.5" r="9"/></g><g class="mk"><title>the moves · 30 moves in: hazel-jit 9.09 µs</title><rect class="s2" x="444.4" y="463.5" width="8" height="8" rx="1"/><circle class="hit" cx="448.4" cy="467.5" r="9"/></g><g class="mk"><title>the moves · 30 moves in: plain JS 0.569 µs</title><path class="s3" d="M394.1 462.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="394.1" cy="467.5" r="9"/></g><text class="lbl" x="352" y="488" text-anchor="end">Hazel&#x27;s move, looking 1 ahead · 8 moves in</text><line class="row" x1="360" x2="766" y1="484.5" y2="484.5"/><g class="mk"><title>Hazel&#x27;s move, looking 1 ahead · 8 moves in: hazeljs 130 ms</title><circle class="s1" cx="635.8" cy="484.5" r="4.5"/><circle class="hit" cx="635.8" cy="484.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 1 ahead · 8 moves in: hazel-jit 0.046 ms</title><rect class="s2" x="476.2" y="480.5" width="8" height="8" rx="1"/><circle class="hit" cx="480.2" cy="484.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 1 ahead · 8 moves in: plain JS 1.75 µs</title><path class="s3" d="M416.1 479.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="416.1" cy="484.5" r="9"/></g><text class="lbl" x="352" y="505" text-anchor="end">Hazel&#x27;s move, looking 1 ahead · 30 moves in</text><line class="row" x1="360" x2="766" y1="501.5" y2="501.5"/><g class="mk"><title>Hazel&#x27;s move, looking 1 ahead · 30 moves in: hazeljs 109 ms</title><circle class="s1" cx="632.3" cy="501.5" r="4.5"/><circle class="hit" cx="632.3" cy="501.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 1 ahead · 30 moves in: hazel-jit 0.039 ms</title><rect class="s2" x="472.8" y="497.5" width="8" height="8" rx="1"/><circle class="hit" cx="476.8" cy="501.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 1 ahead · 30 moves in: plain JS 1.55 µs</title><path class="s3" d="M413.7 496.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="413.7" cy="501.5" r="9"/></g><text class="lbl" x="352" y="522" text-anchor="end">Hazel&#x27;s move, looking 2 ahead · 8 moves in</text><line class="row" x1="360" x2="766" y1="518.5" y2="518.5"/><g class="mk"><title>Hazel&#x27;s move, looking 2 ahead · 8 moves in: hazeljs 635 ms</title><circle class="s1" cx="666.9" cy="518.5" r="4.5"/><circle class="hit" cx="666.9" cy="518.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 2 ahead · 8 moves in: hazel-jit 0.226 ms</title><rect class="s2" x="507.3" y="514.5" width="8" height="8" rx="1"/><circle class="hit" cx="511.3" cy="518.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 2 ahead · 8 moves in: plain JS 0.013 ms</title><path class="s3" d="M455.0 513.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="455.0" cy="518.5" r="9"/></g><text class="lbl" x="352" y="539" text-anchor="end">Hazel&#x27;s move, looking 2 ahead · 30 moves in</text><line class="row" x1="360" x2="766" y1="535.5" y2="535.5"/><g class="mk"><title>Hazel&#x27;s move, looking 2 ahead · 30 moves in: hazeljs 498 ms</title><circle class="s1" cx="662.1" cy="535.5" r="4.5"/><circle class="hit" cx="662.1" cy="535.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 2 ahead · 30 moves in: hazel-jit 0.180 ms</title><rect class="s2" x="502.9" y="531.5" width="8" height="8" rx="1"/><circle class="hit" cx="506.9" cy="535.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 2 ahead · 30 moves in: plain JS 0.010 ms</title><path class="s3" d="M450.5 530.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="450.5" cy="535.5" r="9"/></g><text class="lbl" x="352" y="556" text-anchor="end">Hazel&#x27;s move, looking 3 ahead · 8 moves in</text><line class="row" x1="360" x2="766" y1="552.5" y2="552.5"/><g class="mk"><title>Hazel&#x27;s move, looking 3 ahead · 8 moves in: hazeljs 2.12 s</title><circle class="s1" cx="690.5" cy="552.5" r="4.5"/><circle class="hit" cx="690.5" cy="552.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 3 ahead · 8 moves in: hazel-jit 0.729 ms</title><rect class="s2" x="530.2" y="548.5" width="8" height="8" rx="1"/><circle class="hit" cx="534.2" cy="552.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 3 ahead · 8 moves in: plain JS 0.045 ms</title><path class="s3" d="M479.5 547.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="479.5" cy="552.5" r="9"/></g><text class="lbl" x="352" y="573" text-anchor="end">Hazel&#x27;s move, looking 3 ahead · 30 moves in</text><line class="row" x1="360" x2="766" y1="569.5" y2="569.5"/><g class="mk"><title>Hazel&#x27;s move, looking 3 ahead · 30 moves in: hazeljs 1.86 s</title><circle class="s1" cx="687.9" cy="569.5" r="4.5"/><circle class="hit" cx="687.9" cy="569.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 3 ahead · 30 moves in: hazel-jit 0.649 ms</title><rect class="s2" x="528.0" y="565.5" width="8" height="8" rx="1"/><circle class="hit" cx="532.0" cy="569.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 3 ahead · 30 moves in: plain JS 0.044 ms</title><path class="s3" d="M479.3 564.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="479.3" cy="569.5" r="9"/></g><text class="lbl" x="352" y="590" text-anchor="end">Hazel&#x27;s move, looking 4 ahead · 8 moves in</text><line class="row" x1="360" x2="766" y1="586.5" y2="586.5"/><g class="mk"><title>Hazel&#x27;s move, looking 4 ahead · 8 moves in: hazeljs 6.20 s</title><circle class="s1" cx="711.5" cy="586.5" r="4.5"/><circle class="hit" cx="711.5" cy="586.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 4 ahead · 8 moves in: hazel-jit 2.2 ms</title><rect class="s2" x="551.6" y="582.5" width="8" height="8" rx="1"/><circle class="hit" cx="555.6" cy="586.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 4 ahead · 8 moves in: plain JS 0.139 ms</title><path class="s3" d="M501.7 581.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="501.7" cy="586.5" r="9"/></g><text class="lbl" x="352" y="607" text-anchor="end">Hazel&#x27;s move, looking 4 ahead · 30 moves in</text><line class="row" x1="360" x2="766" y1="603.5" y2="603.5"/><g class="mk"><title>Hazel&#x27;s move, looking 4 ahead · 30 moves in: hazel-jit 2.3 ms</title><rect class="s2" x="552.7" y="599.5" width="8" height="8" rx="1"/><circle class="hit" cx="556.7" cy="603.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 4 ahead · 30 moves in: plain JS 0.156 ms</title><path class="s3" d="M504.1 598.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="504.1" cy="603.5" r="9"/></g><text class="lbl" x="352" y="624" text-anchor="end">Hazel&#x27;s move, looking 5 ahead · 8 moves in</text><line class="row" x1="360" x2="766" y1="620.5" y2="620.5"/><g class="mk"><title>Hazel&#x27;s move, looking 5 ahead · 8 moves in: hazel-jit 6.1 ms</title><rect class="s2" x="571.9" y="616.5" width="8" height="8" rx="1"/><circle class="hit" cx="575.9" cy="620.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 5 ahead · 8 moves in: plain JS 0.428 ms</title><path class="s3" d="M523.8 615.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="523.8" cy="620.5" r="9"/></g><text class="lbl" x="352" y="641" text-anchor="end">Hazel&#x27;s move, looking 5 ahead · 30 moves in</text><line class="row" x1="360" x2="766" y1="637.5" y2="637.5"/><g class="mk"><title>Hazel&#x27;s move, looking 5 ahead · 30 moves in: hazel-jit 6.9 ms</title><rect class="s2" x="574.4" y="633.5" width="8" height="8" rx="1"/><circle class="hit" cx="578.4" cy="637.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 5 ahead · 30 moves in: plain JS 0.407 ms</title><path class="s3" d="M522.8 632.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="522.8" cy="637.5" r="9"/></g><text class="lbl" x="352" y="658" text-anchor="end">Hazel&#x27;s move, looking 6 ahead · 8 moves in</text><line class="row" x1="360" x2="766" y1="654.5" y2="654.5"/><g class="mk"><title>Hazel&#x27;s move, looking 6 ahead · 8 moves in: hazel-jit 19 ms</title><rect class="s2" x="593.7" y="650.5" width="8" height="8" rx="1"/><circle class="hit" cx="597.7" cy="654.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 6 ahead · 8 moves in: plain JS 1.5 ms</title><path class="s3" d="M548.5 649.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="548.5" cy="654.5" r="9"/></g><text class="lbl" x="352" y="675" text-anchor="end">Hazel&#x27;s move, looking 6 ahead · 30 moves in</text><line class="row" x1="360" x2="766" y1="671.5" y2="671.5"/><g class="mk"><title>Hazel&#x27;s move, looking 6 ahead · 30 moves in: hazel-jit 20 ms</title><rect class="s2" x="595.6" y="667.5" width="8" height="8" rx="1"/><circle class="hit" cx="599.6" cy="671.5" r="9"/></g><g class="mk"><title>Hazel&#x27;s move, looking 6 ahead · 30 moves in: plain JS 1.6 ms</title><path class="s3" d="M549.2 666.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="549.2" cy="671.5" r="9"/></g><text class="gh" x="4" y="692">Mahjong</text><text class="lbl" x="352" y="709" text-anchor="end">a hand dealt · the first hand</text><line class="row" x1="360" x2="766" y1="705.5" y2="705.5"/><g class="mk"><title>a hand dealt · the first hand: hazeljs 180 ms</title><circle class="s1" cx="642.1" cy="705.5" r="4.5"/><circle class="hit" cx="642.1" cy="705.5" r="9"/></g><g class="mk"><title>a hand dealt · the first hand: hazel-jit 0.042 ms</title><rect class="s2" x="474.4" y="701.5" width="8" height="8" rx="1"/><circle class="hit" cx="478.4" cy="705.5" r="9"/></g><g class="mk"><title>a hand dealt · the first hand: plain JS 0.021 ms</title><path class="s3" d="M464.6 700.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="464.6" cy="705.5" r="9"/></g><text class="lbl" x="352" y="726" text-anchor="end">a Hazel player&#x27;s turn (a step) · early in the hand</text><line class="row" x1="360" x2="766" y1="722.5" y2="722.5"/><g class="mk"><title>a Hazel player&#x27;s turn (a step) · early in the hand: hazeljs 63 ms</title><circle class="s1" cx="621.7" cy="722.5" r="4.5"/><circle class="hit" cx="621.7" cy="722.5" r="9"/></g><g class="mk"><title>a Hazel player&#x27;s turn (a step) · early in the hand: hazel-jit 0.023 ms</title><rect class="s2" x="462.4" y="718.5" width="8" height="8" rx="1"/><circle class="hit" cx="466.4" cy="722.5" r="9"/></g><g class="mk"><title>a Hazel player&#x27;s turn (a step) · early in the hand: plain JS 2.34 µs</title><path class="s3" d="M421.8 717.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="421.8" cy="722.5" r="9"/></g><text class="lbl" x="352" y="743" text-anchor="end">your options · your turn</text><line class="row" x1="360" x2="766" y1="739.5" y2="739.5"/><g class="mk"><title>your options · your turn: hazeljs 28 ms</title><circle class="s1" cx="605.6" cy="739.5" r="4.5"/><circle class="hit" cx="605.6" cy="739.5" r="9"/></g><g class="mk"><title>your options · your turn: hazel-jit 9.39 µs</title><rect class="s2" x="445.0" y="735.5" width="8" height="8" rx="1"/><circle class="hit" cx="449.0" cy="739.5" r="9"/></g><g class="mk"><title>your options · your turn: plain JS 1.60 µs</title><path class="s3" d="M414.3 734.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="414.3" cy="739.5" r="9"/></g><text class="lbl" x="352" y="760" text-anchor="end">your turn, played by Hazel (a step) · your turn</text><line class="row" x1="360" x2="766" y1="756.5" y2="756.5"/><g class="mk"><title>your turn, played by Hazel (a step) · your turn: hazeljs 62 ms</title><circle class="s1" cx="621.3" cy="756.5" r="4.5"/><circle class="hit" cx="621.3" cy="756.5" r="9"/></g><g class="mk"><title>your turn, played by Hazel (a step) · your turn: hazel-jit 0.019 ms</title><rect class="s2" x="458.9" y="752.5" width="8" height="8" rx="1"/><circle class="hit" cx="462.9" cy="756.5" r="9"/></g><g class="mk"><title>your turn, played by Hazel (a step) · your turn: plain JS 2.46 µs</title><path class="s3" d="M422.7 751.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="422.7" cy="756.5" r="9"/></g><text class="lbl" x="352" y="777" text-anchor="end">the claims on a discard (a step) · another&#x27;s discard</text><line class="row" x1="360" x2="766" y1="773.5" y2="773.5"/><g class="mk"><title>the claims on a discard (a step) · another&#x27;s discard: hazeljs 60 ms</title><circle class="s1" cx="620.7" cy="773.5" r="4.5"/><circle class="hit" cx="620.7" cy="773.5" r="9"/></g><g class="mk"><title>the claims on a discard (a step) · another&#x27;s discard: hazel-jit 0.021 ms</title><rect class="s2" x="460.5" y="769.5" width="8" height="8" rx="1"/><circle class="hit" cx="464.5" cy="773.5" r="9"/></g><g class="mk"><title>the claims on a discard (a step) · another&#x27;s discard: plain JS 8.80 µs</title><path class="s3" d="M447.7 768.0l5.5 5.5l-5.5 5.5l-5.5 -5.5z"/><circle class="hit" cx="447.7" cy="773.5" r="9"/></g></svg>
+<figcaption>Builds 1, 2 and 3 (named in <a href="#method">How this was put together</a>): each operation’s median time per call, on a log scale where each grid line is ten times the one before. Hover over a mark for its time. Measured in Node 22, not in a browser. An empty row for hazeljs means it was not timed there: a call would take too long (Checkers looking 5 or 6 moves ahead, whole expert boards).</figcaption>
+</figure>
+
+<h2 id="faster">How much faster, game by game<a class="anchor" href="#faster" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="faster" title="copy this section's address">copy link</button></h2>
+<p><b>Compiled over interpreted varies little between the games, from about 2,000× (Minesweeper) to 5,300× (Go); plain JavaScript over compiled varies much more, from 4.6× (Mahjong) to 26× (Minesweeper).</b> Interpreting costs about the same per step of work in every game, so compiling gains about the same everywhere. How much more plain JavaScript gains depends on what each program does with its data: least where the work is small lists copied as they change, as Mahjong’s tiles are, most where a JavaScript array or bit operation replaces a walk along a list, as on a Minesweeper board (<a href="#where">where hazel-jit’s time goes</a>).</p>
+<figure class="chart">
+<svg viewBox="0 0 760 310" role="img" aria-labelledby="f2t"><title id="f2t">Per game, how many times faster: hazel-jit than hazeljs, and plain JavaScript than hazel-jit (geometric means over the game's operations)</title><line class="ax" x1="120.0" x2="120.0" y1="20" y2="306"/><text class="axl" x="120.0" y="16" text-anchor="middle">1×</text><line class="ax" x1="252.5" x2="252.5" y1="20" y2="306"/><text class="axl" x="252.5" y="16" text-anchor="middle">10×</text><line class="ax" x1="385.0" x2="385.0" y1="20" y2="306"/><text class="axl" x="385.0" y="16" text-anchor="middle">100×</text><line class="ax" x1="517.5" x2="517.5" y1="20" y2="306"/><text class="axl" x="517.5" y="16" text-anchor="middle">1,000×</text><line class="ax" x1="650.0" x2="650.0" y1="20" y2="306"/><text class="axl" x="650.0" y="16" text-anchor="middle">10,000×</text><text class="gh" x="4" y="45">Solitaire</text><g class="mk"><title>Solitaire: hazel-jit over hazeljs, 3,665×</title><rect class="s2" x="120" y="26" width="472.2" height="15" rx="3"/></g><text class="lbl" x="598.2" y="38">3,665× hazel-jit over hazeljs</text><g class="mk"><title>Solitaire: plain JS over hazel-jit, 22×</title><rect class="s3" x="120" y="45" width="177.3" height="15" rx="3"/></g><text class="lbl" x="303.3" y="57">22× plain JS over hazel-jit</text><text class="gh" x="4" y="105">Minesweeper</text><g class="mk"><title>Minesweeper: hazel-jit over hazeljs, 2,037×</title><rect class="s2" x="120" y="86" width="438.5" height="15" rx="3"/></g><text class="lbl" x="564.5" y="98">2,037× hazel-jit over hazeljs</text><g class="mk"><title>Minesweeper: plain JS over hazel-jit, 25×</title><rect class="s3" x="120" y="105" width="186.4" height="15" rx="3"/></g><text class="lbl" x="312.4" y="117">25× plain JS over hazel-jit</text><text class="gh" x="4" y="165">Go</text><g class="mk"><title>Go: hazel-jit over hazeljs, 5,345×</title><rect class="s2" x="120" y="146" width="494.0" height="15" rx="3"/></g><text class="lbl" x="620.0" y="158">5,345× hazel-jit over hazeljs</text><g class="mk"><title>Go: plain JS over hazel-jit, 10×</title><rect class="s3" x="120" y="165" width="132.8" height="15" rx="3"/></g><text class="lbl" x="258.8" y="177">10× plain JS over hazel-jit</text><text class="gh" x="4" y="225">Checkers</text><g class="mk"><title>Checkers: hazel-jit over hazeljs, 2,881×</title><rect class="s2" x="120" y="206" width="458.4" height="15" rx="3"/></g><text class="lbl" x="584.4" y="218">2,881× hazel-jit over hazeljs</text><g class="mk"><title>Checkers: plain JS over hazel-jit, 17×</title><rect class="s3" x="120" y="225" width="163.3" height="15" rx="3"/></g><text class="lbl" x="289.3" y="237">17× plain JS over hazel-jit</text><text class="gh" x="4" y="285">Mahjong</text><g class="mk"><title>Mahjong: hazel-jit over hazeljs, 3,186×</title><rect class="s2" x="120" y="266" width="464.2" height="15" rx="3"/></g><text class="lbl" x="590.2" y="278">3,186× hazel-jit over hazeljs</text><g class="mk"><title>Mahjong: plain JS over hazel-jit, 4.6×</title><rect class="s3" x="120" y="285" width="88.2" height="15" rx="3"/></g><text class="lbl" x="214.2" y="297">4.6× plain JS over hazel-jit</text></svg>
+<figcaption>Builds 1, 2 and 3: for each game, the geometric mean over its operations of hazeljs’s time ÷ hazel-jit’s (orange) and hazel-jit’s ÷ plain JavaScript’s (aqua), on a log scale. Each game’s table, under <a href="#games">The games</a>, has every operation’s own ratio.</figcaption>
+</figure>
+
+<h2 id="where">Where hazel-jit’s time goes<a class="anchor" href="#where" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="where" title="copy this section's address">copy link</button></h2>
+<p><b>Taking out hazel-jit’s step budget, and making its arithmetic plain, saves at most about a quarter of its time: most of the distance to plain JavaScript is elsewhere.</b> Without the step check in every function, the games ran in 0.76 (Mahjong) to 1.04 (Checkers, within the noise) of hazel-jit’s time; with plain-number arithmetic as well, in 0.77 to 0.91.</p>
+<figure class="chart">
+<svg viewBox="0 0 760 310" role="img" aria-labelledby="f3t"><title id="f3t">hazel-jit's time with its step budget taken out, and with plain-number arithmetic too, as a share of hazel-jit's own time (1.0), per game</title><line class="ax" x1="120.0" x2="120.0" y1="20" y2="306"/><text class="axl" x="120.0" y="16" text-anchor="middle">0</text><line class="ax" x1="207.5" x2="207.5" y1="20" y2="306"/><text class="axl" x="207.5" y="16" text-anchor="middle">0.25</text><line class="ax" x1="295.0" x2="295.0" y1="20" y2="306"/><text class="axl" x="295.0" y="16" text-anchor="middle">0.5</text><line class="ax" x1="382.5" x2="382.5" y1="20" y2="306"/><text class="axl" x="382.5" y="16" text-anchor="middle">0.75</text><line class="ax one" x1="470.0" x2="470.0" y1="20" y2="306"/><text class="axl" x="470.0" y="16" text-anchor="middle">1</text><line class="ax" x1="557.5" x2="557.5" y1="20" y2="306"/><text class="axl" x="557.5" y="16" text-anchor="middle">1.25</text><text class="gh" x="4" y="45">Solitaire</text><g class="mk"><title>Solitaire: no step budget, 0.92 of hazel-jit's time</title><rect class="s4" x="120" y="26" width="323.5" height="15" rx="3"/></g><text class="lbl" x="449.5" y="38">0.92 · no step budget</text><g class="mk"><title>Solitaire: and plain numbers, 0.91 of hazel-jit's time</title><rect class="s5" x="120" y="45" width="320.2" height="15" rx="3"/></g><text class="lbl" x="446.2" y="57">0.91 · and plain numbers</text><text class="gh" x="4" y="105">Minesweeper</text><g class="mk"><title>Minesweeper: no step budget, 0.95 of hazel-jit's time</title><rect class="s4" x="120" y="86" width="331.5" height="15" rx="3"/></g><text class="lbl" x="457.5" y="98">0.95 · no step budget</text><g class="mk"><title>Minesweeper: and plain numbers, 0.87 of hazel-jit's time</title><rect class="s5" x="120" y="105" width="303.4" height="15" rx="3"/></g><text class="lbl" x="429.4" y="117">0.87 · and plain numbers</text><text class="gh" x="4" y="165">Go</text><g class="mk"><title>Go: no step budget, 0.89 of hazel-jit's time</title><rect class="s4" x="120" y="146" width="311.0" height="15" rx="3"/></g><text class="lbl" x="437.0" y="158">0.89 · no step budget</text><g class="mk"><title>Go: and plain numbers, 0.83 of hazel-jit's time</title><rect class="s5" x="120" y="165" width="289.9" height="15" rx="3"/></g><text class="lbl" x="415.9" y="177">0.83 · and plain numbers</text><text class="gh" x="4" y="225">Checkers</text><g class="mk"><title>Checkers: no step budget, 1.04 of hazel-jit's time</title><rect class="s4" x="120" y="206" width="363.0" height="15" rx="3"/></g><text class="lbl" x="489.0" y="218">1.04 · no step budget</text><g class="mk"><title>Checkers: and plain numbers, 0.83 of hazel-jit's time</title><rect class="s5" x="120" y="225" width="290.0" height="15" rx="3"/></g><text class="lbl" x="416.0" y="237">0.83 · and plain numbers</text><text class="gh" x="4" y="285">Mahjong</text><g class="mk"><title>Mahjong: no step budget, 0.76 of hazel-jit's time</title><rect class="s4" x="120" y="266" width="264.8" height="15" rx="3"/></g><text class="lbl" x="390.8" y="278">0.76 · no step budget</text><g class="mk"><title>Mahjong: and plain numbers, 0.77 of hazel-jit's time</title><rect class="s5" x="120" y="285" width="269.9" height="15" rx="3"/></g><text class="lbl" x="395.9" y="297">0.77 · and plain numbers</text></svg>
+<figcaption>Builds 2a and 2b against build 2: each game’s geometric mean, over its operations, of a variant’s time ÷ hazel-jit’s own (1.0, dashed). Below 1, the variant is faster. Both variants are made from <code>compiled.js</code> only for this measurement. The answers stay the same, as each table row checks.</figcaption>
+</figure>
+<p><b>Every compiled function starts by counting a step.</b> hazel-jit keeps the interpreter’s step limit: each compiled function begins with <code>if (--$R.fuel &lt; 0 || (($R.fuel &amp; 16383) === 0 &amp;&amp; performance.now() &gt; $R.deadline)) $R.out();</code>, so a run that loops can be stopped, as the interpreter’s can (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>). Build 2a takes that line out of every function.</p>
+<p><b>Every <code>+</code>, <code>-</code>, <code>*</code> and <code>/</code> on Hazel’s <code>Int</code>s is a call into hazel-jit’s runtime.</b> <code>$R.iadd</code>, <code>$R.isub</code>, <code>$R.imul</code> and <code>$R.idiv</code> keep Hazel’s integers exact past 2<sup>53</sup>, where JavaScript’s numbers stop being exact, by switching to a <code>BigInt</code> there, as the interpreter’s integers are exact (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-757"><code class="ref"><b>^ticket(</b>757<b>)</b></code></a>). Build 2b replaces them with plain number arithmetic, which these games can stand: their numbers stay far below 2<sup>53</sup>.</p>
+<p><b>Most of the rest is the program’s shape: what Hazel gives a program to compute with, and how hazel-jit passes values around.</b> Hazel has lists and no arrays, numbers and no bit operations, and no way to change a value in place. So the Hazel finds the stone at a point of the Go board by walking the rows to its row and along it; tests whether a Checkers square is in a set by dividing the set by a power of two, a power it finds by comparisons; and changes one cell of a Minesweeper board by building a new row and a new list of rows. The plain JavaScript indexes an array, shifts a number, and copies only what changed. hazel-jit adds costs of its own: every function takes one argument, so a call with two makes an array to hold them (<code>has$16([b$19, k$20])</code>), and every labeled tuple is an array whose labels are then set on it as properties, one by one (<code>$R.tup</code>). Removing those would take a compiler change, not a text replacement, so this report does not measure them apart (<a href="#next">What next</a>, steps 2 and 3).</p>
+<p><b>Converting the game between the page’s values and hazel-jit’s, on every call, costs little for a game made of a few numbers, and a lot for a big board: 0.2 µs for Checkers, 40 µs for an expert Minesweeper board, most of the 46 µs that opening one of its cells costs compiled.</b> The page holds the game as hazeljs gives it, JavaScript arrays and objects; hazel-jit’s code holds lists as chains of <code>{h, t}</code> cells and labeled tuples as arrays carrying their labels. <code>compiled.js</code>’s adapters convert the whole game in, and the answer out, on every call (the boundary’s own rows in each game’s table). Opening a Minesweeper cell, where plain JavaScript is 137 times as fast, is mostly this: the board, 480 cells of four fields each, built twice for one cell’s change.</p>
+
+<h2 id="games">The games, one by one<a class="anchor" href="#games" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="games" title="copy this section's address">copy link</button></h2>
+<p>For each game: what the program decides, where randomness enters, what makes its work grow, and its numbers. Randomness in all five works the same way: Hazel has no random numbers of its own, so the page passes them in, a list of numbers drawn by JavaScript’s <code>Math.random()</code> as an argument. That makes every function a pure function of its arguments. Seeded numbers make whole games repeat exactly, which is how all three versions were timed playing the same games, move for move.</p>
+
+<h3 id="solitaire">Solitaire (Klondike)<a class="anchor" href="#solitaire" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="solitaire" title="copy this section's address">copy link</button></h3>
+<p><b>Compiled, Solitaire’s rules run about 3,700 times as fast as interpreted, and plain JavaScript about 22 times as fast again: listing every legal move takes 160 ms interpreted, 16 µs compiled, 0.9 µs in plain JavaScript.</b></p>
+<p><b>The program.</b> Three modules (<code>Cards</code>, <code>Deal</code>, <code>Moves</code>; 244 lines with its vocabulary): the deck, the deal, every legal move in a fixed order, a move made, and the win. There is no opponent: the program’s work is the rules.</p>
+<p><b>Randomness.</b> Only the deal: 52 numbers from the page, each taking a card from those left at the place it falls. Every move after the deal is the player’s.</p>
+<p><b>What the work grows with.</b> Listing every legal move tries each card that can move against each of the seven piles and its foundation: the waste’s top card, each run of face-up cards in each pile, and each foundation’s top card, so about (1 + the face-up cards) × 8 checks. The Hazel walks lists to reach the n-th pile or foundation. The deal takes each card from the list of those left, walking it to the card’s place.</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Operation</th><th>Position</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>hazeljs ÷ hazel-jit</th><th>hazel-jit ÷ plain JS</th></tr></thead><tbody><tr><td>a deal</td><td>a new game</td><td class="n">71 ms</td><td class="n">0.013 ms</td><td class="n">0.013 ms</td><td class="n">0.012 ms</td><td class="n">2.29 µs</td><td class="n">5,317×</td><td class="n">5.8×</td></tr><tr><td>every legal move</td><td>25 moves in</td><td class="n">160 ms</td><td class="n">0.016 ms</td><td class="n">0.015 ms</td><td class="n">0.015 ms</td><td class="n">0.931 µs</td><td class="n">10,082×</td><td class="n">17×</td></tr><tr><td>a move made</td><td>25 moves in</td><td class="n">11 ms</td><td class="n">7.34 µs</td><td class="n">6.42 µs</td><td class="n">6.40 µs</td><td class="n">0.194 µs</td><td class="n">1,450×</td><td class="n">38×</td></tr><tr><td>the moves from a pile</td><td>25 moves in</td><td class="n">11 ms</td><td class="n">4.54 µs</td><td class="n">4.25 µs</td><td class="n">4.30 µs</td><td class="n">0.075 µs</td><td class="n">2,322×</td><td class="n">60×</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>25 moves in</td><td class="n">—</td><td class="n">4.09 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr></tbody></table></div>
+<div class="scroll"><table class="vals"><thead><tr><th>Whole game</th><th>Moves</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>Same end</th></tr></thead><tbody><tr><td>300 random moves</td><td class="n">300</td><td class="n">66.2 s</td><td class="n">9.4 ms</td><td class="n">9.5 ms</td><td class="n">9.2 ms</td><td class="n">1.8 ms</td><td>yes</td></tr></tbody></table></div>
+
+<h3 id="minesweeper">Minesweeper<a class="anchor" href="#minesweeper" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="minesweeper" title="copy this section's address">copy link</button></h3>
+<p><b>The hint on an expert board takes 0.58 s interpreted, 0.23 ms compiled and 5 µs in plain JavaScript; Hazel sweeping a whole intermediate board, 115 moves, takes 122 s interpreted, 35 ms compiled and 4 ms in plain JavaScript.</b></p>
+<p><b>The program.</b> Three modules (<code>Board</code>, <code>Play</code>, <code>Hint</code>; 212 lines with its vocabulary): the mines laid after the first tap (never in its 3 by 3), each cell’s count, a cell opened (and the empty region around it), flags, a number’s neighbours opened at once, and the 💡 hint: a sure move worked out from the open numbers alone. 🤖 plays the hint’s sure moves one after another.</p>
+<p><b>Randomness.</b> The mines: one number from the page for each cell outside the first tap’s 3 by 3, by Knuth’s selection sampling, so exactly the mines asked for, each place as likely as any other. The hint is deterministic: the same board always gives the same sure move. When no number shows a sure move, the hint says so, and 🤖 guesses a closed cell picked at random by the page, not by Hazel, whose rules have no guessing.</p>
+<p><b>What the work grows with.</b> The board’s size and how much of it is open. The hint reads the board once, row by row, making each open cell with closed neighbours a number to reason from. It makes two passes over those numbers to find the mines they force, checking each number’s closed cells against the mines known so far, a list it walks. Then it looks for a number whose mines are all known. So its work grows with the numbers × their cells × the mines known, and so with the board’s size. Opening an empty cell sweeps the whole board, again and again, until no more cells open.</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Operation</th><th>Position</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>hazeljs ÷ hazel-jit</th><th>hazel-jit ÷ plain JS</th></tr></thead><tbody><tr><td>the mines laid</td><td>beginner, 9 by 9</td><td class="n">83 ms</td><td class="n">0.028 ms</td><td class="n">0.025 ms</td><td class="n">0.023 ms</td><td class="n">2.64 µs</td><td class="n">2,953×</td><td class="n">11×</td></tr><tr><td>a cell opened</td><td>beginner, 9 by 9</td><td class="n">7.6 ms</td><td class="n">7.61 µs</td><td class="n">7.56 µs</td><td class="n">7.55 µs</td><td class="n">0.121 µs</td><td class="n">1,004×</td><td class="n">63×</td></tr><tr><td>the hint (a sure move)</td><td>beginner, 9 by 9</td><td class="n">122 ms</td><td class="n">0.031 ms</td><td class="n">0.030 ms</td><td class="n">0.027 ms</td><td class="n">4.31 µs</td><td class="n">3,966×</td><td class="n">7.1×</td></tr><tr><td>the mines laid</td><td>intermediate, 16 by 16</td><td class="n">290 ms</td><td class="n">0.090 ms</td><td class="n">0.082 ms</td><td class="n">0.075 ms</td><td class="n">8.85 µs</td><td class="n">3,242×</td><td class="n">10×</td></tr><tr><td>a cell opened</td><td>intermediate, 16 by 16</td><td class="n">20 ms</td><td class="n">0.022 ms</td><td class="n">0.022 ms</td><td class="n">0.022 ms</td><td class="n">0.219 µs</td><td class="n">921×</td><td class="n">101×</td></tr><tr><td>the hint (a sure move)</td><td>intermediate, 16 by 16</td><td class="n">363 ms</td><td class="n">0.133 ms</td><td class="n">0.130 ms</td><td class="n">0.118 ms</td><td class="n">8.66 µs</td><td class="n">2,740×</td><td class="n">15×</td></tr><tr><td>the mines laid</td><td>expert, 16 by 30</td><td class="n">504 ms</td><td class="n">0.173 ms</td><td class="n">0.155 ms</td><td class="n">0.142 ms</td><td class="n">0.017 ms</td><td class="n">2,911×</td><td class="n">10.0×</td></tr><tr><td>a cell opened</td><td>expert, 16 by 30</td><td class="n">39 ms</td><td class="n">0.046 ms</td><td class="n">0.040 ms</td><td class="n">0.041 ms</td><td class="n">0.336 µs</td><td class="n">841×</td><td class="n">137×</td></tr><tr><td>the hint (a sure move)</td><td>expert, 16 by 30</td><td class="n">583 ms</td><td class="n">0.227 ms</td><td class="n">0.237 ms</td><td class="n">0.161 ms</td><td class="n">5.11 µs</td><td class="n">2,568×</td><td class="n">44×</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>beginner, 9 by 9</td><td class="n">—</td><td class="n">6.90 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>intermediate, 16 by 16</td><td class="n">—</td><td class="n">0.021 ms</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>expert, 16 by 30</td><td class="n">—</td><td class="n">0.040 ms</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr></tbody></table></div>
+<div class="scroll"><table class="vals"><thead><tr><th>Whole game</th><th>Moves</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>Same end</th></tr></thead><tbody><tr><td>Hazel sweeping a board, beginner, 9 by 9</td><td class="n">15</td><td class="n">2.76 s</td><td class="n">1.1 ms</td><td class="n">1.1 ms</td><td class="n">1.0 ms</td><td class="n">1.1 ms</td><td>yes</td></tr><tr><td>Hazel sweeping a board, intermediate, 16 by 16</td><td class="n">115</td><td class="n">121.7 s</td><td class="n">35 ms</td><td class="n">36 ms</td><td class="n">32 ms</td><td class="n">4.1 ms</td><td>yes</td></tr><tr><td>Hazel sweeping a board, expert, 16 by 30</td><td class="n">252</td><td class="n">—</td><td class="n">228 ms</td><td class="n">222 ms</td><td class="n">214 ms</td><td class="n">14 ms</td><td>yes</td></tr></tbody></table></div>
+
+<h3 id="go">Go<a class="anchor" href="#go" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="go" title="copy this section's address">copy link</button></h3>
+<p><b>Hazel’s choice of move takes 0.59 to 0.91 s interpreted, 0.10 to 0.16 ms compiled, and 8 to 16 µs in plain JavaScript; a whole 9 by 9 game of Hazel against itself, 89 moves, takes 71 s, 17 ms and 5.5 ms. Go gains the most from compiling (5,300×), and plain JavaScript gains 10× more.</b></p>
+<p><b>The program.</b> One module (<code>Go.hz</code>; 235 lines with its vocabulary): the board as rows of points, a group of stones and its liberties, a move (its captures, no suicide, the ko), a pass, Tromp and Taylor’s area score, and the opponent.</p>
+<p><b>The strategy.</b> Hazel values every empty point as its move, in tenths of a point: what the move takes (20 a stone), saves (15 a stone of its own groups in atari), threatens (6 a stone left in atari) and risks (−12 a stone of a group left with one liberty), its liberties, and where it is (the third line best, the edge worst). It plays the best one, or passes when none is worth more than −3 points, or when the other side has passed and it is ahead.</p>
+<p><b>Randomness.</b> Each point’s worth gets one of the page’s random numbers added before the best is picked, drawn fresh for every move, from 0 up to the most set by the Go page’s randomness slider (2 points by default; 0 to 10). It varies Hazel’s play, breaks ties, and can tip a choice between moves within that many points of each other, or tip a weak move over the −3 point floor where Hazel would have passed. At 0 Hazel plays its best move every time: two games it plays against itself at 0 come out the same, stone for stone.</p>
+<p><b>What the work grows with.</b> The points on the board, for each move. Hazel traces the board’s groups once a turn, then values each of the 81 points (49 on 7 by 7), looking up the groups beside it. A capture is valued by playing it on a copy of the board. In the Hazel, the stone at a point is found by walking the rows to its row, then along that row, so each lookup costs about as many steps as the point is far from the corner. The plain JavaScript reads the stone at a point from an array, in one step. Counting the score floods each empty region.</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Operation</th><th>Position</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>hazeljs ÷ hazel-jit</th><th>hazel-jit ÷ plain JS</th></tr></thead><tbody><tr><td>a move played</td><td>6 moves in</td><td class="n">17 ms</td><td class="n">4.49 µs</td><td class="n">4.15 µs</td><td class="n">3.83 µs</td><td class="n">1.47 µs</td><td class="n">3,885×</td><td class="n">3.1×</td></tr><tr><td>Hazel&#x27;s choice of move</td><td>6 moves in</td><td class="n">588 ms</td><td class="n">0.105 ms</td><td class="n">0.093 ms</td><td class="n">0.077 ms</td><td class="n">7.63 µs</td><td class="n">5,611×</td><td class="n">14×</td></tr><tr><td>the score</td><td>6 moves in</td><td class="n">755 ms</td><td class="n">0.138 ms</td><td class="n">0.110 ms</td><td class="n">0.105 ms</td><td class="n">5.69 µs</td><td class="n">5,452×</td><td class="n">24×</td></tr><tr><td>a move played</td><td>40 moves in</td><td class="n">188 ms</td><td class="n">0.029 ms</td><td class="n">0.026 ms</td><td class="n">0.023 ms</td><td class="n">3.89 µs</td><td class="n">6,370×</td><td class="n">7.6×</td></tr><tr><td>Hazel&#x27;s choice of move</td><td>40 moves in</td><td class="n">913 ms</td><td class="n">0.162 ms</td><td class="n">0.152 ms</td><td class="n">0.166 ms</td><td class="n">0.016 ms</td><td class="n">5,638×</td><td class="n">10×</td></tr><tr><td>the score</td><td>40 moves in</td><td class="n">260 ms</td><td class="n">0.048 ms</td><td class="n">0.043 ms</td><td class="n">0.039 ms</td><td class="n">3.71 µs</td><td class="n">5,462×</td><td class="n">13×</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>6 moves in</td><td class="n">—</td><td class="n">1.39 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>40 moves in</td><td class="n">—</td><td class="n">1.40 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr></tbody></table></div>
+<div class="scroll"><table class="vals"><thead><tr><th>Whole game</th><th>Moves</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>Same end</th></tr></thead><tbody><tr><td>Hazel against Hazel on 7 by 7</td><td class="n">42</td><td class="n">17.2 s</td><td class="n">5.8 ms</td><td class="n">4.9 ms</td><td class="n">4.6 ms</td><td class="n">0.687 ms</td><td>yes</td></tr><tr><td>Hazel against Hazel on 9 by 9</td><td class="n">89</td><td class="n">71.2 s</td><td class="n">17 ms</td><td class="n">16 ms</td><td class="n">15 ms</td><td class="n">5.5 ms</td><td>yes</td></tr></tbody></table></div>
+
+<h3 id="checkers">Checkers (English draughts)<a class="anchor" href="#checkers" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="checkers" title="copy this section's address">copy link</button></h3>
+<p><b>Looking 4 moves ahead, Hazel’s move takes 6.2 s interpreted, 2.2 ms compiled and 0.14 ms in plain JavaScript, 2,800× and 16×; the factors hold at every depth, since the three search the same tree, each move further ahead about 3 times as much work.</b></p>
+<p><b>The program.</b> One module (<code>Checkers.hz</code>; 141 lines with its vocabulary): each side’s pieces as a set of the 32 dark squares kept in a number’s bits, the moves (jumps are compulsory and go on while they can), kings, the end (no move loses, 80 moves with no capture and no man moving draws), and the opponent.</p>
+<p><b>The strategy.</b> Alpha-beta search: Hazel tries each of its moves, then each answer, and so on, as many moves ahead as chosen, valuing the position at the end by material (a man 100, and 2 for each row it has come; a king 160) for the side to move.</p>
+<p><b>Randomness.</b> Ties only. The page passes 48 numbers, one for each move tried at the top. Of the moves with the best value, the one paired with the largest number is played. The search itself is deterministic.</p>
+<p><b>What the work grows with.</b> The search’s depth. With about 8 moves a position, looking one more move ahead costs several times as much, fewer than 8 because alpha-beta cuts off branches that cannot matter. The compiled times grow from 0.046 ms looking 1 ahead to 18.6 ms looking 6 ahead, at the position 8 moves in. Each position’s moves are found from the sets of squares. The Hazel has no bit operations, so it tests a square by dividing the set by a power of two, where the plain JavaScript shifts and masks.</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Operation</th><th>Position</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>hazeljs ÷ hazel-jit</th><th>hazel-jit ÷ plain JS</th></tr></thead><tbody><tr><td>the moves</td><td>the start</td><td class="n">37 ms</td><td class="n">0.012 ms</td><td class="n">0.012 ms</td><td class="n">8.89 µs</td><td class="n">0.572 µs</td><td class="n">3,049×</td><td class="n">21×</td></tr><tr><td>the moves</td><td>8 moves in</td><td class="n">37 ms</td><td class="n">0.012 ms</td><td class="n">0.012 ms</td><td class="n">9.66 µs</td><td class="n">0.607 µs</td><td class="n">3,031×</td><td class="n">20×</td></tr><tr><td>the moves</td><td>30 moves in</td><td class="n">27 ms</td><td class="n">9.09 µs</td><td class="n">9.11 µs</td><td class="n">7.43 µs</td><td class="n">0.569 µs</td><td class="n">2,933×</td><td class="n">16×</td></tr><tr><td>Hazel&#x27;s move, looking 1 ahead</td><td>8 moves in</td><td class="n">130 ms</td><td class="n">0.046 ms</td><td class="n">0.049 ms</td><td class="n">0.039 ms</td><td class="n">1.75 µs</td><td class="n">2,815×</td><td class="n">26×</td></tr><tr><td>Hazel&#x27;s move, looking 1 ahead</td><td>30 moves in</td><td class="n">109 ms</td><td class="n">0.039 ms</td><td class="n">0.042 ms</td><td class="n">0.034 ms</td><td class="n">1.55 µs</td><td class="n">2,810×</td><td class="n">25×</td></tr><tr><td>Hazel&#x27;s move, looking 2 ahead</td><td>8 moves in</td><td class="n">635 ms</td><td class="n">0.226 ms</td><td class="n">0.237 ms</td><td class="n">0.187 ms</td><td class="n">0.013 ms</td><td class="n">2,812×</td><td class="n">18×</td></tr><tr><td>Hazel&#x27;s move, looking 2 ahead</td><td>30 moves in</td><td class="n">498 ms</td><td class="n">0.180 ms</td><td class="n">0.187 ms</td><td class="n">0.152 ms</td><td class="n">0.010 ms</td><td class="n">2,759×</td><td class="n">18×</td></tr><tr><td>Hazel&#x27;s move, looking 3 ahead</td><td>8 moves in</td><td class="n">2.12 s</td><td class="n">0.729 ms</td><td class="n">0.762 ms</td><td class="n">0.604 ms</td><td class="n">0.045 ms</td><td class="n">2,907×</td><td class="n">16×</td></tr><tr><td>Hazel&#x27;s move, looking 3 ahead</td><td>30 moves in</td><td class="n">1.86 s</td><td class="n">0.649 ms</td><td class="n">0.689 ms</td><td class="n">0.559 ms</td><td class="n">0.044 ms</td><td class="n">2,856×</td><td class="n">15×</td></tr><tr><td>Hazel&#x27;s move, looking 4 ahead</td><td>8 moves in</td><td class="n">6.20 s</td><td class="n">2.2 ms</td><td class="n">2.2 ms</td><td class="n">1.7 ms</td><td class="n">0.139 ms</td><td class="n">2,856×</td><td class="n">16×</td></tr><tr><td>Hazel&#x27;s move, looking 4 ahead</td><td>30 moves in</td><td class="n">—</td><td class="n">2.3 ms</td><td class="n">2.3 ms</td><td class="n">1.8 ms</td><td class="n">0.156 ms</td><td class="n">—</td><td class="n">15×</td></tr><tr><td>Hazel&#x27;s move, looking 5 ahead</td><td>8 moves in</td><td class="n">—</td><td class="n">6.1 ms</td><td class="n">6.7 ms</td><td class="n">5.2 ms</td><td class="n">0.428 ms</td><td class="n">—</td><td class="n">14×</td></tr><tr><td>Hazel&#x27;s move, looking 5 ahead</td><td>30 moves in</td><td class="n">—</td><td class="n">6.9 ms</td><td class="n">7.2 ms</td><td class="n">5.9 ms</td><td class="n">0.407 ms</td><td class="n">—</td><td class="n">17×</td></tr><tr><td>Hazel&#x27;s move, looking 6 ahead</td><td>8 moves in</td><td class="n">—</td><td class="n">19 ms</td><td class="n">20 ms</td><td class="n">16 ms</td><td class="n">1.5 ms</td><td class="n">—</td><td class="n">12×</td></tr><tr><td>Hazel&#x27;s move, looking 6 ahead</td><td>30 moves in</td><td class="n">—</td><td class="n">20 ms</td><td class="n">21 ms</td><td class="n">18 ms</td><td class="n">1.6 ms</td><td class="n">—</td><td class="n">13×</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>the start</td><td class="n">—</td><td class="n">0.141 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>8 moves in</td><td class="n">—</td><td class="n">0.224 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>30 moves in</td><td class="n">—</td><td class="n">0.221 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr></tbody></table></div>
+<div class="scroll"><table class="vals"><thead><tr><th>Whole game</th><th>Moves</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>Same end</th></tr></thead><tbody><tr><td>Hazel against Hazel, looking 2 ahead (to 60 moves)</td><td class="n">60</td><td class="n">24.7 s</td><td class="n">9.8 ms</td><td class="n">11 ms</td><td class="n">9.9 ms</td><td class="n">0.855 ms</td><td>yes</td></tr><tr><td>Hazel against Hazel, looking 4 ahead (a whole game)</td><td class="n">185</td><td class="n">—</td><td class="n">760 ms</td><td class="n">825 ms</td><td class="n">697 ms</td><td class="n">58 ms</td><td>yes</td></tr><tr><td>Hazel against Hazel, looking 6 ahead (a whole game)</td><td class="n">213</td><td class="n">—</td><td class="n">5.38 s</td><td class="n">5.38 s</td><td class="n">4.54 s</td><td class="n">385 ms</td><td>yes</td></tr></tbody></table></div>
+
+<h3 id="mahjong">Mahjong (Hong Kong rules)<a class="anchor" href="#mahjong" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="mahjong" title="copy this section's address">copy link</button></h3>
+<p><b>Mahjong is where plain JavaScript gains least, 4.6 times over compiled: a Hazel player’s turn takes 63 ms interpreted, 23 µs compiled and 2.3 µs in plain JavaScript, and the claims on a discard 60 ms, 21 µs and 9 µs. Eight hands of Hazel playing all four seats take 36 s, 20 ms and 10 ms.</b></p>
+<p><b>The program.</b> One module (<code>Mahjong.hz</code>; 316 lines with its vocabulary): the deal, a turn (a draw and a discard), the claims on a discard (a chow, a pung, a kong, a win) and which comes first, a winning hand and its faan, the points, and what each Hazel player discards and claims. 🤖 plays your seat by the step’s kind 9, as the Hazel players play theirs.</p>
+<p><b>The strategy.</b> A Hazel player wins when it can, declares a kong when it has one, and otherwise discards the tile that helps its hand least: its other copies, its neighbours in its suit, and a little for the middle of the suit or a scoring honour. On another seat’s discard it claims a win, a kong of three, a pung of a pair that is an honour or has few neighbours, or, as the next seat, a chow that breaks no pair.</p>
+<p><b>Randomness.</b> Only the shuffle: 136 numbers from the page, one a tile as its sort key. The players are deterministic: the same table always gives the same discard and the same claims.</p>
+<p><b>What the work grows with.</b> Whether a hand wins, asked again and again. Every step on another seat’s discard asks, for each of the three other seats, whether that discard would complete its hand. That means trying every way the hand makes a pair and four sets, a recursive search over pungs and chows. A player’s own turn asks it once more, then weighs each kind of tile in its hand.</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Operation</th><th>Position</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>hazeljs ÷ hazel-jit</th><th>hazel-jit ÷ plain JS</th></tr></thead><tbody><tr><td>a hand dealt</td><td>the first hand</td><td class="n">180 ms</td><td class="n">0.042 ms</td><td class="n">0.039 ms</td><td class="n">0.039 ms</td><td class="n">0.021 ms</td><td class="n">4,255×</td><td class="n">2.0×</td></tr><tr><td>a Hazel player&#x27;s turn (a step)</td><td>early in the hand</td><td class="n">63 ms</td><td class="n">0.023 ms</td><td class="n">0.014 ms</td><td class="n">0.014 ms</td><td class="n">2.34 µs</td><td class="n">2,777×</td><td class="n">9.7×</td></tr><tr><td>your options</td><td>your turn</td><td class="n">28 ms</td><td class="n">9.39 µs</td><td class="n">6.67 µs</td><td class="n">7.14 µs</td><td class="n">1.60 µs</td><td class="n">2,962×</td><td class="n">5.9×</td></tr><tr><td>your turn, played by Hazel (a step)</td><td>your turn</td><td class="n">62 ms</td><td class="n">0.019 ms</td><td class="n">0.015 ms</td><td class="n">0.016 ms</td><td class="n">2.46 µs</td><td class="n">3,246×</td><td class="n">7.8×</td></tr><tr><td>the claims on a discard (a step)</td><td>another&#x27;s discard</td><td class="n">60 ms</td><td class="n">0.021 ms</td><td class="n">0.016 ms</td><td class="n">0.016 ms</td><td class="n">8.80 µs</td><td class="n">2,890×</td><td class="n">2.4×</td></tr><tr class="bound"><td>the page boundary: the game in and out</td><td>early in the hand</td><td class="n">—</td><td class="n">2.62 µs</td><td class="n" colspan="5">hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays</td></tr></tbody></table></div>
+<div class="scroll"><table class="vals"><thead><tr><th>Whole game</th><th>Moves</th><th>hazeljs</th><th>hazel-jit</th><th>no step budget</th><th>and plain numbers</th><th>plain JS</th><th>Same end</th></tr></thead><tbody><tr><td>Hazel playing all four seats, one hand</td><td class="n">101</td><td class="n">4.62 s</td><td class="n">5.6 ms</td><td class="n">4.5 ms</td><td class="n">5.2 ms</td><td class="n">2.1 ms</td><td>yes</td></tr><tr><td>Hazel playing all four seats, eight hands</td><td class="n">746</td><td class="n">35.6 s</td><td class="n">20 ms</td><td class="n">22 ms</td><td class="n">23 ms</td><td class="n">10 ms</td><td>yes</td></tr></tbody></table></div>
+
+<h2 id="same">The same answers, three ways<a class="anchor" href="#same" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="same" title="copy this section's address">copy link</button></h2>
+<p><b>The three versions of each game give the same answers, value for value, and in the same order where the order matters: the moves listed, the move chosen, the faan counted.</b> Two Node scripts in hazeljs-examples checked it before anything was timed. <code>node/compare-compiled.mjs</code> plays seeded games and compares every answer of the compiled rules with hazeljs’s, and, with <code>--plain</code>, with the plain JavaScript’s:</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Game</th><th>hazel-jit against hazeljs</th><th>plain JS against hazel-jit</th><th>What the plain check covers</th></tr></thead><tbody>
+<tr><td>Checkers</td><td class="n">469 answers, 0 differ</td><td class="n">8,969 answers, 0 differ</td><td>30 random games: every position’s moves, Hazel’s choice looking 1 and 2 ahead (3 and 4 every tenth move), each move made</td></tr>
+<tr><td>Solitaire</td><td class="n">722 answers, 0 differ</td><td class="n">48,040 answers, 0 differ</td><td>40 deals, drawing one and three: every position’s moves, the moves from every place, each move made, the win</td></tr>
+<tr><td>Minesweeper</td><td class="n">571 answers, 0 differ</td><td class="n">15,137 answers, 0 differ</td><td>90 boards at the three levels: every hint (all four kinds of answer, 125 of them “take this flag off”), each move it names, random flags kept, chords</td></tr>
+<tr><td>Go</td><td class="n">157 answers, 0 differ</td><td class="n">5,160 answers, 0 differ</td><td>20 games of Hazel against itself on 9 by 9: every choice, a random point played (legal or not), each move or pass, the score every tenth turn</td></tr>
+<tr><td>Mahjong</td><td class="n">1,719 answers, 0 differ</td><td class="n">15,386 answers, 0 differ</td><td>80 hands: every step and your options, with you discarding at random, making claims, or played by Hazel; every third deal with tied shuffle keys</td></tr>
+</tbody></table></div>
+<p>Then the timing script checked again as it went: each operation’s answer the same all three ways (and both variants), and each whole game ending in the same state. None differed: every operation’s answer was the same all five ways (the three builds and the two variants), and every whole game ended in the same state.</p>
+<p><b>The plain JavaScript keeps the Hazel’s algorithms and its order, not its data structures.</b> Where the Hazel walks a list, the JavaScript indexes an array. Where it divides by a power of two, the JavaScript shifts. Where it looks a value up in a list, the JavaScript uses a <code>Set</code> or a <code>Map</code>. A JavaScript programmer writing the same game would make those choices, and Matthew asked for the JavaScript to be equivalent in the game, its logic and its strategy. Two places keep Hazel’s exact order where a simpler JavaScript would differ. Mahjong’s shuffle sorts the keys with the Hazel’s own merge sort, whose halves are taken alternately and reversed, so tied keys fall the same way. Minesweeper’s hint keeps the order in which the Hazel lists each number’s closed neighbours, because the first sure move found is the one it names.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li><b>Time every hazel-jit change this way.</b> The workflow <code>three-way timing</code> in hazeljs-examples runs on every change to the rules, the compiled programs or the plain JavaScript. Run against each new hazel-jit commit, its results would chart how the distance to plain JavaScript closes, as Matthew put it: “now, and in the future, as the hazel components become better in performance”.</li>
+<li><b>Split the program’s shape from the compiler.</b> A third JavaScript version of one game, written the Hazel’s way (lists of cons cells, division for bits, a tuple for each call), would show how much of the gap to plain JavaScript is Hazel’s vocabulary and how much is hazel-jit’s code. Checkers and Go are the clearest cases.</li>
+<li><b>Calls without a tuple.</b> Every multi-argument call in the compiled code allocates an array for its arguments and reads them back out. Compiling a known function of n arguments to a JavaScript function of n parameters would remove that allocation.</li>
+<li><b>A cheaper page boundary for big values.</b> Minesweeper’s board crosses whole on every call, in and out: 40 µs on an expert board, most of what opening a cell costs. A page could keep hazel-jit’s own value of the game between calls and convert only what it draws, or hazel-jit could take JavaScript arrays as its lists.</li>
+<li><b>The same three ways in a browser, and on a phone.</b> Each page’s ⚙️ Advanced already times its rules, interpreted or compiled. Adding plain JavaScript there would give these numbers on the devices the activities are played on.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>On 2026-11-20, for <a href="https://matthewhammer.org/hazel/dashboard/#ticket-797"><code class="ref"><b>^ticket(</b>797<b>)</b></code></a>. The five games are hazeljs-examples’ own: their rules are the <code>rules/*.hz</code> the pages run, compiled for 0.0.34 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-794"><code class="ref"><b>^ticket(</b>794<b>)</b></code></a>). The plain JavaScript (<code>&lt;game&gt;/plain.js</code>) was written for this report and is never loaded by the pages.</p>
+<div class="scroll"><table class="vals"><thead><tr><th>Build</th><th>What runs the rules</th><th>From</th></tr></thead><tbody><tr><td>1 · hazeljs</td><td>Hazel’s interpreter, as the pages ran their rules until 0.0.34: the game’s <code>rules/*.hz</code> built by <code>Hazel.runProgram</code></td><td>hazeljs 0.0.4 from npm</td></tr><tr><td>2 · hazel-jit</td><td>The same Hazel compiled ahead of time to JavaScript by hazel-jit, wrapped by <code>tools/make-compiled.py</code> with adapters for the page’s values (<code>compiled.js</code>)</td><td>hazelgrove/hazel <code>trial/794-games-aot</code>: Solitaire <code>5405a2e87d</code>, Minesweeper <code>5405a2e87d</code>, Go <code>5405a2e87d</code>, Checkers <code>d15466c7b1</code>, Mahjong <code>70d0178872</code></td></tr><tr><td>2a · no step budget</td><td>Build 2 with the step budget’s check taken out of every compiled function</td><td>made from build 2 by <code>node/three-way.mjs</code>, for timing only</td></tr><tr><td>2b · and plain numbers</td><td>Build 2a with Hazel’s exact-integer <code>+ - * /</code> replaced by plain number arithmetic</td><td>made from build 2a likewise</td></tr><tr><td>3 · plain JS</td><td>The same game, rules and strategy written in plain JavaScript (<code>plain.js</code>)</td><td>hazeljs-examples <code>40fd48b</code></td></tr></tbody></table></div>
+<p><b>The machine.</b> AMD EPYC 9V74 (4 vCPUs), Node 22.23.4, Ubuntu: one GitHub-hosted runner, all five games one after another in one job, so all builds were timed on the same machine: <a href="https://github.com/matthewhammer/hazeljs-examples/actions/runs/44813544646">run 44813544646</a> of the workflow <code>three-way timing</code>, 2026-11-20, 13:41 to 13:51 MST.</p>
+<p><b>The timing.</b> <code>node/three-way.mjs &lt;game&gt;</code> builds the rules with hazeljs as the page does, loads <code>compiled.js</code> and <code>plain.js</code>, and makes the two variants of <code>compiled.js</code> by text replacement. It plays a seeded game to make each operation’s positions (with the compiled rules; all ways answer the same there). Then it times each operation each way: a call too fast for the clock is run in batches of as many calls as take at least a millisecond, and the median batch, per call, is reported. hazeljs is timed at least 3 times and for at least 1.5 s, the others at least 30 times and for at least 0.3 s, after 20 calls to warm up. Whole games are played from the same seed each way: hazeljs once, the others 5 times, keeping the median. Every operation goes through the same functions the page calls, with the page’s values. For hazel-jit that includes converting them in and out (the page boundary, timed by itself on its own rows).</p>
+<p><b>Not timed in a browser.</b> These are Node numbers, on a server processor. Chrome runs the same JavaScript engine as Node (V8); Firefox and Safari have their own, and on a phone every time will be several times longer. The ratios between the three ways are what this report is about.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/060/data"><code>060/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 60,
+ "title": "How Fast Is Hazel? Five Games, Three Ways",
+ "date": "2026-11-20",
+ "kind": "Hazel's speed: five games of hazeljs-examples, each run interpreted by hazeljs, compiled by hazel-jit, and written in plain JavaScript",
+ "status": "work in progress",
+ "question": "Matthew Hammer, 2026-11-20 (^ticket(797)): \"let's write a report to help answer a question from Cyrus about the speed of hazel, versus hazeljit, versus plain JS. For each game, let's have a plain JS version ... That version should be equivalent in terms of game def, logic, and strategy. Please create a report that does a 3-way time comparison for each game: plain hazel, hazel jit, plain JS\"; then \"let's document the role of randomness in the report we do for each strategy, and also, the source of the cost of the strategy (search tree depth, or whatever)\".",
+ "measurements": "Times in milliseconds per call (the median of batches, a batch being as many calls as take at least a millisecond; hazeljs at least 3 times and 1.5 s, the others at least 30 times and 0.3 s, after 20 warm-up calls), and whole seeded games in milliseconds (hazeljs once, the others the median of 5), in Node 22.23.4 on one GitHub runner (AMD EPYC 9V74, 4 vCPUs): hazeljs-examples' node/three-way.mjs, run 44813544646 of its workflow 'three-way timing', at hazeljs-examples 40fd48b. Builds: 1 hazeljs 0.0.4; 2 hazel-jit at hazelgrove/hazel trial/794-games-aot (d15466c7b1 Checkers; 5405a2e87d Go, Minesweeper, Solitaire; 70d0178872 Mahjong); 2a and 2b, build 2 without its step budget, and with plain-number arithmetic too; 3 plain JS (plain.js).",
+ "files": [
+  "data/checkers.json",
+  "data/checkers.txt",
+  "data/go.json",
+  "data/go.txt",
+  "data/machine.txt",
+  "data/mahjong.json",
+  "data/mahjong.txt",
+  "data/meta.json",
+  "data/minesweeper.json",
+  "data/minesweeper.txt",
+  "data/solitaire.json",
+  "data/solitaire.txt",
+  "data/summary.json",
+  "data/tables.json"
+ ],
+ "drivers": [
+  "060/drivers/three-way.mjs",
+  "060/drivers/three-way.yml",
+  "060/gen060.py"
+ ],
+ "machine": "AMD EPYC 9V74 (4 vCPUs), Node 22.23.4, Ubuntu",
+ "run": "44813544646",
+ "run_url": "https://github.com/matthewhammer/hazeljs-examples/actions/runs/44813544646",
+ "when": "2026-11-20, 13:41 to 13:51 MST",
+ "blurb": "Cyrus asked how fast Hazel is. Five games of the Hazel activities, each run three ways with the same rules and strategy: interpreted by hazeljs, compiled ahead of time by hazel-jit (about 3,300 times as fast), and written in plain JavaScript (about 13 times as fast again).",
+ "numbers": {
+  "lead_three": "Compiled by hazel-jit, the five games’ rules run about 3,300 times as fast as hazeljs interprets them; written in plain JavaScript, the same games run about 13 times as fast again.",
+  "lead_three_more": "So plain JavaScript is about 45,000 times as fast as Hazel’s interpreter on these games, and hazel-jit closes all but a factor of about 13 of that distance. Operation by operation the factors spread: compiled over interpreted from 841× (opening a cell on an expert Minesweeper board) to 10,082× (listing Solitaire’s legal moves), and plain JavaScript over compiled from 2× (dealing a Mahjong hand) to 137× (opening that Minesweeper cell).",
+  "lead_faster": "Compiled over interpreted varies little between the games, from about 2,000× (Minesweeper) to 5,300× (Go); plain JavaScript over compiled varies much more, from 4.6× (Mahjong) to 26× (Minesweeper).",
+  "lead_faster_more": "Interpreting costs about the same per step of work in every game, so compiling gains about the same everywhere. How much more plain JavaScript gains depends on what each program does with its data: least where the work is small lists copied as they change, as Mahjong’s tiles are, most where a JavaScript array or bit operation replaces a walk along a list, as on a Minesweeper board (<a href=\"#where\">where hazel-jit’s time goes<\/a>).",
+  "lead_where": "Taking out hazel-jit’s step budget, and making its arithmetic plain, saves at most about a quarter of its time: most of the distance to plain JavaScript is elsewhere.",
+  "lead_where_more": "Without the step check in every function, the games ran in 0.76 (Mahjong) to 1.04 (Checkers, within the noise) of hazel-jit’s time; with plain-number arithmetic as well, in 0.77 to 0.91.",
+  "lead_shape": "Most of the rest is the program’s shape: what Hazel gives a program to compute with, and how hazel-jit passes values around.",
+  "lead_shape_more": "Hazel has lists and no arrays, numbers and no bit operations, and no way to change a value in place. So the Hazel finds the stone at a point of the Go board by walking the rows to its row and along it; tests whether a Checkers square is in a set by dividing the set by a power of two, a power it finds by comparisons; and changes one cell of a Minesweeper board by building a new row and a new list of rows. The plain JavaScript indexes an array, shifts a number, and copies only what changed. hazel-jit adds costs of its own: every function takes one argument, so a call with two makes an array to hold them (<code>has$16([b$19, k$20])<\/code>), and every labeled tuple is an array whose labels are then set on it as properties, one by one (<code>$R.tup<\/code>). Removing those would take a compiler change, not a text replacement, so this report does not measure them apart (<a href=\"#next\">What next<\/a>, steps 2 and 3).",
+  "lead_boundary": "Converting the game between the page’s values and hazel-jit’s, on every call, costs little for a game made of a few numbers, and a lot for a big board: 0.2 µs for Checkers, 40 µs for an expert Minesweeper board, most of the 46 µs that opening one of its cells costs compiled.",
+  "lead_boundary_more": "The page holds the game as hazeljs gives it, JavaScript arrays and objects; hazel-jit’s code holds lists as chains of <code>{h, t}<\/code> cells and labeled tuples as arrays carrying their labels. <code>compiled.js<\/code>’s adapters convert the whole game in, and the answer out, on every call (the boundary’s own rows in each game’s table). Opening a Minesweeper cell, where plain JavaScript is 137 times as fast, is mostly this: the board, 480 cells of four fields each, built twice for one cell’s change.",
+  "lead_solitaire": "Compiled, Solitaire’s rules run about 3,700 times as fast as interpreted, and plain JavaScript about 22 times as fast again: listing every legal move takes 160 ms interpreted, 16 µs compiled, 0.9 µs in plain JavaScript.",
+  "lead_minesweeper": "The hint on an expert board takes 0.58 s interpreted, 0.23 ms compiled and 5 µs in plain JavaScript; Hazel sweeping a whole intermediate board, 115 moves, takes 122 s interpreted, 35 ms compiled and 4 ms in plain JavaScript.",
+  "lead_go": "Hazel’s choice of move takes 0.59 to 0.91 s interpreted, 0.10 to 0.16 ms compiled, and 8 to 16 µs in plain JavaScript; a whole 9 by 9 game of Hazel against itself, 89 moves, takes 71 s, 17 ms and 5.5 ms. Go gains the most from compiling (5,300×), and plain JavaScript gains 10× more.",
+  "lead_checkers": "Looking 4 moves ahead, Hazel’s move takes 6.2 s interpreted, 2.2 ms compiled and 0.14 ms in plain JavaScript, 2,800× and 16×; the factors hold at every depth, since the three search the same tree, each move further ahead about 3 times as much work.",
+  "lead_mahjong": "Mahjong is where plain JavaScript gains least, 4.6 times over compiled: a Hazel player’s turn takes 63 ms interpreted, 23 µs compiled and 2.3 µs in plain JavaScript, and the claims on a discard 60 ms, 21 µs and 9 µs. Eight hands of Hazel playing all four seats take 36 s, 20 ms and 10 ms.",
+  "ck_d1": "0.046 ms",
+  "ck_d6": "18.6 ms",
+  "same_line": "None differed: every operation’s answer was the same all five ways (the three builds and the two variants), and every whole game ended in the same state.",
+  "next_boundary": "Minesweeper’s board crosses whole on every call, in and out: 40 µs on an expert board, most of what opening a cell costs. A page could keep hazel-jit’s own value of the game between calls and convert only what it draws, or hazel-jit could take JavaScript arrays as its lists."
+ },
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Solitaire (Klondike)",
+   "section_id": "solitaire",
+   "columns": [
+    "Operation",
+    "Position",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "hazeljs ÷ hazel-jit",
+    "hazel-jit ÷ plain JS"
+   ],
+   "rows": [
+    [
+     "a deal",
+     "a new game",
+     "71 ms",
+     "0.013 ms",
+     "0.013 ms",
+     "0.012 ms",
+     "2.29 µs",
+     "5,317×",
+     "5.8×"
+    ],
+    [
+     "every legal move",
+     "25 moves in",
+     "160 ms",
+     "0.016 ms",
+     "0.015 ms",
+     "0.015 ms",
+     "0.931 µs",
+     "10,082×",
+     "17×"
+    ],
+    [
+     "a move made",
+     "25 moves in",
+     "11 ms",
+     "7.34 µs",
+     "6.42 µs",
+     "6.40 µs",
+     "0.194 µs",
+     "1,450×",
+     "38×"
+    ],
+    [
+     "the moves from a pile",
+     "25 moves in",
+     "11 ms",
+     "4.54 µs",
+     "4.25 µs",
+     "4.30 µs",
+     "0.075 µs",
+     "2,322×",
+     "60×"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "25 moves in",
+     "—",
+     "4.09 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ]
+   ]
+  },
+  {
+   "section": "Solitaire (Klondike)",
+   "section_id": "solitaire",
+   "columns": [
+    "Whole game",
+    "Moves",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "Same end"
+   ],
+   "rows": [
+    [
+     "300 random moves",
+     "300",
+     "66.2 s",
+     "9.4 ms",
+     "9.5 ms",
+     "9.2 ms",
+     "1.8 ms",
+     "yes"
+    ]
+   ]
+  },
+  {
+   "section": "Minesweeper",
+   "section_id": "minesweeper",
+   "columns": [
+    "Operation",
+    "Position",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "hazeljs ÷ hazel-jit",
+    "hazel-jit ÷ plain JS"
+   ],
+   "rows": [
+    [
+     "the mines laid",
+     "beginner, 9 by 9",
+     "83 ms",
+     "0.028 ms",
+     "0.025 ms",
+     "0.023 ms",
+     "2.64 µs",
+     "2,953×",
+     "11×"
+    ],
+    [
+     "a cell opened",
+     "beginner, 9 by 9",
+     "7.6 ms",
+     "7.61 µs",
+     "7.56 µs",
+     "7.55 µs",
+     "0.121 µs",
+     "1,004×",
+     "63×"
+    ],
+    [
+     "the hint (a sure move)",
+     "beginner, 9 by 9",
+     "122 ms",
+     "0.031 ms",
+     "0.030 ms",
+     "0.027 ms",
+     "4.31 µs",
+     "3,966×",
+     "7.1×"
+    ],
+    [
+     "the mines laid",
+     "intermediate, 16 by 16",
+     "290 ms",
+     "0.090 ms",
+     "0.082 ms",
+     "0.075 ms",
+     "8.85 µs",
+     "3,242×",
+     "10×"
+    ],
+    [
+     "a cell opened",
+     "intermediate, 16 by 16",
+     "20 ms",
+     "0.022 ms",
+     "0.022 ms",
+     "0.022 ms",
+     "0.219 µs",
+     "921×",
+     "101×"
+    ],
+    [
+     "the hint (a sure move)",
+     "intermediate, 16 by 16",
+     "363 ms",
+     "0.133 ms",
+     "0.130 ms",
+     "0.118 ms",
+     "8.66 µs",
+     "2,740×",
+     "15×"
+    ],
+    [
+     "the mines laid",
+     "expert, 16 by 30",
+     "504 ms",
+     "0.173 ms",
+     "0.155 ms",
+     "0.142 ms",
+     "0.017 ms",
+     "2,911×",
+     "10.0×"
+    ],
+    [
+     "a cell opened",
+     "expert, 16 by 30",
+     "39 ms",
+     "0.046 ms",
+     "0.040 ms",
+     "0.041 ms",
+     "0.336 µs",
+     "841×",
+     "137×"
+    ],
+    [
+     "the hint (a sure move)",
+     "expert, 16 by 30",
+     "583 ms",
+     "0.227 ms",
+     "0.237 ms",
+     "0.161 ms",
+     "5.11 µs",
+     "2,568×",
+     "44×"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "beginner, 9 by 9",
+     "—",
+     "6.90 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "intermediate, 16 by 16",
+     "—",
+     "0.021 ms",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "expert, 16 by 30",
+     "—",
+     "0.040 ms",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ]
+   ]
+  },
+  {
+   "section": "Minesweeper",
+   "section_id": "minesweeper",
+   "columns": [
+    "Whole game",
+    "Moves",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "Same end"
+   ],
+   "rows": [
+    [
+     "Hazel sweeping a board, beginner, 9 by 9",
+     "15",
+     "2.76 s",
+     "1.1 ms",
+     "1.1 ms",
+     "1.0 ms",
+     "1.1 ms",
+     "yes"
+    ],
+    [
+     "Hazel sweeping a board, intermediate, 16 by 16",
+     "115",
+     "121.7 s",
+     "35 ms",
+     "36 ms",
+     "32 ms",
+     "4.1 ms",
+     "yes"
+    ],
+    [
+     "Hazel sweeping a board, expert, 16 by 30",
+     "252",
+     "—",
+     "228 ms",
+     "222 ms",
+     "214 ms",
+     "14 ms",
+     "yes"
+    ]
+   ]
+  },
+  {
+   "section": "Go",
+   "section_id": "go",
+   "columns": [
+    "Operation",
+    "Position",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "hazeljs ÷ hazel-jit",
+    "hazel-jit ÷ plain JS"
+   ],
+   "rows": [
+    [
+     "a move played",
+     "6 moves in",
+     "17 ms",
+     "4.49 µs",
+     "4.15 µs",
+     "3.83 µs",
+     "1.47 µs",
+     "3,885×",
+     "3.1×"
+    ],
+    [
+     "Hazel's choice of move",
+     "6 moves in",
+     "588 ms",
+     "0.105 ms",
+     "0.093 ms",
+     "0.077 ms",
+     "7.63 µs",
+     "5,611×",
+     "14×"
+    ],
+    [
+     "the score",
+     "6 moves in",
+     "755 ms",
+     "0.138 ms",
+     "0.110 ms",
+     "0.105 ms",
+     "5.69 µs",
+     "5,452×",
+     "24×"
+    ],
+    [
+     "a move played",
+     "40 moves in",
+     "188 ms",
+     "0.029 ms",
+     "0.026 ms",
+     "0.023 ms",
+     "3.89 µs",
+     "6,370×",
+     "7.6×"
+    ],
+    [
+     "Hazel's choice of move",
+     "40 moves in",
+     "913 ms",
+     "0.162 ms",
+     "0.152 ms",
+     "0.166 ms",
+     "0.016 ms",
+     "5,638×",
+     "10×"
+    ],
+    [
+     "the score",
+     "40 moves in",
+     "260 ms",
+     "0.048 ms",
+     "0.043 ms",
+     "0.039 ms",
+     "3.71 µs",
+     "5,462×",
+     "13×"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "6 moves in",
+     "—",
+     "1.39 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "40 moves in",
+     "—",
+     "1.40 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ]
+   ]
+  },
+  {
+   "section": "Go",
+   "section_id": "go",
+   "columns": [
+    "Whole game",
+    "Moves",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "Same end"
+   ],
+   "rows": [
+    [
+     "Hazel against Hazel on 7 by 7",
+     "42",
+     "17.2 s",
+     "5.8 ms",
+     "4.9 ms",
+     "4.6 ms",
+     "0.687 ms",
+     "yes"
+    ],
+    [
+     "Hazel against Hazel on 9 by 9",
+     "89",
+     "71.2 s",
+     "17 ms",
+     "16 ms",
+     "15 ms",
+     "5.5 ms",
+     "yes"
+    ]
+   ]
+  },
+  {
+   "section": "Checkers (English draughts)",
+   "section_id": "checkers",
+   "columns": [
+    "Operation",
+    "Position",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "hazeljs ÷ hazel-jit",
+    "hazel-jit ÷ plain JS"
+   ],
+   "rows": [
+    [
+     "the moves",
+     "the start",
+     "37 ms",
+     "0.012 ms",
+     "0.012 ms",
+     "8.89 µs",
+     "0.572 µs",
+     "3,049×",
+     "21×"
+    ],
+    [
+     "the moves",
+     "8 moves in",
+     "37 ms",
+     "0.012 ms",
+     "0.012 ms",
+     "9.66 µs",
+     "0.607 µs",
+     "3,031×",
+     "20×"
+    ],
+    [
+     "the moves",
+     "30 moves in",
+     "27 ms",
+     "9.09 µs",
+     "9.11 µs",
+     "7.43 µs",
+     "0.569 µs",
+     "2,933×",
+     "16×"
+    ],
+    [
+     "Hazel's move, looking 1 ahead",
+     "8 moves in",
+     "130 ms",
+     "0.046 ms",
+     "0.049 ms",
+     "0.039 ms",
+     "1.75 µs",
+     "2,815×",
+     "26×"
+    ],
+    [
+     "Hazel's move, looking 1 ahead",
+     "30 moves in",
+     "109 ms",
+     "0.039 ms",
+     "0.042 ms",
+     "0.034 ms",
+     "1.55 µs",
+     "2,810×",
+     "25×"
+    ],
+    [
+     "Hazel's move, looking 2 ahead",
+     "8 moves in",
+     "635 ms",
+     "0.226 ms",
+     "0.237 ms",
+     "0.187 ms",
+     "0.013 ms",
+     "2,812×",
+     "18×"
+    ],
+    [
+     "Hazel's move, looking 2 ahead",
+     "30 moves in",
+     "498 ms",
+     "0.180 ms",
+     "0.187 ms",
+     "0.152 ms",
+     "0.010 ms",
+     "2,759×",
+     "18×"
+    ],
+    [
+     "Hazel's move, looking 3 ahead",
+     "8 moves in",
+     "2.12 s",
+     "0.729 ms",
+     "0.762 ms",
+     "0.604 ms",
+     "0.045 ms",
+     "2,907×",
+     "16×"
+    ],
+    [
+     "Hazel's move, looking 3 ahead",
+     "30 moves in",
+     "1.86 s",
+     "0.649 ms",
+     "0.689 ms",
+     "0.559 ms",
+     "0.044 ms",
+     "2,856×",
+     "15×"
+    ],
+    [
+     "Hazel's move, looking 4 ahead",
+     "8 moves in",
+     "6.20 s",
+     "2.2 ms",
+     "2.2 ms",
+     "1.7 ms",
+     "0.139 ms",
+     "2,856×",
+     "16×"
+    ],
+    [
+     "Hazel's move, looking 4 ahead",
+     "30 moves in",
+     "—",
+     "2.3 ms",
+     "2.3 ms",
+     "1.8 ms",
+     "0.156 ms",
+     "—",
+     "15×"
+    ],
+    [
+     "Hazel's move, looking 5 ahead",
+     "8 moves in",
+     "—",
+     "6.1 ms",
+     "6.7 ms",
+     "5.2 ms",
+     "0.428 ms",
+     "—",
+     "14×"
+    ],
+    [
+     "Hazel's move, looking 5 ahead",
+     "30 moves in",
+     "—",
+     "6.9 ms",
+     "7.2 ms",
+     "5.9 ms",
+     "0.407 ms",
+     "—",
+     "17×"
+    ],
+    [
+     "Hazel's move, looking 6 ahead",
+     "8 moves in",
+     "—",
+     "19 ms",
+     "20 ms",
+     "16 ms",
+     "1.5 ms",
+     "—",
+     "12×"
+    ],
+    [
+     "Hazel's move, looking 6 ahead",
+     "30 moves in",
+     "—",
+     "20 ms",
+     "21 ms",
+     "18 ms",
+     "1.6 ms",
+     "—",
+     "13×"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "the start",
+     "—",
+     "0.141 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "8 moves in",
+     "—",
+     "0.224 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "30 moves in",
+     "—",
+     "0.221 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ]
+   ]
+  },
+  {
+   "section": "Checkers (English draughts)",
+   "section_id": "checkers",
+   "columns": [
+    "Whole game",
+    "Moves",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "Same end"
+   ],
+   "rows": [
+    [
+     "Hazel against Hazel, looking 2 ahead (to 60 moves)",
+     "60",
+     "24.7 s",
+     "9.8 ms",
+     "11 ms",
+     "9.9 ms",
+     "0.855 ms",
+     "yes"
+    ],
+    [
+     "Hazel against Hazel, looking 4 ahead (a whole game)",
+     "185",
+     "—",
+     "760 ms",
+     "825 ms",
+     "697 ms",
+     "58 ms",
+     "yes"
+    ],
+    [
+     "Hazel against Hazel, looking 6 ahead (a whole game)",
+     "213",
+     "—",
+     "5.38 s",
+     "5.38 s",
+     "4.54 s",
+     "385 ms",
+     "yes"
+    ]
+   ]
+  },
+  {
+   "section": "Mahjong (Hong Kong rules)",
+   "section_id": "mahjong",
+   "columns": [
+    "Operation",
+    "Position",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "hazeljs ÷ hazel-jit",
+    "hazel-jit ÷ plain JS"
+   ],
+   "rows": [
+    [
+     "a hand dealt",
+     "the first hand",
+     "180 ms",
+     "0.042 ms",
+     "0.039 ms",
+     "0.039 ms",
+     "0.021 ms",
+     "4,255×",
+     "2.0×"
+    ],
+    [
+     "a Hazel player's turn (a step)",
+     "early in the hand",
+     "63 ms",
+     "0.023 ms",
+     "0.014 ms",
+     "0.014 ms",
+     "2.34 µs",
+     "2,777×",
+     "9.7×"
+    ],
+    [
+     "your options",
+     "your turn",
+     "28 ms",
+     "9.39 µs",
+     "6.67 µs",
+     "7.14 µs",
+     "1.60 µs",
+     "2,962×",
+     "5.9×"
+    ],
+    [
+     "your turn, played by Hazel (a step)",
+     "your turn",
+     "62 ms",
+     "0.019 ms",
+     "0.015 ms",
+     "0.016 ms",
+     "2.46 µs",
+     "3,246×",
+     "7.8×"
+    ],
+    [
+     "the claims on a discard (a step)",
+     "another's discard",
+     "60 ms",
+     "0.021 ms",
+     "0.016 ms",
+     "0.016 ms",
+     "8.80 µs",
+     "2,890×",
+     "2.4×"
+    ],
+    [
+     "the page boundary: the game in and out",
+     "early in the hand",
+     "—",
+     "2.62 µs",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays",
+     "hazel-jit only: the game from hazeljs's shapes into hazel-jit's and back, which every call through the page's functions pays"
+    ]
+   ]
+  },
+  {
+   "section": "Mahjong (Hong Kong rules)",
+   "section_id": "mahjong",
+   "columns": [
+    "Whole game",
+    "Moves",
+    "hazeljs",
+    "hazel-jit",
+    "no step budget",
+    "and plain numbers",
+    "plain JS",
+    "Same end"
+   ],
+   "rows": [
+    [
+     "Hazel playing all four seats, one hand",
+     "101",
+     "4.62 s",
+     "5.6 ms",
+     "4.5 ms",
+     "5.2 ms",
+     "2.1 ms",
+     "yes"
+    ],
+    [
+     "Hazel playing all four seats, eight hands",
+     "746",
+     "35.6 s",
+     "20 ms",
+     "22 ms",
+     "23 ms",
+     "10 ms",
+     "yes"
+    ]
+   ]
+  },
+  {
+   "section": "The same answers, three ways",
+   "section_id": "same",
+   "columns": [
+    "Game",
+    "hazel-jit against hazeljs",
+    "plain JS against hazel-jit",
+    "What the plain check covers"
+   ],
+   "rows": [
+    [
+     "Checkers",
+     "469 answers, 0 differ",
+     "8,969 answers, 0 differ",
+     "30 random games: every position’s moves, Hazel’s choice looking 1 and 2 ahead (3 and 4 every tenth move), each move made"
+    ],
+    [
+     "Solitaire",
+     "722 answers, 0 differ",
+     "48,040 answers, 0 differ",
+     "40 deals, drawing one and three: every position’s moves, the moves from every place, each move made, the win"
+    ],
+    [
+     "Minesweeper",
+     "571 answers, 0 differ",
+     "15,137 answers, 0 differ",
+     "90 boards at the three levels: every hint (all four kinds of answer, 125 of them “take this flag off”), each move it names, random flags kept, chords"
+    ],
+    [
+     "Go",
+     "157 answers, 0 differ",
+     "5,160 answers, 0 differ",
+     "20 games of Hazel against itself on 9 by 9: every choice, a random point played (legal or not), each move or pass, the score every tenth turn"
+    ],
+    [
+     "Mahjong",
+     "1,719 answers, 0 differ",
+     "15,386 answers, 0 differ",
+     "80 hands: every step and your options, with you discarding at random, making claims, or played by Hazel; every third deal with tied shuffle keys"
+    ]
+   ]
+  },
+  {
+   "section": "How this was put together",
+   "section_id": "method",
+   "columns": [
+    "Build",
+    "What runs the rules",
+    "From"
+   ],
+   "rows": [
+    [
+     "1 · hazeljs",
+     "Hazel’s interpreter, as the pages ran their rules until 0.0.34: the game’s rules/*.hz built by Hazel.runProgram",
+     "hazeljs 0.0.4 from npm"
+    ],
+    [
+     "2 · hazel-jit",
+     "The same Hazel compiled ahead of time to JavaScript by hazel-jit, wrapped by tools/make-compiled.py with adapters for the page’s values (compiled.js)",
+     "hazelgrove/hazel trial/794-games-aot: Solitaire 5405a2e87d, Minesweeper 5405a2e87d, Go 5405a2e87d, Checkers d15466c7b1, Mahjong 70d0178872"
+    ],
+    [
+     "2a · no step budget",
+     "Build 2 with the step budget’s check taken out of every compiled function",
+     "made from build 2 by node/three-way.mjs, for timing only"
+    ],
+    [
+     "2b · and plain numbers",
+     "Build 2a with Hazel’s exact-integer + - * / replaced by plain number arithmetic",
+     "made from build 2a likewise"
+    ],
+    [
+     "3 · plain JS",
+     "The same game, rules and strategy written in plain JavaScript (plain.js)",
+     "hazeljs-examples 40fd48b"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/060/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>

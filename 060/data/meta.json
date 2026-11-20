@@ -1,0 +1,53 @@
+{
+ "title": "How Fast Is Hazel? Five Games, Three Ways",
+ "date": "2026-11-20",
+ "kind": "Hazel's speed: five games of hazeljs-examples, each run interpreted by hazeljs, compiled by hazel-jit, and written in plain JavaScript",
+ "status": "work in progress",
+ "question": "Matthew Hammer, 2026-11-20 (^ticket(797)): \"let's write a report to help answer a question from Cyrus about the speed of hazel, versus hazeljit, versus plain JS. For each game, let's have a plain JS version ... That version should be equivalent in terms of game def, logic, and strategy. Please create a report that does a 3-way time comparison for each game: plain hazel, hazel jit, plain JS\"; then \"let's document the role of randomness in the report we do for each strategy, and also, the source of the cost of the strategy (search tree depth, or whatever)\".",
+ "measurements": "Times in milliseconds per call (the median of batches, a batch being as many calls as take at least a millisecond; hazeljs at least 3 times and 1.5 s, the others at least 30 times and 0.3 s, after 20 warm-up calls), and whole seeded games in milliseconds (hazeljs once, the others the median of 5), in Node 22.23.4 on one GitHub runner (AMD EPYC 9V74, 4 vCPUs): hazeljs-examples' node/three-way.mjs, run 44813544646 of its workflow 'three-way timing', at hazeljs-examples 40fd48b. Builds: 1 hazeljs 0.0.4; 2 hazel-jit at hazelgrove/hazel trial/794-games-aot (d15466c7b1 Checkers; 5405a2e87d Go, Minesweeper, Solitaire; 70d0178872 Mahjong); 2a and 2b, build 2 without its step budget, and with plain-number arithmetic too; 3 plain JS (plain.js).",
+ "files": [
+  "solitaire.json",
+  "minesweeper.json",
+  "go.json",
+  "checkers.json",
+  "mahjong.json",
+  "solitaire.txt",
+  "minesweeper.txt",
+  "go.txt",
+  "checkers.txt",
+  "mahjong.txt",
+  "machine.txt",
+  "summary.json"
+ ],
+ "drivers": [
+  "060/drivers/three-way.mjs",
+  "060/drivers/three-way.yml",
+  "060/gen060.py"
+ ],
+ "machine": "AMD EPYC 9V74 (4 vCPUs), Node 22.23.4, Ubuntu",
+ "run": "44813544646",
+ "run_url": "https://github.com/matthewhammer/hazeljs-examples/actions/runs/44813544646",
+ "when": "2026-11-20, 13:41 to 13:51 MST",
+ "blurb": "Cyrus asked how fast Hazel is. Five games of the Hazel activities, each run three ways with the same rules and strategy: interpreted by hazeljs, compiled ahead of time by hazel-jit (about 3,300 times as fast), and written in plain JavaScript (about 13 times as fast again).",
+ "numbers": {
+  "lead_three": "Compiled by hazel-jit, the five games’ rules run about 3,300 times as fast as hazeljs interprets them; written in plain JavaScript, the same games run about 13 times as fast again.",
+  "lead_three_more": "So plain JavaScript is about 45,000 times as fast as Hazel’s interpreter on these games, and hazel-jit closes all but a factor of about 13 of that distance. Operation by operation the factors spread: compiled over interpreted from 841× (opening a cell on an expert Minesweeper board) to 10,082× (listing Solitaire’s legal moves), and plain JavaScript over compiled from 2× (dealing a Mahjong hand) to 137× (opening that Minesweeper cell).",
+  "lead_faster": "Compiled over interpreted varies little between the games, from about 2,000× (Minesweeper) to 5,300× (Go); plain JavaScript over compiled varies much more, from 4.6× (Mahjong) to 26× (Minesweeper).",
+  "lead_faster_more": "Interpreting costs about the same per step of work in every game, so compiling gains about the same everywhere. How much more plain JavaScript gains depends on what each program does with its data: least where the work is small lists copied as they change, as Mahjong’s tiles are, most where a JavaScript array or bit operation replaces a walk along a list, as on a Minesweeper board (<a href=\"#where\">where hazel-jit’s time goes</a>).",
+  "lead_where": "Taking out hazel-jit’s step budget, and making its arithmetic plain, saves at most about a quarter of its time: most of the distance to plain JavaScript is elsewhere.",
+  "lead_where_more": "Without the step check in every function, the games ran in 0.76 (Mahjong) to 1.04 (Checkers, within the noise) of hazel-jit’s time; with plain-number arithmetic as well, in 0.77 to 0.91.",
+  "lead_shape": "Most of the rest is the program’s shape: what Hazel gives a program to compute with, and how hazel-jit passes values around.",
+  "lead_shape_more": "Hazel has lists and no arrays, numbers and no bit operations, and no way to change a value in place. So the Hazel finds the stone at a point of the Go board by walking the rows to its row and along it; tests whether a Checkers square is in a set by dividing the set by a power of two, a power it finds by comparisons; and changes one cell of a Minesweeper board by building a new row and a new list of rows. The plain JavaScript indexes an array, shifts a number, and copies only what changed. hazel-jit adds costs of its own: every function takes one argument, so a call with two makes an array to hold them (<code>has$16([b$19, k$20])</code>), and every labeled tuple is an array whose labels are then set on it as properties, one by one (<code>$R.tup</code>). Removing those would take a compiler change, not a text replacement, so this report does not measure them apart (<a href=\"#next\">What next</a>, steps 2 and 3).",
+  "lead_boundary": "Converting the game between the page’s values and hazel-jit’s, on every call, costs little for a game made of a few numbers, and a lot for a big board: 0.2 µs for Checkers, 40 µs for an expert Minesweeper board, most of the 46 µs that opening one of its cells costs compiled.",
+  "lead_boundary_more": "The page holds the game as hazeljs gives it, JavaScript arrays and objects; hazel-jit’s code holds lists as chains of <code>{h, t}</code> cells and labeled tuples as arrays carrying their labels. <code>compiled.js</code>’s adapters convert the whole game in, and the answer out, on every call (the boundary’s own rows in each game’s table). Opening a Minesweeper cell, where plain JavaScript is 137 times as fast, is mostly this: the board, 480 cells of four fields each, built twice for one cell’s change.",
+  "lead_solitaire": "Compiled, Solitaire’s rules run about 3,700 times as fast as interpreted, and plain JavaScript about 22 times as fast again: listing every legal move takes 160 ms interpreted, 16 µs compiled, 0.9 µs in plain JavaScript.",
+  "lead_minesweeper": "The hint on an expert board takes 0.58 s interpreted, 0.23 ms compiled and 5 µs in plain JavaScript; Hazel sweeping a whole intermediate board, 115 moves, takes 122 s interpreted, 35 ms compiled and 4 ms in plain JavaScript.",
+  "lead_go": "Hazel’s choice of move takes 0.59 to 0.91 s interpreted, 0.10 to 0.16 ms compiled, and 8 to 16 µs in plain JavaScript; a whole 9 by 9 game of Hazel against itself, 89 moves, takes 71 s, 17 ms and 5.5 ms. Go gains the most from compiling (5,300×), and plain JavaScript gains 10× more.",
+  "lead_checkers": "Looking 4 moves ahead, Hazel’s move takes 6.2 s interpreted, 2.2 ms compiled and 0.14 ms in plain JavaScript, 2,800× and 16×; the factors hold at every depth, since the three search the same tree, each move further ahead about 3 times as much work.",
+  "lead_mahjong": "Mahjong is where plain JavaScript gains least, 4.6 times over compiled: a Hazel player’s turn takes 63 ms interpreted, 23 µs compiled and 2.3 µs in plain JavaScript, and the claims on a discard 60 ms, 21 µs and 9 µs. Eight hands of Hazel playing all four seats take 36 s, 20 ms and 10 ms.",
+  "ck_d1": "0.046 ms",
+  "ck_d6": "18.6 ms",
+  "same_line": "None differed: every operation’s answer was the same all five ways (the three builds and the two variants), and every whole game ended in the same state.",
+  "next_boundary": "Minesweeper’s board crosses whole on every call, in and out: 40 µs on an expert board, most of what opening a cell costs. A page could keep hazel-jit’s own value of the game between calls and convert only what it draws, or hazel-jit could take JavaScript arrays as its lists."
+ }
+}

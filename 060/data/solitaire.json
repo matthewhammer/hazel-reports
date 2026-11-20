@@ -1,0 +1,239 @@
+{
+ "game": "solitaire",
+ "when": "2026-11-20T20:42:18.574Z",
+ "quick": false,
+ "machine": {
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "cpus": 4,
+  "node": "v22.23.4",
+  "platform": "linux 7.0.0-1019-azure",
+  "runner": "GitHub Actions 1000026168",
+  "ci": true
+ },
+ "builds": {
+  "hazeljs": "0.0.4",
+  "hazel-jit": "5405a2e87d",
+  "plain JS": "40fd48b",
+  "examples": "40fd48b"
+ },
+ "ways": [
+  "hazeljs",
+  "hazel-jit",
+  "hazel-jit, no step budget",
+  "hazel-jit, no budget, plain numbers",
+  "plain JS"
+ ],
+ "budgetChecks": 43,
+ "hazeljsBuildMs": 1169.8438959999999,
+ "ops": [
+  {
+   "name": "a deal",
+   "where": "a new game",
+   "hazeljs": {
+    "ms": 70.70964400000003,
+    "min": 68.13236099999995,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.013298749999989923,
+    "min": 0.012240625000004002,
+    "reps": 1210,
+    "batch": 16
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.012669515624999406,
+    "min": 0.011804968749999034,
+    "reps": 642,
+    "batch": 32
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.01220118749999699,
+    "min": 0.011306406250000123,
+    "reps": 680,
+    "batch": 32
+   },
+   "plain JS": {
+    "ms": 0.0022944843749996835,
+    "min": 0.002208265624993544,
+    "reps": 1877,
+    "batch": 64
+   },
+   "same": true
+  },
+  {
+   "name": "every legal move",
+   "where": "25 moves in",
+   "hazeljs": {
+    "ms": 159.52956649999987,
+    "min": 156.59661200000028,
+    "reps": 10,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.015823718749999216,
+    "min": 0.014642312500001253,
+    "reps": 487,
+    "batch": 32
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.014803187500007198,
+    "min": 0.014234812500035332,
+    "reps": 1092,
+    "batch": 16
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.014612249999970572,
+    "min": 0.013990062499999567,
+    "reps": 1111,
+    "batch": 16
+   },
+   "plain JS": {
+    "ms": 0.0009306718750039522,
+    "min": 0.0009097890624971683,
+    "reps": 2248,
+    "batch": 128
+   },
+   "same": true
+  },
+  {
+   "name": "the page boundary: the game in and out",
+   "where": "25 moves in",
+   "hazel-jit": {
+    "ms": 0.00409310546875119,
+    "min": 0.003988910156248693,
+    "reps": 270,
+    "batch": 256
+   },
+   "same": true,
+   "boundary": true
+  },
+  {
+   "name": "a move made",
+   "where": "25 moves in",
+   "hazeljs": {
+    "ms": 10.646832999999788,
+    "min": 9.893087999999807,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.0073435625000009,
+    "min": 0.006508531249998839,
+    "reps": 278,
+    "batch": 128
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.006418640625000194,
+    "min": 0.006167953125000736,
+    "reps": 325,
+    "batch": 128
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.0064042382812488086,
+    "min": 0.006177890624996962,
+    "reps": 332,
+    "batch": 128
+   },
+   "plain JS": {
+    "ms": 0.00019415625000007708,
+    "min": 0.00018953906250018804,
+    "reps": 2737,
+    "batch": 512
+   },
+   "same": true
+  },
+  {
+   "name": "the moves from a pile",
+   "where": "25 moves in",
+   "hazeljs": {
+    "ms": 10.533644999999524,
+    "min": 10.325275999999576,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.0045362050781285745,
+    "min": 0.004426667968751019,
+    "reps": 240,
+    "batch": 256
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.004251992187505493,
+    "min": 0.004157324218752478,
+    "reps": 262,
+    "batch": 256
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.004303437499999063,
+    "min": 0.0042123671874989554,
+    "reps": 253,
+    "batch": 256
+   },
+   "plain JS": {
+    "ms": 0.0000752297363282306,
+    "min": 0.00007369799804690658,
+    "reps": 462,
+    "batch": 8192
+   },
+   "same": true
+  }
+ ],
+ "games": [
+  {
+   "name": "300 random moves",
+   "hazeljs": {
+    "ms": 66153.928628,
+    "runs": [
+     66153.928628
+    ],
+    "moves": 300
+   },
+   "hazel-jit": {
+    "ms": 9.381531000006362,
+    "runs": [
+     12.12489999999525,
+     14.032242999994196,
+     9.338036999994074,
+     9.381531000006362,
+     9.068759000001592
+    ],
+    "moves": 300
+   },
+   "hazel-jit, no step budget": {
+    "ms": 9.54452300000412,
+    "runs": [
+     14.221383000010974,
+     11.372646999996505,
+     9.54452300000412,
+     9.048538999995799,
+     9.076288999989629
+    ],
+    "moves": 300
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 9.187023999998928,
+    "runs": [
+     12.513986000005389,
+     11.587916000004043,
+     9.187023999998928,
+     8.690168000000995,
+     8.832818999988376
+    ],
+    "moves": 300
+   },
+   "plain JS": {
+    "ms": 1.821033999993233,
+    "runs": [
+     4.186394999996992,
+     3.4336609999882057,
+     1.821033999993233,
+     1.5870089999953052,
+     0.9391000000032363
+    ],
+    "moves": 300
+   },
+   "same": true
+  }
+ ]
+}

@@ -1,0 +1,542 @@
+{
+ "game": "minesweeper",
+ "when": "2026-11-20T20:44:58.851Z",
+ "quick": false,
+ "machine": {
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "cpus": 4,
+  "node": "v22.23.4",
+  "platform": "linux 7.0.0-1019-azure",
+  "runner": "GitHub Actions 1000026168",
+  "ci": true
+ },
+ "builds": {
+  "hazeljs": "0.0.4",
+  "hazel-jit": "5405a2e87d",
+  "plain JS": "40fd48b",
+  "examples": "40fd48b"
+ },
+ "ways": [
+  "hazeljs",
+  "hazel-jit",
+  "hazel-jit, no step budget",
+  "hazel-jit, no budget, plain numbers",
+  "plain JS"
+ ],
+ "budgetChecks": 55,
+ "hazeljsBuildMs": 4616.915098,
+ "ops": [
+  {
+   "name": "the mines laid",
+   "where": "beginner, 9 by 9",
+   "hazeljs": {
+    "ms": 83.35225300000002,
+    "min": 80.94456499999978,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.028230500000006487,
+    "min": 0.026630625000052532,
+    "reps": 1036,
+    "batch": 8
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.02533499999981359,
+    "min": 0.0242982499999016,
+    "reps": 2317,
+    "batch": 4
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.0234240624999984,
+    "min": 0.02252962500006106,
+    "reps": 1292,
+    "batch": 8
+   },
+   "plain JS": {
+    "ms": 0.0026401562499813735,
+    "min": 0.0025575312500052405,
+    "reps": 3000,
+    "batch": 32
+   },
+   "same": true
+  },
+  {
+   "name": "a cell opened",
+   "where": "beginner, 9 by 9",
+   "hazeljs": {
+    "ms": 7.640255999999681,
+    "min": 6.18909800000074,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.007606874999993352,
+    "min": 0.007380140625002696,
+    "reps": 495,
+    "batch": 64
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.007556730468753159,
+    "min": 0.007411515624994536,
+    "reps": 258,
+    "batch": 128
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.007547406250012045,
+    "min": 0.007339000000001761,
+    "reps": 996,
+    "batch": 32
+   },
+   "plain JS": {
+    "ms": 0.00012052978515608714,
+    "min": 0.00011763964843680697,
+    "reps": 921,
+    "batch": 2048
+   },
+   "same": true
+  },
+  {
+   "name": "the hint (a sure move)",
+   "where": "beginner, 9 by 9",
+   "hazeljs": {
+    "ms": 121.55421399999977,
+    "min": 118.75610400000005,
+    "reps": 13,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.03064912499996808,
+    "min": 0.02871375000017906,
+    "reps": 878,
+    "batch": 8
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.029852312499997424,
+    "min": 0.028579749999835258,
+    "reps": 898,
+    "batch": 8
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.026986249999936263,
+    "min": 0.024915625000176078,
+    "reps": 917,
+    "batch": 8
+   },
+   "plain JS": {
+    "ms": 0.004312625000011394,
+    "min": 0.004069749999985106,
+    "reps": 3252,
+    "batch": 16
+   },
+   "same": true
+  },
+  {
+   "name": "the page boundary: the game in and out",
+   "where": "beginner, 9 by 9",
+   "hazel-jit": {
+    "ms": 0.006904867187493835,
+    "min": 0.006716265625001938,
+    "reps": 276,
+    "batch": 128
+   },
+   "same": true,
+   "boundary": true
+  },
+  {
+   "name": "the mines laid",
+   "where": "intermediate, 16 by 16",
+   "hazeljs": {
+    "ms": 290.29116950000025,
+    "min": 277.77442399999927,
+    "reps": 6,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.08953999999994267,
+    "min": 0.08701399999972637,
+    "reps": 1272,
+    "batch": 2
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.08164599999963684,
+    "min": 0.0785112499997922,
+    "reps": 695,
+    "batch": 4
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.07536781250001923,
+    "min": 0.07375162499999988,
+    "reps": 198,
+    "batch": 16
+   },
+   "plain JS": {
+    "ms": 0.008851261718753278,
+    "min": 0.008566585937487048,
+    "reps": 204,
+    "batch": 128
+   },
+   "same": true
+  },
+  {
+   "name": "a cell opened",
+   "where": "intermediate, 16 by 16",
+   "hazeljs": {
+    "ms": 20.420405999999275,
+    "min": 18.45035199999984,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.022176710937515054,
+    "min": 0.02150292187496916,
+    "reps": 184,
+    "batch": 64
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.02169678906250283,
+    "min": 0.021244093749999138,
+    "reps": 194,
+    "batch": 64
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.021728476562486776,
+    "min": 0.021292749999986427,
+    "reps": 192,
+    "batch": 64
+   },
+   "plain JS": {
+    "ms": 0.0002190373535162493,
+    "min": 0.00020648730468764143,
+    "reps": 518,
+    "batch": 2048
+   },
+   "same": true
+  },
+  {
+   "name": "the hint (a sure move)",
+   "where": "intermediate, 16 by 16",
+   "hazeljs": {
+    "ms": 363.02230300000156,
+    "min": 347.3007190000026,
+    "reps": 5,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.1325038749999976,
+    "min": 0.09765949999996337,
+    "reps": 152,
+    "batch": 16
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.1301031249998914,
+    "min": 0.09782912500008933,
+    "reps": 156,
+    "batch": 16
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.11840112500010491,
+    "min": 0.08701124999993226,
+    "reps": 172,
+    "batch": 16
+   },
+   "plain JS": {
+    "ms": 0.008663609374991665,
+    "min": 0.008272250000004533,
+    "reps": 457,
+    "batch": 64
+   },
+   "same": true
+  },
+  {
+   "name": "the page boundary: the game in and out",
+   "where": "intermediate, 16 by 16",
+   "hazel-jit": {
+    "ms": 0.02136662499998465,
+    "min": 0.020361062500001026,
+    "reps": 386,
+    "batch": 32
+   },
+   "same": true,
+   "boundary": true
+  },
+  {
+   "name": "the mines laid",
+   "where": "expert, 16 by 30",
+   "hazeljs": {
+    "ms": 503.57047800000146,
+    "min": 490.6742740000009,
+    "reps": 3,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.1730033750000075,
+    "min": 0.16834787500010862,
+    "reps": 173,
+    "batch": 8
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.15462637500013443,
+    "min": 0.1480105000000549,
+    "reps": 388,
+    "batch": 4
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.1418237500001851,
+    "min": 0.1366523749998123,
+    "reps": 219,
+    "batch": 8
+   },
+   "plain JS": {
+    "ms": 0.017320187499990425,
+    "min": 0.016404187500029366,
+    "reps": 886,
+    "batch": 16
+   },
+   "same": true
+  },
+  {
+   "name": "a cell opened",
+   "where": "expert, 16 by 30",
+   "hazeljs": {
+    "ms": 38.688466999999946,
+    "min": 35.09566199999972,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.04600071875000822,
+    "min": 0.039213937499994245,
+    "reps": 82,
+    "batch": 32
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.03974065625004641,
+    "min": 0.03858081250018586,
+    "reps": 410,
+    "batch": 16
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.04079190624997864,
+    "min": 0.03922143750003215,
+    "reps": 204,
+    "batch": 32
+   },
+   "plain JS": {
+    "ms": 0.0003363302001955226,
+    "min": 0.00031805346679636415,
+    "reps": 208,
+    "batch": 4096
+   },
+   "same": true
+  },
+  {
+   "name": "the hint (a sure move)",
+   "where": "expert, 16 by 30",
+   "hazeljs": {
+    "ms": 582.5126830000008,
+    "min": 573.9914319999989,
+    "reps": 3,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.22679924999965806,
+    "min": 0.16900137500033452,
+    "reps": 173,
+    "batch": 8
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.2371232499999678,
+    "min": 0.17000912499997867,
+    "reps": 171,
+    "batch": 8
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.16119849999995495,
+    "min": 0.14828812499990818,
+    "reps": 196,
+    "batch": 8
+   },
+   "plain JS": {
+    "ms": 0.005108265625011654,
+    "min": 0.004861875000017335,
+    "reps": 758,
+    "batch": 64
+   },
+   "same": true
+  },
+  {
+   "name": "the page boundary: the game in and out",
+   "where": "expert, 16 by 30",
+   "hazel-jit": {
+    "ms": 0.03951890625000942,
+    "min": 0.037819374999912725,
+    "reps": 206,
+    "batch": 32
+   },
+   "same": true,
+   "boundary": true
+  }
+ ],
+ "games": [
+  {
+   "name": "Hazel sweeping a board, beginner, 9 by 9",
+   "hazeljs": {
+    "ms": 2763.771024999998,
+    "runs": [
+     2763.771024999998
+    ],
+    "moves": 15
+   },
+   "hazel-jit": {
+    "ms": 1.08763899999758,
+    "runs": [
+     1.5621099999989383,
+     1.0519859999985783,
+     2.4457970000003115,
+     1.0668080000032205,
+     1.08763899999758
+    ],
+    "moves": 15
+   },
+   "hazel-jit, no step budget": {
+    "ms": 1.1366310000012163,
+    "runs": [
+     1.819430999996257,
+     3.137821000003896,
+     1.1366310000012163,
+     1.0322369999994407,
+     1.0205790000036359
+    ],
+    "moves": 15
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 1.031565999997838,
+    "runs": [
+     1.6788330000053975,
+     2.7953940000006696,
+     1.031565999997838,
+     0.9253879999960191,
+     0.934531999999308
+    ],
+    "moves": 15
+   },
+   "plain JS": {
+    "ms": 1.1017199999987497,
+    "runs": [
+     1.1017199999987497,
+     1.1856839999963995,
+     1.183830999994825,
+     0.2613760000022012,
+     0.22698600000148872
+    ],
+    "moves": 15
+   },
+   "same": true
+  },
+  {
+   "name": "Hazel sweeping a board, intermediate, 16 by 16",
+   "hazeljs": {
+    "ms": 121667.579325,
+    "runs": [
+     121667.579325
+    ],
+    "moves": 115
+   },
+   "hazel-jit": {
+    "ms": 35.11952500001644,
+    "runs": [
+     39.38649699999951,
+     35.11952500001644,
+     34.420630999986315,
+     36.78262499999255,
+     34.36838299999363
+    ],
+    "moves": 115
+   },
+   "hazel-jit, no step budget": {
+    "ms": 35.63543799999752,
+    "runs": [
+     35.63543799999752,
+     33.745212000008905,
+     32.78323800000362,
+     40.101926000003004,
+     39.625980999990134
+    ],
+    "moves": 115
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 31.749760000006063,
+    "runs": [
+     35.09131299998262,
+     31.922035000025062,
+     31.60868100001244,
+     31.749760000006063,
+     31.052877999987686
+    ],
+    "moves": 115
+   },
+   "plain JS": {
+    "ms": 4.0755389999831095,
+    "runs": [
+     5.3336899999994785,
+     4.334322000009706,
+     3.786751000006916,
+     4.0755389999831095,
+     3.8412829999870155
+    ],
+    "moves": 115
+   },
+   "same": true
+  },
+  {
+   "name": "Hazel sweeping a board, expert, 16 by 30",
+   "hazeljs": null,
+   "hazel-jit": {
+    "ms": 227.84906199999386,
+    "runs": [
+     226.84923300001537,
+     229.1588300000003,
+     227.84906199999386,
+     228.00698599999305,
+     226.51580000002286
+    ],
+    "moves": 252
+   },
+   "hazel-jit, no step budget": {
+    "ms": 221.5773240000126,
+    "runs": [
+     213.90029199997662,
+     216.78770900002564,
+     221.6223309999914,
+     225.43374400000903,
+     221.5773240000126
+    ],
+    "moves": 252
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 213.51702999998815,
+    "runs": [
+     217.23642300002393,
+     213.51702999998815,
+     212.8896620000014,
+     213.28985800000373,
+     216.91419800001313
+    ],
+    "moves": 252
+   },
+   "plain JS": {
+    "ms": 13.61819700000342,
+    "runs": [
+     13.705887000018265,
+     13.505160000000615,
+     13.274769000010565,
+     13.61819700000342,
+     14.292424999992363
+    ],
+    "moves": 252
+   },
+   "same": true
+  }
+ ]
+}

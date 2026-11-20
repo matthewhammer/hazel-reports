@@ -1,0 +1,329 @@
+{
+ "game": "mahjong",
+ "when": "2026-11-20T20:45:54.515Z",
+ "quick": false,
+ "machine": {
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "cpus": 4,
+  "node": "v22.23.4",
+  "platform": "linux 7.0.0-1019-azure",
+  "runner": "GitHub Actions 1000026168",
+  "ci": true
+ },
+ "builds": {
+  "hazeljs": "0.0.4",
+  "hazel-jit": "70d0178872",
+  "plain JS": "40fd48b",
+  "examples": "40fd48b"
+ },
+ "ways": [
+  "hazeljs",
+  "hazel-jit",
+  "hazel-jit, no step budget",
+  "hazel-jit, no budget, plain numbers",
+  "plain JS"
+ ],
+ "budgetChecks": 87,
+ "hazeljsBuildMs": 2346.484002,
+ "ops": [
+  {
+   "name": "a hand dealt",
+   "where": "the first hand",
+   "hazeljs": {
+    "ms": 179.52785800000038,
+    "min": 176.35680700000012,
+    "reps": 9,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.0421947499999078,
+    "min": 0.03897525000002133,
+    "reps": 1525,
+    "batch": 4
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.03900174999998285,
+    "min": 0.0348947499999781,
+    "reps": 434,
+    "batch": 16
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.03929593749998617,
+    "min": 0.03426131250000708,
+    "reps": 434,
+    "batch": 16
+   },
+   "plain JS": {
+    "ms": 0.020793031249993987,
+    "min": 0.019535140624995506,
+    "reps": 214,
+    "batch": 64
+   },
+   "same": true
+  },
+  {
+   "name": "a Hazel player's turn (a step)",
+   "where": "early in the hand",
+   "hazeljs": {
+    "ms": 63.37017099999957,
+    "min": 61.16577999999936,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.02281625000000531,
+    "min": 0.019075749999956315,
+    "reps": 1311,
+    "batch": 8
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.014388187500060212,
+    "min": 0.013508750000028158,
+    "reps": 2004,
+    "batch": 8
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.013661750000011352,
+    "min": 0.012519468750014084,
+    "reps": 533,
+    "batch": 32
+   },
+   "plain JS": {
+    "ms": 0.002340257812505797,
+    "min": 0.0022093593750014406,
+    "reps": 847,
+    "batch": 128
+   },
+   "same": true
+  },
+  {
+   "name": "the page boundary: the game in and out",
+   "where": "early in the hand",
+   "hazel-jit": {
+    "ms": 0.0026164882812480528,
+    "min": 0.0024960351562484107,
+    "reps": 417,
+    "batch": 256
+   },
+   "same": true,
+   "boundary": true
+  },
+  {
+   "name": "your options",
+   "where": "your turn",
+   "hazeljs": {
+    "ms": 27.81943599999977,
+    "min": 26.873836999999185,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.009393113281248588,
+    "min": 0.008505945312506924,
+    "reps": 226,
+    "batch": 128
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.006666195312504897,
+    "min": 0.006286796875002665,
+    "reps": 319,
+    "batch": 128
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.007140230468753117,
+    "min": 0.00615648828124904,
+    "reps": 164,
+    "batch": 256
+   },
+   "plain JS": {
+    "ms": 0.0015992998046883145,
+    "min": 0.001227040039061933,
+    "reps": 187,
+    "batch": 1024
+   },
+   "same": true
+  },
+  {
+   "name": "your turn, played by Hazel (a step)",
+   "where": "your turn",
+   "hazeljs": {
+    "ms": 62.126899999999296,
+    "min": 60.82462399999895,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.019139882812496012,
+    "min": 0.017679281249996848,
+    "reps": 228,
+    "batch": 64
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.014625078125021673,
+    "min": 0.013973484375014777,
+    "reps": 289,
+    "batch": 64
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.015696503906248438,
+    "min": 0.012965750000006437,
+    "reps": 154,
+    "batch": 128
+   },
+   "plain JS": {
+    "ms": 0.0024563886718738104,
+    "min": 0.00225642382812552,
+    "reps": 217,
+    "batch": 512
+   },
+   "same": true
+  },
+  {
+   "name": "the claims on a discard (a step)",
+   "where": "another's discard",
+   "hazeljs": {
+    "ms": 59.97941299999911,
+    "min": 57.85588699999971,
+    "reps": 15,
+    "batch": 1
+   },
+   "hazel-jit": {
+    "ms": 0.020756953124987376,
+    "min": 0.018577156249989457,
+    "reps": 396,
+    "batch": 32
+   },
+   "hazel-jit, no step budget": {
+    "ms": 0.016285968749969015,
+    "min": 0.015101374999971995,
+    "reps": 503,
+    "batch": 32
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 0.016296937499987507,
+    "min": 0.015230656250025731,
+    "reps": 495,
+    "batch": 32
+   },
+   "plain JS": {
+    "ms": 0.00879645312500088,
+    "min": 0.00797101562500302,
+    "reps": 469,
+    "batch": 64
+   },
+   "same": true
+  }
+ ],
+ "games": [
+  {
+   "name": "Hazel playing all four seats, one hand",
+   "hazeljs": {
+    "ms": 4622.804991000001,
+    "runs": [
+     4622.804991000001
+    ],
+    "moves": 101
+   },
+   "hazel-jit": {
+    "ms": 5.6294680000028166,
+    "runs": [
+     7.160823999998684,
+     5.91519100000005,
+     5.6294680000028166,
+     4.606665000002977,
+     4.848092000000179
+    ],
+    "moves": 101
+   },
+   "hazel-jit, no step budget": {
+    "ms": 4.517833999998402,
+    "runs": [
+     7.33411000000342,
+     4.517833999998402,
+     4.238710999998148,
+     4.9446549999993294,
+     3.933408999997482
+    ],
+    "moves": 101
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 5.232890999999654,
+    "runs": [
+     7.572623000000021,
+     6.108677000000171,
+     3.705662000000302,
+     5.232890999999654,
+     3.2797319999990577
+    ],
+    "moves": 101
+   },
+   "plain JS": {
+    "ms": 2.0700619999988703,
+    "runs": [
+     3.9214219999994384,
+     1.867592999999033,
+     2.642478999998275,
+     2.0700619999988703,
+     1.5112460000018473
+    ],
+    "moves": 101
+   },
+   "same": true
+  },
+  {
+   "name": "Hazel playing all four seats, eight hands",
+   "hazeljs": {
+    "ms": 35550.82303,
+    "runs": [
+     35550.82303
+    ],
+    "moves": 746
+   },
+   "hazel-jit": {
+    "ms": 20.423842000003788,
+    "runs": [
+     34.28448199999548,
+     20.423842000003788,
+     19.99029100000189,
+     26.51765699999669,
+     19.406197000003885
+    ],
+    "moves": 746
+   },
+   "hazel-jit, no step budget": {
+    "ms": 21.971942999996827,
+    "runs": [
+     33.625952000002144,
+     21.971942999996827,
+     18.65052000000287,
+     25.68194599999697,
+     19.722825000004377
+    ],
+    "moves": 746
+   },
+   "hazel-jit, no budget, plain numbers": {
+    "ms": 22.88070599999628,
+    "runs": [
+     34.07828100000188,
+     22.88070599999628,
+     17.712993000001006,
+     17.647716000006767,
+     23.079390000006242
+    ],
+    "moves": 746
+   },
+   "plain JS": {
+    "ms": 10.021013999998104,
+    "runs": [
+     21.833968999999342,
+     16.02525600000081,
+     10.021013999998104,
+     8.846885999999358,
+     9.18790099999751
+    ],
+    "moves": 746
+   },
+   "same": true
+  }
+ ]
+}
