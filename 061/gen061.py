@@ -108,6 +108,15 @@ FIGS = {
     "move_cut": pct(NONE["msPerMove"] - MOVE["msPerMove"], NONE["msPerMove"]), "player_cut": pct(NONE["msPerMove"] - PLAYER["msPerMove"], NONE["msPerMove"]),
     "pd_differ": str(PD["differ"]), "sd_differ": str(SD["differ"]), "pd_ms": f'{PD["msPerMove"]:.1f}', "sd_ms": f'{SD["msPerMove"]:.1f}',
     "player_size": num(PLAYER["size"]), "shared_size": num(SHARED["size"]),
+    # (Matthew 2026-11-21: "the 69% as the top level number ---- is that predicting that a memo table will save 69% of AI search
+    # calls?" No: what repeats, not what a table saves. What it saves, and why less: the edge's repeats it cannot answer for, and
+    # the bounds alpha-beta leaves that do not settle a later question)
+    "calls_none": num(NONE["interior"] + NONE["leaves"]), "calls_player": num(PLAYER["interior"] + PLAYER["leaves"]),
+    "calls_cut": pct(NONE["interior"] + NONE["leaves"] - PLAYER["interior"] - PLAYER["leaves"], NONE["interior"] + NONE["leaves"]),
+    "repeats": num(REP), "repeats_gone": pct(NONE["interior"] + NONE["leaves"] - PLAYER["interior"] - PLAYER["leaves"], REP),
+    "edge_left": num(PLAYER["leaves"] - (C["leaves"] - C["leafRepeat"])),
+    "inner_left": f'{round((PLAYER["interior"] - (FIRST - (C["leaves"] - C["leafRepeat"]))) / 1000):,},000',
+    "player_hits": num(PLAYER["hits"]),
     "g1": str(games[0]["moves"]), "g2": str(games[1]["moves"]), "g3": str(games[2]["moves"]),
 }
 body = open(os.path.join(HERE, "body.html")).read()

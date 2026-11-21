@@ -3,6 +3,7 @@
 <h1>Does Hazel Repeat Itself? Checkers, Six Moves Ahead</h1>
 <p class="sub">Matthew asked (^ticket(811)): when Hazel plays Checkers against itself, each side looking six moves ahead for the whole game, how much of the work is repeated, across the two players and across all their moves? His guess: a great many of the “sub-worlds” searched are shared, between the players and as the game goes on; and since Hazel playing itself has nothing to hide from itself, two players sharing what they have searched should explore faster than two keeping it private. Counted here, position by position, over {{games}} whole games ({{moves}} moves).</p>
 {{cards}}
+<p><b>The 69% is how much of the search repeats, not how much a memo table would save.</b> With a table each player keeps, the search looks at {{calls_cut}} fewer positions ({{calls_none}} down to {{calls_player}}), and a move takes {{player_cut}} less time; <a href="#why-less">why less than 69%</a>.</p>
 <p class="muted">Every count here is exact: each position the search looks at, from the Checkers rules’ own search, mirrored in JavaScript and checked against the compiled Hazel move for move (<a href="#method">how</a>). The times are one run each on a laptop, and only compare the ways with each other.</p>
 
 <h2 id="outline">Outline</h2>
@@ -46,6 +47,7 @@
 <figcaption>Build 1 (the lab): the same {{moves}} moves (the positions of the games above, each searched again with its tie-break numbers) with each kind of table, the time a move takes in the lab’s JavaScript. Blue: tables that keep Hazel’s own answers (no move chosen differently); orange: tables that let a deeper search answer for a shallower one.</figcaption>
 </figure>
 {{share_table}}
+<p id="why-less"><b>Why a table saves less than the 69% that repeats: of the {{repeats}} repeats, it takes away {{repeats_gone}}; the rest it cannot answer for, and what it does answer costs time of its own.</b> Positions at the edge are valued, not looked up (looking one up would cost more than valuing it), so a repeat there goes only when the table answers for the position above it: {{edge_left}} of them are still valued. And alpha-beta leaves most positions with only a bound on their value, since it stops as soon as it knows a position cannot change the answer; a bound answers a later question only when it settles that question, so about {{inner_left}} positions are searched again. The table answered {{player_hits}} times. Making a key for each position and keeping the table then turn {{calls_cut}} fewer positions into {{player_cut}} less time.</p>
 <p>Letting a deeper search answer for a shallower one, as chess programs’ tables do, saves a little more for each player’s own table ({{pd_ms}} ms), and changes {{pd_differ}} of {{moves}} moves. Sharing that kind of table between the players does not help: {{sd_ms}} ms, and {{sd_differ}} moves chosen differently. What one player found deeper is mostly what the other would have found anyway, a move later; but positions the other player searched at its own depths crowd the table and its answers, without lessening the work.</p>
 
 <h2 id="verdict">The guess, confirmed and rejected</h2>
