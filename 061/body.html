@@ -1,0 +1,65 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 061 · Hazel’s search · 2026-11-21, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 060</p>
+<h1>Does Hazel Repeat Itself? Checkers, Six Moves Ahead</h1>
+<p class="sub">Matthew asked (^ticket(811)): when Hazel plays Checkers against itself, each side looking six moves ahead for the whole game, how much of the work is repeated, across the two players and across all their moves? His guess: a great many of the “sub-worlds” searched are shared, between the players and as the game goes on; and since Hazel playing itself has nothing to hide from itself, two players sharing what they have searched should explore faster than two keeping it private. Counted here, position by position, over {{games}} whole games ({{moves}} moves).</p>
+{{cards}}
+<p class="muted">Every count here is exact: each position the search looks at, from the Checkers rules’ own search, mirrored in JavaScript and checked against the compiled Hazel move for move (<a href="#method">how</a>). The times are one run each on a laptop, and only compare the ways with each other.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#search">How Hazel looks ahead</a>: the search in the Checkers rules, and what counts as the same position.</li>
+<li><a href="#repeats">Two thirds of the search is a repeat</a>: where the repeats are, within a move, across a player’s moves, across the players.</li>
+<li><a href="#parity">The two players never meet</a>: why a position never comes up in both players’ searches with as far still to look.</li>
+<li><a href="#positions">By position alone, the players share a little</a>: what overlaps if how far there is still to look is let go.</li>
+<li><a href="#tables">What a memo table would save</a>: one for each move, one each player keeps, one shared; and tables that let a deeper search answer for a shallower one.</li>
+<li><a href="#verdict">The guess, confirmed and rejected</a>: what is shared, and what sharing would buy.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="search">How Hazel looks ahead</h2>
+<p><b>Hazel’s opponent searches every move six moves deep (three of its own, three of yours), by negamax with alpha-beta, and keeps nothing from one search to the next.</b> In <code>checkers/rules/Checkers.hz</code>, <code>choose</code> tries each of its moves (<code>pick</code>) with the whole window, so the value of each move is exact; below that, <code>walk</code> tries replies in order and stops a branch as soon as it cannot change the answer (alpha-beta). At the edge, six moves on, a position is valued by its pieces (<code>value</code>: a man 100 and 2 a row advanced, a king 160). There is no table of positions searched: each move’s search starts afresh, and so does each player’s.</p>
+<p>A position is the pieces (black’s, white’s, which are kings) and whose turn it is. The search’s answer for a position depends also on how far there is still to look: the same position four moves from the edge and two moves from it are different questions. So a repeat, here, is a position looked at again <i>with as far still to look</i>, the one kind whose answer could simply be reused.</p>
+
+<h2 id="repeats">Two thirds of the search is a repeat</h2>
+<p><b>Of {{all}} positions looked at in {{games}} games, {{rep}} had been looked at before with as far still to look: {{in_move}} in the same move’s search, {{own}} in the same player’s earlier moves, and {{other}} only in the other player’s.</b> Nearly all the repetition is inside one search: the same moves played in another order lead to the same position (a transposition), and the search walks into it again. Across a player’s own moves a little comes back too, mostly in the endgame, where kings shuffle and positions recur. Across the two players, none at all; the next section says why.</p>
+<figure class="chart">
+{{where}}
+<figcaption>Build 1 (the lab): every position the six-deep search looked at over {{games}} games of Hazel against itself ({{g1}}, {{g2}} and {{g3}} moves), by whether it had been looked at before with as far still to look, and where. Only {{distinct}} of them were different.</figcaption>
+</figure>
+<p>Most of what is looked at is the edge: {{leaves}} ({{leaves_pct}}) only valued, six moves on, and those repeat the most. The deeper in the tree, the more often a position comes back:</p>
+{{depth_table}}
+
+<h2 id="parity">The two players never meet</h2>
+<p><b>A position comes up in both players’ searches, but never with as far still to look: in black’s searches, black is to move with 6, 4, 2 or 0 moves still to look; in white’s, with 5, 3 or 1.</b> Each search starts with its own player to move and six to look, and every move changes both whose turn it is and how far is left, together. So the depth at which black’s turn comes is always even in black’s search and odd in white’s. A table of exact answers, kept by position and depth, can never hand one player’s answer to the other.</p>
+<figure class="chart">
+{{parity}}
+<figcaption>The parity, in any two searches one move apart: black to move is marked in each. The same position, black to move, comes up in both, but never with as far still to look. The same holds for white, the other way round.</figcaption>
+</figure>
+
+<h2 id="positions">By position alone, the players share a little</h2>
+<p><b>Letting go of how far there is still to look, {{p_rep}} of the positions looked at had been looked at before: {{p_in}} in the same search, {{p_own}} in the same player’s earlier moves, and {{p_other}} only by the other player.</b> That {{p_other}} is the most the two players could ever share, and only by letting one player’s answer from a different depth stand for the other’s: a deeper answer for a shallower question is a better answer, but it is no longer the answer Hazel’s own search would give, so the moves chosen can change. In all, {{distinct_pos}} different positions came up, with any look-ahead.</p>
+
+<h2 id="tables">What a memo table would save</h2>
+<p><b>A table of the positions searched, kept by each player from move to move, would make a move take {{player_cut}} less time ({{none_ms}} ms to {{player_ms}} ms here), with every move chosen exactly as now; a table shared by both players saves nothing more.</b> A table that lives only for one move’s search already saves {{move_cut}} ({{move_ms}} ms): that is the repetition within a search. Kept across the player’s moves it saves a little more. Shared between the players it changes nothing: the same positions are searched (the parity again), at the same cost; the table only gets bigger ({{shared_size}} entries at most, against {{player_size}}).</p>
+<figure class="chart">
+{{tables}}
+<figcaption>Build 1 (the lab): the same {{moves}} moves (the positions of the games above, each searched again with its tie-break numbers) with each kind of table, the time a move takes in the lab’s JavaScript. Blue: tables that keep Hazel’s own answers (no move chosen differently); orange: tables that let a deeper search answer for a shallower one.</figcaption>
+</figure>
+{{share_table}}
+<p>Letting a deeper search answer for a shallower one, as chess programs’ tables do, saves a little more for each player’s own table ({{pd_ms}} ms), and changes {{pd_differ}} of {{moves}} moves. Sharing that kind of table between the players does not help: {{sd_ms}} ms, and {{sd_differ}} moves chosen differently. What one player found deeper is mostly what the other would have found anyway, a move later; but positions the other player searched at its own depths crowd the table and its answers, without lessening the work.</p>
+
+<h2 id="verdict">The guess, confirmed and rejected</h2>
+<p><b>Confirmed: most of Hazel’s Checkers search is repeated, about two thirds of it. Rejected: the repeats are not between the players, and sharing the search between them would not explore faster.</b> The “sub-worlds” that come back are the ones a single search walks into twice, by different move orders, and to a smaller degree the ones a player meets again as the game goes on. A memo table pays for that, and pays most within each move’s search. The two players, looking the same distance ahead, ask about the same positions at opposite parities, so what one has found is never the answer to the other’s question, and the overlap that remains by position alone ({{p_other}}) is too small, and too far from exact, to be worth sharing.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li><b>A memo table in Hazel’s own search.</b> The saving is a third of the time in the lab; in Hazel it comes with the cost of keeping the table (a persistent map keyed by the pieces, three numbers up to 2^32, and the depth) in a language with no hash tables. Worth measuring in the compiled rules before deciding.</li>
+<li><b>Better move order.</b> Alpha-beta saves more when the best reply is tried first; the table’s best moves can order the next search. Not measured yet.</li>
+<li><b>Go.</b> The same parity holds for any two-player search of fixed depth; Go’s positions transpose far more than Checkers’ do (captures aside, stones placed in any order), so the repetition within a search should be larger still.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p><b>Build 1, the lab:</b> <code>tools/checkers-lab.mjs</code> in hazeljs-examples (commit b3ec66c), the rules of <code>checkers/rules/Checkers.hz</code> mirrored step for step in JavaScript: the moves in the same order, the same values, the same alpha-beta walk and tie-break. <code>node tools/checkers-lab.mjs check</code> plays Hazel against itself and asks the compiled rules for the same move at every position: 403 positions of two games, every move and every list of legal moves the same. <code>count</code> watches every position the search looks at; <code>share</code> plays the games once with no table, then searches the same positions again in the same order with each kind of table. The tie-breaks come from a seeded stream (the page’s are random).</p>
+<p><b>Build 2, the compiled rules</b> (checked against only): <code>checkers/compiled.js</code>, the rules compiled by hazel-jit at hazelgrove/hazel d15466c7b1 (trial/794-games-aot). Times: one run each, Node 22.23 on a 13th-gen Intel i7-1370P laptop.</p>
+</main></body>
+</html>
