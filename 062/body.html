@@ -1,0 +1,73 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 062 · Hazel’s search · 2026-11-21, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 061</p>
+<h1>One Search Tree for Two Players</h1>
+<p class="sub">Report 061 found that Hazel’s two Checkers players, each looking six moves ahead, never ask each other’s questions. Matthew asked next: “is there a way to make a ‘canonical search space’ that’s not POV, so that each person’s view of it matches each other persons?”; “we want a memo policy that does not match exactly, but instead uses a partial ordering”; “a way of asking for a shallow depth, getting a full match, and then separately asking for a deeper match that reuses that entire shallow match, without redoing it”; “we need a way to treat the matches as streams, whose heads can be reused … tree-streams”. This is a prototype of that design, in the Checkers lab, measured on the {{moves}} positions of report 061’s {{games}} games.</p>
+{{cards}}
+<p class="muted">Every count is exact, from the lab’s mirror of the Checkers rules; the times are one run each on a laptop and only compare the ways with each other (<a href="#method">how</a>). Every way that keeps Hazel’s way of looking ahead chose every move exactly as Hazel does.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#design">The design</a>: one tree of boards, and two streams on each board, its moves and its answers.</li>
+<li><a href="#pairs">Lined up, the players share</a>: when two searches end on the same move, the second does about half the work.</li>
+<li><a href="#lineup">Lining up costs a move of look-ahead</a>: one player looks one move further, or one less.</li>
+<li><a href="#tree">Keeping the tree</a>: half the moves worked out, no time saved, more memory.</li>
+<li><a href="#deepen">Shallow first, then deeper</a>: nothing saved here, and why.</li>
+<li><a href="#order">The partial order</a>: ranges are what make any answer reusable; further answers for nearer ones add a little.</li>
+<li><a href="#all">Every way, in one table</a>, <a href="#verdict">the answer</a>, <a href="#next">what next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="design">The design</h2>
+<p><b>One tree of boards that both players grow and read. A node is a board (the pieces and whose turn it is), the same node whoever reaches it, and each node carries two streams: its moves, worked out the first time anyone asks and kept, and its answers, one range of values for each look-ahead.</b> A board’s answer is its value to the side to move there, so it means the same thing to both players: nothing has to be turned round for one or the other. That is the canonical search space, with no point of view in it.</p>
+<figure class="chart">
+{{design}}
+<figcaption>A board’s node in the shared tree (Build 1). Its moves stream: worked out once; each child board made the first time a search goes there (dashed: not yet). Its answers stream: for each look-ahead, a range (exact, at least, or between two values), filled in by whichever search came by.</figcaption>
+</figure>
+<p>A search asks a board a question: “looking 5 ahead, is your value more than 3?” Alpha-beta asks that kind of question, a value inside a window, rather than “what exactly is your value”. The memo answers it with <b>any</b> entry that settles it, not only an exact match: an entry “between 4 and 9” for 5 ahead settles “more than 3”. That is the partial order: a narrower range knows more than a wider one, and one that settles the question is good enough. Optionally, an entry for a further look-ahead may stand for a nearer one (<a href="#order">below</a>).</p>
+<p>Three more parts of the prototype: each board remembers which of its moves was best last time, and that move is tried first next time (the head of the last answer, reused by the next question); a search may first look 2 ahead, then 3, and so on, before the full depth (<a href="#deepen">deepening</a>); and boards at the very edge of a search are only valued, never kept, since valuing a board costs less than finding it in the tree. Boards no search has visited in the last two moves are let go, so the tree keeps what is near the game as it goes on.</p>
+
+<h2 id="pairs">Lined up, the players share</h2>
+<p><b>When two searches end on the same move, the one that comes second does about half the work with one table shared: black, coming second, looks at {{b67_sh_looked}} positions a move instead of {{b67_own_looked}} ({{b67_cut}} fewer, {{b67_own_ms}} ms to {{b67_sh_ms}} ms); white, coming second the other way round, {{w65_sh_looked}} instead of {{w65_own_looked}} ({{w65_cut}} fewer, {{w65_own_ms}} ms to {{w65_sh_ms}} ms).</b> Report 061 showed why Hazel’s two players never meet: black at move 10 looks to move 16, white at move 11 to move 17, so a board they both reach is asked about with different distances still to look. Line their finish lines up, and they ask the same questions. Black looking 6 ahead and white 7: white at move 11 looks to move 18, black at move 12 looks to move 18, and every board both reach is asked the same question. Or black 6 and white 5: black at move 10 and white at move 11 both look to move 16.</p>
+<figure class="chart">
+{{pairs}}
+<figcaption>Which searches end on the same move. Hazel now (6 and 6): none. Black 6, white 7: white’s search and black’s next one. Black 6, white 5: black’s search and white’s next one. The second of each pair reads what the first left in the table. (A diagram of the rule, not of a build.)</figcaption>
+</figure>
+<p>The second search’s head start is the first one’s work along the line it expected: the first search tried every one of its moves with the whole window, so every board the second player can be facing already has an exact answer, out to the same finish, and the second player’s replies have at least ranges. Not everything carries over: the second player still wants an exact value for each of its own moves (Hazel breaks ties between equal moves at random), and many of the first search’s answers are only ranges.</p>
+
+<h2 id="lineup">Lining up costs a move of look-ahead</h2>
+<p><b>Two searches can end on the same move only if one of the two players looks one move further than the other, or one less, so the sharing is paid for in look-ahead: white looking 7 costs more than the sharing saves ({{s67_ms}} ms a move with one table, against {{e66_ms}} for Hazel’s 6 and 6 with a table each), while white looking 5 costs less ({{s65_ms}} ms a move, {{s65_vs_e66}} less than 6 and 6 with a table each and {{s65_vs_now}} less than Hazel now, {{now_ms}} ms).</b> One move more is expensive: white looking 7 with no table takes {{p67_w}} ms a move against {{now_w}} for 6. One move less is cheap, and the sharing then lands on white, the player looking 5. Whether white playing 5 ahead plays noticeably worse, or white playing 7 better, is not measured here (<a href="#next">what next</a>).</p>
+<figure class="chart">
+{{ways}}
+<figcaption>Build 1 (the lab): milliseconds a move, black’s and white’s, over the same {{moves}} positions, for Hazel’s way of looking ahead (6 and 6) and the two lined-up ways, each with a table for each player, one table shared, and the shared tree. Lined up, the second search of each pair (black’s for 6 and 7, white’s for 6 and 5) gains from sharing; with 6 and 6, sharing changes nothing.</figcaption>
+</figure>
+
+<h2 id="tree">Keeping the tree</h2>
+<p><b>Keeping the tree (each board’s moves worked out once, its best move tried first) halves the moves worked out ({{e66_worked}} a move with a table, {{tr66_worked}} with the tree, {{tr66_worked_cut}} fewer) and looks at {{tr66_looked_cut}} fewer positions, but in JavaScript it is no faster ({{tr66_ms}} ms a move against {{e66_ms}}) and keeps three to four times the memory ({{tr66_heap}} MB against {{e66_heap}}).</b> Working out a board’s moves again turns out to cost about what finding the board’s node and its kept moves costs; and a node, with its board, its moves and its answers, is heavy to keep. Trying the best move first is the part that pays: lined up 6 and 7, it brings white’s positions looked at from {{tro67_w_looked}} to {{tr67_w_looked}} a move ({{tr67_order_cut}} fewer; {{tro67_ms}} ms a move to {{tr67_ms}}). It needs only the best move of each board kept, which a table can keep too.</p>
+
+<h2 id="deepen">Shallow first, then deeper</h2>
+<p><b>Looking 2 ahead first, then 3, and so on up to the full depth, saves nothing here ({{trd67_ms}} ms a move, against {{tr67_ms}} without), because a deeper answer cannot be built on top of a shallower one.</b> A board’s value looking 6 ahead comes from its children’s values looking 5 ahead, not from its own value looking 5 ahead; so what the shallow searches leave for the deep one is the tree (white’s moves worked out drop from {{tr67_worked}} to {{trd67_worked}} a move) and the order to try moves in, and the shallow searches themselves cost about what that order saves. Chess programs gain from deepening mostly by searching the first move with the whole window and the rest with a narrow one; Hazel’s players want an exact value for every move (for their random tie-breaks), which leaves that gain unused. The streams’ heads that pay off are the ones shared between the two players, not the ones a player passes to its own deeper search.</p>
+
+<h2 id="order">The partial order</h2>
+<p><b>The order by ranges is the memo’s baseline: every table in reports 061 and 062 answers a question with any range that settles it, which is how alpha-beta’s answers, often only ranges, can be reused at all. Letting an answer for a further look-ahead stand for a nearer one adds little: {{trp67_cut}} less time ({{tr67_ms}} to {{trp67_ms}} ms a move), and {{trp67_differ}} of {{moves}} moves chosen differently.</b> A further answer is a better-informed one, but it is no longer the answer the nearer search would have found, so it changes the player a little; here the change was small both ways.</p>
+
+<h2 id="all">Every way, in one table</h2>
+{{all_table}}
+<p class="muted">Build 1 (the lab), the same {{moves}} positions each way. “Moves chosen differently”: against the plain search with the same look-ahead for each player (Hazel’s own moves, for 6 and 6). Memory: what the way keeps at the end of a game, after a collection.</p>
+
+<h2 id="verdict">The answer</h2>
+<p><b>Yes, the two players can share one search: with the board as the node and its answers as ranges found by a partial order, the space has no point of view in it, and once the two searches end on the same move, the second one does about half the work. The price is a move of look-ahead for one player.</b> Of the design’s other parts, trying each board’s best move first pays; keeping the tree’s moves, and deepening a step at a time, do not pay in this lab, because the deeper answer is built from the children, not from the shallower answer, and most of the work is always the new bottom of the tree.</p>
+
+<h2 id="next">What next</h2>
+<ol>
+<li><b>Does it play as well?</b> Play black 6 and white 5 (and 6 and 7) against Hazel’s 6 and 6, many games each way round, to see what a move of look-ahead is worth against the time saved.</li>
+<li><b>In Hazel itself.</b> The compiled rules work out moves far more slowly than this JavaScript (report 060), which may change the tree’s balance: kept moves might pay there. A memo in Hazel needs a persistent map keyed by the board; measure it in the compiled rules.</li>
+<li><b>Go.</b> Go’s boards repeat within a search far more than Checkers’ (stones placed in any order), so both the shared table and the tree should do more there.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<table class="nums"><thead><tr><th>build</th><th>what</th><th>where</th></tr></thead><tbody>
+<tr><td>Build 1, the lab</td><td><code>node tools/checkers-lab.mjs tree 3 6</code>: Hazel’s {{games}} games recorded (6 and 6, no table, seeded tie-breaks), then each way searching the same {{moves}} positions in the same order</td><td>hazeljs-examples commit 1f0270c; the driver is in this report’s <code>drivers/</code></td></tr>
+<tr><td>Build 2, the compiled rules (checked against)</td><td><code>checkers/compiled.js</code>: <code>node tools/checkers-lab.mjs check 1 6</code>, 223 positions of a game, every move and every list of legal moves the same as the lab’s</td><td>hazel-jit at hazelgrove/hazel d15466c7b1 (trial/794-games-aot)</td></tr>
+</tbody></table>
+<p>The lab mirrors <code>checkers/rules/Checkers.hz</code> step for step (report 061’s method): the moves in the same order, the same values, the same alpha-beta. Its new <code>tree</code> mode adds the shared tree (a node a board searched past the edge; its moves, its children made as first visited, an entry of lo and hi for each look-ahead; boards untouched for two searches let go past 300,000), best-first order, deepening, and the three ways of setting each player’s look-ahead. Counts by side: moves worked out (calls of <code>legal</code>), positions valued, positions searched past the edge, answers from the memo. Times: one run each, Node 22 on a 13th-gen Intel i7-1370P laptop, two cores, at low priority. The data is in <code>data/tree.json</code> and <code>data/tree-65.json</code>, and embedded in this page.</p>
+</main></body>
+</html>

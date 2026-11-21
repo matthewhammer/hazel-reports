@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Search Tree for Two Players</title>
+<meta name="description" content="A prototype of Matthew&#x27;s tree-streams for Hazel&#x27;s Checkers search: one tree of boards both players grow, answers kept as ranges and found by a partial order. When the two players&#x27; searches end on the same move, the one that comes second does about half the work; lining them up costs one player a move of look-ahead, and black 6 with white 5 runs 63% faster than Hazel now. Keeping the tree itself halves the moves worked out but saves no time in JavaScript, and deepening a step at a time saves nothing here.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  figure.chart svg { width: 100%; height: auto; display: block; }
+  svg .lbl { fill: var(--ink); font: 13px system-ui, sans-serif; } svg .mut { fill: var(--muted); font: 12px system-ui, sans-serif; }
+  svg .blk { fill: #1f2328; } svg .wht { fill: #f6f0e2; stroke: #8a7a5a; } svg .hi { fill: #eb6834; } svg .grid { stroke: var(--line); }
+  svg .node { fill: var(--paper); stroke: #2a78d6; stroke-width: 2; } svg .cell { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+  svg .cell.later { stroke-dasharray: 5 4; } svg .link { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+  svg .barb { fill: #2a78d6; } svg .barw { fill: #9ec5f0; } svg .arrowb { stroke: #1f2328; stroke-width: 3; } svg .arroww { stroke: #b8a57a; stroke-width: 3; }
+  svg .finish { stroke: #eb6834; stroke-width: 2; stroke-dasharray: 4 3; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) svg .blk { fill: #e8e6e3; } :root:not([data-theme="light"]) svg .arrowb { stroke: #e8e6e3; } }
+  :root[data-theme="dark"] svg .blk { fill: #e8e6e3; } :root[data-theme="dark"] svg .arrowb { stroke: #e8e6e3; }
+  table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td:first-child, table.nums th:first-child { text-align: left; }
+  .tw { overflow-x: auto; margin: 0.6em 0 1em; } .tw table { min-width: 720px; }
+  .cards3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 0.8em 0 1.2em; }
+  .cards3 .card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--paper); }
+  .cards3 .big { font-size: 1.9em; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; } .cards3 .what { color: var(--muted); font-size: 0.88em; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+li.anchored .anchor { margin-left: 6px; color: var(--muted); text-decoration: none; opacity: 0.5; } li.anchored .copyanchor { opacity: 0.8; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>62<b>)</b></code> · Hazel’s search · 2026-11-21, revised 2026-11-21 12:41 MST · <span class="wip">work in progress</span> · after <a href="../061/"><code class="ref"><b>^report(</b>61<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>One Search Tree for Two Players</h1>
+<p class="sub"><a href="../061/"><code class="ref"><b>^report(</b>61<b>)</b></code></a> found that Hazel’s two Checkers players, each looking six moves ahead, never ask each other’s questions. Matthew asked next: “is there a way to make a ‘canonical search space’ that’s not POV, so that each person’s view of it matches each other persons?”; “we want a memo policy that does not match exactly, but instead uses a partial ordering”; “a way of asking for a shallow depth, getting a full match, and then separately asking for a deeper match that reuses that entire shallow match, without redoing it”; “we need a way to treat the matches as streams, whose heads can be reused … tree-streams”. This is a prototype of that design, in the Checkers lab, measured on the 503 positions of <a href="../061/"><code class="ref"><b>^report(</b>61<b>)</b></code></a>’s 3 games.</p>
+<div class="cards3"><div class="card"><div class="big">about half</div><div class="what">the work of the search that comes second in each pair, when the two players&#x27; searches end on the same move and share one table</div></div><div class="card"><div class="big">63% less</div><div class="what">time a move, black looking 6 ahead and white 5, sharing a table, against Hazel now (white sees one move less)</div></div><div class="card"><div class="big">52% fewer</div><div class="what">moves worked out when the tree is kept, but no faster in JavaScript, and three to four times the memory</div></div></div>
+<p class="muted">Every count is exact, from the lab’s mirror of the Checkers rules; the times are one run each on a laptop and only compare the ways with each other (<a href="#method">how</a>). Every way that keeps Hazel’s way of looking ahead chose every move exactly as Hazel does.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#design">The design</a>: one tree of boards, and two streams on each board, its moves and its answers.</li>
+<li><a href="#pairs">Lined up, the players share</a>: when two searches end on the same move, the second does about half the work.</li>
+<li><a href="#lineup">Lining up costs a move of look-ahead</a>: one player looks one move further, or one less.</li>
+<li><a href="#tree">Keeping the tree</a>: half the moves worked out, no time saved, more memory.</li>
+<li><a href="#deepen">Shallow first, then deeper</a>: nothing saved here, and why.</li>
+<li><a href="#order">The partial order</a>: ranges are what make any answer reusable; further answers for nearer ones add a little.</li>
+<li><a href="#all">Every way, in one table</a>, <a href="#verdict">the answer</a>, <a href="#next">what next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="design">The design<a class="anchor" href="#design" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="design" title="copy this section's address">copy link</button></h2>
+<p><b>One tree of boards that both players grow and read. A node is a board (the pieces and whose turn it is), the same node whoever reaches it, and each node carries two streams: its moves, worked out the first time anyone asks and kept, and its answers, one range of values for each look-ahead.</b> A board’s answer is its value to the side to move there, so it means the same thing to both players: nothing has to be turned round for one or the other. That is the canonical search space, with no point of view in it.</p>
+<figure class="chart">
+<svg viewBox="0 0 600 330" role="img" aria-label="A board in the shared tree: its moves, made as they are first visited, and its answers, a range for each look-ahead; a question answered by any entry that settles it"><rect class="node" x="20" y="120" width="150" height="96" rx="10"/><text class="lbl" x="95" y="146" text-anchor="middle">a board</text><text class="mut" x="95" y="166" text-anchor="middle">(the pieces,</text><text class="mut" x="95" y="182" text-anchor="middle">whose turn)</text><text class="mut" x="95" y="202" text-anchor="middle">the same for both</text><text class="mut" x="200" y="40" text-anchor="start">its moves: worked out once, each child made when first visited</text><rect class="cell" x="200" y="52" width="86" height="34" rx="6"/><text class="lbl" x="243" y="74" text-anchor="middle">move 1</text><rect class="cell" x="296" y="52" width="86" height="34" rx="6"/><text class="lbl" x="339" y="74" text-anchor="middle">move 2</text><rect class="cell later" x="392" y="52" width="86" height="34" rx="6"/><text class="mut" x="435" y="74" text-anchor="middle">move 3 …</text><rect class="cell later" x="488" y="52" width="86" height="34" rx="6"/><text class="mut" x="531" y="74" text-anchor="middle">move 4 …</text><path class="link" d="M170 150 C185 110 190 80 200 70"/><text class="mut" x="200" y="250" text-anchor="start">its answers: for each look-ahead, a range (at least, at most)</text><rect class="cell" x="200" y="262" width="86" height="40" rx="6"/><text class="mut" x="243" y="279" text-anchor="middle">1 ahead</text><text class="lbl" x="243" y="296" text-anchor="middle">= 12</text><rect class="cell" x="296" y="262" width="86" height="40" rx="6"/><text class="mut" x="339" y="279" text-anchor="middle">3 ahead</text><text class="lbl" x="339" y="296" text-anchor="middle">≥ 4</text><rect class="cell" x="392" y="262" width="86" height="40" rx="6"/><text class="mut" x="435" y="279" text-anchor="middle">5 ahead</text><text class="lbl" x="435" y="296" text-anchor="middle">4 … 9</text><rect class="cell later" x="488" y="262" width="86" height="40" rx="6"/><text class="mut" x="531" y="279" text-anchor="middle">7 ahead</text><text class="mut" x="531" y="296" text-anchor="middle">?</text><path class="link" d="M170 190 C185 230 190 260 200 275"/><text class="lbl" x="200" y="150" text-anchor="start">a question: “5 ahead: is it more than 3?”</text><text class="mut" x="200" y="170" text-anchor="start">answered by any entry that settles it: “4 … 9” does,</text><text class="mut" x="200" y="188" text-anchor="start">whichever player's search left it there</text></svg>
+<figcaption>A board’s node in the shared tree (Build 1). Its moves stream: worked out once; each child board made the first time a search goes there (dashed: not yet). Its answers stream: for each look-ahead, a range (exact, at least, or between two values), filled in by whichever search came by.</figcaption>
+</figure>
+<p>A search asks a board a question: “looking 5 ahead, is your value more than 3?” Alpha-beta asks that kind of question, a value inside a window, rather than “what exactly is your value”. The memo answers it with <b>any</b> entry that settles it, not only an exact match: an entry “between 4 and 9” for 5 ahead settles “more than 3”. That is the partial order: a narrower range knows more than a wider one, and one that settles the question is good enough. Optionally, an entry for a further look-ahead may stand for a nearer one (<a href="#order">below</a>).</p>
+<p>Three more parts of the prototype: each board remembers which of its moves was best last time, and that move is tried first next time (the head of the last answer, reused by the next question); a search may first look 2 ahead, then 3, and so on, before the full depth (<a href="#deepen">deepening</a>); and boards at the very edge of a search are only valued, never kept, since valuing a board costs less than finding it in the tree. Boards no search has visited in the last two moves are let go, so the tree keeps what is near the game as it goes on.</p>
+
+<h2 id="pairs">Lined up, the players share<a class="anchor" href="#pairs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pairs" title="copy this section's address">copy link</button></h2>
+<p><b>When two searches end on the same move, the one that comes second does about half the work with one table shared: black, coming second, looks at 1,996 positions a move instead of 3,917 (49% fewer, 11.1 ms to 5.4 ms); white, coming second the other way round, 746 instead of 1,451 (49% fewer, 3.9 ms to 2.1 ms).</b> <a href="../061/"><code class="ref"><b>^report(</b>61<b>)</b></code></a> showed why Hazel’s two players never meet: black at move 10 looks to move 16, white at move 11 to move 17, so a board they both reach is asked about with different distances still to look. Line their finish lines up, and they ask the same questions. Black looking 6 ahead and white 7: white at move 11 looks to move 18, black at move 12 looks to move 18, and every board both reach is asked the same question. Or black 6 and white 5: black at move 10 and white at move 11 both look to move 16.</p>
+<figure class="chart">
+<svg viewBox="0 0 600 326" role="img" aria-label="Which searches end on the same move: none in Hazel now; pairs when White looks one move more or less"><text class="mut" x="150" y="16" text-anchor="middle">10</text><text class="mut" x="196" y="16" text-anchor="middle">11</text><text class="mut" x="242" y="16" text-anchor="middle">12</text><text class="mut" x="288" y="16" text-anchor="middle">13</text><text class="mut" x="334" y="16" text-anchor="middle">14</text><text class="mut" x="380" y="16" text-anchor="middle">15</text><text class="mut" x="426" y="16" text-anchor="middle">16</text><text class="mut" x="472" y="16" text-anchor="middle">17</text><text class="mut" x="518" y="16" text-anchor="middle">18</text><text class="mut" x="564" y="16" text-anchor="middle">19</text><line class="grid" x1="150" y1="22" x2="150" y2="300"/><line class="grid" x1="196" y1="22" x2="196" y2="300"/><line class="grid" x1="242" y1="22" x2="242" y2="300"/><line class="grid" x1="288" y1="22" x2="288" y2="300"/><line class="grid" x1="334" y1="22" x2="334" y2="300"/><line class="grid" x1="380" y1="22" x2="380" y2="300"/><line class="grid" x1="426" y1="22" x2="426" y2="300"/><line class="grid" x1="472" y1="22" x2="472" y2="300"/><line class="grid" x1="518" y1="22" x2="518" y2="300"/><line class="grid" x1="564" y1="22" x2="564" y2="300"/><text class="lbl" x="8" y="62">6 and 6</text><text class="mut" x="8" y="80">Hazel now</text><line class="arrowb" x1="150" y1="50" x2="426" y2="50"/><circle class="blk" cx="150" cy="50" r="6"/><circle class="hi" cx="426" cy="50" r="3.5"/><line class="arroww" x1="196" y1="72" x2="472" y2="72"/><circle class="wht" cx="196" cy="72" r="6"/><circle class="hi" cx="472" cy="72" r="3.5"/><line class="arrowb" x1="242" y1="94" x2="518" y2="94"/><circle class="blk" cx="242" cy="94" r="6"/><circle class="hi" cx="518" cy="94" r="3.5"/><text class="lbl" x="8" y="154">6 and 7</text><text class="mut" x="8" y="172">lined up</text><line class="arrowb" x1="150" y1="142" x2="426" y2="142"/><circle class="blk" cx="150" cy="142" r="6"/><circle class="hi" cx="426" cy="142" r="3.5"/><line class="arroww" x1="196" y1="164" x2="518" y2="164"/><circle class="wht" cx="196" cy="164" r="6"/><circle class="hi" cx="518" cy="164" r="3.5"/><line class="arrowb" x1="242" y1="186" x2="518" y2="186"/><circle class="blk" cx="242" cy="186" r="6"/><circle class="hi" cx="518" cy="186" r="3.5"/><line class="finish" x1="526" y1="156" x2="526" y2="194"/><text class="mut" x="531" y="179.0">same finish</text><text class="lbl" x="8" y="246">6 and 5</text><text class="mut" x="8" y="264">lined up</text><line class="arrowb" x1="150" y1="234" x2="426" y2="234"/><circle class="blk" cx="150" cy="234" r="6"/><circle class="hi" cx="426" cy="234" r="3.5"/><line class="arroww" x1="196" y1="256" x2="426" y2="256"/><circle class="wht" cx="196" cy="256" r="6"/><circle class="hi" cx="426" cy="256" r="3.5"/><line class="arrowb" x1="242" y1="278" x2="518" y2="278"/><circle class="blk" cx="242" cy="278" r="6"/><circle class="hi" cx="518" cy="278" r="3.5"/><line class="finish" x1="434" y1="226" x2="434" y2="264"/><text class="mut" x="439" y="249.0">same finish</text><text class="mut" x="8" y="318">the move each search starts at (● black, ○ white), and the move it looks ahead to</text></svg>
+<figcaption>Which searches end on the same move. Hazel now (6 and 6): none. Black 6, white 7: white’s search and black’s next one. Black 6, white 5: black’s search and white’s next one. The second of each pair reads what the first left in the table. (A diagram of the rule, not of a build.)</figcaption>
+</figure>
+<p>The second search’s head start is the first one’s work along the line it expected: the first search tried every one of its moves with the whole window, so every board the second player can be facing already has an exact answer, out to the same finish, and the second player’s replies have at least ranges. Not everything carries over: the second player still wants an exact value for each of its own moves (Hazel breaks ties between equal moves at random), and many of the first search’s answers are only ranges.</p>
+
+<h2 id="lineup">Lining up costs a move of look-ahead<a class="anchor" href="#lineup" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lineup" title="copy this section's address">copy link</button></h2>
+<p><b>Two searches can end on the same move only if one of the two players looks one move further than the other, or one less, so the sharing is paid for in look-ahead: white looking 7 costs more than the sharing saves (17.1 ms a move with one table, against 10.7 for Hazel’s 6 and 6 with a table each), while white looking 5 costs less (6.2 ms a move, 43% less than 6 and 6 with a table each and 63% less than Hazel now, 16.8 ms).</b> One move more is expensive: white looking 7 with no table takes 48.0 ms a move against 19.6 for 6. One move less is cheap, and the sharing then lands on white, the player looking 5. Whether white playing 5 ahead plays noticeably worse, or white playing 7 better, is not measured here (<a href="#next">what next</a>).</p>
+<figure class="chart">
+<svg viewBox="0 0 600 434" role="img" aria-label="Milliseconds a move, black's and white's, each way"><text class="lbl" x="8" y="32">now: 6 and 6, no table</text><rect class="barb" x="230" y="14" width="146.8" height="13"><title>black: 14.1 ms a move</title></rect><text class="mut" x="381.8" y="25">14.1</text><rect class="barw" x="230" y="29" width="203.4" height="13"><title>white: 19.6 ms a move</title></rect><text class="mut" x="438.4" y="40">19.6</text><text class="lbl" x="8" y="72">6 and 6, a table each</text><rect class="barb" x="230" y="54" width="105.3" height="13"><title>black: 10.1 ms a move</title></rect><text class="mut" x="340.3" y="65">10.1</text><rect class="barw" x="230" y="69" width="117.7" height="13"><title>white: 11.3 ms a move</title></rect><text class="mut" x="352.7" y="80">11.3</text><text class="lbl" x="8" y="112">6 and 6, one table, shared</text><rect class="barb" x="230" y="94" width="102.7" height="13"><title>black: 9.9 ms a move</title></rect><text class="mut" x="337.7" y="105">9.9</text><rect class="barw" x="230" y="109" width="117.8" height="13"><title>white: 11.3 ms a move</title></rect><text class="mut" x="352.8" y="120">11.3</text><text class="lbl" x="8" y="152">6 and 6, the shared tree</text><rect class="barb" x="230" y="134" width="99.1" height="13"><title>black: 9.5 ms a move</title></rect><text class="mut" x="334.1" y="145">9.5</text><rect class="barw" x="230" y="149" width="126.4" height="13"><title>white: 12.2 ms a move</title></rect><text class="mut" x="361.4" y="160">12.2</text><text class="lbl" x="8" y="192">6 and 7, a table each</text><rect class="barb" x="230" y="174" width="115.1" height="13"><title>black: 11.1 ms a move</title></rect><text class="mut" x="350.1" y="185">11.1</text><rect class="barw" x="230" y="189" width="295.4" height="13"><title>white: 28.4 ms a move</title></rect><text class="mut" x="530.4" y="200">28.4</text><text class="lbl" x="8" y="232">6 and 7, one table, shared</text><rect class="barb" x="230" y="214" width="55.8" height="13"><title>black: 5.4 ms a move</title></rect><text class="mut" x="290.8" y="225">5.4</text><rect class="barw" x="230" y="229" width="300.0" height="13"><title>white: 28.9 ms a move</title></rect><text class="mut" x="535.0" y="240">28.9</text><text class="lbl" x="8" y="272">6 and 7, the shared tree</text><rect class="barb" x="230" y="254" width="65.9" height="13"><title>black: 6.3 ms a move</title></rect><text class="mut" x="300.9" y="265">6.3</text><rect class="barw" x="230" y="269" width="275.3" height="13"><title>white: 26.5 ms a move</title></rect><text class="mut" x="510.3" y="280">26.5</text><text class="lbl" x="8" y="312">6 and 5, a table each</text><rect class="barb" x="230" y="294" width="110.2" height="13"><title>black: 10.6 ms a move</title></rect><text class="mut" x="345.2" y="305">10.6</text><rect class="barw" x="230" y="309" width="40.3" height="13"><title>white: 3.9 ms a move</title></rect><text class="mut" x="275.3" y="320">3.9</text><text class="lbl" x="8" y="352">6 and 5, one table, shared</text><rect class="barb" x="230" y="334" width="105.7" height="13"><title>black: 10.2 ms a move</title></rect><text class="mut" x="340.7" y="345">10.2</text><rect class="barw" x="230" y="349" width="22.2" height="13"><title>white: 2.1 ms a move</title></rect><text class="mut" x="257.2" y="360">2.1</text><text class="lbl" x="8" y="392">6 and 5, the shared tree</text><rect class="barb" x="230" y="374" width="124.7" height="13"><title>black: 12.0 ms a move</title></rect><text class="mut" x="359.7" y="385">12.0</text><rect class="barw" x="230" y="389" width="20.2" height="13"><title>white: 1.9 ms a move</title></rect><text class="mut" x="255.2" y="400">1.9</text><rect class="barb" x="230" y="414" width="12" height="10"/><text class="mut" x="246" y="423">black's moves</text><rect class="barw" x="350" y="414" width="12" height="10"/><text class="mut" x="366" y="423">white's moves, ms a move</text></svg>
+<figcaption>Build 1 (the lab): milliseconds a move, black’s and white’s, over the same 503 positions, for Hazel’s way of looking ahead (6 and 6) and the two lined-up ways, each with a table for each player, one table shared, and the shared tree. Lined up, the second search of each pair (black’s for 6 and 7, white’s for 6 and 5) gains from sharing; with 6 and 6, sharing changes nothing.</figcaption>
+</figure>
+
+<h2 id="tree">Keeping the tree<a class="anchor" href="#tree" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="tree" title="copy this section's address">copy link</button></h2>
+<p><b>Keeping the tree (each board’s moves worked out once, its best move tried first) halves the moves worked out (1,647 a move with a table, 782 with the tree, 52% fewer) and looks at 13% fewer positions, but in JavaScript it is no faster (10.8 ms a move against 10.7) and keeps three to four times the memory (522 MB against 125).</b> Working out a board’s moves again turns out to cost about what finding the board’s node and its kept moves costs; and a node, with its board, its moves and its answers, is heavy to keep. Trying the best move first is the part that pays: lined up 6 and 7, it brings white’s positions looked at from 10,095 to 8,110 a move (20% fewer; 18.7 ms a move to 16.4). It needs only the best move of each board kept, which a table can keep too.</p>
+
+<h2 id="deepen">Shallow first, then deeper<a class="anchor" href="#deepen" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="deepen" title="copy this section's address">copy link</button></h2>
+<p><b>Looking 2 ahead first, then 3, and so on up to the full depth, saves nothing here (16.8 ms a move, against 16.4 without), because a deeper answer cannot be built on top of a shallower one.</b> A board’s value looking 6 ahead comes from its children’s values looking 5 ahead, not from its own value looking 5 ahead; so what the shallow searches leave for the deep one is the tree (white’s moves worked out drop from 2,396 to 2,078 a move) and the order to try moves in, and the shallow searches themselves cost about what that order saves. Chess programs gain from deepening mostly by searching the first move with the whole window and the rest with a narrow one; Hazel’s players want an exact value for every move (for their random tie-breaks), which leaves that gain unused. The streams’ heads that pay off are the ones shared between the two players, not the ones a player passes to its own deeper search.</p>
+
+<h2 id="order">The partial order<a class="anchor" href="#order" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="order" title="copy this section's address">copy link</button></h2>
+<p><b>The order by ranges is the memo’s baseline: every table in <a href="../061/"><code class="ref"><b>^report(</b>61<b>)</b></code></a> and <code class="ref"><b>^report(</b>62<b>)</b></code> answers a question with any range that settles it, which is how alpha-beta’s answers, often only ranges, can be reused at all. Letting an answer for a further look-ahead stand for a nearer one adds little: 2% less time (16.4 to 16.0 ms a move), and 1 of 503 moves chosen differently.</b> A further answer is a better-informed one, but it is no longer the answer the nearer search would have found, so it changes the player a little; here the change was small both ways.</p>
+
+<h2 id="all">Every way, in one table<a class="anchor" href="#all" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="all" title="copy this section's address">copy link</button></h2>
+<div class="tw"><table class="nums"><thead><tr><th>way</th><th>ms a move</th><th>black’s</th><th>white’s</th><th>positions looked at, a move</th><th>moves worked out, a move</th><th>answered by the memo, a move</th><th>moves chosen differently</th><th>boards or entries kept, most</th><th>memory, MB</th></tr></thead><tbody><tr><td>Hazel now: 6 and 6, no table</td><td>16.8</td><td>14.1</td><td>19.6</td><td>9,454</td><td>2,442</td><td>0</td><td>0</td><td>0</td><td>5</td></tr><tr><td>6 and 6, a table each</td><td>10.7</td><td>10.1</td><td>11.3</td><td>4,541</td><td>1,647</td><td>440</td><td>0</td><td>354,202</td><td>125</td></tr><tr><td>6 and 6, one table, shared</td><td>10.6</td><td>9.9</td><td>11.3</td><td>4,541</td><td>1,647</td><td>440</td><td>0</td><td>354,202</td><td>125</td></tr><tr><td>6 and 6, the shared tree</td><td>10.8</td><td>9.5</td><td>12.2</td><td>3,969</td><td>782</td><td>369</td><td>0</td><td>246,997</td><td>522</td></tr><tr><td>6 and 7, no table</td><td>31.2</td><td>14.4</td><td>48.0</td><td>15,887</td><td>5,704</td><td>0</td><td>0</td><td>0</td><td>4</td></tr><tr><td>6 and 7, a table each</td><td>19.7</td><td>11.1</td><td>28.4</td><td>7,057</td><td>3,282</td><td>978</td><td>0</td><td>701,399</td><td>225</td></tr><tr><td>6 and 7, one table, shared</td><td>17.1</td><td>5.4</td><td>28.9</td><td>6,031</td><td>2,876</td><td>920</td><td>0</td><td>577,440</td><td>192</td></tr><tr><td>6 and 7, the shared tree, the rules&#x27; order</td><td>18.7</td><td>5.7</td><td>31.7</td><td>6,039</td><td>1,606</td><td>918</td><td>0</td><td>231,917</td><td>477</td></tr><tr><td>6 and 7, the shared tree</td><td>16.4</td><td>6.3</td><td>26.5</td><td>5,201</td><td>1,424</td><td>763</td><td>0</td><td>172,665</td><td>350</td></tr><tr><td>6 and 7, the shared tree, deepening</td><td>16.8</td><td>5.4</td><td>28.2</td><td>6,693</td><td>1,210</td><td>886</td><td>0</td><td>157,818</td><td>327</td></tr><tr><td>6 and 7, the shared tree, further answers</td><td>16.0</td><td>5.5</td><td>26.6</td><td>5,125</td><td>1,421</td><td>761</td><td>1</td><td>172,145</td><td>349</td></tr><tr><td>6 and 5, no table</td><td>9.2</td><td>14.2</td><td>4.1</td><td>4,700</td><td>1,523</td><td>0</td><td>0</td><td>0</td><td>5</td></tr><tr><td>6 and 5, one table, shared</td><td>6.2</td><td>10.2</td><td>2.1</td><td>2,317</td><td>993</td><td>283</td><td>0</td><td>211,812</td><td>71</td></tr><tr><td>6 and 5, the shared tree</td><td>7.0</td><td>12.0</td><td>1.9</td><td>2,209</td><td>556</td><td>253</td><td>0</td><td>184,399</td><td>384</td></tr><tr><td>6 and 5, a table each</td><td>7.2</td><td>10.6</td><td>3.9</td><td>2,686</td><td>1,119</td><td>289</td><td>0</td><td>253,147</td><td>89</td></tr></tbody></table></div>
+<p class="muted">Build 1 (the lab), the same 503 positions each way. “Moves chosen differently”: against the plain search with the same look-ahead for each player (Hazel’s own moves, for 6 and 6). Memory: what the way keeps at the end of a game, after a collection.</p>
+
+<h2 id="verdict">The answer<a class="anchor" href="#verdict" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="verdict" title="copy this section's address">copy link</button></h2>
+<p><b>Yes, the two players can share one search: with the board as the node and its answers as ranges found by a partial order, the space has no point of view in it, and once the two searches end on the same move, the second one does about half the work. The price is a move of look-ahead for one player.</b> Of the design’s other parts, trying each board’s best move first pays; keeping the tree’s moves, and deepening a step at a time, do not pay in this lab, because the deeper answer is built from the children, not from the shallower answer, and most of the work is always the new bottom of the tree.</p>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li><b>Does it play as well?</b> Play black 6 and white 5 (and 6 and 7) against Hazel’s 6 and 6, many games each way round, to see what a move of look-ahead is worth against the time saved.</li>
+<li><b>In Hazel itself.</b> The compiled rules work out moves far more slowly than this JavaScript (<a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a>), which may change the tree’s balance: kept moves might pay there. A memo in Hazel needs a persistent map keyed by the board; measure it in the compiled rules.</li>
+<li><b>Go.</b> Go’s boards repeat within a search far more than Checkers’ (stones placed in any order), so both the shared table and the tree should do more there.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<table class="nums"><thead><tr><th>build</th><th>what</th><th>where</th></tr></thead><tbody>
+<tr><td>Build 1, the lab</td><td><code>node tools/checkers-lab.mjs tree 3 6</code>: Hazel’s 3 games recorded (6 and 6, no table, seeded tie-breaks), then each way searching the same 503 positions in the same order</td><td>hazeljs-examples commit 1f0270c; the driver is in this report’s <code>drivers/</code></td></tr>
+<tr><td>Build 2, the compiled rules (checked against)</td><td><code>checkers/compiled.js</code>: <code>node tools/checkers-lab.mjs check 1 6</code>, 223 positions of a game, every move and every list of legal moves the same as the lab’s</td><td>hazel-jit at hazelgrove/hazel d15466c7b1 (trial/794-games-aot)</td></tr>
+</tbody></table>
+<p>The lab mirrors <code>checkers/rules/Checkers.hz</code> step for step (<a href="../061/"><code class="ref"><b>^report(</b>61<b>)</b></code></a>’s method): the moves in the same order, the same values, the same alpha-beta. Its new <code>tree</code> mode adds the shared tree (a node a board searched past the edge; its moves, its children made as first visited, an entry of lo and hi for each look-ahead; boards untouched for two searches let go past 300,000), best-first order, deepening, and the three ways of setting each player’s look-ahead. Counts by side: moves worked out (calls of <code>legal</code>), positions valued, positions searched past the edge, answers from the memo. Times: one run each, Node 22 on a 13th-gen Intel i7-1370P laptop, two cores, at low priority. The data is in <code>data/tree.json</code> and <code>data/tree-65.json</code>, and embedded in this page.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/062/data"><code>062/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 62,
+ "blurb": "A prototype of Matthew's tree-streams for Hazel's Checkers search: one tree of boards both players grow, answers kept as ranges and found by a partial order. When the two players' searches end on the same move, the one that comes second does about half the work; lining them up costs one player a move of look-ahead, and black 6 with white 5 runs 63% faster than Hazel now. Keeping the tree itself halves the moves worked out but saves no time in JavaScript, and deepening a step at a time saves nothing here.",
+ "title": "One Search Tree for Two Players",
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "Every way, in one table",
+   "section_id": "all",
+   "columns": [
+    "way",
+    "ms a move",
+    "black’s",
+    "white’s",
+    "positions looked at, a move",
+    "moves worked out, a move",
+    "answered by the memo, a move",
+    "moves chosen differently",
+    "boards or entries kept, most",
+    "memory, MB"
+   ],
+   "rows": [
+    [
+     "Hazel now: 6 and 6, no table",
+     "16.8",
+     "14.1",
+     "19.6",
+     "9,454",
+     "2,442",
+     "0",
+     "0",
+     "0",
+     "5"
+    ],
+    [
+     "6 and 6, a table each",
+     "10.7",
+     "10.1",
+     "11.3",
+     "4,541",
+     "1,647",
+     "440",
+     "0",
+     "354,202",
+     "125"
+    ],
+    [
+     "6 and 6, one table, shared",
+     "10.6",
+     "9.9",
+     "11.3",
+     "4,541",
+     "1,647",
+     "440",
+     "0",
+     "354,202",
+     "125"
+    ],
+    [
+     "6 and 6, the shared tree",
+     "10.8",
+     "9.5",
+     "12.2",
+     "3,969",
+     "782",
+     "369",
+     "0",
+     "246,997",
+     "522"
+    ],
+    [
+     "6 and 7, no table",
+     "31.2",
+     "14.4",
+     "48.0",
+     "15,887",
+     "5,704",
+     "0",
+     "0",
+     "0",
+     "4"
+    ],
+    [
+     "6 and 7, a table each",
+     "19.7",
+     "11.1",
+     "28.4",
+     "7,057",
+     "3,282",
+     "978",
+     "0",
+     "701,399",
+     "225"
+    ],
+    [
+     "6 and 7, one table, shared",
+     "17.1",
+     "5.4",
+     "28.9",
+     "6,031",
+     "2,876",
+     "920",
+     "0",
+     "577,440",
+     "192"
+    ],
+    [
+     "6 and 7, the shared tree, the rules' order",
+     "18.7",
+     "5.7",
+     "31.7",
+     "6,039",
+     "1,606",
+     "918",
+     "0",
+     "231,917",
+     "477"
+    ],
+    [
+     "6 and 7, the shared tree",
+     "16.4",
+     "6.3",
+     "26.5",
+     "5,201",
+     "1,424",
+     "763",
+     "0",
+     "172,665",
+     "350"
+    ],
+    [
+     "6 and 7, the shared tree, deepening",
+     "16.8",
+     "5.4",
+     "28.2",
+     "6,693",
+     "1,210",
+     "886",
+     "0",
+     "157,818",
+     "327"
+    ],
+    [
+     "6 and 7, the shared tree, further answers",
+     "16.0",
+     "5.5",
+     "26.6",
+     "5,125",
+     "1,421",
+     "761",
+     "1",
+     "172,145",
+     "349"
+    ],
+    [
+     "6 and 5, no table",
+     "9.2",
+     "14.2",
+     "4.1",
+     "4,700",
+     "1,523",
+     "0",
+     "0",
+     "0",
+     "5"
+    ],
+    [
+     "6 and 5, one table, shared",
+     "6.2",
+     "10.2",
+     "2.1",
+     "2,317",
+     "993",
+     "283",
+     "0",
+     "211,812",
+     "71"
+    ],
+    [
+     "6 and 5, the shared tree",
+     "7.0",
+     "12.0",
+     "1.9",
+     "2,209",
+     "556",
+     "253",
+     "0",
+     "184,399",
+     "384"
+    ],
+    [
+     "6 and 5, a table each",
+     "7.2",
+     "10.6",
+     "3.9",
+     "2,686",
+     "1,119",
+     "289",
+     "0",
+     "253,147",
+     "89"
+    ]
+   ]
+  },
+  {
+   "section": "How this was put together",
+   "section_id": "method",
+   "columns": [
+    "build",
+    "what",
+    "where"
+   ],
+   "rows": [
+    [
+     "Build 1, the lab",
+     "node tools/checkers-lab.mjs tree 3 6: Hazel’s 3 games recorded (6 and 6, no table, seeded tie-breaks), then each way searching the same 503 positions in the same order",
+     "hazeljs-examples commit 1f0270c; the driver is in this report’s drivers/"
+    ],
+    [
+     "Build 2, the compiled rules (checked against)",
+     "checkers/compiled.js: node tools/checkers-lab.mjs check 1 6, 223 positions of a game, every move and every list of legal moves the same as the lab’s",
+     "hazel-jit at hazelgrove/hazel d15466c7b1 (trial/794-games-aot)"
+    ]
+   ]
+  }
+ ],
+ "files": [
+  "data/meta.json",
+  "data/tables.json",
+  "data/tree-65.json",
+  "data/tree.json"
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/062/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>

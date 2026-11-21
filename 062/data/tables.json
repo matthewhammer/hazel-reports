@@ -1,0 +1,221 @@
+[
+ {
+  "section": "Every way, in one table",
+  "section_id": "all",
+  "columns": [
+   "way",
+   "ms a move",
+   "black’s",
+   "white’s",
+   "positions looked at, a move",
+   "moves worked out, a move",
+   "answered by the memo, a move",
+   "moves chosen differently",
+   "boards or entries kept, most",
+   "memory, MB"
+  ],
+  "rows": [
+   [
+    "Hazel now: 6 and 6, no table",
+    "16.8",
+    "14.1",
+    "19.6",
+    "9,454",
+    "2,442",
+    "0",
+    "0",
+    "0",
+    "5"
+   ],
+   [
+    "6 and 6, a table each",
+    "10.7",
+    "10.1",
+    "11.3",
+    "4,541",
+    "1,647",
+    "440",
+    "0",
+    "354,202",
+    "125"
+   ],
+   [
+    "6 and 6, one table, shared",
+    "10.6",
+    "9.9",
+    "11.3",
+    "4,541",
+    "1,647",
+    "440",
+    "0",
+    "354,202",
+    "125"
+   ],
+   [
+    "6 and 6, the shared tree",
+    "10.8",
+    "9.5",
+    "12.2",
+    "3,969",
+    "782",
+    "369",
+    "0",
+    "246,997",
+    "522"
+   ],
+   [
+    "6 and 7, no table",
+    "31.2",
+    "14.4",
+    "48.0",
+    "15,887",
+    "5,704",
+    "0",
+    "0",
+    "0",
+    "4"
+   ],
+   [
+    "6 and 7, a table each",
+    "19.7",
+    "11.1",
+    "28.4",
+    "7,057",
+    "3,282",
+    "978",
+    "0",
+    "701,399",
+    "225"
+   ],
+   [
+    "6 and 7, one table, shared",
+    "17.1",
+    "5.4",
+    "28.9",
+    "6,031",
+    "2,876",
+    "920",
+    "0",
+    "577,440",
+    "192"
+   ],
+   [
+    "6 and 7, the shared tree, the rules' order",
+    "18.7",
+    "5.7",
+    "31.7",
+    "6,039",
+    "1,606",
+    "918",
+    "0",
+    "231,917",
+    "477"
+   ],
+   [
+    "6 and 7, the shared tree",
+    "16.4",
+    "6.3",
+    "26.5",
+    "5,201",
+    "1,424",
+    "763",
+    "0",
+    "172,665",
+    "350"
+   ],
+   [
+    "6 and 7, the shared tree, deepening",
+    "16.8",
+    "5.4",
+    "28.2",
+    "6,693",
+    "1,210",
+    "886",
+    "0",
+    "157,818",
+    "327"
+   ],
+   [
+    "6 and 7, the shared tree, further answers",
+    "16.0",
+    "5.5",
+    "26.6",
+    "5,125",
+    "1,421",
+    "761",
+    "1",
+    "172,145",
+    "349"
+   ],
+   [
+    "6 and 5, no table",
+    "9.2",
+    "14.2",
+    "4.1",
+    "4,700",
+    "1,523",
+    "0",
+    "0",
+    "0",
+    "5"
+   ],
+   [
+    "6 and 5, one table, shared",
+    "6.2",
+    "10.2",
+    "2.1",
+    "2,317",
+    "993",
+    "283",
+    "0",
+    "211,812",
+    "71"
+   ],
+   [
+    "6 and 5, the shared tree",
+    "7.0",
+    "12.0",
+    "1.9",
+    "2,209",
+    "556",
+    "253",
+    "0",
+    "184,399",
+    "384"
+   ],
+   [
+    "6 and 5, a table each",
+    "7.2",
+    "10.6",
+    "3.9",
+    "2,686",
+    "1,119",
+    "289",
+    "0",
+    "253,147",
+    "89"
+   ]
+  ]
+ },
+ {
+  "section": "How this was put together",
+  "section_id": "method",
+  "columns": [
+   "build",
+   "what",
+   "where"
+  ],
+  "rows": [
+   [
+    "Build 1, the lab",
+    "node tools/checkers-lab.mjs tree 3 6: Hazel’s 3 games recorded (6 and 6, no table, seeded tie-breaks), then each way searching the same 503 positions in the same order",
+    "hazeljs-examples commit 1f0270c; the driver is in this report’s drivers/"
+   ],
+   [
+    "Build 2, the compiled rules (checked against)",
+    "checkers/compiled.js: node tools/checkers-lab.mjs check 1 6, 223 positions of a game, every move and every list of legal moves the same as the lab’s",
+    "hazel-jit at hazelgrove/hazel d15466c7b1 (trial/794-games-aot)"
+   ]
+  ]
+ }
+]
