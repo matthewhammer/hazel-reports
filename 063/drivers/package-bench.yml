@@ -1,0 +1,41 @@
+# (ticket 795) every game timed four ways with one build of the hazeljs package (node/package-bench.mjs): its interpreter,
+# its jit, its compiler's JavaScript ahead of time, and plain JavaScript where a game has it. One runner per game, so a game's
+# four ways share a machine; the results (JSON, the printed lines, the machine) as one artifact per game. Runs on a push to
+# a bench/ branch, so main and the site are untouched.
+name: package bench
+on:
+  push:
+    branches: ["bench/**"]
+  workflow_dispatch:
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [i-ching, tarot, astrology, checkers, go, minesweeper, mahjong, solitaire, mahjong-solitaire, pinball, downhill, bricks, snake, trails, starwave, bugs, dig]
+    steps:
+      - uses: actions/checkout@v4
+      # hazeljs 0.0.11, not on npm: hazelgrove/hazeljs's editor-in-package at the commit that made it
+      - uses: actions/checkout@v4
+        with:
+          repository: hazelgrove/hazeljs
+          ref: b149ed58f25aa5b938d6459363861dbb95ff5f5a
+          path: hazeljs-pkg
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The machine
+        run: |
+          mkdir -p bench
+          { nproc; grep -m1 'model name' /proc/cpuinfo; node --version; } | tee bench/${{ matrix.game }}-machine.txt
+      - name: Four ways
+        run: |
+          ulimit -s unlimited || ulimit -s 65536
+          node --stack-size=30000 --max-old-space-size=6000 node/package-bench.mjs ${{ matrix.game }} hazeljs-pkg bench/${{ matrix.game }}.json | tee bench/${{ matrix.game }}.txt
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: bench-${{ matrix.game }}
+          path: bench/

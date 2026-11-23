@@ -1,0 +1,786 @@
+[
+ {
+  "section": "The PRs",
+  "section_id": "prs",
+  "columns": [
+   "PR",
+   "branch",
+   "state",
+   "lines",
+   "what it gives the package"
+  ],
+  "rows": [
+   [
+    "#2857",
+    "hazeljs into dev",
+    "draft",
+    "+8,577 / −59",
+    "The one PR: everything below that the package uses, merged with dev and ported to Jane Street Core, plus hazel-jit's compiler and the code font's license."
+   ],
+   [
+    "#2711",
+    "js-library into dev",
+    "draft",
+    "+510 / −3",
+    "The library, first version: Hazel.analyze and Hazel.run from any page."
+   ],
+   [
+    "#2719",
+    "js-library-embed into js-library",
+    "draft",
+    "+4,168 / −109",
+    "Programs of named modules (analyzeProgram, runProgram), and Hazel in another page's frame."
+   ],
+   [
+    "#2814",
+    "embed-editable into js-library-embed",
+    "draft",
+    "+948 / −72",
+    "Embed mode: editable cells, one module at a time, go to definition across cells."
+   ],
+   [
+    "#2837",
+    "ui-font-installed into dev",
+    "open",
+    "+110 / −5",
+    "IBM Plex Sans as the interface font, in place of a Helvetica Neue that Hazel had no license to ship."
+   ],
+   [
+    "#2842",
+    "ui-icons-shipped into dev",
+    "open",
+    "+222 / −6",
+    "Material Icons shipped with Hazel, so nothing loads from Google."
+   ],
+   [
+    "#2817",
+    "trial/694-view-jit into integration/livelits-modular-editors",
+    "draft",
+    "+15,915 / −1,174",
+    "hazel-jit on the livelits line: livelit views compiled. #2857's compiler is this one's, from trial/794-games-aot, with the livelit-only forms taken out."
+   ],
+   [
+    "#2828",
+    "fix/758-sint-32-bits into dev",
+    "draft",
+    "+233 / −76",
+    "SInt with 64 bits everywhere, overflow an error. Not in #2857 yet."
+   ]
+  ]
+ },
+ {
+  "section": "How the branch differs from dev",
+  "section_id": "diff",
+  "columns": [
+   "part",
+   "files",
+   "lines added",
+   "lines removed"
+  ],
+  "rows": [
+   [
+    "hazel-jit",
+    "2",
+    "2,215",
+    "0"
+   ],
+   [
+    "the library",
+    "5",
+    "1,088",
+    "1"
+   ],
+   [
+    "programs of modules",
+    "1",
+    "683",
+    "0"
+   ],
+   [
+    "embed mode",
+    "11",
+    "1,702",
+    "5"
+   ],
+   [
+    "fonts, icons, licenses",
+    "12",
+    "434",
+    "11"
+   ],
+   [
+    "changes to dev’s own code",
+    "4",
+    "179",
+    "32"
+   ],
+   [
+    "tests",
+    "6",
+    "2,276",
+    "10"
+   ],
+   [
+    "all",
+    "41",
+    "8,577",
+    "59"
+   ]
+  ]
+ },
+ {
+  "section": "Every game, four ways",
+  "section_id": "speed",
+  "columns": [
+   "operation",
+   "interpreted",
+   "jit",
+   "ahead of time",
+   "plain JS",
+   "jit over interpreted",
+   "ahead of time over jit"
+  ],
+  "rows": [
+   [
+    "Oracles",
+    "Oracles",
+    "Oracles",
+    "Oracles",
+    "Oracles",
+    "Oracles",
+    "Oracles"
+   ],
+   [
+    "I Ching: a cast by coins",
+    "0.78 ms",
+    "4.1 µs",
+    "78 ns",
+    "–",
+    "189×",
+    "53×"
+   ],
+   [
+    "I Ching: a cast by yarrow",
+    "1.2 ms",
+    "5.8 µs",
+    "337 ns",
+    "–",
+    "212×",
+    "17×"
+   ],
+   [
+    "I Ching: a reading",
+    "11 ms",
+    "14 µs",
+    "2.2 µs",
+    "–",
+    "773×",
+    "6.6×"
+   ],
+   [
+    "Tarot: a deal, One",
+    "2.5 ms",
+    "10 µs",
+    "290 ns",
+    "–",
+    "237×",
+    "36×"
+   ],
+   [
+    "Tarot: a deal, CelticCross",
+    "30 ms",
+    "56 µs",
+    "6.2 µs",
+    "–",
+    "533×",
+    "9.0×"
+   ],
+   [
+    "Tarot: a deal, YearAhead",
+    "46 ms",
+    "80 µs",
+    "10 µs",
+    "–",
+    "584×",
+    "7.8×"
+   ],
+   [
+    "Astrology: a chart (interpreted: the whole program built each time)",
+    "990 ms",
+    "0.97 ms",
+    "0.18 ms",
+    "–",
+    "1,022×",
+    "5.5×"
+   ],
+   [
+    "Board and card games, each with a plain JavaScript version",
+    "Board and card games, each with a plain JavaScript version",
+    "Board and card games, each with a plain JavaScript version",
+    "Board and card games, each with a plain JavaScript version",
+    "Board and card games, each with a plain JavaScript version",
+    "Board and card games, each with a plain JavaScript version",
+    "Board and card games, each with a plain JavaScript version"
+   ],
+   [
+    "Checkers: the moves",
+    "20 ms",
+    "15 µs",
+    "6.3 µs",
+    "336 ns",
+    "1,323×",
+    "2.3×"
+   ],
+   [
+    "Checkers: Hazel's move, looking 1 ahead",
+    "34 ms",
+    "27 µs",
+    "13 µs",
+    "528 ns",
+    "1,230×",
+    "2.1×"
+   ],
+   [
+    "Checkers: Hazel's move, looking 2 ahead",
+    "55 ms",
+    "31 µs",
+    "23 µs",
+    "1.4 µs",
+    "1,761×",
+    "1.3×"
+   ],
+   [
+    "Checkers: Hazel's move, looking 3 ahead",
+    "149 ms",
+    "74 µs",
+    "65 µs",
+    "3.5 µs",
+    "2,002×",
+    "1.1×"
+   ],
+   [
+    "Checkers: Hazel's move, looking 4 ahead",
+    "375 ms",
+    "0.18 ms",
+    "0.17 ms",
+    "12 µs",
+    "2,080×",
+    "1.0×"
+   ],
+   [
+    "Go: a move played",
+    "14 ms",
+    "83 µs",
+    "4.6 µs",
+    "1.7 µs",
+    "165×",
+    "18×"
+   ],
+   [
+    "Go: Hazel's choice of move",
+    "446 ms",
+    "0.17 ms",
+    "0.12 ms",
+    "8.5 µs",
+    "2,560×",
+    "1.5×"
+   ],
+   [
+    "Go: the score",
+    "700 ms",
+    "0.20 ms",
+    "0.17 ms",
+    "7.3 µs",
+    "3,430×",
+    "1.2×"
+   ],
+   [
+    "Minesweeper: 9 by 9: the mines laid",
+    "81 ms",
+    "0.42 ms",
+    "34 µs",
+    "3.6 µs",
+    "190×",
+    "12×"
+   ],
+   [
+    "Minesweeper: 9 by 9: a cell opened",
+    "10 ms",
+    "0.60 ms",
+    "12 µs",
+    "474 ns",
+    "17×",
+    "50×"
+   ],
+   [
+    "Minesweeper: 9 by 9: the hint (a sure move)",
+    "134 ms",
+    "0.35 ms",
+    "43 µs",
+    "3.4 µs",
+    "386×",
+    "8.1×"
+   ],
+   [
+    "Minesweeper: 16 by 30: the mines laid",
+    "442 ms",
+    "3.7 ms",
+    "0.20 ms",
+    "23 µs",
+    "119×",
+    "19×"
+   ],
+   [
+    "Minesweeper: 16 by 30: a cell opened",
+    "32 ms",
+    "7.5 ms",
+    "50 µs",
+    "531 ns",
+    "4.2×",
+    "150×"
+   ],
+   [
+    "Minesweeper: 16 by 30: the hint (a sure move)",
+    "576 ms",
+    "2.0 ms",
+    "0.22 ms",
+    "6.6 µs",
+    "288×",
+    "9.0×"
+   ],
+   [
+    "Mahjong: a hand dealt",
+    "108 ms",
+    "0.10 ms",
+    "40 µs",
+    "17 µs",
+    "1,056×",
+    "2.5×"
+   ],
+   [
+    "Mahjong: a step",
+    "1.8 ms",
+    "75 µs",
+    "2.2 µs",
+    "8 ns",
+    "24×",
+    "34×"
+   ],
+   [
+    "Mahjong: your options",
+    "18 ms",
+    "34 µs",
+    "5.6 µs",
+    "1.3 µs",
+    "534×",
+    "6.1×"
+   ],
+   [
+    "Solitaire: a deal",
+    "41 ms",
+    "0.12 ms",
+    "9.9 µs",
+    "1.8 µs",
+    "348×",
+    "12×"
+   ],
+   [
+    "Solitaire: every legal move",
+    "44 ms",
+    "100 µs",
+    "6.4 µs",
+    "332 ns",
+    "438×",
+    "16×"
+   ],
+   [
+    "Solitaire: a move made",
+    "1.7 ms",
+    "0.16 ms",
+    "3.0 µs",
+    "92 ns",
+    "10×",
+    "53×"
+   ],
+   [
+    "A puzzle",
+    "A puzzle",
+    "A puzzle",
+    "A puzzle",
+    "A puzzle",
+    "A puzzle",
+    "A puzzle"
+   ],
+   [
+    "Mahjong solitaire: a deal",
+    "16.2 s",
+    "15 ms",
+    "12 ms",
+    "–",
+    "1,063×",
+    "1.2×"
+   ],
+   [
+    "Mahjong solitaire: Hazel's choice of pair",
+    "16 ms",
+    "3.5 ms",
+    "1.4 µs",
+    "–",
+    "4.7×",
+    "2,462×"
+   ],
+   [
+    "Arcade games, a step at a time",
+    "Arcade games, a step at a time",
+    "Arcade games, a step at a time",
+    "Arcade games, a step at a time",
+    "Arcade games, a step at a time",
+    "Arcade games, a step at a time",
+    "Arcade games, a step at a time"
+   ],
+   [
+    "Pinball: a step",
+    "86 ms",
+    "59 µs",
+    "35 µs",
+    "–",
+    "1,467×",
+    "1.7×"
+   ],
+   [
+    "Pinball: a board",
+    "20 ms",
+    "0.31 ms",
+    "35 µs",
+    "–",
+    "63×",
+    "8.9×"
+   ],
+   [
+    "Downhill: a step",
+    "2.9 ms",
+    "38 µs",
+    "4.9 µs",
+    "–",
+    "75×",
+    "7.8×"
+   ],
+   [
+    "Downhill: the robot's choice",
+    "3.8 ms",
+    "11 µs",
+    "1.9 µs",
+    "–",
+    "344×",
+    "5.9×"
+   ],
+   [
+    "Bricks: a step",
+    "1.9 ms",
+    "55 µs",
+    "2.9 µs",
+    "–",
+    "35×",
+    "19×"
+   ],
+   [
+    "Bricks: the robot's choice",
+    "0.47 ms",
+    "17 µs",
+    "648 ns",
+    "–",
+    "28×",
+    "26×"
+   ],
+   [
+    "Snake: a step",
+    "6.1 ms",
+    "62 µs",
+    "3.8 µs",
+    "–",
+    "100×",
+    "16×"
+   ],
+   [
+    "Snake: the robot's choice (42 long)",
+    "677 ms",
+    "0.14 ms",
+    "0.16 ms",
+    "–",
+    "4,955×",
+    "0.9×"
+   ],
+   [
+    "Light trails: a step",
+    "17 ms",
+    "63 µs",
+    "6.5 µs",
+    "–",
+    "264×",
+    "9.7×"
+   ],
+   [
+    "Light trails: the robot's choice, looking 150",
+    "4.1 s",
+    "1.0 ms",
+    "1.0 ms",
+    "–",
+    "3,941×",
+    "1.0×"
+   ],
+   [
+    "Star wave: a step",
+    "27 ms",
+    "81 µs",
+    "14 µs",
+    "–",
+    "331×",
+    "5.6×"
+   ],
+   [
+    "Star wave: the robot's choice",
+    "68 ms",
+    "37 µs",
+    "21 µs",
+    "–",
+    "1,838×",
+    "1.7×"
+   ],
+   [
+    "Butterfly garden: a step",
+    "9.2 ms",
+    "0.23 ms",
+    "27 µs",
+    "–",
+    "40×",
+    "8.4×"
+   ],
+   [
+    "Butterfly garden: the robot's choice",
+    "224 ms",
+    "0.14 ms",
+    "69 µs",
+    "–",
+    "1,563×",
+    "2.1×"
+   ],
+   [
+    "Gnome dig: a step",
+    "97 ms",
+    "0.36 ms",
+    "43 µs",
+    "–",
+    "267×",
+    "8.3×"
+   ],
+   [
+    "Gnome dig: the robot's choice",
+    "3.8 s",
+    "1.0 ms",
+    "0.88 ms",
+    "–",
+    "3,742×",
+    "1.2×"
+   ]
+  ]
+ },
+ {
+  "section": "Building the rules",
+  "section_id": "build",
+  "columns": [
+   "game",
+   "interpreted: build",
+   "jit: build and compile",
+   "compileProgram",
+   "compiled program",
+   "ahead-of-time file",
+   "the runner’s processor"
+  ],
+  "rows": [
+   [
+    "I Ching",
+    "511 ms",
+    "117 ms",
+    "111 ms",
+    "15 kB",
+    "35 kB",
+    "AMD EPYC 9V45 96-Core Processor"
+   ],
+   [
+    "Tarot",
+    "512 ms",
+    "119 ms",
+    "105 ms",
+    "14 kB",
+    "34 kB",
+    "Intel(R) Xeon(R) 6975P-C"
+   ],
+   [
+    "Astrology",
+    "1.7 s",
+    "722 ms",
+    "663 ms",
+    "80 kB",
+    "101 kB",
+    "Intel(R) Xeon(R) 6975P-C"
+   ],
+   [
+    "Checkers",
+    "1.2 s",
+    "338 ms",
+    "370 ms",
+    "22 kB",
+    "43 kB",
+    "AMD EPYC 9V45 96-Core Processor"
+   ],
+   [
+    "Go",
+    "2.1 s",
+    "492 ms",
+    "419 ms",
+    "32 kB",
+    "53 kB",
+    "AMD EPYC 7763 64-Core Processor"
+   ],
+   [
+    "Minesweeper",
+    "6.1 s",
+    "2.1 s",
+    "1.7 s",
+    "77 kB",
+    "98 kB",
+    "AMD EPYC 7763 64-Core Processor"
+   ],
+   [
+    "Mahjong",
+    "2.0 s",
+    "1.1 s",
+    "1.1 s",
+    "60 kB",
+    "82 kB",
+    "Intel(R) Xeon(R) 6975P-C"
+   ],
+   [
+    "Solitaire",
+    "950 ms",
+    "367 ms",
+    "267 ms",
+    "32 kB",
+    "54 kB",
+    "AMD EPYC 9V45 96-Core Processor"
+   ],
+   [
+    "Mahjong solitaire",
+    "2.4 s",
+    "1.3 s",
+    "1.2 s",
+    "45 kB",
+    "66 kB",
+    "AMD EPYC 7763 64-Core Processor"
+   ],
+   [
+    "Pinball",
+    "1.7 s",
+    "730 ms",
+    "799 ms",
+    "55 kB",
+    "77 kB",
+    "Intel(R) Xeon(R) 6975P-C"
+   ],
+   [
+    "Downhill",
+    "907 ms",
+    "417 ms",
+    "390 ms",
+    "20 kB",
+    "41 kB",
+    "AMD EPYC 9V74 80-Core Processor"
+   ],
+   [
+    "Bricks",
+    "653 ms",
+    "230 ms",
+    "229 ms",
+    "18 kB",
+    "38 kB",
+    "Intel(R) Xeon(R) 6975P-C"
+   ],
+   [
+    "Snake",
+    "742 ms",
+    "247 ms",
+    "216 ms",
+    "12 kB",
+    "32 kB",
+    "AMD EPYC 7763 64-Core Processor"
+   ],
+   [
+    "Light trails",
+    "778 ms",
+    "250 ms",
+    "265 ms",
+    "11 kB",
+    "32 kB",
+    "AMD EPYC 7763 64-Core Processor"
+   ],
+   [
+    "Star wave",
+    "982 ms",
+    "414 ms",
+    "428 ms",
+    "24 kB",
+    "45 kB",
+    "INTEL(R) XEON(R) PLATINUM 8573C"
+   ],
+   [
+    "Butterfly garden",
+    "1.2 s",
+    "589 ms",
+    "510 ms",
+    "28 kB",
+    "49 kB",
+    "AMD EPYC 7763 64-Core Processor"
+   ],
+   [
+    "Gnome dig",
+    "5.6 s",
+    "3.7 s",
+    "3.4 s",
+    "102 kB",
+    "124 kB",
+    "AMD EPYC 7763 64-Core Processor"
+   ]
+  ]
+ },
+ {
+  "section": "How this was put together",
+  "section_id": "method",
+  "columns": [
+   "build",
+   "what",
+   "where"
+  ],
+  "rows": [
+   [
+    "Build 1 · the package’s interpreter",
+    "Hazel.runProgram on the game’s rules; its value’s functions called",
+    "hazeljs 0.0.11 (hazelgrove/hazeljs b149ed58f2, editor-in-package), whose hazel-lib.js is hazelgrove/hazel 98c482395d (branch hazeljs, #2857)"
+   ],
+   [
+    "Build 2 · the package’s jit",
+    "Hazel.jitProgram on the same rules; its value’s functions called",
+    "the same file"
+   ],
+   [
+    "Build 3 · ahead of time",
+    "Hazel.compileProgram’s program and runtime, put in place of those in the game’s own compiled.js, so its converters are the page’s",
+    "the same file, at the start of each game’s run"
+   ],
+   [
+    "Build 4 · plain JavaScript",
+    "the game written by hand, <game>/plain.js: Checkers, Go, Minesweeper, Mahjong and Solitaire",
+    "matthewhammer/hazeljs-examples a4a0a88"
+   ]
+  ]
+ }
+]

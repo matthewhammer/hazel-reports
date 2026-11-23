@@ -1,0 +1,24 @@
+{
+ "title": "Hazel as an npm Package: What to Decide Next",
+ "blurb": "Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one PR (#2857) that it is built from, how that branch differs from dev, and every game in hazeljs-examples timed four ways. The package's jit runs the games 317× as fast as its interpreter (geometric mean over 45 operations), from 4.2× to 4,955×: on searches it is as fast as code compiled ahead of time, but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run 2,392× as fast as interpreted, and the five written by hand in JavaScript about 16× faster again. Then the decisions before it merges into dev.",
+ "builds": {
+  "package": "hazeljs 0.0.11 (hazelgrove/hazeljs editor-in-package b149ed58f2), not on npm",
+  "hazel": "hazelgrove/hazel 98c482395d (branch hazeljs, #2857): hazel-lib.js, byte for byte the deploy's",
+  "examples": "matthewhammer/hazeljs-examples a4a0a88 (bench/package-0.0.11): the games' rules, compiled.js converters and plain.js as of 0.0.74 (d3e8d79), and node/package-bench.mjs",
+  "run": "GitHub Actions run 45247119864 (workflow package bench), 2026-11-23, one runner per game, Node v22.23.5"
+ },
+ "measures": {
+  "ms": "milliseconds a call: the median of batches (as many calls as take at least 1 ms), the interpreter at least 3 batches and 1.5 s, the others at least 30 and 0.3 s",
+  "interpretedBuildMs": "Hazel.runProgram on the game's rules, once",
+  "jitBuildMs": "Hazel.jitProgram on the same, once (analysis, compiling, running the compiled modules)",
+  "compileMs": "Hazel.compileProgram on the same, once",
+  "wrappedBytes": "the ahead-of-time file: the runtime, the compiled program and the page's converters",
+  "same": "the way's answer equals the ahead-of-time code's (numbers to a relative 1e-9); every one is true"
+ },
+ "ways": {
+  "interpreted": "Hazel.runProgram's value",
+  "jit": "Hazel.jitProgram's value",
+  "compiled": "Hazel.compileProgram's program and runtime in the page's compiled.js, its converters",
+  "plain JS": "<game>/plain.js, five games"
+ }
+}

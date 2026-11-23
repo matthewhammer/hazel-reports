@@ -1,0 +1,201 @@
+{
+ "game": "checkers",
+ "when": "2026-11-23T19:16:20.932Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V45 96-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.11",
+  "hazel": {
+   "commit": "98c482395d06ca1979ccf63213c70a1f653a17e6",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "98c482395d06ca1979ccf63213c70a1f653a17e6"
+ },
+ "examples": "a4a0a8852f9c96a98c5068194f0babf4b42b68e9",
+ "once": {
+  "interpretedBuildMs": 1213.7489099999998,
+  "jitBuildMs": 337.5208030000001,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 369.605364,
+  "compiledJsBytes": 22374,
+  "runtimeBytes": 18740,
+  "wrappedBytes": 43614,
+  "pageCompiledFrom": "d15466c7b1",
+  "compiledLoadMs": 1.2677530000000843
+ },
+ "ops": [
+  {
+   "name": "the moves",
+   "ways": {
+    "interpreted": {
+     "ms": 19.615004000000226,
+     "min": 16.60754799999995,
+     "reps": 15,
+     "batch": 1,
+     "same": true
+    },
+    "jit": {
+     "ms": 0.014824515625001311,
+     "min": 0.012998781250004754,
+     "reps": 336,
+     "batch": 32,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.0063499375000048985,
+     "min": 0.0061981874999901265,
+     "reps": 2408,
+     "batch": 16,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.00033644531249876763,
+     "min": 0.0002939609375012253,
+     "reps": 6108,
+     "batch": 128,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 1 ahead",
+   "ways": {
+    "interpreted": {
+     "ms": 33.65070800000012,
+     "min": 30.087723000000096,
+     "reps": 15,
+     "batch": 1,
+     "same": true
+    },
+    "jit": {
+     "ms": 0.027368687500000988,
+     "min": 0.024189500000005637,
+     "reps": 243,
+     "batch": 32,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.01280068750000396,
+     "min": 0.011886749999973745,
+     "reps": 631,
+     "batch": 32,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.0005282031250004593,
+     "min": 0.0004899609375002001,
+     "reps": 1924,
+     "batch": 256,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 2 ahead",
+   "ways": {
+    "interpreted": {
+     "ms": 55.10780100000011,
+     "min": 51.94500499999958,
+     "reps": 15,
+     "batch": 1,
+     "same": true
+    },
+    "jit": {
+     "ms": 0.03128496875001474,
+     "min": 0.029780749999986256,
+     "reps": 482,
+     "batch": 16,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.023261843750020716,
+     "min": 0.02262931249998701,
+     "reps": 744,
+     "batch": 16,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.0014122187499978622,
+     "min": 0.0013196562500041864,
+     "reps": 1280,
+     "batch": 128,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 3 ahead",
+   "ways": {
+    "interpreted": {
+     "ms": 148.79271100000005,
+     "min": 134.21828600000026,
+     "reps": 11,
+     "batch": 1,
+     "same": true
+    },
+    "jit": {
+     "ms": 0.07431643749998784,
+     "min": 0.06901587500010464,
+     "reps": 350,
+     "batch": 8,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.0651199375000715,
+     "min": 0.0628721250000126,
+     "reps": 257,
+     "batch": 16,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.0035067187500033015,
+     "min": 0.003183968750008148,
+     "reps": 614,
+     "batch": 128,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 4 ahead",
+   "ways": {
+    "interpreted": {
+     "ms": 375.1195109999999,
+     "min": 365.1783680000008,
+     "reps": 4,
+     "batch": 1,
+     "same": true
+    },
+    "jit": {
+     "ms": 0.18032949999997072,
+     "min": 0.17466474999991988,
+     "reps": 193,
+     "batch": 8,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.17498887500005367,
+     "min": 0.17297212499988746,
+     "reps": 207,
+     "batch": 8,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.01232226562500216,
+     "min": 0.009636156249996475,
+     "reps": 402,
+     "batch": 64,
+     "same": true
+    }
+   }
+  }
+ ]
+}

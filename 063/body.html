@@ -1,0 +1,115 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 063 · the hazeljs package · 2026-11-23, revised {{updated}} MST · <span class="wip">work in progress</span> · after reports 054 and 060</p>
+<h1>Hazel as an npm Package: What to Decide Next</h1>
+<p class="sub">On 2026-11-23 Matthew asked for one PR that tracks everything the hazeljs npm package depends on: Hazel’s editor in the package, working offline, with fonts and icons whose licenses allow it, and hazel-jit, “so that hazel code can be parsed and jitted from the npm package API as well”. That PR is hazelgrove/hazel#2857, and hazeljs 0.0.11 is built from it. This report is for Matthew and Cyrus, to see the design space before it goes to <code>dev</code>: what the package is, the PRs it comes from, how its branch differs from <code>dev</code>, how fast each way of running a program is on every game in hazeljs-examples, and the decisions to make next.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#package">What the package is</a>: three ways for a page to run Hazel code, and Hazel’s own editor, offline.</li>
+<li><a href="#prs">The PRs</a>: one PR holds it all; the parts it came from are still open.</li>
+<li><a href="#diff">How the branch differs from dev</a>: {{added}} lines added, nearly all in new files, and the move to Jane Street Core.</li>
+<li><a href="#speed">Every game, four ways</a>: the {{games}} games’ {{ops}} operations, interpreted, through the jit, compiled ahead of time, and in plain JavaScript.</li>
+<li><a href="#crossing">Where the jit’s time goes</a>: on most calls, converting the values in and out costs more than the compiled code itself.</li>
+<li><a href="#build">Building the rules</a>: the jit builds faster than the interpreter; ahead of time, nothing is built in the page.</li>
+<li><a href="#plain">Against plain JavaScript</a>: what hazel-jit’s code still costs over a hand-written game.</li>
+<li><a href="#decide">What to decide before dev</a>: ten questions, each with its options.</li>
+<li><a href="#next">What next for speed</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="package">What the package is</h2>
+<p><b>hazeljs 0.0.11 gives a page three ways to run a Hazel program, and Hazel’s own editor.</b> The first two come in one file, <code>hazel-lib.js</code> (2.9 MB, Hazel compiled to JavaScript by js_of_ocaml): <code>Hazel.run</code> and <code>runProgram</code> interpret a program; <code>Hazel.jit</code> and <code>jitProgram</code> compile it to JavaScript with hazel-jit in the page and run that. The third needs no Hazel in the page at all: <code>Hazel.compileProgram</code> gives the JavaScript and its runtime once, ahead of time, to keep in a file, which is how every game in hazeljs-examples ships. The editor is Hazel’s web app, built from the same commit, framed by the package’s <code>hazel-listings.js</code>; its fonts and icons are in the package with their licenses, so it loads nothing from another host.</p>
+<figure class="chart">
+{{paths}}
+<figcaption>How a page uses hazeljs 0.0.11. The values a page passes and gets back have the same shapes in the first two ways: a constructor as <code>{tag, value}</code>, a list as an array, a labeled tuple as an object, a function as a JavaScript function. Code compiled ahead of time has hazel-jit’s own shapes inside, and each game converts them with a few lines written by hand.</figcaption>
+</figure>
+<p>0.0.11 is pushed on hazelgrove/hazeljs’s <code>editor-in-package</code> branch and is not on npm. Its <code>hazel-lib.js</code> is byte for byte the file Hazel’s own deploy of the same commit serves, and the package’s Verify workflow rebuilds it on GitHub and checks that. Its install checks run on Node 18, 20 and 22, in TypeScript, and in a headless Firefox.</p>
+
+<h2 id="prs">The PRs</h2>
+<p><b>One PR, #2857, holds everything the package is built from; the PRs its parts came from are still open, and none is merged.</b> #2857 merges the library and embed line (#2711, #2719, #2814, stacked on each other), the font (#2837) and the icons (#2842), adds hazel-jit’s compiler, and merges <code>dev</code>. The package’s <code>package.json</code> records the commit, the branch and the PR it was built from.</p>
+{{pr_table}}
+<p>Two more are named in what follows: hazelgrove/hazel#2832, the interpreter’s answer that grows to gigabytes when a program’s answer is a function reaching several modules (why the astrology chart below is interpreted as a whole program each time), and hazelgrove/hazeljs#2, the issue that put the editor in the package (0.0.9).</p>
+
+<h2 id="diff">How the branch differs from dev</h2>
+<p><b>The branch is {{ahead}} commits ahead of <code>dev</code> and {{behind}} behind. It changes {{files}} files, adding {{added}} lines and removing {{deleted}}: almost all of it new files, and {{test_lines}} lines of it tests.</b> Only {{own_lines}} added lines touch what <code>dev</code>’s own code does; the rest is new modules and files that <code>dev</code> does not have.</p>
+<figure class="chart">
+{{diff}}
+<figcaption>Lines the <code>hazeljs</code> branch (98c482395d) adds over <code>dev</code> (21da4ae66b), by part. The fonts are binary files and are not counted in lines: two Helvetica Neue files removed (258 kB), two IBM Plex Sans files and Material Icons added (170 kB).</figcaption>
+</figure>
+{{diff_table}}
+<p><b>What changes for <code>dev</code>’s own app.</b> The interface font is IBM Plex Sans instead of Helvetica Neue, on every page. The icons load from Hazel’s own files instead of from Google. Hazel’s list of error messages can also give each with the id of the term it is on (the library’s errors per module use it). An editor rooted at a module reads its text as a module body, and the fast parser retries a module body whose last member is still being written. In the interpreter, a labeled tuple whose fields arrive in another order than its type’s is put in its type’s order before it runs; only a value made in JavaScript ever arrives that way. Embed mode (the frame, editable cells, go to definition across cells) is reached through <code>#embed</code> and changes nothing in the normal app.</p>
+<p><b>Jane Street Core.</b> <code>dev</code> moved to Core in hazelgrove/hazel#2470 through #2477, and <code>-open Core</code> applies to a whole library at once, so the branch’s own files were ported in the same merge. One difference no type error showed: Core’s <code>List.init</code> calls its function from the last index down, where OCaml’s own went up from 0. The jit finds a compiled tuple’s labels by the value at each index, using each label up as it goes, so in reverse it swapped fields that JavaScript’s <code>==</code> takes as equal: <code>(b = false, a = 0, c = 5)</code> came back as <code>{a: false, b: 0, c: 5}</code>. Comparing Gnome dig’s compiled run with its interpreted run in Node found it; 98c482395d fixes it, with a test. The parts’ own PRs (#2711, #2719, #2814) are still written for OCaml’s standard library.</p>
+
+<h2 id="speed">Every game, four ways</h2>
+<p><b>Through the package’s jit, the {{games}} games run {{ij_gm}} as fast as through its interpreter (the geometric mean over {{ops}} operations), from {{ij_min}} to {{ij_max}}. Compiled ahead of time, the same code runs {{ic_gm}} as fast as the interpreter.</b> The spread is the point. On the {{heavy_n}} operations that are mostly the program’s own work, a robot choosing or Hazel searching for a move, the jit is {{heavy_min}} to {{heavy_max}} as fast as the interpreter and within {{heavy_jc}} of code compiled ahead of time. On the other {{light_n}}, short calls on a large state, it is {{light_min}} to {{light_max}} as fast as the interpreter. The difference is the crossing (<a href="#crossing">next</a>). All four ways gave the same answer on every operation.</p>
+<figure class="chart">
+{{ways}}
+<figcaption>Builds 1 to 4 (not a build of the app: Node 22 on GitHub’s runners, one runner per game). Each operation of the {{games}} games, timed four ways: the package’s interpreter (grey), the package’s jit (orange), the package’s compiler ahead of time (blue), and plain JavaScript (green, {{plain_games}} games). A log scale: each step is a hundred times the one before. Hover a mark for its time.</figcaption>
+</figure>
+<p>For one game, Gnome dig: a step of the game takes {{dig_step_i}} interpreted, {{dig_step_j}} through the jit and {{dig_step_c}} ahead of time; the robot choosing its move takes {{dig_robot_i}}, {{dig_robot_j}} and {{dig_robot_c}}. At 60 frames a second a frame has 16.7 ms, so interpreted, one step is six frames and the robot’s choice almost four seconds; through the jit, both fit in a frame many times over.</p>
+<details><summary>Every operation’s numbers</summary>
+{{ops_table}}
+</details>
+
+<h2 id="crossing">Where the jit’s time goes</h2>
+<p><b>On {{light_n}} of the {{ops}} operations, more of the jit’s time goes to converting the values in and out than to the compiled code itself. The largest: {{worst_name}}, {{worst_j}} through the jit against {{worst_c}} ahead of time.</b> A call through the jit converts its arguments from the page’s JavaScript values into Hazel’s own values, using the function’s declared types, then from those into hazel-jit’s shapes; calls the compiled function; and converts its answer back the same two steps. A game’s whole state crosses on every call, both ways. Code compiled ahead of time does the same work with converters written by hand for the game’s values, straight from one shape to the other, so it pays for the crossing too, but far less.</p>
+<figure class="chart">
+{{cross}}
+<figcaption>Builds 2 and 3 (not a build of the app). Each operation’s time through the jit, split into the compiled code’s own work (its time ahead of time, blue) and the rest, the crossing (orange), sorted by the crossing’s share. Where the jit came out a little faster than ahead of time (the robots’ searches, within the clock’s noise), the bar is all blue.</figcaption>
+</figure>
+<p>Expert Minesweeper shows the extremes. Opening one cell of a 16 by 30 board takes {{ms30_i}} interpreted, {{ms30_j}} through the jit, {{ms30_c}} ahead of time and {{ms30_p}} in plain JavaScript: the call does almost nothing, and the board of 480 cells crosses twice. A search, on the other hand, works for milliseconds on a state that crosses once: there the jit and code compiled ahead of time are the same speed.</p>
+
+<h2 id="build">Building the rules</h2>
+<p><b>Building a game’s rules with the jit took less time than with the interpreter on every game: {{bj_min}} to {{bj_max}}, against {{bi_min}} to {{bi_max}} ({{bj_share_min}} to {{bj_share_max}} of the interpreter’s time). Compiled ahead of time, nothing is built in the page.</b> Both builds read and check the program first; then the interpreter evaluates every module’s definitions, while the jit compiles them and runs the compiled code. For Gnome dig that is {{dig_bi}} interpreted and {{dig_bj}} through the jit, each time a page loads it. An ahead-of-time file is {{aot_min}} to {{aot_max}} (the compiled program, {{runtime_kb}} of runtime and the converters), against 2.9 MB of <code>hazel-lib.js</code>, and it starts at once.</p>
+<figure class="chart">
+{{once}}
+<figcaption>Builds 1 and 2 (not a build of the app). Milliseconds to build each game’s rules once, interpreted (<code>runProgram</code>, grey) and with the jit (<code>jitProgram</code>: reading, checking, compiling and running the compiled modules, orange); on the right, the size of its ahead-of-time file (build 3). One run each, each game on its own runner.</figcaption>
+</figure>
+<details><summary>The one-time costs, game by game, and each runner’s processor</summary>
+{{once_table}}
+</details>
+
+<h2 id="plain">Against plain JavaScript</h2>
+<p><b>Plain JavaScript runs the {{plain_games}} games that have it about {{cp_gm}} as fast as hazel-jit’s code compiled ahead of time (geometric mean over {{cp_n}} operations), from {{cp_min}} to {{cp_max}}; that is {{ip_gm}} as fast as the interpreter.</b> These are the games of report 060, which measured the same gap with an earlier hazel-jit (about 13 times) and listed what hazel-jit’s code pays for, one cost at a time: a step budget checked in every function, exact integers through runtime calls, lists as chains of cells, and tuples as arrays carrying their labels. Those costs are unchanged in this build; this report adds no new measurement of them.</p>
+
+<h2 id="decide">What to decide before dev</h2>
+<p><b>Ten questions, roughly in the order they block.</b> Each says what is at stake, the options we see, and what the measurements or the code say.</p>
+<ol class="decide">
+<li><b>One PR, or its parts?</b> #2857 is {{added}} lines in one review. Its parts’ own PRs are still written for OCaml’s standard library, so landing them one by one means porting each to Core again; #2857 has the port done. Options: review and merge #2857, closing #2711, #2719 and #2814; land #2837 (the font) and #2842 (the icons) first, on their own, since they are small and independent and change what every user sees; or split #2857 by part, from its ported files.</li>
+<li><b>Does hazel-jit belong on <code>dev</code>, and where?</b> It is {{jit_lines}} lines in <code>src/language/dynamics</code>: a second way to evaluate a program, which has to agree with the interpreter. Every new kind of term needs either a rule in the compiler or an explicit refusal (the program then runs interpreted). The livelits line (#2817) has a larger hazel-jit, with livelit views and the mixed mode of report 054. Options: on <code>dev</code> in the language library, with agreement tests in CI; on <code>dev</code> as a library of its own that only the package and the web app link; or on the package’s branch only, until the livelits line settles where hazel-jit lives.</li>
+<li><b>How is agreement kept?</b> The answers agree on every operation measured here, but #2857’s CI checks the jit only through 7 library cases. The per-game agreement tests (the games’ rules, compiled and interpreted, the same answers) live on <code>trial/794-games-aot</code>. Options: bring them into #2857 (their programs into <code>test/</code>); or keep agreement as hazeljs-examples’ job, outside Hazel’s CI.</li>
+<li><b>What is the jit for: finished programs, or the editor too?</b> It compiles a program only when every form in it compiles: a hole, a test, a stepper filter or a livelit makes the whole program run interpreted. That suits the games, which are finished programs; it does not help a program being edited. Report 054’s mixed mode, the interpreter calling compiled functions, is the path to the editor. Options: say the package’s jit is for finished programs, for now; or plan mixed mode into the package.</li>
+<li><b>The values a page sees are an API: which shapes?</b> A constructor is <code>{tag, value}</code>, a list an array, a labeled tuple an object, a number read by its declared type, a function a function. Every call converts whole values (<a href="#crossing">the crossing</a>). Options: keep plain values only (simple, and the crossing stays); add handles, values kept in hazel-jit’s own shape between calls that a page reads through accessors; or both, plain by default.</li>
+<li><b>Numbers.</b> On this branch an SInt is checked at 32 bits; #2828 gives SInt 64 bits everywhere and is on Core like this branch now, and the 64-bit compiled SInt of <code>trial/694-view-jit</code> needs it. An Int is exact in compiled code (a BigInt past 2<sup>53</sup>), through runtime calls that report 060 found among the costs over plain JavaScript. Options: bring #2828 and the 64-bit compiled SInt into #2857 before merging; or merge first and follow with them. Either way, the number model is part of the API above.</li>
+<li><b>What <code>dev</code>’s users would see.</b> The interface font changes on every page, and the icons work offline. The interpreter’s change is small and only reachable from JavaScript (fields put in their type’s order). Option: agree to the font as a team, since it is the one visible change.</li>
+<li><b>Licenses.</b> The Source Code Pro, IBM Plex Sans and Material Icons licenses are now in <code>licenses/</code> and ship with the editor. Five icons from The Noun Project, under its “Icon Pro” license, still ship, as Hazel’s web app always has. Options: confirm that license allows an npm package to carry them; replace them; or leave them out of the package’s editor.</li>
+<li><b>Who may embed Hazel?</b> Embed mode takes messages only from matthewhammer.org, localhost and its own origin, a list in the code. On <code>dev</code> every hazel.org build would have it. Options: a list kept in the code; any page; or a setting at build time.</li>
+<li><b>Publishing.</b> The package records the Hazel commit, branch and PR it was built from, and Verify checks its <code>hazel-lib.js</code> against that commit. 0.0.10 and 0.0.11 are not on npm. Options: who publishes, and from which branch (today <code>hazeljs</code>; after a merge, <code>dev</code>); whether every version must come from a commit on <code>dev</code>.</li>
+</ol>
+
+<h2 id="next">What next for speed</h2>
+<ol>
+<li><b>Convert by declared type, in one step.</b> Write the page’s values straight into hazel-jit’s shapes and back, guided by the function’s declared types, as the hand-written converters of the ahead-of-time files do, instead of through Hazel’s own values. On the {{light_n}} operations where the crossing is most of the jit’s time, this should bring the jit near the ahead-of-time column ({{ms30_j}} to near {{ms30_c}} for an expert Minesweeper cell). The converters could be generated, and the ahead-of-time files could use them too.</li>
+<li><b>Keep values compiled between calls.</b> With handles (question 5 above), a game’s state stays in hazel-jit’s shape from one call to the next, and only what the page reads crosses. That removes the crossing’s cost for the state entirely, at the price of a second kind of value in the API.</li>
+<li><b>Load time.</b> The jit builds a program each time a page loads it, {{bj_min}} to {{bj_max}} for these games. Keep the compiled program in the browser’s storage, keyed by the program’s text, or compile it ahead of time when the program does not change, as the games do now.</li>
+<li><b>The costs over plain JavaScript.</b> About {{cp_gm}} remains between hazel-jit’s code and a hand-written game. Report 060 measured each cost on its own; the next step is to remove the largest where the declared types allow it, for example plain arithmetic where an Int provably stays small.</li>
+<li><b>Agreement in CI.</b> Before any of these, bring the per-game agreement tests into Hazel’s CI (question 3), so a change to the compiler that changes an answer fails there, and not in a game.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<table class="nums"><thead><tr><th>build</th><th class="l">what</th><th class="l">where</th></tr></thead><tbody>
+<tr><td>Build 1 · the package’s interpreter</td><td class="l"><code>Hazel.runProgram</code> on the game’s rules; its value’s functions called</td><td class="l">hazeljs 0.0.11 (hazelgrove/hazeljs b149ed58f2, <code>editor-in-package</code>), whose <code>hazel-lib.js</code> is hazelgrove/hazel 98c482395d (branch <code>hazeljs</code>, #2857)</td></tr>
+<tr><td>Build 2 · the package’s jit</td><td class="l"><code>Hazel.jitProgram</code> on the same rules; its value’s functions called</td><td class="l">the same file</td></tr>
+<tr><td>Build 3 · ahead of time</td><td class="l"><code>Hazel.compileProgram</code>’s program and runtime, put in place of those in the game’s own <code>compiled.js</code>, so its converters are the page’s</td><td class="l">the same file, at the start of each game’s run</td></tr>
+<tr><td>Build 4 · plain JavaScript</td><td class="l">the game written by hand, <code>&lt;game&gt;/plain.js</code>: Checkers, Go, Minesweeper, Mahjong and Solitaire</td><td class="l">matthewhammer/hazeljs-examples a4a0a88</td></tr>
+</tbody></table>
+<ul>
+<li><b>The driver:</b> hazeljs-examples’ <code>node/package-bench.mjs</code>, run by its workflow <code>package bench</code> (GitHub Actions run 45247119864, 2026-11-23), one runner per game, Node {{node}}. For each game it builds the rules all four ways, then times each operation on positions made by the compiled rules from a seeded game: the operations <code>node/compare-compiled.mjs</code> times. Both files are in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/063/drivers"><code>063/drivers/</code></a>.</li>
+<li><b>The clock</b> is report 060’s: a call too fast for the clock is timed in batches (as many calls as take at least a millisecond), and the median of the batches is taken, per call; the interpreter at least 3 times and for at least 1.5 s, the others at least 30 times and for at least 0.3 s. Each operation was timed in one such run. A one-time cost (building, compiling) is one run.</li>
+<li><b>The same answers:</b> every way’s answer to every operation was compared with the ahead-of-time code’s (numbers to a relative 10<sup>−9</sup>, everything else exactly), and every one was the same. The run fails otherwise.</li>
+<li><b>The machines differ.</b> Each game ran on its own runner, and GitHub gave them {{n_models}} different processors (listed in <a href="#build">the one-time costs</a>). A game’s four ways shared a machine, so the ratios within a game hold; times across games are not comparable to better than the machines’ difference.</li>
+<li><b>Astrology</b> is interpreted as its page does it: the whole program built with one reading as its answer, each time, since building it with the reading function as its answer grows past gigabytes (#2832). The jit and the ahead-of-time code call the function.</li>
+<li><b>The diff and the PRs:</b> <code>git diff --numstat</code> of <code>dev</code> (21da4ae66b) against the branch (98c482395d), and the PRs as GitHub had them on 2026-11-23, in <code>063/data/diff.json</code> and <code>063/data/prs.json</code>.</li>
+<li><b>The data:</b> each game’s results as <code>063/data/&lt;game&gt;.json</code>, its printed lines and its machine, in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/063/data"><code>063/data/</code></a>.</li>
+</ul>
+</main></body>
+</html>

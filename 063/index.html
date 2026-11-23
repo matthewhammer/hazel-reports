@@ -1,0 +1,1528 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hazel as an npm Package: What to Decide Next</title>
+<meta name="description" content="Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one PR (#2857) that it is built from, how that branch differs from dev, and every game in hazeljs-examples timed four ways. The package&#x27;s jit runs the games 317× as fast as its interpreter (geometric mean over 45 operations), from 4.2× to 4,955×: on searches it is as fast as code compiled ahead of time, but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run 2,392× as fast as interpreted, and the five written by hand in JavaScript about 16× faster again. Then the decisions before it merges into dev.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  figure.chart svg { width: 100%; height: auto; display: block; }
+  svg .lbl { fill: var(--ink); font: 13px system-ui, sans-serif; } svg .mut { fill: var(--muted); font: 12px system-ui, sans-serif; }
+  svg .small { font-size: 11px; } svg .grp { fill: var(--ink); font: 700 12px system-ui, sans-serif; }
+  svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
+  svg .mi { fill: #6b737d; } svg .mj { fill: #eb6834; } svg .mc { fill: #2a78d6; } svg .mp { fill: #2e9e5b; }
+  svg .pbox { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; } svg .pbox.interpreted { stroke: #6b737d; } svg .pbox.jit { stroke: #eb6834; }
+  svg .pbox.compiled { stroke: #2a78d6; } svg .pbox.editor { stroke: #2e9e5b; } svg .arrow { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+  table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td:first-child, table.nums th:first-child { text-align: left; }
+  table.nums td.l, table.nums th.l { text-align: left; } table.nums tr.grp td { font-weight: 700; padding-top: 0.8em; }
+  .tw { overflow-x: auto; margin: 0.6em 0 1em; } .tw table { min-width: 720px; }
+  ol.decide > li { margin-bottom: 0.9em; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+li.anchored .anchor { margin-left: 6px; color: var(--muted); text-decoration: none; opacity: 0.5; } li.anchored .copyanchor { opacity: 0.8; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>63<b>)</b></code> · the hazeljs package · 2026-11-23, revised 2026-11-23 12:24 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> and <a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Hazel as an npm Package: What to Decide Next</h1>
+<p class="sub">On 2026-11-23 Matthew asked for one PR that tracks everything the hazeljs npm package depends on: Hazel’s editor in the package, working offline, with fonts and icons whose licenses allow it, and hazel-jit, “so that hazel code can be parsed and jitted from the npm package API as well”. That PR is <a href="https://github.com/hazelgrove/hazel/pull/2857">hazelgrove/hazel#2857</a>, and hazeljs 0.0.11 is built from it. This report is for Matthew and Cyrus, to see the design space before it goes to <code>dev</code>: what the package is, the PRs it comes from, how its branch differs from <code>dev</code>, how fast each way of running a program is on every game in hazeljs-examples, and the decisions to make next.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#package">What the package is</a>: three ways for a page to run Hazel code, and Hazel’s own editor, offline.</li>
+<li><a href="#prs">The PRs</a>: one PR holds it all; the parts it came from are still open.</li>
+<li><a href="#diff">How the branch differs from dev</a>: 8,577 lines added, nearly all in new files, and the move to Jane Street Core.</li>
+<li><a href="#speed">Every game, four ways</a>: the 17 games’ 45 operations, interpreted, through the jit, compiled ahead of time, and in plain JavaScript.</li>
+<li><a href="#crossing">Where the jit’s time goes</a>: on most calls, converting the values in and out costs more than the compiled code itself.</li>
+<li><a href="#build">Building the rules</a>: the jit builds faster than the interpreter; ahead of time, nothing is built in the page.</li>
+<li><a href="#plain">Against plain JavaScript</a>: what hazel-jit’s code still costs over a hand-written game.</li>
+<li><a href="#decide">What to decide before dev</a>: ten questions, each with its options.</li>
+<li><a href="#next">What next for speed</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="package">What the package is<a class="anchor" href="#package" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="package" title="copy this section's address">copy link</button></h2>
+<p><b>hazeljs 0.0.11 gives a page three ways to run a Hazel program, and Hazel’s own editor.</b> The first two come in one file, <code>hazel-lib.js</code> (2.9 MB, Hazel compiled to JavaScript by js_of_ocaml): <code>Hazel.run</code> and <code>runProgram</code> interpret a program; <code>Hazel.jit</code> and <code>jitProgram</code> compile it to JavaScript with hazel-jit in the page and run that. The third needs no Hazel in the page at all: <code>Hazel.compileProgram</code> gives the JavaScript and its runtime once, ahead of time, to keep in a file, which is how every game in hazeljs-examples ships. The editor is Hazel’s web app, built from the same commit, framed by the package’s <code>hazel-listings.js</code>; its fonts and icons are in the package with their licenses, so it loads nothing from another host.</p>
+<figure class="chart">
+<svg viewBox="0 0 640 316" role="img" aria-label="Four ways a page uses the hazeljs package: the interpreter, the jit, code compiled ahead of time, and the editor"><rect class="pbox" x="8" y="118" width="120" height="70" rx="8"/><text class="lbl" x="68" y="150" text-anchor="middle">a page</text><text class="mut" x="68" y="168" text-anchor="middle">import "hazeljs"</text><path class="arrow" d="M128 153 C 170 153, 170 42, 208 42"/><rect class="pbox interpreted" x="210" y="10" width="420" height="64" rx="8"/><text class="lbl" x="222" y="30">hazel-lib.js, 2.9 MB</text><text class="mut" x="222" y="48">Hazel.run, runProgram: the interpreter runs the program</text><text class="mut" x="222" y="65">every game: 0.5 to 6 s to build, then each call interpreted</text><path class="arrow" d="M128 153 C 170 153, 170 118, 208 118"/><rect class="pbox jit" x="210" y="86" width="420" height="64" rx="8"/><text class="lbl" x="222" y="106">hazel-lib.js, the same file</text><text class="mut" x="222" y="124">Hazel.jit, jitProgram: compiled to JavaScript in the page</text><text class="mut" x="222" y="141">each call&#x27;s values cross through Hazel&#x27;s own, both ways</text><path class="arrow" d="M128 153 C 170 153, 170 194, 208 194"/><rect class="pbox compiled" x="210" y="162" width="420" height="64" rx="8"/><text class="lbl" x="222" y="182">compiled.js, 32 to 124 kB</text><text class="mut" x="222" y="200">Hazel.compileProgram, once, ahead of time: no Hazel in the page</text><text class="mut" x="222" y="217">the game&#x27;s values converted by converters written by hand</text><path class="arrow" d="M128 153 C 170 153, 170 270, 208 270"/><rect class="pbox editor" x="210" y="238" width="420" height="64" rx="8"/><text class="lbl" x="222" y="258">editor/, 68 files, 11 MB</text><text class="mut" x="222" y="276">Hazel&#x27;s own editor, framed by hazel-listings.js</text><text class="mut" x="222" y="293">offline: its fonts and icons in the package</text></svg>
+<figcaption>How a page uses hazeljs 0.0.11. The values a page passes and gets back have the same shapes in the first two ways: a constructor as <code>{tag, value}</code>, a list as an array, a labeled tuple as an object, a function as a JavaScript function. Code compiled ahead of time has hazel-jit’s own shapes inside, and each game converts them with a few lines written by hand.</figcaption>
+</figure>
+<p>0.0.11 is pushed on hazelgrove/hazeljs’s <code>editor-in-package</code> branch and is not on npm. Its <code>hazel-lib.js</code> is byte for byte the file Hazel’s own deploy of the same commit serves, and the package’s Verify workflow rebuilds it on GitHub and checks that. Its install checks run on Node 18, 20 and 22, in TypeScript, and in a headless Firefox.</p>
+
+<h2 id="prs">The PRs<a class="anchor" href="#prs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="prs" title="copy this section's address">copy link</button></h2>
+<p><b>One PR, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, holds everything the package is built from; the PRs its parts came from are still open, and none is merged.</b> <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> merges the library and embed line (<a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, <a href="https://github.com/hazelgrove/hazel/pull/2814">#2814</a>, stacked on each other), the font (<a href="https://github.com/hazelgrove/hazel/pull/2837">#2837</a>) and the icons (<a href="https://github.com/hazelgrove/hazel/pull/2842">#2842</a>), adds hazel-jit’s compiler, and merges <code>dev</code>. The package’s <code>package.json</code> records the commit, the branch and the PR it was built from.</p>
+<div class="tw"><table class="nums"><thead><tr><th>PR</th><th>branch</th><th>state</th><th>lines</th><th class="l">what it gives the package</th></tr></thead><tbody><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a></td><td><code>hazeljs</code> into <code>dev</code></td><td>draft</td><td>+8,577 / −59</td><td class="l">The one PR: everything below that the package uses, merged with dev and ported to Jane Street Core, plus hazel-jit's compiler and the code font's license.</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a></td><td><code>js-library</code> into <code>dev</code></td><td>draft</td><td>+510 / −3</td><td class="l">The library, first version: <code>Hazel.analyze</code> and <code>Hazel.run</code> from any page.</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a></td><td><code>js-library-embed</code> into <code>js-library</code></td><td>draft</td><td>+4,168 / −109</td><td class="l">Programs of named modules (<code>analyzeProgram</code>, <code>runProgram</code>), and Hazel in another page's frame.</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2814">#2814</a></td><td><code>embed-editable</code> into <code>js-library-embed</code></td><td>draft</td><td>+948 / −72</td><td class="l">Embed mode: editable cells, one module at a time, go to definition across cells.</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2837">#2837</a></td><td><code>ui-font-installed</code> into <code>dev</code></td><td>open</td><td>+110 / −5</td><td class="l">IBM Plex Sans as the interface font, in place of a Helvetica Neue that Hazel had no license to ship.</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2842">#2842</a></td><td><code>ui-icons-shipped</code> into <code>dev</code></td><td>open</td><td>+222 / −6</td><td class="l">Material Icons shipped with Hazel, so nothing loads from Google.</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a></td><td><code>trial/694-view-jit</code> into <code>integration/livelits-modular-editors</code></td><td>draft</td><td>+15,915 / −1,174</td><td class="l">hazel-jit on the livelits line: livelit views compiled. <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>'s compiler is this one's, from <code>trial/794-games-aot</code>, with the livelit-only forms taken out.</td></tr><tr><td><a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a></td><td><code>fix/758-sint-32-bits</code> into <code>dev</code></td><td>draft</td><td>+233 / −76</td><td class="l">SInt with 64 bits everywhere, overflow an error. Not in <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> yet.</td></tr></tbody></table></div>
+<p>Two more are named in what follows: <a href="https://github.com/hazelgrove/hazel/issues/2832">hazelgrove/hazel#2832</a>, the interpreter’s answer that grows to gigabytes when a program’s answer is a function reaching several modules (why the astrology chart below is interpreted as a whole program each time), and <a href="https://github.com/hazelgrove/hazeljs/issues/2">hazelgrove/hazeljs#2</a>, the issue that put the editor in the package (0.0.9).</p>
+
+<h2 id="diff">How the branch differs from dev<a class="anchor" href="#diff" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="diff" title="copy this section's address">copy link</button></h2>
+<p><b>The branch is 50 commits ahead of <code>dev</code> and 0 behind. It changes 41 files, adding 8,577 lines and removing 59: almost all of it new files, and 2,276 lines of it tests.</b> Only 179 added lines touch what <code>dev</code>’s own code does; the rest is new modules and files that <code>dev</code> does not have.</p>
+<figure class="chart">
+<svg viewBox="0 0 640 150" role="img" aria-label="Lines the hazeljs branch adds over dev, by part"><text class="lbl small" x="8" y="17">hazel-jit</text><rect class="mc" x="190" y="6" width="321.2" height="13"/><text class="mut small" x="516.2" y="17">2,215 lines, 2 files</text><text class="lbl small" x="8" y="37">the library</text><rect class="mc" x="190" y="26" width="157.8" height="13"/><text class="mut small" x="352.8" y="37">1,088 lines, 5 files</text><text class="lbl small" x="8" y="57">programs of modules</text><rect class="mc" x="190" y="46" width="99.0" height="13"/><text class="mut small" x="294.0" y="57">683 lines, 1 files</text><text class="lbl small" x="8" y="77">embed mode</text><rect class="mc" x="190" y="66" width="246.8" height="13"/><text class="mut small" x="441.8" y="77">1,702 lines, 11 files</text><text class="lbl small" x="8" y="97">fonts, icons, licenses</text><rect class="mc" x="190" y="86" width="62.9" height="13"/><text class="mut small" x="257.9" y="97">434 lines, 12 files</text><text class="lbl small" x="8" y="117">changes to dev’s own code</text><rect class="mc" x="190" y="106" width="26.0" height="13"/><text class="mut small" x="221.0" y="117">179 lines, 4 files</text><text class="lbl small" x="8" y="137">tests</text><rect class="mc" x="190" y="126" width="330.0" height="13"/><text class="mut small" x="525.0" y="137">2,276 lines, 6 files</text></svg>
+<figcaption>Lines the <code>hazeljs</code> branch (98c482395d) adds over <code>dev</code> (21da4ae66b), by part. The fonts are binary files and are not counted in lines: two Helvetica Neue files removed (258 kB), two IBM Plex Sans files and Material Icons added (170 kB).</figcaption>
+</figure>
+<table class="nums"><thead><tr><th>part</th><th>files</th><th>lines added</th><th>lines removed</th></tr></thead><tbody><tr><td>hazel-jit</td><td>2</td><td>2,215</td><td>0</td></tr><tr><td>the library</td><td>5</td><td>1,088</td><td>1</td></tr><tr><td>programs of modules</td><td>1</td><td>683</td><td>0</td></tr><tr><td>embed mode</td><td>11</td><td>1,702</td><td>5</td></tr><tr><td>fonts, icons, licenses</td><td>12</td><td>434</td><td>11</td></tr><tr><td>changes to dev’s own code</td><td>4</td><td>179</td><td>32</td></tr><tr><td>tests</td><td>6</td><td>2,276</td><td>10</td></tr><tr><td><b>all</b></td><td><b>41</b></td><td><b>8,577</b></td><td><b>59</b></td></tr></tbody></table>
+<p><b>What changes for <code>dev</code>’s own app.</b> The interface font is IBM Plex Sans instead of Helvetica Neue, on every page. The icons load from Hazel’s own files instead of from Google. Hazel’s list of error messages can also give each with the id of the term it is on (the library’s errors per module use it). An editor rooted at a module reads its text as a module body, and the fast parser retries a module body whose last member is still being written. In the interpreter, a labeled tuple whose fields arrive in another order than its type’s is put in its type’s order before it runs; only a value made in JavaScript ever arrives that way. Embed mode (the frame, editable cells, go to definition across cells) is reached through <code>#embed</code> and changes nothing in the normal app.</p>
+<p><b>Jane Street Core.</b> <code>dev</code> moved to Core in <a href="https://github.com/hazelgrove/hazel/pull/2470">hazelgrove/hazel#2470</a> through <a href="https://github.com/hazelgrove/hazel/pull/2477">#2477</a>, and <code>-open Core</code> applies to a whole library at once, so the branch’s own files were ported in the same merge. One difference no type error showed: Core’s <code>List.init</code> calls its function from the last index down, where OCaml’s own went up from 0. The jit finds a compiled tuple’s labels by the value at each index, using each label up as it goes, so in reverse it swapped fields that JavaScript’s <code>==</code> takes as equal: <code>(b = false, a = 0, c = 5)</code> came back as <code>{a: false, b: 0, c: 5}</code>. Comparing Gnome dig’s compiled run with its interpreted run in Node found it; 98c482395d fixes it, with a test. The parts’ own PRs (<a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a>, <a href="https://github.com/hazelgrove/hazel/pull/2814">#2814</a>) are still written for OCaml’s standard library.</p>
+
+<h2 id="speed">Every game, four ways<a class="anchor" href="#speed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="speed" title="copy this section's address">copy link</button></h2>
+<p><b>Through the package’s jit, the 17 games run 317× as fast as through its interpreter (the geometric mean over 45 operations), from 4.2× to 4,955×. Compiled ahead of time, the same code runs 2,392× as fast as the interpreter.</b> The spread is the point. On the 11 operations that are mostly the program’s own work, a robot choosing or Hazel searching for a move, the jit is 1,063× to 4,955× as fast as the interpreter and within 1.7× of code compiled ahead of time. On the other 34, short calls on a large state, it is 4.2× to 1,563× as fast as the interpreter. The difference is the crossing (<a href="#crossing">next</a>). All four ways gave the same answer on every operation.</p>
+<figure class="chart">
+<svg viewBox="0 0 640 819" role="img" aria-label="Every operation of the 17 games, timed four ways, on a log scale from 10 nanoseconds to 100 seconds"><line class="grid" x1="628.0" y1="20" x2="628.0" y2="797"/><line class="grid" x1="554.8" y1="20" x2="554.8" y2="797"/><line class="grid" x1="481.6" y1="20" x2="481.6" y2="797"/><line class="grid" x1="408.4" y1="20" x2="408.4" y2="797"/><line class="grid" x1="335.2" y1="20" x2="335.2" y2="797"/><line class="grid" x1="262.0" y1="20" x2="262.0" y2="797"/><text class="mut" x="262.0" y="14" text-anchor="middle">10 ns</text><text class="mut" x="335.2" y="14" text-anchor="middle">1 µs</text><text class="mut" x="408.4" y="14" text-anchor="middle">0.1 ms</text><text class="mut" x="481.6" y="14" text-anchor="middle">10 ms</text><text class="mut" x="554.8" y="14" text-anchor="middle">1 s</text><text class="mut" x="628.0" y="14" text-anchor="end">100 s</text><text class="grp" x="8" y="44">Oracles</text><text class="lbl small" x="8" y="60">I Ching: a cast by coins</text><line class="span" x1="294.6" y1="56" x2="441.1" y2="56"/><circle class="mi" cx="441.1" cy="56" r="4.2"><title>I Ching, a cast by coins: interpreted 0.78 ms</title></circle><circle class="mj" cx="357.8" cy="56" r="4.2"><title>I Ching, a cast by coins: jit 4.1 µs</title></circle><circle class="mc" cx="294.6" cy="56" r="4.2"><title>I Ching, a cast by coins: compiled 78 ns</title></circle><text class="lbl small" x="8" y="75">I Ching: a cast by yarrow</text><line class="span" x1="317.9" y1="71" x2="448.2" y2="71"/><circle class="mi" cx="448.2" cy="71" r="4.2"><title>I Ching, a cast by yarrow: interpreted 1.2 ms</title></circle><circle class="mj" cx="363.0" cy="71" r="4.2"><title>I Ching, a cast by yarrow: jit 5.8 µs</title></circle><circle class="mc" cx="317.9" cy="71" r="4.2"><title>I Ching, a cast by yarrow: compiled 337 ns</title></circle><text class="lbl small" x="8" y="90">I Ching: a reading</text><line class="span" x1="347.7" y1="86" x2="483.4" y2="86"/><circle class="mi" cx="483.4" cy="86" r="4.2"><title>I Ching, a reading: interpreted 11 ms</title></circle><circle class="mj" cx="377.7" cy="86" r="4.2"><title>I Ching, a reading: jit 14 µs</title></circle><circle class="mc" cx="347.7" cy="86" r="4.2"><title>I Ching, a reading: compiled 2.2 µs</title></circle><text class="lbl small" x="8" y="105">Tarot: a deal, One</text><line class="span" x1="315.5" y1="101" x2="459.4" y2="101"/><circle class="mi" cx="459.4" cy="101" r="4.2"><title>Tarot, a deal, One: interpreted 2.5 ms</title></circle><circle class="mj" cx="372.5" cy="101" r="4.2"><title>Tarot, a deal, One: jit 10 µs</title></circle><circle class="mc" cx="315.5" cy="101" r="4.2"><title>Tarot, a deal, One: compiled 290 ns</title></circle><text class="lbl small" x="8" y="120">Tarot: a deal, CelticCross</text><line class="span" x1="364.2" y1="116" x2="498.9" y2="116"/><circle class="mi" cx="498.9" cy="116" r="4.2"><title>Tarot, a deal, CelticCross: interpreted 30 ms</title></circle><circle class="mj" cx="399.1" cy="116" r="4.2"><title>Tarot, a deal, CelticCross: jit 56 µs</title></circle><circle class="mc" cx="364.2" cy="116" r="4.2"><title>Tarot, a deal, CelticCross: compiled 6.2 µs</title></circle><text class="lbl small" x="8" y="135">Tarot: a deal, YearAhead</text><line class="span" x1="372.2" y1="131" x2="506.0" y2="131"/><circle class="mi" cx="506.0" cy="131" r="4.2"><title>Tarot, a deal, YearAhead: interpreted 46 ms</title></circle><circle class="mj" cx="404.8" cy="131" r="4.2"><title>Tarot, a deal, YearAhead: jit 80 µs</title></circle><circle class="mc" cx="372.2" cy="131" r="4.2"><title>Tarot, a deal, YearAhead: compiled 10 µs</title></circle><text class="lbl small" x="8" y="150">Astrology: a chart (interpreted: the whole…</text><line class="span" x1="417.4" y1="146" x2="554.6" y2="146"/><circle class="mi" cx="554.6" cy="146" r="4.2"><title>Astrology, a chart (interpreted: the whole program built each time): interpreted 990 ms</title></circle><circle class="mj" cx="444.5" cy="146" r="4.2"><title>Astrology, a chart (interpreted: the whole program built each time): jit 0.97 ms</title></circle><circle class="mc" cx="417.4" cy="146" r="4.2"><title>Astrology, a chart (interpreted: the whole program built each time): compiled 0.18 ms</title></circle><text class="grp" x="8" y="173">Board and card games, each with a plain JavaScript version</text><text class="lbl small" x="8" y="189">Checkers: the moves</text><line class="span" x1="317.9" y1="185" x2="492.3" y2="185"/><circle class="mi" cx="492.3" cy="185" r="4.2"><title>Checkers, the moves: interpreted 20 ms</title></circle><circle class="mj" cx="378.1" cy="185" r="4.2"><title>Checkers, the moves: jit 15 µs</title></circle><circle class="mc" cx="364.6" cy="185" r="4.2"><title>Checkers, the moves: compiled 6.3 µs</title></circle><circle class="mp" cx="317.9" cy="185" r="4.2"><title>Checkers, the moves: plain JS 336 ns</title></circle><text class="lbl small" x="8" y="204">Checkers: Hazel&#x27;s move, looking 1 ahead</text><line class="span" x1="325.1" y1="200" x2="500.9" y2="200"/><circle class="mi" cx="500.9" cy="200" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 1 ahead: interpreted 34 ms</title></circle><circle class="mj" cx="387.8" cy="200" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 1 ahead: jit 27 µs</title></circle><circle class="mc" cx="375.7" cy="200" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 1 ahead: compiled 13 µs</title></circle><circle class="mp" cx="325.1" cy="200" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 1 ahead: plain JS 528 ns</title></circle><text class="lbl small" x="8" y="219">Checkers: Hazel&#x27;s move, looking 2 ahead</text><line class="span" x1="340.7" y1="215" x2="508.7" y2="215"/><circle class="mi" cx="508.7" cy="215" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 2 ahead: interpreted 55 ms</title></circle><circle class="mj" cx="389.9" cy="215" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 2 ahead: jit 31 µs</title></circle><circle class="mc" cx="385.2" cy="215" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 2 ahead: compiled 23 µs</title></circle><circle class="mp" cx="340.7" cy="215" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 2 ahead: plain JS 1.4 µs</title></circle><text class="lbl small" x="8" y="234">Checkers: Hazel&#x27;s move, looking 3 ahead</text><line class="span" x1="355.1" y1="230" x2="524.5" y2="230"/><circle class="mi" cx="524.5" cy="230" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 3 ahead: interpreted 149 ms</title></circle><circle class="mj" cx="403.7" cy="230" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 3 ahead: jit 74 µs</title></circle><circle class="mc" cx="401.6" cy="230" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 3 ahead: compiled 65 µs</title></circle><circle class="mp" cx="355.1" cy="230" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 3 ahead: plain JS 3.5 µs</title></circle><text class="lbl small" x="8" y="249">Checkers: Hazel&#x27;s move, looking 4 ahead</text><line class="span" x1="375.1" y1="245" x2="539.2" y2="245"/><circle class="mi" cx="539.2" cy="245" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 4 ahead: interpreted 375 ms</title></circle><circle class="mj" cx="417.8" cy="245" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 4 ahead: jit 0.18 ms</title></circle><circle class="mc" cx="417.3" cy="245" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 4 ahead: compiled 0.17 ms</title></circle><circle class="mp" cx="375.1" cy="245" r="4.2"><title>Checkers, Hazel&#x27;s move, looking 4 ahead: plain JS 12 µs</title></circle><text class="lbl small" x="8" y="264">Go: a move played</text><line class="span" x1="343.8" y1="260" x2="486.5" y2="260"/><circle class="mi" cx="486.5" cy="260" r="4.2"><title>Go, a move played: interpreted 14 ms</title></circle><circle class="mj" cx="405.4" cy="260" r="4.2"><title>Go, a move played: jit 83 µs</title></circle><circle class="mc" cx="359.5" cy="260" r="4.2"><title>Go, a move played: compiled 4.6 µs</title></circle><circle class="mp" cx="343.8" cy="260" r="4.2"><title>Go, a move played: plain JS 1.7 µs</title></circle><text class="lbl small" x="8" y="279">Go: Hazel&#x27;s choice of move</text><line class="span" x1="369.3" y1="275" x2="542.0" y2="275"/><circle class="mi" cx="542.0" cy="275" r="4.2"><title>Go, Hazel&#x27;s choice of move: interpreted 446 ms</title></circle><circle class="mj" cx="417.2" cy="275" r="4.2"><title>Go, Hazel&#x27;s choice of move: jit 0.17 ms</title></circle><circle class="mc" cx="411.1" cy="275" r="4.2"><title>Go, Hazel&#x27;s choice of move: compiled 0.12 ms</title></circle><circle class="mp" cx="369.3" cy="275" r="4.2"><title>Go, Hazel&#x27;s choice of move: plain JS 8.5 µs</title></circle><text class="lbl small" x="8" y="294">Go: the score</text><line class="span" x1="366.9" y1="290" x2="549.1" y2="290"/><circle class="mi" cx="549.1" cy="290" r="4.2"><title>Go, the score: interpreted 700 ms</title></circle><circle class="mj" cx="419.7" cy="290" r="4.2"><title>Go, the score: jit 0.20 ms</title></circle><circle class="mc" cx="416.9" cy="290" r="4.2"><title>Go, the score: compiled 0.17 ms</title></circle><circle class="mp" cx="366.9" cy="290" r="4.2"><title>Go, the score: plain JS 7.3 µs</title></circle><text class="lbl small" x="8" y="309">Minesweeper: 9 by 9: the mines laid</text><line class="span" x1="355.5" y1="305" x2="514.8" y2="305"/><circle class="mi" cx="514.8" cy="305" r="4.2"><title>Minesweeper, 9 by 9: the mines laid: interpreted 81 ms</title></circle><circle class="mj" cx="431.3" cy="305" r="4.2"><title>Minesweeper, 9 by 9: the mines laid: jit 0.42 ms</title></circle><circle class="mc" cx="391.4" cy="305" r="4.2"><title>Minesweeper, 9 by 9: the mines laid: compiled 34 µs</title></circle><circle class="mp" cx="355.5" cy="305" r="4.2"><title>Minesweeper, 9 by 9: the mines laid: plain JS 3.6 µs</title></circle><text class="lbl small" x="8" y="324">Minesweeper: 9 by 9: a cell opened</text><line class="span" x1="323.3" y1="320" x2="482.0" y2="320"/><circle class="mi" cx="482.0" cy="320" r="4.2"><title>Minesweeper, 9 by 9: a cell opened: interpreted 10 ms</title></circle><circle class="mj" cx="436.8" cy="320" r="4.2"><title>Minesweeper, 9 by 9: a cell opened: jit 0.60 ms</title></circle><circle class="mc" cx="374.6" cy="320" r="4.2"><title>Minesweeper, 9 by 9: a cell opened: compiled 12 µs</title></circle><circle class="mp" cx="323.3" cy="320" r="4.2"><title>Minesweeper, 9 by 9: a cell opened: plain JS 474 ns</title></circle><text class="lbl small" x="8" y="339">Minesweeper: 9 by 9: the hint (a sure move)</text><line class="span" x1="354.6" y1="335" x2="522.9" y2="335"/><circle class="mi" cx="522.9" cy="335" r="4.2"><title>Minesweeper, 9 by 9: the hint (a sure move): interpreted 134 ms</title></circle><circle class="mj" cx="428.2" cy="335" r="4.2"><title>Minesweeper, 9 by 9: the hint (a sure move): jit 0.35 ms</title></circle><circle class="mc" cx="394.9" cy="335" r="4.2"><title>Minesweeper, 9 by 9: the hint (a sure move): compiled 43 µs</title></circle><circle class="mp" cx="354.6" cy="335" r="4.2"><title>Minesweeper, 9 by 9: the hint (a sure move): plain JS 3.4 µs</title></circle><text class="lbl small" x="8" y="354">Minesweeper: 16 by 30: the mines laid</text><line class="span" x1="385.2" y1="350" x2="541.8" y2="350"/><circle class="mi" cx="541.8" cy="350" r="4.2"><title>Minesweeper, 16 by 30: the mines laid: interpreted 442 ms</title></circle><circle class="mj" cx="465.9" cy="350" r="4.2"><title>Minesweeper, 16 by 30: the mines laid: jit 3.7 ms</title></circle><circle class="mc" cx="419.4" cy="350" r="4.2"><title>Minesweeper, 16 by 30: the mines laid: compiled 0.20 ms</title></circle><circle class="mp" cx="385.2" cy="350" r="4.2"><title>Minesweeper, 16 by 30: the mines laid: plain JS 23 µs</title></circle><text class="lbl small" x="8" y="369">Minesweeper: 16 by 30: a cell opened</text><line class="span" x1="325.1" y1="365" x2="499.9" y2="365"/><circle class="mi" cx="499.9" cy="365" r="4.2"><title>Minesweeper, 16 by 30: a cell opened: interpreted 32 ms</title></circle><circle class="mj" cx="477.0" cy="365" r="4.2"><title>Minesweeper, 16 by 30: a cell opened: jit 7.5 ms</title></circle><circle class="mc" cx="397.3" cy="365" r="4.2"><title>Minesweeper, 16 by 30: a cell opened: compiled 50 µs</title></circle><circle class="mp" cx="325.1" cy="365" r="4.2"><title>Minesweeper, 16 by 30: a cell opened: plain JS 531 ns</title></circle><text class="lbl small" x="8" y="384">Minesweeper: 16 by 30: the hint (a sure mo…</text><line class="span" x1="365.2" y1="380" x2="546.0" y2="380"/><circle class="mi" cx="546.0" cy="380" r="4.2"><title>Minesweeper, 16 by 30: the hint (a sure move): interpreted 576 ms</title></circle><circle class="mj" cx="456.0" cy="380" r="4.2"><title>Minesweeper, 16 by 30: the hint (a sure move): jit 2.0 ms</title></circle><circle class="mc" cx="421.0" cy="380" r="4.2"><title>Minesweeper, 16 by 30: the hint (a sure move): compiled 0.22 ms</title></circle><circle class="mp" cx="365.2" cy="380" r="4.2"><title>Minesweeper, 16 by 30: the hint (a sure move): plain JS 6.6 µs</title></circle><text class="lbl small" x="8" y="399">Mahjong: a hand dealt</text><line class="span" x1="380.7" y1="395" x2="519.4" y2="395"/><circle class="mi" cx="519.4" cy="395" r="4.2"><title>Mahjong, a hand dealt: interpreted 108 ms</title></circle><circle class="mj" cx="408.8" cy="395" r="4.2"><title>Mahjong, a hand dealt: jit 0.10 ms</title></circle><circle class="mc" cx="393.9" cy="395" r="4.2"><title>Mahjong, a hand dealt: compiled 40 µs</title></circle><circle class="mp" cx="380.7" cy="395" r="4.2"><title>Mahjong, a hand dealt: plain JS 17 µs</title></circle><text class="lbl small" x="8" y="414">Mahjong: a step</text><line class="span" x1="258.1" y1="410" x2="454.4" y2="410"/><circle class="mi" cx="454.4" cy="410" r="4.2"><title>Mahjong, a step: interpreted 1.8 ms</title></circle><circle class="mj" cx="403.7" cy="410" r="4.2"><title>Mahjong, a step: jit 75 µs</title></circle><circle class="mc" cx="347.9" cy="410" r="4.2"><title>Mahjong, a step: compiled 2.2 µs</title></circle><circle class="mp" cx="258.1" cy="410" r="4.2"><title>Mahjong, a step: plain JS 8 ns</title></circle><text class="lbl small" x="8" y="429">Mahjong: your options</text><line class="span" x1="339.8" y1="425" x2="491.3" y2="425"/><circle class="mi" cx="491.3" cy="425" r="4.2"><title>Mahjong, your options: interpreted 18 ms</title></circle><circle class="mj" cx="391.4" cy="425" r="4.2"><title>Mahjong, your options: jit 34 µs</title></circle><circle class="mc" cx="362.6" cy="425" r="4.2"><title>Mahjong, your options: compiled 5.6 µs</title></circle><circle class="mp" cx="339.8" cy="425" r="4.2"><title>Mahjong, your options: plain JS 1.3 µs</title></circle><text class="lbl small" x="8" y="444">Solitaire: a deal</text><line class="span" x1="344.3" y1="440" x2="503.9" y2="440"/><circle class="mi" cx="503.9" cy="440" r="4.2"><title>Solitaire, a deal: interpreted 41 ms</title></circle><circle class="mj" cx="410.9" cy="440" r="4.2"><title>Solitaire, a deal: jit 0.12 ms</title></circle><circle class="mc" cx="371.6" cy="440" r="4.2"><title>Solitaire, a deal: compiled 9.9 µs</title></circle><circle class="mp" cx="344.3" cy="440" r="4.2"><title>Solitaire, a deal: plain JS 1.8 µs</title></circle><text class="lbl small" x="8" y="459">Solitaire: every legal move</text><line class="span" x1="317.7" y1="455" x2="505.0" y2="455"/><circle class="mi" cx="505.0" cy="455" r="4.2"><title>Solitaire, every legal move: interpreted 44 ms</title></circle><circle class="mj" cx="408.4" cy="455" r="4.2"><title>Solitaire, every legal move: jit 100 µs</title></circle><circle class="mc" cx="364.6" cy="455" r="4.2"><title>Solitaire, every legal move: compiled 6.4 µs</title></circle><circle class="mp" cx="317.7" cy="455" r="4.2"><title>Solitaire, every legal move: plain JS 332 ns</title></circle><text class="lbl small" x="8" y="474">Solitaire: a move made</text><line class="span" x1="297.2" y1="470" x2="453.1" y2="470"/><circle class="mi" cx="453.1" cy="470" r="4.2"><title>Solitaire, a move made: interpreted 1.7 ms</title></circle><circle class="mj" cx="416.0" cy="470" r="4.2"><title>Solitaire, a move made: jit 0.16 ms</title></circle><circle class="mc" cx="352.8" cy="470" r="4.2"><title>Solitaire, a move made: compiled 3.0 µs</title></circle><circle class="mp" cx="297.2" cy="470" r="4.2"><title>Solitaire, a move made: plain JS 92 ns</title></circle><text class="grp" x="8" y="497">A puzzle</text><text class="lbl small" x="8" y="513">Mahjong solitaire: a deal</text><line class="span" x1="485.0" y1="509" x2="599.0" y2="509"/><circle class="mi" cx="599.0" cy="509" r="4.2"><title>Mahjong solitaire, a deal: interpreted 16.2 s</title></circle><circle class="mj" cx="488.3" cy="509" r="4.2"><title>Mahjong solitaire, a deal: jit 15 ms</title></circle><circle class="mc" cx="485.0" cy="509" r="4.2"><title>Mahjong solitaire, a deal: compiled 12 ms</title></circle><text class="lbl small" x="8" y="528">Mahjong solitaire: Hazel&#x27;s choice of pair</text><line class="span" x1="340.9" y1="524" x2="489.5" y2="524"/><circle class="mi" cx="489.5" cy="524" r="4.2"><title>Mahjong solitaire, Hazel&#x27;s choice of pair: interpreted 16 ms</title></circle><circle class="mj" cx="465.0" cy="524" r="4.2"><title>Mahjong solitaire, Hazel&#x27;s choice of pair: jit 3.5 ms</title></circle><circle class="mc" cx="340.9" cy="524" r="4.2"><title>Mahjong solitaire, Hazel&#x27;s choice of pair: compiled 1.4 µs</title></circle><text class="grp" x="8" y="551">Arcade games, a step at a time</text><text class="lbl small" x="8" y="567">Pinball: a step</text><line class="span" x1="391.6" y1="563" x2="515.8" y2="563"/><circle class="mi" cx="515.8" cy="563" r="4.2"><title>Pinball, a step: interpreted 86 ms</title></circle><circle class="mj" cx="399.9" cy="563" r="4.2"><title>Pinball, a step: jit 59 µs</title></circle><circle class="mc" cx="391.6" cy="563" r="4.2"><title>Pinball, a step: compiled 35 µs</title></circle><text class="lbl small" x="8" y="582">Pinball: a board</text><line class="span" x1="391.8" y1="578" x2="492.4" y2="578"/><circle class="mi" cx="492.4" cy="578" r="4.2"><title>Pinball, a board: interpreted 20 ms</title></circle><circle class="mj" cx="426.6" cy="578" r="4.2"><title>Pinball, a board: jit 0.31 ms</title></circle><circle class="mc" cx="391.8" cy="578" r="4.2"><title>Pinball, a board: compiled 35 µs</title></circle><text class="lbl small" x="8" y="597">Downhill: a step</text><line class="span" x1="360.4" y1="593" x2="461.8" y2="593"/><circle class="mi" cx="461.8" cy="593" r="4.2"><title>Downhill, a step: interpreted 2.9 ms</title></circle><circle class="mj" cx="393.1" cy="593" r="4.2"><title>Downhill, a step: jit 38 µs</title></circle><circle class="mc" cx="360.4" cy="593" r="4.2"><title>Downhill, a step: compiled 4.9 µs</title></circle><text class="lbl small" x="8" y="612">Downhill: the robot&#x27;s choice</text><line class="span" x1="345.0" y1="608" x2="466.0" y2="608"/><circle class="mi" cx="466.0" cy="608" r="4.2"><title>Downhill, the robot&#x27;s choice: interpreted 3.8 ms</title></circle><circle class="mj" cx="373.2" cy="608" r="4.2"><title>Downhill, the robot&#x27;s choice: jit 11 µs</title></circle><circle class="mc" cx="345.0" cy="608" r="4.2"><title>Downhill, the robot&#x27;s choice: compiled 1.9 µs</title></circle><text class="lbl small" x="8" y="627">Bricks: a step</text><line class="span" x1="352.0" y1="623" x2="455.4" y2="623"/><circle class="mi" cx="455.4" cy="623" r="4.2"><title>Bricks, a step: interpreted 1.9 ms</title></circle><circle class="mj" cx="398.9" cy="623" r="4.2"><title>Bricks, a step: jit 55 µs</title></circle><circle class="mc" cx="352.0" cy="623" r="4.2"><title>Bricks, a step: compiled 2.9 µs</title></circle><text class="lbl small" x="8" y="642">Bricks: the robot&#x27;s choice</text><line class="span" x1="328.3" y1="638" x2="433.0" y2="638"/><circle class="mi" cx="433.0" cy="638" r="4.2"><title>Bricks, the robot&#x27;s choice: interpreted 0.47 ms</title></circle><circle class="mj" cx="380.1" cy="638" r="4.2"><title>Bricks, the robot&#x27;s choice: jit 17 µs</title></circle><circle class="mc" cx="328.3" cy="638" r="4.2"><title>Bricks, the robot&#x27;s choice: compiled 648 ns</title></circle><text class="lbl small" x="8" y="657">Snake: a step</text><line class="span" x1="356.5" y1="653" x2="473.8" y2="653"/><circle class="mi" cx="473.8" cy="653" r="4.2"><title>Snake, a step: interpreted 6.1 ms</title></circle><circle class="mj" cx="400.7" cy="653" r="4.2"><title>Snake, a step: jit 62 µs</title></circle><circle class="mc" cx="356.5" cy="653" r="4.2"><title>Snake, a step: compiled 3.8 µs</title></circle><text class="lbl small" x="8" y="672">Snake: the robot&#x27;s choice (42 long)</text><line class="span" x1="413.4" y1="668" x2="548.6" y2="668"/><circle class="mi" cx="548.6" cy="668" r="4.2"><title>Snake, the robot&#x27;s choice (42 long): interpreted 677 ms</title></circle><circle class="mj" cx="413.4" cy="668" r="4.2"><title>Snake, the robot&#x27;s choice (42 long): jit 0.14 ms</title></circle><circle class="mc" cx="415.8" cy="668" r="4.2"><title>Snake, the robot&#x27;s choice (42 long): compiled 0.16 ms</title></circle><text class="lbl small" x="8" y="687">Light trails: a step</text><line class="span" x1="364.9" y1="683" x2="489.6" y2="683"/><circle class="mi" cx="489.6" cy="683" r="4.2"><title>Light trails, a step: interpreted 17 ms</title></circle><circle class="mj" cx="401.0" cy="683" r="4.2"><title>Light trails, a step: jit 63 µs</title></circle><circle class="mc" cx="364.9" cy="683" r="4.2"><title>Light trails, a step: compiled 6.5 µs</title></circle><text class="lbl small" x="8" y="702">Light trails: the robot&#x27;s choice, looking …</text><line class="span" x1="445.2" y1="698" x2="577.3" y2="698"/><circle class="mi" cx="577.3" cy="698" r="4.2"><title>Light trails, the robot&#x27;s choice, looking 150: interpreted 4.1 s</title></circle><circle class="mj" cx="445.7" cy="698" r="4.2"><title>Light trails, the robot&#x27;s choice, looking 150: jit 1.0 ms</title></circle><circle class="mc" cx="445.2" cy="698" r="4.2"><title>Light trails, the robot&#x27;s choice, looking 150: compiled 1.0 ms</title></circle><text class="lbl small" x="8" y="717">Star wave: a step</text><line class="span" x1="377.5" y1="713" x2="497.3" y2="713"/><circle class="mi" cx="497.3" cy="713" r="4.2"><title>Star wave, a step: interpreted 27 ms</title></circle><circle class="mj" cx="405.0" cy="713" r="4.2"><title>Star wave, a step: jit 81 µs</title></circle><circle class="mc" cx="377.5" cy="713" r="4.2"><title>Star wave, a step: compiled 14 µs</title></circle><text class="lbl small" x="8" y="732">Star wave: the robot&#x27;s choice</text><line class="span" x1="383.9" y1="728" x2="512.0" y2="728"/><circle class="mi" cx="512.0" cy="728" r="4.2"><title>Star wave, the robot&#x27;s choice: interpreted 68 ms</title></circle><circle class="mj" cx="392.5" cy="728" r="4.2"><title>Star wave, the robot&#x27;s choice: jit 37 µs</title></circle><circle class="mc" cx="383.9" cy="728" r="4.2"><title>Star wave, the robot&#x27;s choice: compiled 21 µs</title></circle><text class="lbl small" x="8" y="747">Butterfly garden: a step</text><line class="span" x1="387.8" y1="743" x2="480.2" y2="743"/><circle class="mi" cx="480.2" cy="743" r="4.2"><title>Butterfly garden, a step: interpreted 9.2 ms</title></circle><circle class="mj" cx="421.6" cy="743" r="4.2"><title>Butterfly garden, a step: jit 0.23 ms</title></circle><circle class="mc" cx="387.8" cy="743" r="4.2"><title>Butterfly garden, a step: compiled 27 µs</title></circle><text class="lbl small" x="8" y="762">Butterfly garden: the robot&#x27;s choice</text><line class="span" x1="402.5" y1="758" x2="531.0" y2="758"/><circle class="mi" cx="531.0" cy="758" r="4.2"><title>Butterfly garden, the robot&#x27;s choice: interpreted 224 ms</title></circle><circle class="mj" cx="414.1" cy="758" r="4.2"><title>Butterfly garden, the robot&#x27;s choice: jit 0.14 ms</title></circle><circle class="mc" cx="402.5" cy="758" r="4.2"><title>Butterfly garden, the robot&#x27;s choice: compiled 69 µs</title></circle><text class="lbl small" x="8" y="777">Gnome dig: a step</text><line class="span" x1="395.1" y1="773" x2="517.7" y2="773"/><circle class="mi" cx="517.7" cy="773" r="4.2"><title>Gnome dig, a step: interpreted 97 ms</title></circle><circle class="mj" cx="428.9" cy="773" r="4.2"><title>Gnome dig, a step: jit 0.36 ms</title></circle><circle class="mc" cx="395.1" cy="773" r="4.2"><title>Gnome dig, a step: compiled 43 µs</title></circle><text class="lbl small" x="8" y="792">Gnome dig: the robot&#x27;s choice</text><line class="span" x1="442.9" y1="788" x2="576.0" y2="788"/><circle class="mi" cx="576.0" cy="788" r="4.2"><title>Gnome dig, the robot&#x27;s choice: interpreted 3.8 s</title></circle><circle class="mj" cx="445.2" cy="788" r="4.2"><title>Gnome dig, the robot&#x27;s choice: jit 1.0 ms</title></circle><circle class="mc" cx="442.9" cy="788" r="4.2"><title>Gnome dig, the robot&#x27;s choice: compiled 0.88 ms</title></circle><circle class="mi" cx="262" cy="807" r="4.2"/><text class="mut" x="270" y="811">interpreted</text><circle class="mj" cx="362" cy="807" r="4.2"/><text class="mut" x="370" y="811">jit</text><circle class="mc" cx="462" cy="807" r="4.2"/><text class="mut" x="470" y="811">compiled ahead of time</text><circle class="mp" cx="562" cy="807" r="4.2"/><text class="mut" x="570" y="811">plain JS</text></svg>
+<figcaption>Builds 1 to 4 (not a build of the app: Node 22 on GitHub’s runners, one runner per game). Each operation of the 17 games, timed four ways: the package’s interpreter (grey), the package’s jit (orange), the package’s compiler ahead of time (blue), and plain JavaScript (green, 5 games). A log scale: each step is a hundred times the one before. Hover a mark for its time.</figcaption>
+</figure>
+<p>For one game, Gnome dig: a step of the game takes 97 ms interpreted, 0.36 ms through the jit and 43 µs ahead of time; the robot choosing its move takes 3.8 s, 1.0 ms and 0.88 ms. At 60 frames a second a frame has 16.7 ms, so interpreted, one step is six frames and the robot’s choice almost four seconds; through the jit, both fit in a frame many times over.</p>
+<details><summary>Every operation’s numbers</summary>
+<div class="tw"><table class="nums"><thead><tr><th>operation</th><th>interpreted</th><th>jit</th><th>ahead of time</th><th>plain JS</th><th>jit over interpreted</th><th>ahead of time over jit</th></tr></thead><tbody><tr class="grp"><td colspan="7">Oracles</td></tr><tr><td>I Ching: a cast by coins</td><td>0.78 ms</td><td>4.1 µs</td><td>78 ns</td><td>–</td><td>189×</td><td>53×</td></tr><tr><td>I Ching: a cast by yarrow</td><td>1.2 ms</td><td>5.8 µs</td><td>337 ns</td><td>–</td><td>212×</td><td>17×</td></tr><tr><td>I Ching: a reading</td><td>11 ms</td><td>14 µs</td><td>2.2 µs</td><td>–</td><td>773×</td><td>6.6×</td></tr><tr><td>Tarot: a deal, One</td><td>2.5 ms</td><td>10 µs</td><td>290 ns</td><td>–</td><td>237×</td><td>36×</td></tr><tr><td>Tarot: a deal, CelticCross</td><td>30 ms</td><td>56 µs</td><td>6.2 µs</td><td>–</td><td>533×</td><td>9.0×</td></tr><tr><td>Tarot: a deal, YearAhead</td><td>46 ms</td><td>80 µs</td><td>10 µs</td><td>–</td><td>584×</td><td>7.8×</td></tr><tr><td>Astrology: a chart (interpreted: the whole program built each time)</td><td>990 ms</td><td>0.97 ms</td><td>0.18 ms</td><td>–</td><td>1,022×</td><td>5.5×</td></tr><tr class="grp"><td colspan="7">Board and card games, each with a plain JavaScript version</td></tr><tr><td>Checkers: the moves</td><td>20 ms</td><td>15 µs</td><td>6.3 µs</td><td>336 ns</td><td>1,323×</td><td>2.3×</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 1 ahead</td><td>34 ms</td><td>27 µs</td><td>13 µs</td><td>528 ns</td><td>1,230×</td><td>2.1×</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 2 ahead</td><td>55 ms</td><td>31 µs</td><td>23 µs</td><td>1.4 µs</td><td>1,761×</td><td>1.3×</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 3 ahead</td><td>149 ms</td><td>74 µs</td><td>65 µs</td><td>3.5 µs</td><td>2,002×</td><td>1.1×</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 4 ahead</td><td>375 ms</td><td>0.18 ms</td><td>0.17 ms</td><td>12 µs</td><td>2,080×</td><td>1.0×</td></tr><tr><td>Go: a move played</td><td>14 ms</td><td>83 µs</td><td>4.6 µs</td><td>1.7 µs</td><td>165×</td><td>18×</td></tr><tr><td>Go: Hazel&#x27;s choice of move</td><td>446 ms</td><td>0.17 ms</td><td>0.12 ms</td><td>8.5 µs</td><td>2,560×</td><td>1.5×</td></tr><tr><td>Go: the score</td><td>700 ms</td><td>0.20 ms</td><td>0.17 ms</td><td>7.3 µs</td><td>3,430×</td><td>1.2×</td></tr><tr><td>Minesweeper: 9 by 9: the mines laid</td><td>81 ms</td><td>0.42 ms</td><td>34 µs</td><td>3.6 µs</td><td>190×</td><td>12×</td></tr><tr><td>Minesweeper: 9 by 9: a cell opened</td><td>10 ms</td><td>0.60 ms</td><td>12 µs</td><td>474 ns</td><td>17×</td><td>50×</td></tr><tr><td>Minesweeper: 9 by 9: the hint (a sure move)</td><td>134 ms</td><td>0.35 ms</td><td>43 µs</td><td>3.4 µs</td><td>386×</td><td>8.1×</td></tr><tr><td>Minesweeper: 16 by 30: the mines laid</td><td>442 ms</td><td>3.7 ms</td><td>0.20 ms</td><td>23 µs</td><td>119×</td><td>19×</td></tr><tr><td>Minesweeper: 16 by 30: a cell opened</td><td>32 ms</td><td>7.5 ms</td><td>50 µs</td><td>531 ns</td><td>4.2×</td><td>150×</td></tr><tr><td>Minesweeper: 16 by 30: the hint (a sure move)</td><td>576 ms</td><td>2.0 ms</td><td>0.22 ms</td><td>6.6 µs</td><td>288×</td><td>9.0×</td></tr><tr><td>Mahjong: a hand dealt</td><td>108 ms</td><td>0.10 ms</td><td>40 µs</td><td>17 µs</td><td>1,056×</td><td>2.5×</td></tr><tr><td>Mahjong: a step</td><td>1.8 ms</td><td>75 µs</td><td>2.2 µs</td><td>8 ns</td><td>24×</td><td>34×</td></tr><tr><td>Mahjong: your options</td><td>18 ms</td><td>34 µs</td><td>5.6 µs</td><td>1.3 µs</td><td>534×</td><td>6.1×</td></tr><tr><td>Solitaire: a deal</td><td>41 ms</td><td>0.12 ms</td><td>9.9 µs</td><td>1.8 µs</td><td>348×</td><td>12×</td></tr><tr><td>Solitaire: every legal move</td><td>44 ms</td><td>100 µs</td><td>6.4 µs</td><td>332 ns</td><td>438×</td><td>16×</td></tr><tr><td>Solitaire: a move made</td><td>1.7 ms</td><td>0.16 ms</td><td>3.0 µs</td><td>92 ns</td><td>10×</td><td>53×</td></tr><tr class="grp"><td colspan="7">A puzzle</td></tr><tr><td>Mahjong solitaire: a deal</td><td>16.2 s</td><td>15 ms</td><td>12 ms</td><td>–</td><td>1,063×</td><td>1.2×</td></tr><tr><td>Mahjong solitaire: Hazel&#x27;s choice of pair</td><td>16 ms</td><td>3.5 ms</td><td>1.4 µs</td><td>–</td><td>4.7×</td><td>2,462×</td></tr><tr class="grp"><td colspan="7">Arcade games, a step at a time</td></tr><tr><td>Pinball: a step</td><td>86 ms</td><td>59 µs</td><td>35 µs</td><td>–</td><td>1,467×</td><td>1.7×</td></tr><tr><td>Pinball: a board</td><td>20 ms</td><td>0.31 ms</td><td>35 µs</td><td>–</td><td>63×</td><td>8.9×</td></tr><tr><td>Downhill: a step</td><td>2.9 ms</td><td>38 µs</td><td>4.9 µs</td><td>–</td><td>75×</td><td>7.8×</td></tr><tr><td>Downhill: the robot&#x27;s choice</td><td>3.8 ms</td><td>11 µs</td><td>1.9 µs</td><td>–</td><td>344×</td><td>5.9×</td></tr><tr><td>Bricks: a step</td><td>1.9 ms</td><td>55 µs</td><td>2.9 µs</td><td>–</td><td>35×</td><td>19×</td></tr><tr><td>Bricks: the robot&#x27;s choice</td><td>0.47 ms</td><td>17 µs</td><td>648 ns</td><td>–</td><td>28×</td><td>26×</td></tr><tr><td>Snake: a step</td><td>6.1 ms</td><td>62 µs</td><td>3.8 µs</td><td>–</td><td>100×</td><td>16×</td></tr><tr><td>Snake: the robot&#x27;s choice (42 long)</td><td>677 ms</td><td>0.14 ms</td><td>0.16 ms</td><td>–</td><td>4,955×</td><td>0.9×</td></tr><tr><td>Light trails: a step</td><td>17 ms</td><td>63 µs</td><td>6.5 µs</td><td>–</td><td>264×</td><td>9.7×</td></tr><tr><td>Light trails: the robot&#x27;s choice, looking 150</td><td>4.1 s</td><td>1.0 ms</td><td>1.0 ms</td><td>–</td><td>3,941×</td><td>1.0×</td></tr><tr><td>Star wave: a step</td><td>27 ms</td><td>81 µs</td><td>14 µs</td><td>–</td><td>331×</td><td>5.6×</td></tr><tr><td>Star wave: the robot&#x27;s choice</td><td>68 ms</td><td>37 µs</td><td>21 µs</td><td>–</td><td>1,838×</td><td>1.7×</td></tr><tr><td>Butterfly garden: a step</td><td>9.2 ms</td><td>0.23 ms</td><td>27 µs</td><td>–</td><td>40×</td><td>8.4×</td></tr><tr><td>Butterfly garden: the robot&#x27;s choice</td><td>224 ms</td><td>0.14 ms</td><td>69 µs</td><td>–</td><td>1,563×</td><td>2.1×</td></tr><tr><td>Gnome dig: a step</td><td>97 ms</td><td>0.36 ms</td><td>43 µs</td><td>–</td><td>267×</td><td>8.3×</td></tr><tr><td>Gnome dig: the robot&#x27;s choice</td><td>3.8 s</td><td>1.0 ms</td><td>0.88 ms</td><td>–</td><td>3,742×</td><td>1.2×</td></tr></tbody></table></div>
+</details>
+
+<h2 id="crossing">Where the jit’s time goes<a class="anchor" href="#crossing" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="crossing" title="copy this section's address">copy link</button></h2>
+<p><b>On 34 of the 45 operations, more of the jit’s time goes to converting the values in and out than to the compiled code itself. The largest: Minesweeper, 16 by 30: a cell opened, 7.5 ms through the jit against 50 µs ahead of time.</b> A call through the jit converts its arguments from the page’s JavaScript values into Hazel’s own values, using the function’s declared types, then from those into hazel-jit’s shapes; calls the compiled function; and converts its answer back the same two steps. A game’s whole state crosses on every call, both ways. Code compiled ahead of time does the same work with converters written by hand for the game’s values, straight from one shape to the other, so it pays for the crossing too, but far less.</p>
+<figure class="chart">
+<svg viewBox="0 0 640 660" role="img" aria-label="Each operation's jit time split into the compiled code's own work and the crossing, sorted by the crossing's share"><text class="lbl small" x="8" y="16">Mahjong solitaire: Hazel&#x27;s choice of pair</text><rect class="mc" x="262" y="6" width="0.1" height="11"/><rect class="mj" x="262.1" y="6" width="199.9" height="11"><title>100% crossing</title></rect><text class="mut small" x="468" y="16">jit 3.5 ms, ahead of time 1.4 µs</text><text class="lbl small" x="8" y="30">Minesweeper: 16 by 30: a cell opened</text><rect class="mc" x="262" y="20" width="1.3" height="11"/><rect class="mj" x="263.3" y="20" width="198.7" height="11"><title>99% crossing</title></rect><text class="mut small" x="468" y="30">jit 7.5 ms, ahead of time 50 µs</text><text class="lbl small" x="8" y="44">I Ching: a cast by coins</text><rect class="mc" x="262" y="34" width="3.8" height="11"/><rect class="mj" x="265.8" y="34" width="196.2" height="11"><title>98% crossing</title></rect><text class="mut small" x="468" y="44">jit 4.1 µs, ahead of time 78 ns</text><text class="lbl small" x="8" y="58">Solitaire: a move made</text><rect class="mc" x="262" y="48" width="3.8" height="11"/><rect class="mj" x="265.8" y="48" width="196.2" height="11"><title>98% crossing</title></rect><text class="mut small" x="468" y="58">jit 0.16 ms, ahead of time 3.0 µs</text><text class="lbl small" x="8" y="72">Minesweeper: 9 by 9: a cell opened</text><rect class="mc" x="262" y="62" width="4.0" height="11"/><rect class="mj" x="266.0" y="62" width="196.0" height="11"><title>98% crossing</title></rect><text class="mut small" x="468" y="72">jit 0.60 ms, ahead of time 12 µs</text><text class="lbl small" x="8" y="86">Tarot: a deal, One</text><rect class="mc" x="262" y="76" width="5.5" height="11"/><rect class="mj" x="267.5" y="76" width="194.5" height="11"><title>97% crossing</title></rect><text class="mut small" x="468" y="86">jit 10 µs, ahead of time 290 ns</text><text class="lbl small" x="8" y="100">Mahjong: a step</text><rect class="mc" x="262" y="90" width="6.0" height="11"/><rect class="mj" x="268.0" y="90" width="194.0" height="11"><title>97% crossing</title></rect><text class="mut small" x="468" y="100">jit 75 µs, ahead of time 2.2 µs</text><text class="lbl small" x="8" y="114">Bricks: the robot&#x27;s choice</text><rect class="mc" x="262" y="104" width="7.7" height="11"/><rect class="mj" x="269.7" y="104" width="192.3" height="11"><title>96% crossing</title></rect><text class="mut small" x="468" y="114">jit 17 µs, ahead of time 648 ns</text><text class="lbl small" x="8" y="128">Bricks: a step</text><rect class="mc" x="262" y="118" width="10.5" height="11"/><rect class="mj" x="272.5" y="118" width="189.5" height="11"><title>95% crossing</title></rect><text class="mut small" x="468" y="128">jit 55 µs, ahead of time 2.9 µs</text><text class="lbl small" x="8" y="142">Minesweeper: 16 by 30: the mines laid</text><rect class="mc" x="262" y="132" width="10.7" height="11"/><rect class="mj" x="272.7" y="132" width="189.3" height="11"><title>95% crossing</title></rect><text class="mut small" x="468" y="142">jit 3.7 ms, ahead of time 0.20 ms</text><text class="lbl small" x="8" y="156">Go: a move played</text><rect class="mc" x="262" y="146" width="11.1" height="11"/><rect class="mj" x="273.1" y="146" width="188.9" height="11"><title>94% crossing</title></rect><text class="mut small" x="468" y="156">jit 83 µs, ahead of time 4.6 µs</text><text class="lbl small" x="8" y="170">I Ching: a cast by yarrow</text><rect class="mc" x="262" y="160" width="11.7" height="11"/><rect class="mj" x="273.7" y="160" width="188.3" height="11"><title>94% crossing</title></rect><text class="mut small" x="468" y="170">jit 5.8 µs, ahead of time 337 ns</text><text class="lbl small" x="8" y="184">Snake: a step</text><rect class="mc" x="262" y="174" width="12.4" height="11"/><rect class="mj" x="274.4" y="174" width="187.6" height="11"><title>94% crossing</title></rect><text class="mut small" x="468" y="184">jit 62 µs, ahead of time 3.8 µs</text><text class="lbl small" x="8" y="198">Solitaire: every legal move</text><rect class="mc" x="262" y="188" width="12.8" height="11"/><rect class="mj" x="274.8" y="188" width="187.2" height="11"><title>94% crossing</title></rect><text class="mut small" x="468" y="198">jit 100 µs, ahead of time 6.4 µs</text><text class="lbl small" x="8" y="212">Minesweeper: 9 by 9: the mines laid</text><rect class="mc" x="262" y="202" width="16.2" height="11"/><rect class="mj" x="278.2" y="202" width="183.8" height="11"><title>92% crossing</title></rect><text class="mut small" x="468" y="212">jit 0.42 ms, ahead of time 34 µs</text><text class="lbl small" x="8" y="226">Solitaire: a deal</text><rect class="mc" x="262" y="216" width="16.9" height="11"/><rect class="mj" x="278.9" y="216" width="183.1" height="11"><title>92% crossing</title></rect><text class="mut small" x="468" y="226">jit 0.12 ms, ahead of time 9.9 µs</text><text class="lbl small" x="8" y="240">Light trails: a step</text><rect class="mc" x="262" y="230" width="20.7" height="11"/><rect class="mj" x="282.7" y="230" width="179.3" height="11"><title>90% crossing</title></rect><text class="mut small" x="468" y="240">jit 63 µs, ahead of time 6.5 µs</text><text class="lbl small" x="8" y="254">Minesweeper: 16 by 30: the hint (a sure mo…</text><rect class="mc" x="262" y="244" width="22.1" height="11"/><rect class="mj" x="284.1" y="244" width="177.9" height="11"><title>89% crossing</title></rect><text class="mut small" x="468" y="254">jit 2.0 ms, ahead of time 0.22 ms</text><text class="lbl small" x="8" y="268">Tarot: a deal, CelticCross</text><rect class="mc" x="262" y="258" width="22.3" height="11"/><rect class="mj" x="284.3" y="258" width="177.7" height="11"><title>89% crossing</title></rect><text class="mut small" x="468" y="268">jit 56 µs, ahead of time 6.2 µs</text><text class="lbl small" x="8" y="282">Pinball: a board</text><rect class="mc" x="262" y="272" width="22.4" height="11"/><rect class="mj" x="284.4" y="272" width="177.6" height="11"><title>89% crossing</title></rect><text class="mut small" x="468" y="282">jit 0.31 ms, ahead of time 35 µs</text><text class="lbl small" x="8" y="296">Butterfly garden: a step</text><rect class="mc" x="262" y="286" width="23.8" height="11"/><rect class="mj" x="285.8" y="286" width="176.2" height="11"><title>88% crossing</title></rect><text class="mut small" x="468" y="296">jit 0.23 ms, ahead of time 27 µs</text><text class="lbl small" x="8" y="310">Gnome dig: a step</text><rect class="mc" x="262" y="300" width="24.0" height="11"/><rect class="mj" x="286.0" y="300" width="176.0" height="11"><title>88% crossing</title></rect><text class="mut small" x="468" y="310">jit 0.36 ms, ahead of time 43 µs</text><text class="lbl small" x="8" y="324">Minesweeper: 9 by 9: the hint (a sure move)</text><rect class="mc" x="262" y="314" width="24.6" height="11"/><rect class="mj" x="286.6" y="314" width="175.4" height="11"><title>88% crossing</title></rect><text class="mut small" x="468" y="324">jit 0.35 ms, ahead of time 43 µs</text><text class="lbl small" x="8" y="338">Downhill: a step</text><rect class="mc" x="262" y="328" width="25.6" height="11"/><rect class="mj" x="287.6" y="328" width="174.4" height="11"><title>87% crossing</title></rect><text class="mut small" x="468" y="338">jit 38 µs, ahead of time 4.9 µs</text><text class="lbl small" x="8" y="352">Tarot: a deal, YearAhead</text><rect class="mc" x="262" y="342" width="25.8" height="11"/><rect class="mj" x="287.8" y="342" width="174.2" height="11"><title>87% crossing</title></rect><text class="mut small" x="468" y="352">jit 80 µs, ahead of time 10 µs</text><text class="lbl small" x="8" y="366">I Ching: a reading</text><rect class="mc" x="262" y="356" width="30.3" height="11"/><rect class="mj" x="292.3" y="356" width="169.7" height="11"><title>85% crossing</title></rect><text class="mut small" x="468" y="366">jit 14 µs, ahead of time 2.2 µs</text><text class="lbl small" x="8" y="380">Mahjong: your options</text><rect class="mc" x="262" y="370" width="32.6" height="11"/><rect class="mj" x="294.6" y="370" width="167.4" height="11"><title>84% crossing</title></rect><text class="mut small" x="468" y="380">jit 34 µs, ahead of time 5.6 µs</text><text class="lbl small" x="8" y="394">Downhill: the robot&#x27;s choice</text><rect class="mc" x="262" y="384" width="34.1" height="11"/><rect class="mj" x="296.1" y="384" width="165.9" height="11"><title>83% crossing</title></rect><text class="mut small" x="468" y="394">jit 11 µs, ahead of time 1.9 µs</text><text class="lbl small" x="8" y="408">Star wave: a step</text><rect class="mc" x="262" y="398" width="35.4" height="11"/><rect class="mj" x="297.4" y="398" width="164.6" height="11"><title>82% crossing</title></rect><text class="mut small" x="468" y="408">jit 81 µs, ahead of time 14 µs</text><text class="lbl small" x="8" y="422">Astrology: a chart (interpreted: the whole…</text><rect class="mc" x="262" y="412" width="36.4" height="11"/><rect class="mj" x="298.4" y="412" width="163.6" height="11"><title>82% crossing</title></rect><text class="mut small" x="468" y="422">jit 0.97 ms, ahead of time 0.18 ms</text><text class="lbl small" x="8" y="436">Mahjong: a hand dealt</text><rect class="mc" x="262" y="426" width="78.6" height="11"/><rect class="mj" x="340.6" y="426" width="121.4" height="11"><title>61% crossing</title></rect><text class="mut small" x="468" y="436">jit 0.10 ms, ahead of time 40 µs</text><text class="lbl small" x="8" y="450">Checkers: the moves</text><rect class="mc" x="262" y="440" width="85.7" height="11"/><rect class="mj" x="347.7" y="440" width="114.3" height="11"><title>57% crossing</title></rect><text class="mut small" x="468" y="450">jit 15 µs, ahead of time 6.3 µs</text><text class="lbl small" x="8" y="464">Checkers: Hazel&#x27;s move, looking 1 ahead</text><rect class="mc" x="262" y="454" width="93.5" height="11"/><rect class="mj" x="355.5" y="454" width="106.5" height="11"><title>53% crossing</title></rect><text class="mut small" x="468" y="464">jit 27 µs, ahead of time 13 µs</text><text class="lbl small" x="8" y="478">Butterfly garden: the robot&#x27;s choice</text><rect class="mc" x="262" y="468" width="96.4" height="11"/><rect class="mj" x="358.4" y="468" width="103.6" height="11"><title>52% crossing</title></rect><text class="mut small" x="468" y="478">jit 0.14 ms, ahead of time 69 µs</text><text class="lbl small" x="8" y="492">Star wave: the robot&#x27;s choice</text><rect class="mc" x="262" y="482" width="116.6" height="11"/><rect class="mj" x="378.6" y="482" width="83.4" height="11"><title>42% crossing</title></rect><text class="mut small" x="468" y="492">jit 37 µs, ahead of time 21 µs</text><text class="lbl small" x="8" y="506">Pinball: a step</text><rect class="mc" x="262" y="496" width="118.7" height="11"/><rect class="mj" x="380.7" y="496" width="81.3" height="11"><title>41% crossing</title></rect><text class="mut small" x="468" y="506">jit 59 µs, ahead of time 35 µs</text><text class="lbl small" x="8" y="520">Go: Hazel&#x27;s choice of move</text><rect class="mc" x="262" y="510" width="135.8" height="11"/><rect class="mj" x="397.8" y="510" width="64.2" height="11"><title>32% crossing</title></rect><text class="mut small" x="468" y="520">jit 0.17 ms, ahead of time 0.12 ms</text><text class="lbl small" x="8" y="534">Checkers: Hazel&#x27;s move, looking 2 ahead</text><rect class="mc" x="262" y="524" width="148.7" height="11"/><rect class="mj" x="410.7" y="524" width="51.3" height="11"><title>26% crossing</title></rect><text class="mut small" x="468" y="534">jit 31 µs, ahead of time 23 µs</text><text class="lbl small" x="8" y="548">Mahjong solitaire: a deal</text><rect class="mc" x="262" y="538" width="163.0" height="11"/><rect class="mj" x="425.0" y="538" width="37.0" height="11"><title>19% crossing</title></rect><text class="mut small" x="468" y="548">jit 15 ms, ahead of time 12 ms</text><text class="lbl small" x="8" y="562">Go: the score</text><rect class="mc" x="262" y="552" width="167.8" height="11"/><rect class="mj" x="429.8" y="552" width="32.2" height="11"><title>16% crossing</title></rect><text class="mut small" x="468" y="562">jit 0.20 ms, ahead of time 0.17 ms</text><text class="lbl small" x="8" y="576">Gnome dig: the robot&#x27;s choice</text><rect class="mc" x="262" y="566" width="173.0" height="11"/><rect class="mj" x="435.0" y="566" width="27.0" height="11"><title>13% crossing</title></rect><text class="mut small" x="468" y="576">jit 1.0 ms, ahead of time 0.88 ms</text><text class="lbl small" x="8" y="590">Checkers: Hazel&#x27;s move, looking 3 ahead</text><rect class="mc" x="262" y="580" width="175.3" height="11"/><rect class="mj" x="437.3" y="580" width="24.7" height="11"><title>12% crossing</title></rect><text class="mut small" x="468" y="590">jit 74 µs, ahead of time 65 µs</text><text class="lbl small" x="8" y="604">Checkers: Hazel&#x27;s move, looking 4 ahead</text><rect class="mc" x="262" y="594" width="194.1" height="11"/><rect class="mj" x="456.1" y="594" width="5.9" height="11"><title>3% crossing</title></rect><text class="mut small" x="468" y="604">jit 0.18 ms, ahead of time 0.17 ms</text><text class="lbl small" x="8" y="618">Light trails: the robot&#x27;s choice, looking …</text><rect class="mc" x="262" y="608" width="194.7" height="11"/><rect class="mj" x="456.7" y="608" width="5.3" height="11"><title>3% crossing</title></rect><text class="mut small" x="468" y="618">jit 1.0 ms, ahead of time 1.0 ms</text><text class="lbl small" x="8" y="632">Snake: the robot&#x27;s choice (42 long)</text><rect class="mc" x="262" y="622" width="200.0" height="11"/><rect class="mj" x="462.0" y="622" width="0.0" height="11"><title>0% crossing</title></rect><text class="mut small" x="468" y="632">jit 0.14 ms, ahead of time 0.16 ms</text><line class="grid" x1="362.0" y1="0" x2="362.0" y2="638"/><rect class="mc" x="262" y="644" width="10" height="10"/><text class="mut" x="276" y="653">the compiled code’s own work</text><rect class="mj" x="462" y="644" width="10" height="10"/><text class="mut" x="476" y="653">crossing: the values in and out</text></svg>
+<figcaption>Builds 2 and 3 (not a build of the app). Each operation’s time through the jit, split into the compiled code’s own work (its time ahead of time, blue) and the rest, the crossing (orange), sorted by the crossing’s share. Where the jit came out a little faster than ahead of time (the robots’ searches, within the clock’s noise), the bar is all blue.</figcaption>
+</figure>
+<p>Expert Minesweeper shows the extremes. Opening one cell of a 16 by 30 board takes 32 ms interpreted, 7.5 ms through the jit, 50 µs ahead of time and 531 ns in plain JavaScript: the call does almost nothing, and the board of 480 cells crosses twice. A search, on the other hand, works for milliseconds on a state that crosses once: there the jit and code compiled ahead of time are the same speed.</p>
+
+<h2 id="build">Building the rules<a class="anchor" href="#build" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="build" title="copy this section's address">copy link</button></h2>
+<p><b>Building a game’s rules with the jit took less time than with the interpreter on every game: 117 ms to 3.7 s, against 511 ms to 6.1 s (23% to 65% of the interpreter’s time). Compiled ahead of time, nothing is built in the page.</b> Both builds read and check the program first; then the interpreter evaluates every module’s definitions, while the jit compiles them and runs the compiled code. For Gnome dig that is 5.6 s interpreted and 3.7 s through the jit, each time a page loads it. An ahead-of-time file is 32 kB to 124 kB (the compiled program, 18 kB of runtime and the converters), against 2.9 MB of <code>hazel-lib.js</code>, and it starts at once.</p>
+<figure class="chart">
+<svg viewBox="0 0 640 481" role="img" aria-label="Milliseconds to build each game's rules interpreted and with the jit, and the size of its ahead-of-time file"><text class="lbl small" x="8" y="21">Minesweeper</text><rect class="mi" x="150" y="6" width="330.0" height="10"/><text class="mut small" x="484.0" y="15">6.1 s</text><rect class="mj" x="150" y="17" width="113.5" height="10"/><text class="mut small" x="267.5" y="26">2.1 s</text><text class="mut small" x="632" y="21" text-anchor="end">98 kB</text><text class="lbl small" x="8" y="48">Gnome dig</text><rect class="mi" x="150" y="33" width="306.8" height="10"/><text class="mut small" x="460.8" y="42">5.6 s</text><rect class="mj" x="150" y="44" width="200.8" height="10"/><text class="mut small" x="354.8" y="53">3.7 s</text><text class="mut small" x="632" y="48" text-anchor="end">124 kB</text><text class="lbl small" x="8" y="75">Mahjong solitaire</text><rect class="mi" x="150" y="60" width="130.7" height="10"/><text class="mut small" x="284.7" y="69">2.4 s</text><rect class="mj" x="150" y="71" width="69.0" height="10"/><text class="mut small" x="223.0" y="80">1.3 s</text><text class="mut small" x="632" y="75" text-anchor="end">66 kB</text><text class="lbl small" x="8" y="102">Go</text><rect class="mi" x="150" y="87" width="115.2" height="10"/><text class="mut small" x="269.2" y="96">2.1 s</text><rect class="mj" x="150" y="98" width="26.8" height="10"/><text class="mut small" x="180.8" y="107">492 ms</text><text class="mut small" x="632" y="102" text-anchor="end">53 kB</text><text class="lbl small" x="8" y="129">Mahjong</text><rect class="mi" x="150" y="114" width="107.9" height="10"/><text class="mut small" x="261.9" y="123">2.0 s</text><rect class="mj" x="150" y="125" width="60.4" height="10"/><text class="mut small" x="214.4" y="134">1.1 s</text><text class="mut small" x="632" y="129" text-anchor="end">82 kB</text><text class="lbl small" x="8" y="156">Astrology</text><rect class="mi" x="150" y="141" width="94.9" height="10"/><text class="mut small" x="248.9" y="150">1.7 s</text><rect class="mj" x="150" y="152" width="39.3" height="10"/><text class="mut small" x="193.3" y="161">722 ms</text><text class="mut small" x="632" y="156" text-anchor="end">101 kB</text><text class="lbl small" x="8" y="183">Pinball</text><rect class="mi" x="150" y="168" width="92.5" height="10"/><text class="mut small" x="246.5" y="177">1.7 s</text><rect class="mj" x="150" y="179" width="39.8" height="10"/><text class="mut small" x="193.8" y="188">730 ms</text><text class="mut small" x="632" y="183" text-anchor="end">77 kB</text><text class="lbl small" x="8" y="210">Checkers</text><rect class="mi" x="150" y="195" width="66.1" height="10"/><text class="mut small" x="220.1" y="204">1.2 s</text><rect class="mj" x="150" y="206" width="18.4" height="10"/><text class="mut small" x="172.4" y="215">338 ms</text><text class="mut small" x="632" y="210" text-anchor="end">43 kB</text><text class="lbl small" x="8" y="237">Butterfly garden</text><rect class="mi" x="150" y="222" width="65.7" height="10"/><text class="mut small" x="219.7" y="231">1.2 s</text><rect class="mj" x="150" y="233" width="32.1" height="10"/><text class="mut small" x="186.1" y="242">589 ms</text><text class="mut small" x="632" y="237" text-anchor="end">49 kB</text><text class="lbl small" x="8" y="264">Star wave</text><rect class="mi" x="150" y="249" width="53.5" height="10"/><text class="mut small" x="207.5" y="258">982 ms</text><rect class="mj" x="150" y="260" width="22.5" height="10"/><text class="mut small" x="176.5" y="269">414 ms</text><text class="mut small" x="632" y="264" text-anchor="end">45 kB</text><text class="lbl small" x="8" y="291">Solitaire</text><rect class="mi" x="150" y="276" width="51.7" height="10"/><text class="mut small" x="205.7" y="285">950 ms</text><rect class="mj" x="150" y="287" width="20.0" height="10"/><text class="mut small" x="174.0" y="296">367 ms</text><text class="mut small" x="632" y="291" text-anchor="end">54 kB</text><text class="lbl small" x="8" y="318">Downhill</text><rect class="mi" x="150" y="303" width="49.4" height="10"/><text class="mut small" x="203.4" y="312">907 ms</text><rect class="mj" x="150" y="314" width="22.7" height="10"/><text class="mut small" x="176.7" y="323">417 ms</text><text class="mut small" x="632" y="318" text-anchor="end">41 kB</text><text class="lbl small" x="8" y="345">Light trails</text><rect class="mi" x="150" y="330" width="42.4" height="10"/><text class="mut small" x="196.4" y="339">778 ms</text><rect class="mj" x="150" y="341" width="13.6" height="10"/><text class="mut small" x="167.6" y="350">250 ms</text><text class="mut small" x="632" y="345" text-anchor="end">32 kB</text><text class="lbl small" x="8" y="372">Snake</text><rect class="mi" x="150" y="357" width="40.4" height="10"/><text class="mut small" x="194.4" y="366">742 ms</text><rect class="mj" x="150" y="368" width="13.5" height="10"/><text class="mut small" x="167.5" y="377">247 ms</text><text class="mut small" x="632" y="372" text-anchor="end">32 kB</text><text class="lbl small" x="8" y="399">Bricks</text><rect class="mi" x="150" y="384" width="35.5" height="10"/><text class="mut small" x="189.5" y="393">653 ms</text><rect class="mj" x="150" y="395" width="12.5" height="10"/><text class="mut small" x="166.5" y="404">230 ms</text><text class="mut small" x="632" y="399" text-anchor="end">38 kB</text><text class="lbl small" x="8" y="426">Tarot</text><rect class="mi" x="150" y="411" width="27.9" height="10"/><text class="mut small" x="181.9" y="420">512 ms</text><rect class="mj" x="150" y="422" width="6.5" height="10"/><text class="mut small" x="160.5" y="431">119 ms</text><text class="mut small" x="632" y="426" text-anchor="end">34 kB</text><text class="lbl small" x="8" y="453">I Ching</text><rect class="mi" x="150" y="438" width="27.8" height="10"/><text class="mut small" x="181.8" y="447">511 ms</text><rect class="mj" x="150" y="449" width="6.4" height="10"/><text class="mut small" x="160.4" y="458">117 ms</text><text class="mut small" x="632" y="453" text-anchor="end">35 kB</text><text class="mut small" x="632" y="473" text-anchor="end">ahead of time: the file</text><rect class="mi" x="150" y="465" width="10" height="10"/><text class="mut" x="164" y="474">interpreted: build</text><rect class="mj" x="280" y="465" width="10" height="10"/><text class="mut" x="294" y="474">jit: build and compile</text></svg>
+<figcaption>Builds 1 and 2 (not a build of the app). Milliseconds to build each game’s rules once, interpreted (<code>runProgram</code>, grey) and with the jit (<code>jitProgram</code>: reading, checking, compiling and running the compiled modules, orange); on the right, the size of its ahead-of-time file (build 3). One run each, each game on its own runner.</figcaption>
+</figure>
+<details><summary>The one-time costs, game by game, and each runner’s processor</summary>
+<div class="tw"><table class="nums"><thead><tr><th>game</th><th>interpreted: build</th><th>jit: build and compile</th><th>compileProgram</th><th>compiled program</th><th>ahead-of-time file</th><th class="l">the runner’s processor</th></tr></thead><tbody><tr><td>I Ching</td><td>511 ms</td><td>117 ms</td><td>111 ms</td><td>15 kB</td><td>35 kB</td><td class="l">AMD EPYC 9V45 96-Core Processor</td></tr><tr><td>Tarot</td><td>512 ms</td><td>119 ms</td><td>105 ms</td><td>14 kB</td><td>34 kB</td><td class="l">Intel(R) Xeon(R) 6975P-C</td></tr><tr><td>Astrology</td><td>1.7 s</td><td>722 ms</td><td>663 ms</td><td>80 kB</td><td>101 kB</td><td class="l">Intel(R) Xeon(R) 6975P-C</td></tr><tr><td>Checkers</td><td>1.2 s</td><td>338 ms</td><td>370 ms</td><td>22 kB</td><td>43 kB</td><td class="l">AMD EPYC 9V45 96-Core Processor</td></tr><tr><td>Go</td><td>2.1 s</td><td>492 ms</td><td>419 ms</td><td>32 kB</td><td>53 kB</td><td class="l">AMD EPYC 7763 64-Core Processor</td></tr><tr><td>Minesweeper</td><td>6.1 s</td><td>2.1 s</td><td>1.7 s</td><td>77 kB</td><td>98 kB</td><td class="l">AMD EPYC 7763 64-Core Processor</td></tr><tr><td>Mahjong</td><td>2.0 s</td><td>1.1 s</td><td>1.1 s</td><td>60 kB</td><td>82 kB</td><td class="l">Intel(R) Xeon(R) 6975P-C</td></tr><tr><td>Solitaire</td><td>950 ms</td><td>367 ms</td><td>267 ms</td><td>32 kB</td><td>54 kB</td><td class="l">AMD EPYC 9V45 96-Core Processor</td></tr><tr><td>Mahjong solitaire</td><td>2.4 s</td><td>1.3 s</td><td>1.2 s</td><td>45 kB</td><td>66 kB</td><td class="l">AMD EPYC 7763 64-Core Processor</td></tr><tr><td>Pinball</td><td>1.7 s</td><td>730 ms</td><td>799 ms</td><td>55 kB</td><td>77 kB</td><td class="l">Intel(R) Xeon(R) 6975P-C</td></tr><tr><td>Downhill</td><td>907 ms</td><td>417 ms</td><td>390 ms</td><td>20 kB</td><td>41 kB</td><td class="l">AMD EPYC 9V74 80-Core Processor</td></tr><tr><td>Bricks</td><td>653 ms</td><td>230 ms</td><td>229 ms</td><td>18 kB</td><td>38 kB</td><td class="l">Intel(R) Xeon(R) 6975P-C</td></tr><tr><td>Snake</td><td>742 ms</td><td>247 ms</td><td>216 ms</td><td>12 kB</td><td>32 kB</td><td class="l">AMD EPYC 7763 64-Core Processor</td></tr><tr><td>Light trails</td><td>778 ms</td><td>250 ms</td><td>265 ms</td><td>11 kB</td><td>32 kB</td><td class="l">AMD EPYC 7763 64-Core Processor</td></tr><tr><td>Star wave</td><td>982 ms</td><td>414 ms</td><td>428 ms</td><td>24 kB</td><td>45 kB</td><td class="l">INTEL(R) XEON(R) PLATINUM 8573C</td></tr><tr><td>Butterfly garden</td><td>1.2 s</td><td>589 ms</td><td>510 ms</td><td>28 kB</td><td>49 kB</td><td class="l">AMD EPYC 7763 64-Core Processor</td></tr><tr><td>Gnome dig</td><td>5.6 s</td><td>3.7 s</td><td>3.4 s</td><td>102 kB</td><td>124 kB</td><td class="l">AMD EPYC 7763 64-Core Processor</td></tr></tbody></table></div>
+</details>
+
+<h2 id="plain">Against plain JavaScript<a class="anchor" href="#plain" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="plain" title="copy this section's address">copy link</button></h2>
+<p><b>Plain JavaScript runs the 5 games that have it about 16× as fast as hazel-jit’s code compiled ahead of time (geometric mean over 20 operations), from 2.3× to 283×; that is 36,200× as fast as the interpreter.</b> These are the games of <a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a>, which measured the same gap with an earlier hazel-jit (about 13 times) and listed what hazel-jit’s code pays for, one cost at a time: a step budget checked in every function, exact integers through runtime calls, lists as chains of cells, and tuples as arrays carrying their labels. Those costs are unchanged in this build; this report adds no new measurement of them.</p>
+
+<h2 id="decide">What to decide before dev<a class="anchor" href="#decide" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="decide" title="copy this section's address">copy link</button></h2>
+<p><b>Ten questions, roughly in the order they block.</b> Each says what is at stake, the options we see, and what the measurements or the code say.</p>
+<ol class="decide">
+<li><b>One PR, or its parts?</b> <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> is 8,577 lines in one review. Its parts’ own PRs are still written for OCaml’s standard library, so landing them one by one means porting each to Core again; <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> has the port done. Options: review and merge <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, closing <a href="https://github.com/hazelgrove/hazel/pull/2711">#2711</a>, <a href="https://github.com/hazelgrove/hazel/pull/2719">#2719</a> and <a href="https://github.com/hazelgrove/hazel/pull/2814">#2814</a>; land <a href="https://github.com/hazelgrove/hazel/pull/2837">#2837</a> (the font) and <a href="https://github.com/hazelgrove/hazel/pull/2842">#2842</a> (the icons) first, on their own, since they are small and independent and change what every user sees; or split <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> by part, from its ported files.</li>
+<li><b>Does hazel-jit belong on <code>dev</code>, and where?</b> It is 2,215 lines in <code>src/language/dynamics</code>: a second way to evaluate a program, which has to agree with the interpreter. Every new kind of term needs either a rule in the compiler or an explicit refusal (the program then runs interpreted). The livelits line (<a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a>) has a larger hazel-jit, with livelit views and the mixed mode of <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>. Options: on <code>dev</code> in the language library, with agreement tests in CI; on <code>dev</code> as a library of its own that only the package and the web app link; or on the package’s branch only, until the livelits line settles where hazel-jit lives.</li>
+<li><b>How is agreement kept?</b> The answers agree on every operation measured here, but <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>’s CI checks the jit only through 7 library cases. The per-game agreement tests (the games’ rules, compiled and interpreted, the same answers) live on <code>trial/794-games-aot</code>. Options: bring them into <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> (their programs into <code>test/</code>); or keep agreement as hazeljs-examples’ job, outside Hazel’s CI.</li>
+<li><b>What is the jit for: finished programs, or the editor too?</b> It compiles a program only when every form in it compiles: a hole, a test, a stepper filter or a livelit makes the whole program run interpreted. That suits the games, which are finished programs; it does not help a program being edited. <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>’s mixed mode, the interpreter calling compiled functions, is the path to the editor. Options: say the package’s jit is for finished programs, for now; or plan mixed mode into the package.</li>
+<li><b>The values a page sees are an API: which shapes?</b> A constructor is <code>{tag, value}</code>, a list an array, a labeled tuple an object, a number read by its declared type, a function a function. Every call converts whole values (<a href="#crossing">the crossing</a>). Options: keep plain values only (simple, and the crossing stays); add handles, values kept in hazel-jit’s own shape between calls that a page reads through accessors; or both, plain by default.</li>
+<li><b>Numbers.</b> On this branch an SInt is checked at 32 bits; <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a> gives SInt 64 bits everywhere and is on Core like this branch now, and the 64-bit compiled SInt of <code>trial/694-view-jit</code> needs it. An Int is exact in compiled code (a BigInt past 2<sup>53</sup>), through runtime calls that <a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a> found among the costs over plain JavaScript. Options: bring <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a> and the 64-bit compiled SInt into <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> before merging; or merge first and follow with them. Either way, the number model is part of the API above.</li>
+<li><b>What <code>dev</code>’s users would see.</b> The interface font changes on every page, and the icons work offline. The interpreter’s change is small and only reachable from JavaScript (fields put in their type’s order). Option: agree to the font as a team, since it is the one visible change.</li>
+<li><b>Licenses.</b> The Source Code Pro, IBM Plex Sans and Material Icons licenses are now in <code>licenses/</code> and ship with the editor. Five icons from The Noun Project, under its “Icon Pro” license, still ship, as Hazel’s web app always has. Options: confirm that license allows an npm package to carry them; replace them; or leave them out of the package’s editor.</li>
+<li><b>Who may embed Hazel?</b> Embed mode takes messages only from matthewhammer.org, localhost and its own origin, a list in the code. On <code>dev</code> every hazel.org build would have it. Options: a list kept in the code; any page; or a setting at build time.</li>
+<li><b>Publishing.</b> The package records the Hazel commit, branch and PR it was built from, and Verify checks its <code>hazel-lib.js</code> against that commit. 0.0.10 and 0.0.11 are not on npm. Options: who publishes, and from which branch (today <code>hazeljs</code>; after a merge, <code>dev</code>); whether every version must come from a commit on <code>dev</code>.</li>
+</ol>
+
+<h2 id="next">What next for speed<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li><b>Convert by declared type, in one step.</b> Write the page’s values straight into hazel-jit’s shapes and back, guided by the function’s declared types, as the hand-written converters of the ahead-of-time files do, instead of through Hazel’s own values. On the 34 operations where the crossing is most of the jit’s time, this should bring the jit near the ahead-of-time column (7.5 ms to near 50 µs for an expert Minesweeper cell). The converters could be generated, and the ahead-of-time files could use them too.</li>
+<li><b>Keep values compiled between calls.</b> With handles (question 5 above), a game’s state stays in hazel-jit’s shape from one call to the next, and only what the page reads crosses. That removes the crossing’s cost for the state entirely, at the price of a second kind of value in the API.</li>
+<li><b>Load time.</b> The jit builds a program each time a page loads it, 117 ms to 3.7 s for these games. Keep the compiled program in the browser’s storage, keyed by the program’s text, or compile it ahead of time when the program does not change, as the games do now.</li>
+<li><b>The costs over plain JavaScript.</b> About 16× remains between hazel-jit’s code and a hand-written game. <a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a> measured each cost on its own; the next step is to remove the largest where the declared types allow it, for example plain arithmetic where an Int provably stays small.</li>
+<li><b>Agreement in CI.</b> Before any of these, bring the per-game agreement tests into Hazel’s CI (question 3), so a change to the compiler that changes an answer fails there, and not in a game.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<table class="nums"><thead><tr><th>build</th><th class="l">what</th><th class="l">where</th></tr></thead><tbody>
+<tr><td>Build 1 · the package’s interpreter</td><td class="l"><code>Hazel.runProgram</code> on the game’s rules; its value’s functions called</td><td class="l">hazeljs 0.0.11 (hazelgrove/hazeljs b149ed58f2, <code>editor-in-package</code>), whose <code>hazel-lib.js</code> is hazelgrove/hazel 98c482395d (branch <code>hazeljs</code>, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>)</td></tr>
+<tr><td>Build 2 · the package’s jit</td><td class="l"><code>Hazel.jitProgram</code> on the same rules; its value’s functions called</td><td class="l">the same file</td></tr>
+<tr><td>Build 3 · ahead of time</td><td class="l"><code>Hazel.compileProgram</code>’s program and runtime, put in place of those in the game’s own <code>compiled.js</code>, so its converters are the page’s</td><td class="l">the same file, at the start of each game’s run</td></tr>
+<tr><td>Build 4 · plain JavaScript</td><td class="l">the game written by hand, <code>&lt;game&gt;/plain.js</code>: Checkers, Go, Minesweeper, Mahjong and Solitaire</td><td class="l">matthewhammer/hazeljs-examples a4a0a88</td></tr>
+</tbody></table>
+<ul>
+<li><b>The driver:</b> hazeljs-examples’ <code>node/package-bench.mjs</code>, run by its workflow <code>package bench</code> (GitHub Actions run 45247119864, 2026-11-23), one runner per game, Node v22.23.5. For each game it builds the rules all four ways, then times each operation on positions made by the compiled rules from a seeded game: the operations <code>node/compare-compiled.mjs</code> times. Both files are in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/063/drivers"><code>063/drivers/</code></a>.</li>
+<li><b>The clock</b> is <a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a>’s: a call too fast for the clock is timed in batches (as many calls as take at least a millisecond), and the median of the batches is taken, per call; the interpreter at least 3 times and for at least 1.5 s, the others at least 30 times and for at least 0.3 s. Each operation was timed in one such run. A one-time cost (building, compiling) is one run.</li>
+<li><b>The same answers:</b> every way’s answer to every operation was compared with the ahead-of-time code’s (numbers to a relative 10<sup>−9</sup>, everything else exactly), and every one was the same. The run fails otherwise.</li>
+<li><b>The machines differ.</b> Each game ran on its own runner, and GitHub gave them 5 different processors (listed in <a href="#build">the one-time costs</a>). A game’s four ways shared a machine, so the ratios within a game hold; times across games are not comparable to better than the machines’ difference.</li>
+<li><b>Astrology</b> is interpreted as its page does it: the whole program built with one reading as its answer, each time, since building it with the reading function as its answer grows past gigabytes (<a href="https://github.com/hazelgrove/hazel/issues/2832">#2832</a>). The jit and the ahead-of-time code call the function.</li>
+<li><b>The diff and the PRs:</b> <code>git diff --numstat</code> of <code>dev</code> (21da4ae66b) against the branch (98c482395d), and the PRs as GitHub had them on 2026-11-23, in <code>063/data/diff.json</code> and <code>063/data/prs.json</code>.</li>
+<li><b>The data:</b> each game’s results as <code>063/data/&lt;game&gt;.json</code>, its printed lines and its machine, in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/063/data"><code>063/data/</code></a>.</li>
+  <!-- data-line: begin -->
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/063/data"><code>063/data/</code></a>.</li>
+  <!-- data-line: end -->
+</ul>
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2470": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-28T13:52:25Z", "kind": "pull", "state": "merged", "title": "Migrate src/util to Jane Street Core", "updated": "2026-11-19T21:40:57Z", "base": "dev"}, "hazelgrove/hazel#2477": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-28T13:52:49Z", "kind": "pull", "state": "merged", "title": "Use Core's list and option combinators where we hand-rolled them", "updated": "2026-11-19T21:40:58Z", "base": "cleanup/core-test"}, "hazelgrove/hazel#2711": {"author": "matthewhammer", "comments": 1, "created": "2026-10-20T17:35:02Z", "kind": "pull", "state": "draft", "title": "Hazel as a JS library: analyze and run programs from any page", "updated": "2026-10-23T23:17:27Z", "base": "dev"}, "hazelgrove/hazel#2719": {"author": "matthewhammer", "comments": 1, "created": "2026-10-21T21:38:03Z", "kind": "pull", "state": "draft", "title": "Hazel in another page's frame, and a program of named modules (stacked on #2711)", "updated": "2026-11-15T19:28:45Z", "base": "js-library"}, "hazelgrove/hazel#2814": {"author": "matthewhammer", "comments": 1, "created": "2026-11-06T18:38:17Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`js-library-embed`): Embed mode: editable cells, one module at a time, and go to definition across cells", "updated": "2026-11-06T20:33:06Z", "base": "js-library-embed"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2837": {"author": "matthewhammer", "comments": 3, "created": "2026-11-19T18:09:52Z", "kind": "pull", "state": "open", "title": "Ship IBM Plex Sans as Hazel's interface font, in place of Helvetica Neue", "updated": "2026-11-19T21:04:37Z", "base": "dev"}, "hazelgrove/hazel#2842": {"author": "matthewhammer", "comments": 0, "created": "2026-11-19T19:03:49Z", "kind": "pull", "state": "open", "title": "Ship Material Icons with Hazel, so the command palette works offline", "updated": "2026-11-19T19:03:50Z", "base": "dev"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-23T19:03:51Z", "base": "dev"}, "hazelgrove/hazeljs#2": {"author": "matthewhammer", "comments": 0, "created": "2026-11-19T16:22:03Z", "kind": "issues", "state": "open", "title": "Hazel's editor is not in the package: it comes from a branch preview, at another commit than the library", "updated": "2026-11-19T16:22:03Z"}}, BUILT = "2026-11-23";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 63,
+ "title": "Hazel as an npm Package: What to Decide Next",
+ "blurb": "Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one PR (#2857) that it is built from, how that branch differs from dev, and every game in hazeljs-examples timed four ways. The package's jit runs the games 317× as fast as its interpreter (geometric mean over 45 operations), from 4.2× to 4,955×: on searches it is as fast as code compiled ahead of time, but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run 2,392× as fast as interpreted, and the five written by hand in JavaScript about 16× faster again. Then the decisions before it merges into dev.",
+ "builds": {
+  "package": "hazeljs 0.0.11 (hazelgrove/hazeljs editor-in-package b149ed58f2), not on npm",
+  "hazel": "hazelgrove/hazel 98c482395d (branch hazeljs, #2857): hazel-lib.js, byte for byte the deploy's",
+  "examples": "matthewhammer/hazeljs-examples a4a0a88 (bench/package-0.0.11): the games' rules, compiled.js converters and plain.js as of 0.0.74 (d3e8d79), and node/package-bench.mjs",
+  "run": "GitHub Actions run 45247119864 (workflow package bench), 2026-11-23, one runner per game, Node v22.23.5"
+ },
+ "measures": {
+  "ms": "milliseconds a call: the median of batches (as many calls as take at least 1 ms), the interpreter at least 3 batches and 1.5 s, the others at least 30 and 0.3 s",
+  "interpretedBuildMs": "Hazel.runProgram on the game's rules, once",
+  "jitBuildMs": "Hazel.jitProgram on the same, once (analysis, compiling, running the compiled modules)",
+  "compileMs": "Hazel.compileProgram on the same, once",
+  "wrappedBytes": "the ahead-of-time file: the runtime, the compiled program and the page's converters",
+  "same": "the way's answer equals the ahead-of-time code's (numbers to a relative 1e-9); every one is true"
+ },
+ "ways": {
+  "interpreted": "Hazel.runProgram's value",
+  "jit": "Hazel.jitProgram's value",
+  "compiled": "Hazel.compileProgram's program and runtime in the page's compiled.js, its converters",
+  "plain JS": "<game>/plain.js, five games"
+ },
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "The PRs",
+   "section_id": "prs",
+   "columns": [
+    "PR",
+    "branch",
+    "state",
+    "lines",
+    "what it gives the package"
+   ],
+   "rows": [
+    [
+     "#2857",
+     "hazeljs into dev",
+     "draft",
+     "+8,577 / −59",
+     "The one PR: everything below that the package uses, merged with dev and ported to Jane Street Core, plus hazel-jit's compiler and the code font's license."
+    ],
+    [
+     "#2711",
+     "js-library into dev",
+     "draft",
+     "+510 / −3",
+     "The library, first version: Hazel.analyze and Hazel.run from any page."
+    ],
+    [
+     "#2719",
+     "js-library-embed into js-library",
+     "draft",
+     "+4,168 / −109",
+     "Programs of named modules (analyzeProgram, runProgram), and Hazel in another page's frame."
+    ],
+    [
+     "#2814",
+     "embed-editable into js-library-embed",
+     "draft",
+     "+948 / −72",
+     "Embed mode: editable cells, one module at a time, go to definition across cells."
+    ],
+    [
+     "#2837",
+     "ui-font-installed into dev",
+     "open",
+     "+110 / −5",
+     "IBM Plex Sans as the interface font, in place of a Helvetica Neue that Hazel had no license to ship."
+    ],
+    [
+     "#2842",
+     "ui-icons-shipped into dev",
+     "open",
+     "+222 / −6",
+     "Material Icons shipped with Hazel, so nothing loads from Google."
+    ],
+    [
+     "#2817",
+     "trial/694-view-jit into integration/livelits-modular-editors",
+     "draft",
+     "+15,915 / −1,174",
+     "hazel-jit on the livelits line: livelit views compiled. #2857's compiler is this one's, from trial/794-games-aot, with the livelit-only forms taken out."
+    ],
+    [
+     "#2828",
+     "fix/758-sint-32-bits into dev",
+     "draft",
+     "+233 / −76",
+     "SInt with 64 bits everywhere, overflow an error. Not in #2857 yet."
+    ]
+   ]
+  },
+  {
+   "section": "How the branch differs from dev",
+   "section_id": "diff",
+   "columns": [
+    "part",
+    "files",
+    "lines added",
+    "lines removed"
+   ],
+   "rows": [
+    [
+     "hazel-jit",
+     "2",
+     "2,215",
+     "0"
+    ],
+    [
+     "the library",
+     "5",
+     "1,088",
+     "1"
+    ],
+    [
+     "programs of modules",
+     "1",
+     "683",
+     "0"
+    ],
+    [
+     "embed mode",
+     "11",
+     "1,702",
+     "5"
+    ],
+    [
+     "fonts, icons, licenses",
+     "12",
+     "434",
+     "11"
+    ],
+    [
+     "changes to dev’s own code",
+     "4",
+     "179",
+     "32"
+    ],
+    [
+     "tests",
+     "6",
+     "2,276",
+     "10"
+    ],
+    [
+     "all",
+     "41",
+     "8,577",
+     "59"
+    ]
+   ]
+  },
+  {
+   "section": "Every game, four ways",
+   "section_id": "speed",
+   "columns": [
+    "operation",
+    "interpreted",
+    "jit",
+    "ahead of time",
+    "plain JS",
+    "jit over interpreted",
+    "ahead of time over jit"
+   ],
+   "rows": [
+    [
+     "Oracles",
+     "Oracles",
+     "Oracles",
+     "Oracles",
+     "Oracles",
+     "Oracles",
+     "Oracles"
+    ],
+    [
+     "I Ching: a cast by coins",
+     "0.78 ms",
+     "4.1 µs",
+     "78 ns",
+     "–",
+     "189×",
+     "53×"
+    ],
+    [
+     "I Ching: a cast by yarrow",
+     "1.2 ms",
+     "5.8 µs",
+     "337 ns",
+     "–",
+     "212×",
+     "17×"
+    ],
+    [
+     "I Ching: a reading",
+     "11 ms",
+     "14 µs",
+     "2.2 µs",
+     "–",
+     "773×",
+     "6.6×"
+    ],
+    [
+     "Tarot: a deal, One",
+     "2.5 ms",
+     "10 µs",
+     "290 ns",
+     "–",
+     "237×",
+     "36×"
+    ],
+    [
+     "Tarot: a deal, CelticCross",
+     "30 ms",
+     "56 µs",
+     "6.2 µs",
+     "–",
+     "533×",
+     "9.0×"
+    ],
+    [
+     "Tarot: a deal, YearAhead",
+     "46 ms",
+     "80 µs",
+     "10 µs",
+     "–",
+     "584×",
+     "7.8×"
+    ],
+    [
+     "Astrology: a chart (interpreted: the whole program built each time)",
+     "990 ms",
+     "0.97 ms",
+     "0.18 ms",
+     "–",
+     "1,022×",
+     "5.5×"
+    ],
+    [
+     "Board and card games, each with a plain JavaScript version",
+     "Board and card games, each with a plain JavaScript version",
+     "Board and card games, each with a plain JavaScript version",
+     "Board and card games, each with a plain JavaScript version",
+     "Board and card games, each with a plain JavaScript version",
+     "Board and card games, each with a plain JavaScript version",
+     "Board and card games, each with a plain JavaScript version"
+    ],
+    [
+     "Checkers: the moves",
+     "20 ms",
+     "15 µs",
+     "6.3 µs",
+     "336 ns",
+     "1,323×",
+     "2.3×"
+    ],
+    [
+     "Checkers: Hazel's move, looking 1 ahead",
+     "34 ms",
+     "27 µs",
+     "13 µs",
+     "528 ns",
+     "1,230×",
+     "2.1×"
+    ],
+    [
+     "Checkers: Hazel's move, looking 2 ahead",
+     "55 ms",
+     "31 µs",
+     "23 µs",
+     "1.4 µs",
+     "1,761×",
+     "1.3×"
+    ],
+    [
+     "Checkers: Hazel's move, looking 3 ahead",
+     "149 ms",
+     "74 µs",
+     "65 µs",
+     "3.5 µs",
+     "2,002×",
+     "1.1×"
+    ],
+    [
+     "Checkers: Hazel's move, looking 4 ahead",
+     "375 ms",
+     "0.18 ms",
+     "0.17 ms",
+     "12 µs",
+     "2,080×",
+     "1.0×"
+    ],
+    [
+     "Go: a move played",
+     "14 ms",
+     "83 µs",
+     "4.6 µs",
+     "1.7 µs",
+     "165×",
+     "18×"
+    ],
+    [
+     "Go: Hazel's choice of move",
+     "446 ms",
+     "0.17 ms",
+     "0.12 ms",
+     "8.5 µs",
+     "2,560×",
+     "1.5×"
+    ],
+    [
+     "Go: the score",
+     "700 ms",
+     "0.20 ms",
+     "0.17 ms",
+     "7.3 µs",
+     "3,430×",
+     "1.2×"
+    ],
+    [
+     "Minesweeper: 9 by 9: the mines laid",
+     "81 ms",
+     "0.42 ms",
+     "34 µs",
+     "3.6 µs",
+     "190×",
+     "12×"
+    ],
+    [
+     "Minesweeper: 9 by 9: a cell opened",
+     "10 ms",
+     "0.60 ms",
+     "12 µs",
+     "474 ns",
+     "17×",
+     "50×"
+    ],
+    [
+     "Minesweeper: 9 by 9: the hint (a sure move)",
+     "134 ms",
+     "0.35 ms",
+     "43 µs",
+     "3.4 µs",
+     "386×",
+     "8.1×"
+    ],
+    [
+     "Minesweeper: 16 by 30: the mines laid",
+     "442 ms",
+     "3.7 ms",
+     "0.20 ms",
+     "23 µs",
+     "119×",
+     "19×"
+    ],
+    [
+     "Minesweeper: 16 by 30: a cell opened",
+     "32 ms",
+     "7.5 ms",
+     "50 µs",
+     "531 ns",
+     "4.2×",
+     "150×"
+    ],
+    [
+     "Minesweeper: 16 by 30: the hint (a sure move)",
+     "576 ms",
+     "2.0 ms",
+     "0.22 ms",
+     "6.6 µs",
+     "288×",
+     "9.0×"
+    ],
+    [
+     "Mahjong: a hand dealt",
+     "108 ms",
+     "0.10 ms",
+     "40 µs",
+     "17 µs",
+     "1,056×",
+     "2.5×"
+    ],
+    [
+     "Mahjong: a step",
+     "1.8 ms",
+     "75 µs",
+     "2.2 µs",
+     "8 ns",
+     "24×",
+     "34×"
+    ],
+    [
+     "Mahjong: your options",
+     "18 ms",
+     "34 µs",
+     "5.6 µs",
+     "1.3 µs",
+     "534×",
+     "6.1×"
+    ],
+    [
+     "Solitaire: a deal",
+     "41 ms",
+     "0.12 ms",
+     "9.9 µs",
+     "1.8 µs",
+     "348×",
+     "12×"
+    ],
+    [
+     "Solitaire: every legal move",
+     "44 ms",
+     "100 µs",
+     "6.4 µs",
+     "332 ns",
+     "438×",
+     "16×"
+    ],
+    [
+     "Solitaire: a move made",
+     "1.7 ms",
+     "0.16 ms",
+     "3.0 µs",
+     "92 ns",
+     "10×",
+     "53×"
+    ],
+    [
+     "A puzzle",
+     "A puzzle",
+     "A puzzle",
+     "A puzzle",
+     "A puzzle",
+     "A puzzle",
+     "A puzzle"
+    ],
+    [
+     "Mahjong solitaire: a deal",
+     "16.2 s",
+     "15 ms",
+     "12 ms",
+     "–",
+     "1,063×",
+     "1.2×"
+    ],
+    [
+     "Mahjong solitaire: Hazel's choice of pair",
+     "16 ms",
+     "3.5 ms",
+     "1.4 µs",
+     "–",
+     "4.7×",
+     "2,462×"
+    ],
+    [
+     "Arcade games, a step at a time",
+     "Arcade games, a step at a time",
+     "Arcade games, a step at a time",
+     "Arcade games, a step at a time",
+     "Arcade games, a step at a time",
+     "Arcade games, a step at a time",
+     "Arcade games, a step at a time"
+    ],
+    [
+     "Pinball: a step",
+     "86 ms",
+     "59 µs",
+     "35 µs",
+     "–",
+     "1,467×",
+     "1.7×"
+    ],
+    [
+     "Pinball: a board",
+     "20 ms",
+     "0.31 ms",
+     "35 µs",
+     "–",
+     "63×",
+     "8.9×"
+    ],
+    [
+     "Downhill: a step",
+     "2.9 ms",
+     "38 µs",
+     "4.9 µs",
+     "–",
+     "75×",
+     "7.8×"
+    ],
+    [
+     "Downhill: the robot's choice",
+     "3.8 ms",
+     "11 µs",
+     "1.9 µs",
+     "–",
+     "344×",
+     "5.9×"
+    ],
+    [
+     "Bricks: a step",
+     "1.9 ms",
+     "55 µs",
+     "2.9 µs",
+     "–",
+     "35×",
+     "19×"
+    ],
+    [
+     "Bricks: the robot's choice",
+     "0.47 ms",
+     "17 µs",
+     "648 ns",
+     "–",
+     "28×",
+     "26×"
+    ],
+    [
+     "Snake: a step",
+     "6.1 ms",
+     "62 µs",
+     "3.8 µs",
+     "–",
+     "100×",
+     "16×"
+    ],
+    [
+     "Snake: the robot's choice (42 long)",
+     "677 ms",
+     "0.14 ms",
+     "0.16 ms",
+     "–",
+     "4,955×",
+     "0.9×"
+    ],
+    [
+     "Light trails: a step",
+     "17 ms",
+     "63 µs",
+     "6.5 µs",
+     "–",
+     "264×",
+     "9.7×"
+    ],
+    [
+     "Light trails: the robot's choice, looking 150",
+     "4.1 s",
+     "1.0 ms",
+     "1.0 ms",
+     "–",
+     "3,941×",
+     "1.0×"
+    ],
+    [
+     "Star wave: a step",
+     "27 ms",
+     "81 µs",
+     "14 µs",
+     "–",
+     "331×",
+     "5.6×"
+    ],
+    [
+     "Star wave: the robot's choice",
+     "68 ms",
+     "37 µs",
+     "21 µs",
+     "–",
+     "1,838×",
+     "1.7×"
+    ],
+    [
+     "Butterfly garden: a step",
+     "9.2 ms",
+     "0.23 ms",
+     "27 µs",
+     "–",
+     "40×",
+     "8.4×"
+    ],
+    [
+     "Butterfly garden: the robot's choice",
+     "224 ms",
+     "0.14 ms",
+     "69 µs",
+     "–",
+     "1,563×",
+     "2.1×"
+    ],
+    [
+     "Gnome dig: a step",
+     "97 ms",
+     "0.36 ms",
+     "43 µs",
+     "–",
+     "267×",
+     "8.3×"
+    ],
+    [
+     "Gnome dig: the robot's choice",
+     "3.8 s",
+     "1.0 ms",
+     "0.88 ms",
+     "–",
+     "3,742×",
+     "1.2×"
+    ]
+   ]
+  },
+  {
+   "section": "Building the rules",
+   "section_id": "build",
+   "columns": [
+    "game",
+    "interpreted: build",
+    "jit: build and compile",
+    "compileProgram",
+    "compiled program",
+    "ahead-of-time file",
+    "the runner’s processor"
+   ],
+   "rows": [
+    [
+     "I Ching",
+     "511 ms",
+     "117 ms",
+     "111 ms",
+     "15 kB",
+     "35 kB",
+     "AMD EPYC 9V45 96-Core Processor"
+    ],
+    [
+     "Tarot",
+     "512 ms",
+     "119 ms",
+     "105 ms",
+     "14 kB",
+     "34 kB",
+     "Intel(R) Xeon(R) 6975P-C"
+    ],
+    [
+     "Astrology",
+     "1.7 s",
+     "722 ms",
+     "663 ms",
+     "80 kB",
+     "101 kB",
+     "Intel(R) Xeon(R) 6975P-C"
+    ],
+    [
+     "Checkers",
+     "1.2 s",
+     "338 ms",
+     "370 ms",
+     "22 kB",
+     "43 kB",
+     "AMD EPYC 9V45 96-Core Processor"
+    ],
+    [
+     "Go",
+     "2.1 s",
+     "492 ms",
+     "419 ms",
+     "32 kB",
+     "53 kB",
+     "AMD EPYC 7763 64-Core Processor"
+    ],
+    [
+     "Minesweeper",
+     "6.1 s",
+     "2.1 s",
+     "1.7 s",
+     "77 kB",
+     "98 kB",
+     "AMD EPYC 7763 64-Core Processor"
+    ],
+    [
+     "Mahjong",
+     "2.0 s",
+     "1.1 s",
+     "1.1 s",
+     "60 kB",
+     "82 kB",
+     "Intel(R) Xeon(R) 6975P-C"
+    ],
+    [
+     "Solitaire",
+     "950 ms",
+     "367 ms",
+     "267 ms",
+     "32 kB",
+     "54 kB",
+     "AMD EPYC 9V45 96-Core Processor"
+    ],
+    [
+     "Mahjong solitaire",
+     "2.4 s",
+     "1.3 s",
+     "1.2 s",
+     "45 kB",
+     "66 kB",
+     "AMD EPYC 7763 64-Core Processor"
+    ],
+    [
+     "Pinball",
+     "1.7 s",
+     "730 ms",
+     "799 ms",
+     "55 kB",
+     "77 kB",
+     "Intel(R) Xeon(R) 6975P-C"
+    ],
+    [
+     "Downhill",
+     "907 ms",
+     "417 ms",
+     "390 ms",
+     "20 kB",
+     "41 kB",
+     "AMD EPYC 9V74 80-Core Processor"
+    ],
+    [
+     "Bricks",
+     "653 ms",
+     "230 ms",
+     "229 ms",
+     "18 kB",
+     "38 kB",
+     "Intel(R) Xeon(R) 6975P-C"
+    ],
+    [
+     "Snake",
+     "742 ms",
+     "247 ms",
+     "216 ms",
+     "12 kB",
+     "32 kB",
+     "AMD EPYC 7763 64-Core Processor"
+    ],
+    [
+     "Light trails",
+     "778 ms",
+     "250 ms",
+     "265 ms",
+     "11 kB",
+     "32 kB",
+     "AMD EPYC 7763 64-Core Processor"
+    ],
+    [
+     "Star wave",
+     "982 ms",
+     "414 ms",
+     "428 ms",
+     "24 kB",
+     "45 kB",
+     "INTEL(R) XEON(R) PLATINUM 8573C"
+    ],
+    [
+     "Butterfly garden",
+     "1.2 s",
+     "589 ms",
+     "510 ms",
+     "28 kB",
+     "49 kB",
+     "AMD EPYC 7763 64-Core Processor"
+    ],
+    [
+     "Gnome dig",
+     "5.6 s",
+     "3.7 s",
+     "3.4 s",
+     "102 kB",
+     "124 kB",
+     "AMD EPYC 7763 64-Core Processor"
+    ]
+   ]
+  },
+  {
+   "section": "How this was put together",
+   "section_id": "method",
+   "columns": [
+    "build",
+    "what",
+    "where"
+   ],
+   "rows": [
+    [
+     "Build 1 · the package’s interpreter",
+     "Hazel.runProgram on the game’s rules; its value’s functions called",
+     "hazeljs 0.0.11 (hazelgrove/hazeljs b149ed58f2, editor-in-package), whose hazel-lib.js is hazelgrove/hazel 98c482395d (branch hazeljs, #2857)"
+    ],
+    [
+     "Build 2 · the package’s jit",
+     "Hazel.jitProgram on the same rules; its value’s functions called",
+     "the same file"
+    ],
+    [
+     "Build 3 · ahead of time",
+     "Hazel.compileProgram’s program and runtime, put in place of those in the game’s own compiled.js, so its converters are the page’s",
+     "the same file, at the start of each game’s run"
+    ],
+    [
+     "Build 4 · plain JavaScript",
+     "the game written by hand, <game>/plain.js: Checkers, Go, Minesweeper, Mahjong and Solitaire",
+     "matthewhammer/hazeljs-examples a4a0a88"
+    ]
+   ]
+  }
+ ],
+ "files": [
+  "data/astrology-machine.txt",
+  "data/astrology.json",
+  "data/astrology.txt",
+  "data/bricks-machine.txt",
+  "data/bricks.json",
+  "data/bricks.txt",
+  "data/bugs-machine.txt",
+  "data/bugs.json",
+  "data/bugs.txt",
+  "data/checkers-machine.txt",
+  "data/checkers.json",
+  "data/checkers.txt",
+  "data/diff.json",
+  "data/dig-machine.txt",
+  "data/dig.json",
+  "data/dig.txt",
+  "data/downhill-machine.txt",
+  "data/downhill.json",
+  "data/downhill.txt",
+  "data/go-machine.txt",
+  "data/go.json",
+  "data/go.txt",
+  "data/i-ching-machine.txt",
+  "data/i-ching.json",
+  "data/i-ching.txt",
+  "data/mahjong-machine.txt",
+  "data/mahjong-solitaire-machine.txt",
+  "data/mahjong-solitaire.json",
+  "data/mahjong-solitaire.txt",
+  "data/mahjong.json",
+  "data/mahjong.txt",
+  "data/meta.json",
+  "data/minesweeper-machine.txt",
+  "data/minesweeper.json",
+  "data/minesweeper.txt",
+  "data/pinball-machine.txt",
+  "data/pinball.json",
+  "data/pinball.txt",
+  "data/prs.json",
+  "data/snake-machine.txt",
+  "data/snake.json",
+  "data/snake.txt",
+  "data/solitaire-machine.txt",
+  "data/solitaire.json",
+  "data/solitaire.txt",
+  "data/starwave-machine.txt",
+  "data/starwave.json",
+  "data/starwave.txt",
+  "data/tables.json",
+  "data/tarot-machine.txt",
+  "data/tarot.json",
+  "data/tarot.txt",
+  "data/trails-machine.txt",
+  "data/trails.json",
+  "data/trails.txt"
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/063/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>
