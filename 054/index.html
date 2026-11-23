@@ -149,6 +149,7 @@ h3.grp { margin-top: 1.2em; }
 <style id="anchors-css">
 h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
 h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+li.anchored .anchor { margin-left: 6px; color: var(--muted); text-decoration: none; opacity: 0.5; } li.anchored .copyanchor { opacity: 0.8; }
 .copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
   border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
 h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
@@ -157,7 +158,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-18 08:36 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-23 13:00 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -261,13 +262,14 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#cost">What it all costs</a>: the Witch slide, build by build.</li>
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
 <li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, step counts and probes as the interpreter's, and compiling ahead of time for older phones.</li>
+<li><a href="#lists">Lists as JavaScript arrays, and holes</a>: arrays measured against today’s cells and a hybrid of the two; holes in lists, terms with holes, the order to build them in, and where hazel-jit lives now.</li>
 <li><a href="#questions">Questions for the team</a>: seventeen open design questions, each with our lean, for the team's meeting of 2026-11-17, two of them met by the astrology oracle this morning.</li>
 <li><a href="#next">What next</a>, with <a href="#next-who">next steps for Matthew and others</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
 <h2 id="plan">The plan<a class="anchor" href="#plan" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="plan" title="copy this section's address">copy link</button></h2>
 <p><b>Of the meeting's seven changes, six are done on the hazel-jit branch and pass CI, overflow among them: SInt is 32 bits everywhere, each result checked. One is under way: the limits, where four of the evaluator's 313 programs still meet one, all four ill-typed tests left so on purpose, and probes are not begun.</b> Each became a ticket on the work dashboard. Three more tickets came out of the work itself: a crash in the interpreter, now fixed on a PR to dev; a cost in how Hazel checks types at run time; and the oracles, slow on an older phone, now compiled ahead of time. A last ticket is the direction chosen after the meeting, mixed mode. What the team could decide is gathered in <a href="#questions">questions for the team</a>.</p>
-<figure class="f"><svg viewBox="0 0 700 402" role="img" aria-label="Each ticket of the plan as a row of four stages, filled up to the stage it has reached" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The plan, ticket by ticket, on 2026-11-18</text><text x="16" y="34" font-size="11" fill="var(--muted)">each dot a stage reached; for ticket 764 the last stage is a PR to dev, not the branch</text><text x="290" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">designed</text><text x="398" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">written</text><text x="506" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">CI green</text><text x="614" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">on the branch</text><text x="260" y="67" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">756</tspan> the same answers, checked in CI</text><line x1="290" y1="63" x2="614" y2="63" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="63" r="7" fill="#15803d"/><circle cx="398" cy="63" r="7" fill="#15803d"/><circle cx="506" cy="63" r="7" fill="#15803d"/><circle cx="614" cy="63" r="7" fill="#15803d"/><text x="260" y="95" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">757</tspan> Int and Nat exact</text><line x1="290" y1="91" x2="614" y2="91" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="91" r="7" fill="#15803d"/><circle cx="398" cy="91" r="7" fill="#15803d"/><circle cx="506" cy="91" r="7" fill="#15803d"/><circle cx="614" cy="91" r="7" fill="#15803d"/><text x="260" y="123" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">758</tspan> overflow: a stuck term</text><line x1="290" y1="119" x2="614" y2="119" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="119" r="7" fill="#15803d"/><circle cx="398" cy="119" r="7" fill="#15803d"/><circle cx="506" cy="119" r="7" fill="#15803d"/><circle cx="614" cy="119" r="7" fill="#15803d"/><text x="260" y="151" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">759</tspan> divide by zero: a stuck term</text><line x1="290" y1="147" x2="614" y2="147" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="147" r="7" fill="#15803d"/><circle cx="398" cy="147" r="7" fill="#15803d"/><circle cx="506" cy="147" r="7" fill="#15803d"/><circle cx="614" cy="147" r="7" fill="#15803d"/><text x="260" y="179" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">760</tspan> holes, the stepper: the interpreter&#x27;s</text><line x1="290" y1="175" x2="614" y2="175" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="175" r="7" fill="#15803d"/><circle cx="398" cy="175" r="7" fill="#15803d"/><circle cx="506" cy="175" r="7" fill="#15803d"/><circle cx="614" cy="175" r="7" fill="#15803d"/><text x="260" y="207" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">761</tspan> the other limits, one at a time</text><line x1="290" y1="203" x2="614" y2="203" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="203" r="7" fill="#b45309"/><circle cx="398" cy="203" r="7" fill="#b45309"/><circle cx="506" cy="203" r="7" fill="#b45309"/><circle cx="614" cy="203" r="7" fill="#b45309"/><text x="260" y="235" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">763</tspan> a step budget</text><line x1="290" y1="231" x2="614" y2="231" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="231" r="7" fill="#15803d"/><circle cx="398" cy="231" r="7" fill="#15803d"/><circle cx="506" cy="231" r="7" fill="#15803d"/><circle cx="614" cy="231" r="7" fill="#15803d"/><text x="260" y="263" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">764</tspan> found: modulo by zero crashed</text><line x1="290" y1="259" x2="614" y2="259" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="259" r="7" fill="#2563eb"/><circle cx="398" cy="259" r="7" fill="#2563eb"/><circle cx="506" cy="259" r="7" fill="#2563eb"/><circle cx="614" cy="259" r="7" fill="#2563eb"/><text x="260" y="291" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">762</tspan> found: undeclared result types</text><line x1="290" y1="287" x2="614" y2="287" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="287" r="7" fill="#9ca3af"/><circle cx="398" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="506" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="614" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><text x="260" y="319" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">765</tspan> found: slow on an older phone</text><line x1="290" y1="315" x2="614" y2="315" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="315" r="7" fill="#15803d"/><circle cx="398" cy="315" r="7" fill="#15803d"/><circle cx="506" cy="315" r="7" fill="#15803d"/><circle cx="614" cy="315" r="7" fill="#15803d"/><text x="260" y="347" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">766</tspan> next: mixed mode</text><line x1="290" y1="343" x2="614" y2="343" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="343" r="7" fill="#b45309"/><circle cx="398" cy="343" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="506" cy="343" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="614" cy="343" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><text x="260" y="375" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">767</tspan> next: steps and probes</text><line x1="290" y1="371" x2="614" y2="371" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="371" r="7" fill="#b45309"/><circle cx="398" cy="371" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="506" cy="371" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="614" cy="371" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/></svg><figcaption>Tickets 756 to 763 are the meeting's items; 762, 764 and 765 were found on the way, and 766 is the direction chosen after the meeting; 767 is the meeting's answer on steps and probes. For 765 the last stage is the oracles' pages running compiled code. Green: done on <code>trial/694-view-jit</code> (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>, the hazel-jit prototype); amber: in progress; grey: waiting on a decision or not begun; blue: on a PR to dev. Not a build of the app: a status chart.</figcaption></figure>
+<figure class="f"><svg viewBox="0 0 700 402" role="img" aria-label="Each ticket of the plan as a row of four stages, filled up to the stage it has reached" style="width:100%;height:auto;display:block"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The plan, ticket by ticket, on 2026-11-23</text><text x="16" y="34" font-size="11" fill="var(--muted)">each dot a stage reached; for ticket 764 the last stage is a PR to dev, not the branch</text><text x="290" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">designed</text><text x="398" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">written</text><text x="506" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">CI green</text><text x="614" y="46" font-size="10.5" text-anchor="middle" fill="var(--muted)">on the branch</text><text x="260" y="67" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">756</tspan> the same answers, checked in CI</text><line x1="290" y1="63" x2="614" y2="63" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="63" r="7" fill="#15803d"/><circle cx="398" cy="63" r="7" fill="#15803d"/><circle cx="506" cy="63" r="7" fill="#15803d"/><circle cx="614" cy="63" r="7" fill="#15803d"/><text x="260" y="95" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">757</tspan> Int and Nat exact</text><line x1="290" y1="91" x2="614" y2="91" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="91" r="7" fill="#15803d"/><circle cx="398" cy="91" r="7" fill="#15803d"/><circle cx="506" cy="91" r="7" fill="#15803d"/><circle cx="614" cy="91" r="7" fill="#15803d"/><text x="260" y="123" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">758</tspan> overflow: a stuck term</text><line x1="290" y1="119" x2="614" y2="119" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="119" r="7" fill="#15803d"/><circle cx="398" cy="119" r="7" fill="#15803d"/><circle cx="506" cy="119" r="7" fill="#15803d"/><circle cx="614" cy="119" r="7" fill="#15803d"/><text x="260" y="151" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">759</tspan> divide by zero: a stuck term</text><line x1="290" y1="147" x2="614" y2="147" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="147" r="7" fill="#15803d"/><circle cx="398" cy="147" r="7" fill="#15803d"/><circle cx="506" cy="147" r="7" fill="#15803d"/><circle cx="614" cy="147" r="7" fill="#15803d"/><text x="260" y="179" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">760</tspan> holes, the stepper: the interpreter&#x27;s</text><line x1="290" y1="175" x2="614" y2="175" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="175" r="7" fill="#15803d"/><circle cx="398" cy="175" r="7" fill="#15803d"/><circle cx="506" cy="175" r="7" fill="#15803d"/><circle cx="614" cy="175" r="7" fill="#15803d"/><text x="260" y="207" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">761</tspan> the other limits, one at a time</text><line x1="290" y1="203" x2="614" y2="203" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="203" r="7" fill="#b45309"/><circle cx="398" cy="203" r="7" fill="#b45309"/><circle cx="506" cy="203" r="7" fill="#b45309"/><circle cx="614" cy="203" r="7" fill="#b45309"/><text x="260" y="235" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">763</tspan> a step budget</text><line x1="290" y1="231" x2="614" y2="231" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="231" r="7" fill="#15803d"/><circle cx="398" cy="231" r="7" fill="#15803d"/><circle cx="506" cy="231" r="7" fill="#15803d"/><circle cx="614" cy="231" r="7" fill="#15803d"/><text x="260" y="263" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">764</tspan> found: modulo by zero crashed</text><line x1="290" y1="259" x2="614" y2="259" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="259" r="7" fill="#2563eb"/><circle cx="398" cy="259" r="7" fill="#2563eb"/><circle cx="506" cy="259" r="7" fill="#2563eb"/><circle cx="614" cy="259" r="7" fill="#2563eb"/><text x="260" y="291" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">762</tspan> found: undeclared result types</text><line x1="290" y1="287" x2="614" y2="287" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="287" r="7" fill="#9ca3af"/><circle cx="398" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="506" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><circle cx="614" cy="287" r="6" fill="none" stroke="#9ca3af" stroke-width="1.6"/><text x="260" y="319" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">765</tspan> found: slow on an older phone</text><line x1="290" y1="315" x2="614" y2="315" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="315" r="7" fill="#15803d"/><circle cx="398" cy="315" r="7" fill="#15803d"/><circle cx="506" cy="315" r="7" fill="#15803d"/><circle cx="614" cy="315" r="7" fill="#15803d"/><text x="260" y="347" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">766</tspan> next: mixed mode</text><line x1="290" y1="343" x2="614" y2="343" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="343" r="7" fill="#b45309"/><circle cx="398" cy="343" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="506" cy="343" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="614" cy="343" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><text x="260" y="375" font-size="12" text-anchor="end" fill="var(--ink)"><tspan font-weight="700">767</tspan> next: steps and probes</text><line x1="290" y1="371" x2="614" y2="371" stroke="var(--line)" stroke-width="2"/><circle cx="290" cy="371" r="7" fill="#b45309"/><circle cx="398" cy="371" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="506" cy="371" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/><circle cx="614" cy="371" r="6" fill="none" stroke="#b45309" stroke-width="1.6"/></svg><figcaption>Tickets 756 to 763 are the meeting's items; 762, 764 and 765 were found on the way, and 766 is the direction chosen after the meeting; 767 is the meeting's answer on steps and probes. For 765 the last stage is the oracles' pages running compiled code. Green: done on <code>trial/694-view-jit</code> (<a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>, the hazel-jit prototype); amber: in progress; grey: waiting on a decision or not begun; blue: on a PR to dev. Not a build of the app: a status chart.</figcaption></figure>
 <p>Matthew's summary of the meeting, as he wrote it on 2026-11-15:</p>
 <blockquote class="msg"><ul><li>we want semantic consistency with Hazel the interpreter, and to ensure that with CI, and our design decisions.</li><li>arb precision Ints and Nats --- we want to use bignum in the output if we can, or something comparable, not native JS numbers for Ints and Nats.</li><li>when we hit an overflow for any times where that is possible -- we should check each time for non-arb precision numbers --- we should create an indet term / stuck term with that error -- look at existing interpreter cases for inspiration.</li><li>similar for divide by zero</li><li>for the output of hazel-jit, we should continue to avoid translating code with holes, and we should exclude &quot;stepper functions&quot; (don&#x27;t know what that is myself, please explain later).</li><li>probes, step budgets, and all other limitations we should work to overcome in the coming days.</li></ul></blockquote>
 <p>And Cyrus's concern, which Matthew passed on separately the same day: <i>"We need a way to limit compiled hazel functions that diverge --- we need a step limit. esp if we continue to optimize by including certain jit-compiled hazel functions into the main thread"</i></p>
@@ -464,6 +466,40 @@ document.addEventListener("DOMContentLoaded", () => {
 </table>
 <p>The first two lines the phone sent with <code>?compiled</code> came back interpreted, and the page did not say why: it fell back to hazeljs on any failure of the compiled file, silently. Since 0.0.12 it says so, in the status line and in the speed line, and with the address as <code>?compiled=1</code> the phone ran compiled, with no error.</p>
 
+<h2 id="lists">Lists as JavaScript arrays, and holes<a class="anchor" href="#lists" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lists" title="copy this section's address">copy link</button></h2>
+<p><b>Plain JavaScript arrays are the wrong shape for Hazel’s lists in compiled code: Hazel code walks a list through its patterns, <code>x :: rest</code>, and an array copies its tail at every step, so recursion over 1,000 elements runs 20 to 70 times as slow as today’s cells. A hybrid keeps cells for <code>::</code> and lets a list’s tail be a segment of a JavaScript array: within 15 to 40% of cells on recursion, constant time for length and nth, and a page’s array passed in and out with no copy (12 ns against 6 µs for 1,000 elements).</b> Matthew asked on 2026-11-23 to look at JavaScript arrays for lists, in compiled code and in the interpreter’s evaluated lists, with holes in them; and for hazel-jit to run terms with holes, not only finished programs.</p>
+<figure class="chart">
+<svg viewBox="0 0 720 400" role="img" aria-label="Microseconds for eight list workloads on 1,000 elements, cells, arrays and the hybrid"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A list of 1,000 Ints, three ways in compiled code: microseconds, log scale</text><line x1="300.0" y1="28" x2="300.0" y2="360" stroke="var(--line)"/><text x="300.0" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">1 ns</text><line x1="414.3" y1="28" x2="414.3" y2="360" stroke="var(--line)"/><text x="414.3" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">0.1 µs</text><line x1="528.6" y1="28" x2="528.6" y2="360" stroke="var(--line)"/><text x="528.6" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">10 µs</text><line x1="642.9" y1="28" x2="642.9" y2="360" stroke="var(--line)"/><text x="642.9" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">1 ms</text><text x="16" y="54" font-size="11.5" fill="var(--ink)">sum by recursion over x :: rest</text><rect x="300" y="36" width="236.1" height="9" fill="#6b7280"><title>cells: 13.6 µs</title></rect><text x="540.1" y="44" font-size="9.5" fill="var(--muted)">13.6 µs</text><rect x="300" y="47" width="310.6" height="9" fill="#c2410c"><title>arrays: 273 µs</title></rect><text x="614.6" y="55" font-size="9.5" fill="var(--muted)">273 µs</text><rect x="300" y="58" width="239.7" height="9" fill="#2a78d6"><title>hybrid: 15.7 µs</title></rect><text x="543.7" y="66" font-size="9.5" fill="var(--muted)">15.7 µs</text><text x="16" y="94" font-size="11.5" fill="var(--ink)">map, f(x) :: map(rest)</text><rect x="300" y="76" width="239.1" height="9" fill="#6b7280"><title>cells: 15.3 µs</title></rect><text x="543.1" y="84" font-size="9.5" fill="var(--muted)">15.3 µs</text><rect x="300" y="87" width="335.9" height="9" fill="#c2410c"><title>arrays: 756 µs</title></rect><text x="639.9" y="95" font-size="9.5" fill="var(--muted)">756 µs</text><rect x="300" y="98" width="244.9" height="9" fill="#2a78d6"><title>hybrid: 19.3 µs</title></rect><text x="548.9" y="106" font-size="9.5" fill="var(--muted)">19.3 µs</text><text x="16" y="134" font-size="11.5" fill="var(--ink)">build with an accumulator, then reverse</text><rect x="300" y="116" width="249.1" height="9" fill="#6b7280"><title>cells: 22.9 µs</title></rect><text x="553.1" y="124" font-size="9.5" fill="var(--muted)">22.9 µs</text><rect x="300" y="127" width="354.4" height="9" fill="#c2410c"><title>arrays: 1,592 µs</title></rect><text x="658.4" y="135" font-size="9.5" fill="var(--muted)">1,592 µs</text><rect x="300" y="138" width="252.3" height="9" fill="#2a78d6"><title>hybrid: 26.1 µs</title></rect><text x="556.3" y="146" font-size="9.5" fill="var(--muted)">26.1 µs</text><text x="16" y="174" font-size="11.5" fill="var(--ink)">length (a builtin)</text><rect x="300" y="156" width="179.2" height="9" fill="#6b7280"><title>cells: 1.4 µs</title></rect><text x="483.2" y="164" font-size="9.5" fill="var(--muted)">1.4 µs</text><rect x="300" y="167" width="50.2" height="9" fill="#c2410c"><title>arrays: 0.008 µs</title></rect><text x="354.2" y="175" font-size="9.5" fill="var(--muted)">0.008 µs</text><rect x="300" y="178" width="50.9" height="9" fill="#2a78d6"><title>hybrid: 0.008 µs</title></rect><text x="354.9" y="186" font-size="9.5" fill="var(--muted)">0.008 µs</text><text x="16" y="214" font-size="11.5" fill="var(--ink)">nth, the middle (a builtin)</text><rect x="300" y="196" width="160.9" height="9" fill="#6b7280"><title>cells: 0.655 µs</title></rect><text x="464.9" y="204" font-size="9.5" fill="var(--muted)">0.655 µs</text><rect x="300" y="207" width="50.5" height="9" fill="#c2410c"><title>arrays: 0.008 µs</title></rect><text x="354.5" y="215" font-size="9.5" fill="var(--muted)">0.008 µs</text><rect x="300" y="218" width="52.3" height="9" fill="#2a78d6"><title>hybrid: 0.008 µs</title></rect><text x="356.3" y="226" font-size="9.5" fill="var(--muted)">0.008 µs</text><text x="16" y="254" font-size="11.5" fill="var(--ink)">nth, the middle, by recursion</text><rect x="300" y="236" width="201.7" height="9" fill="#6b7280"><title>cells: 3.4 µs</title></rect><text x="505.7" y="244" font-size="9.5" fill="var(--muted)">3.4 µs</text><rect x="300" y="247" width="305.5" height="9" fill="#c2410c"><title>arrays: 222 µs</title></rect><text x="609.5" y="255" font-size="9.5" fill="var(--muted)">222 µs</text><rect x="300" y="258" width="207.9" height="9" fill="#2a78d6"><title>hybrid: 4.4 µs</title></rect><text x="511.9" y="266" font-size="9.5" fill="var(--muted)">4.4 µs</text><text x="16" y="294" font-size="11.5" fill="var(--ink)">a page&#x27;s array in and back out</text><rect x="300" y="276" width="216.5" height="9" fill="#6b7280"><title>cells: 6.1 µs</title></rect><text x="520.5" y="284" font-size="9.5" fill="var(--muted)">6.1 µs</text><rect x="300" y="287" width="55.5" height="9" fill="#c2410c"><title>arrays: 0.009 µs</title></rect><text x="359.5" y="295" font-size="9.5" fill="var(--muted)">0.009 µs</text><rect x="300" y="298" width="60.9" height="9" fill="#2a78d6"><title>hybrid: 0.012 µs</title></rect><text x="364.9" y="306" font-size="9.5" fill="var(--muted)">0.012 µs</text><text x="16" y="334" font-size="11.5" fill="var(--ink)">a page&#x27;s array in, mapped, back out</text><rect x="300" y="316" width="248.5" height="9" fill="#6b7280"><title>cells: 22.3 µs</title></rect><text x="552.5" y="324" font-size="9.5" fill="var(--muted)">22.3 µs</text><rect x="300" y="327" width="336.0" height="9" fill="#c2410c"><title>arrays: 758 µs</title></rect><text x="640.0" y="335" font-size="9.5" fill="var(--muted)">758 µs</text><rect x="300" y="338" width="247.0" height="9" fill="#2a78d6"><title>hybrid: 21.0 µs</title></rect><text x="551.0" y="346" font-size="9.5" fill="var(--muted)">21.0 µs</text><rect x="16" y="382" width="10" height="10" fill="#6b7280"/><text x="30" y="391" font-size="11" fill="var(--muted)">cells {h, t}, today</text><rect x="246" y="382" width="10" height="10" fill="#c2410c"/><text x="260" y="391" font-size="11" fill="var(--muted)">arrays, copied by ::</text><rect x="476" y="382" width="10" height="10" fill="#2a78d6"/><text x="490" y="391" font-size="11" fill="var(--muted)">cells, a tail an array segment</text></svg>
+<figcaption>Not a build of the app: a microbenchmark in Node 22 on the laptop, one run, each time the median of batches (<code>054/drivers/lists-bench.mjs</code>). The workloads are what compiled Hazel code does with a list: recursion through <code>x :: rest</code>, building with <code>::</code>, the builtins, and a page’s array crossing in and out.</figcaption>
+</figure>
+<details><summary>Every workload at 10, 100 and 1,000 elements</summary>
+<table class="nums"><thead><tr><th>elements</th><th>workload</th><th>cells (today)</th><th>arrays</th><th>hybrid</th></tr></thead><tbody><tr><td>10</td><td>sum by recursion over x :: rest</td><td>0.041 µs</td><td>0.308 µs</td><td>0.159 µs</td></tr><tr><td>10</td><td>map, f(x) :: map(rest)</td><td>0.076 µs</td><td>0.394 µs</td><td>0.181 µs</td></tr><tr><td>10</td><td>build with an accumulator, then reverse</td><td>0.064 µs</td><td>0.728 µs</td><td>0.328 µs</td></tr><tr><td>10</td><td>length (a builtin)</td><td>0.012 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>10</td><td>nth, the middle (a builtin)</td><td>0.008 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>10</td><td>nth, the middle, by recursion</td><td>0.029 µs</td><td>0.114 µs</td><td>0.056 µs</td></tr><tr><td>10</td><td>a page&#x27;s array in and back out</td><td>0.052 µs</td><td>0.009 µs</td><td>0.012 µs</td></tr><tr><td>10</td><td>a page&#x27;s array in, mapped, back out</td><td>0.116 µs</td><td>0.416 µs</td><td>0.233 µs</td></tr><tr><td>100</td><td>sum by recursion over x :: rest</td><td>1.1 µs</td><td>3.7 µs</td><td>1.4 µs</td></tr><tr><td>100</td><td>map, f(x) :: map(rest)</td><td>1.4 µs</td><td>9.3 µs</td><td>1.7 µs</td></tr><tr><td>100</td><td>build with an accumulator, then reverse</td><td>2.2 µs</td><td>17.2 µs</td><td>2.6 µs</td></tr><tr><td>100</td><td>length (a builtin)</td><td>0.147 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>100</td><td>nth, the middle (a builtin)</td><td>0.060 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>100</td><td>nth, the middle, by recursion</td><td>0.314 µs</td><td>1.9 µs</td><td>0.403 µs</td></tr><tr><td>100</td><td>a page&#x27;s array in and back out</td><td>0.569 µs</td><td>0.009 µs</td><td>0.012 µs</td></tr><tr><td>100</td><td>a page&#x27;s array in, mapped, back out</td><td>2.1 µs</td><td>10.3 µs</td><td>2.0 µs</td></tr><tr><td>1,000</td><td>sum by recursion over x :: rest</td><td>13.6 µs</td><td>273 µs</td><td>15.7 µs</td></tr><tr><td>1,000</td><td>map, f(x) :: map(rest)</td><td>15.3 µs</td><td>756 µs</td><td>19.3 µs</td></tr><tr><td>1,000</td><td>build with an accumulator, then reverse</td><td>22.9 µs</td><td>1,592 µs</td><td>26.1 µs</td></tr><tr><td>1,000</td><td>length (a builtin)</td><td>1.4 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>1,000</td><td>nth, the middle (a builtin)</td><td>0.655 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>1,000</td><td>nth, the middle, by recursion</td><td>3.4 µs</td><td>222 µs</td><td>4.4 µs</td></tr><tr><td>1,000</td><td>a page&#x27;s array in and back out</td><td>6.1 µs</td><td>0.009 µs</td><td>0.012 µs</td></tr><tr><td>1,000</td><td>a page&#x27;s array in, mapped, back out</td><td>22.3 µs</td><td>758 µs</td><td>21.0 µs</td></tr></tbody></table>
+</details>
+
+<h3 id="lists-how">Three ways to hold a list<a class="anchor" href="#lists-how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lists-how" title="copy this section's address">copy link</button></h3>
+<ol>
+<li><b>Cells, today.</b> <code>null</code> for the empty list, <code>{h, t}</code> for <code>x :: xs</code>. A pattern reads <code>.h</code> and <code>.t</code>, and <code>::</code> makes one cell. Length and nth walk the list, and a page’s array is converted cell by cell on the way in and out.</li>
+<li><b>Arrays.</b> A list is an immutable JavaScript array. Length and nth take constant time and a page’s array crosses as it is, but <code>x :: xs</code> copies <code>xs</code>, and so does a pattern’s tail. Hazel code mostly walks and builds lists a cell at a time, so the time grows with the square of the length.</li>
+<li><b>Hybrid.</b> A list is <code>null</code>, a cell <code>{h, t}</code>, or a segment <code>{a, i}</code>: the elements of the array <code>a</code> from index <code>i</code> on, shared and never changed. A list literal and a page’s array are segments, made with no copy; <code>::</code> makes a cell as today; a pattern on a segment reads <code>a[i]</code>, and its tail is the segment from <code>i + 1</code>. Every operation has one more test than with cells.</li>
+</ol>
+
+<h3 id="lists-holes">Holes in lists<a class="anchor" href="#lists-holes" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lists-holes" title="copy this section's address">copy link</button></h3>
+<p><b>The interpreter already allows both kinds of hole in a list, and the hybrid has room for both.</b> An element can be indeterminate, <code>[1, ?, 3]</code>, and the list is still a list literal. A tail can be indeterminate too, <code>1 :: ?</code>: an indeterminate cons, which the interpreter’s unboxing keeps apart from literals, since a pattern <code>[a, b]</code> might or might not match it. Plain arrays can hold the first kind and not the second. In the hybrid, an element is any value and a cell’s tail is any value, an indeterminate one included; a pattern that meets one is an indeterminate match. That needs compiled code to carry indeterminate values at all (<a href="#holes">below</a>).</p>
+
+<h3 id="lists-interp">The interpreter’s evaluated lists<a class="anchor" href="#lists-interp" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lists-interp" title="copy this section's address">copy link</button></h3>
+<p><b>In the interpreter, arrays would change a lot for little, as far as we can see now.</b> An evaluated list is a list literal holding an OCaml list, which js_of_ocaml makes a chain of cells, the same shape as hazel-jit’s today. Arrays there would make <code>::</code> and a pattern’s tail cost a copy, unless the interpreter had a hybrid of its own, and about ninety places in the evaluator alone match on list literals and conses (transitions, unboxing, the stepper’s contexts, substitution). The interpreter’s time goes to its rewriting steps more than to its lists’ shape. Where the shape matters is the crossing between the interpreter and compiled code (mixed mode, and the library), and there every element is converted anyway. So: measure that crossing once the compiled side has its hybrid, before changing the interpreter’s lists.</p>
+
+<h3 id="holes">Terms with holes<a class="anchor" href="#holes" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="holes" title="copy this section's address">copy link</button></h3>
+<p><b>Two designs, the second built on the first: fall back to the interpreter for any call that meets a hole, as mixed mode does now; then carry holes through compiled code as indeterminate values that build the interpreter’s residual terms.</b></p>
+<ol>
+<li><b>Fall back for the call.</b> Mixed mode, on the <code>hazel-jit</code> branch now: the interpreter runs the program around its holes and calls the complete functions compiled, and a call whose argument holds a hole, or that reaches an indeterminate value, is run again by the interpreter, for that call alone. It is correct and built, but a function with a hole in it is never compiled, and a call that meets a hole pays for a compiled try and an interpreted run.</li>
+<li><b>Indeterminate values in compiled code.</b> A hole compiles to a value, <code>$R.hole(id)</code>, that carries what is needed to rebuild its term. Each elimination form checks for one: <code>a + ?</code> gives an indeterminate sum; a case whose scrutinee is indeterminate, where some pattern might match, gives an indeterminate match holding its rules and the values its variables are bound to; applying an indeterminate function gives an indeterminate application. When the answer comes back to the interpreter, these become its residual terms, so the result is the one the interpreter would give. The cost is a check at every elimination form, as the step budget checks at every call, and code to build each residual form. This is what running terms with holes means in full.</li>
+</ol>
+<p><b>Together or apart?</b> Design them together and build them apart. The list’s shape decides where an indeterminate value can sit (an element, a tail), so the hybrid should leave a cell’s tail free to be any value from the start. But the hybrid is a change to the compiler’s output, its runtime and the value boundary, measurable on the seventeen games of <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>, while indeterminate values touch every elimination form. So: the hybrid lists first, measured; then indeterminate values on top of them.</p>
+
+<h3 id="home">Where hazel-jit lives<a class="anchor" href="#home" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="home" title="copy this section's address">copy link</button></h3>
+<p>Matthew, 2026-11-23: the jit should live in as few active PRs as possible, ideally two, both meant for <code>dev</code>: one tracking the jit alone, and its integration into the one npm package branch. The jit-only PR is <a href="https://github.com/hazelgrove/hazel/pull/2859">hazelgrove/hazel#2859</a> (branch <code>hazel-jit</code>, from <code>dev</code>, on Jane Street Core): the compiler, its value boundary and mixed mode, with the agreement tests and the evaluator tests’ sweep. The package’s PR, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, merges that branch. The livelits line keeps its own hazel-jit (<a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a>, and the build of <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>), with the livelit views, on the same compiler.</p>
+
 <h2 id="questions">Questions for the team<a class="anchor" href="#questions" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="questions" title="copy this section's address">copy link</button></h2>
 <p><b>Seventeen questions are open, for the team's meeting of 2026-11-17: two PRs to review, seven on mixed mode, three on what compiled code must match, three on how it lands, and two that an app met this morning.</b> Each has our lean and what the answer decides. None blocks today's work; the answers on mixed mode decide its first step.</p>
 <blockquote class="msg"><p><b>Answered at Matthew and Cyrus's meeting of 2026-11-13</b> (Matthew, 2026-11-17): <i>"we want to mimic the step counts in the compiled code, if possible. can we make it match the interpreter in each case? if not, why not?"</i> and <i>"if we can mimic the step counts in the compiled code, can we support probes? if not, why not?"</i> That settles three of the questions below, on the stepper, probes and the step budget. Our answer to theirs: yes and yes, with the care and limits in <a href="#steps">step counts and probes, as the interpreter's</a>.</p></blockquote>
@@ -502,8 +538,12 @@ document.addEventListener("DOMContentLoaded", () => {
 </ol>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
-<p><b>Build 50 is the prototype branch now, with the slides' builtins: next, a numeric program compiled whole, and mixed mode across modules.</b> In order:</p>
+<p><b>hazel-jit has its own PR for <code>dev</code> now, merged into the package’s branch; next, lists in the hybrid shape, then holes as indeterminate values (<a href="#lists">above</a>).</b> In order:</p>
 <ol class="outline">
+<li>The jit-only PR, <a href="https://github.com/hazelgrove/hazel/pull/2859">hazelgrove/hazel#2859</a> (<code>hazel-jit</code>), green in CI, and <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> taking the jit from it rather than from its own copy.</li>
+<li>Lists in the hybrid shape (<a href="#lists-how">above</a>), in the compiler’s output, its runtime and the value boundary, on <code>hazel-jit</code>; measured on <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>’s seventeen games against today’s cells, with a page’s arrays passed straight in.</li>
+<li>Indeterminate values in compiled code (<a href="#holes">above</a>): a design for each elimination form’s residual, then a prototype on the hybrid lists, checked against the interpreter by the evaluator tests’ sweep, whose programs with holes it would then compile.</li>
+<li>The crossing between the interpreter and compiled code measured, before any change to the interpreter’s own lists (<a href="#lists-interp">above</a>).</li>
 <li><span class="muted">Done 11-18, build 50:</span> the slides' builtins (<code>trial/761-slide-builtins</code>): an operator passed as a function, and <code>to_lvs</code>, so more of the slides' programs compile: 20 of the 129, against 15. Its full tests had gone past their 100 minutes twice (build 49's took 72; CI runs 44146528138 and 44165874889). With the consistency check's timing runs left to the quick tests, they finish in 77 minutes (CI run 44184122601). A trail CI now prints shows the slides' check taking 13 of them, 11 of those on twenty slides, 91 to 110 in the check's order, the livelit playground's among them, each run once each way. Build 49's timing rule ran each slide at least ten times, which likely explains why its quick tests ran long whenever a test was added, as the astrology test was (not yet checked). The run found a real difference: two b2t2 examples, <code>t.get_acne</code> with <code>t</code> a list of rows, which the interpreter projects through the list, each row's field, and hazel-jit compiled as a JavaScript property read, undefined on a list. Projection now goes through the list as the interpreter's does, with two tests, and all 20 compiled slides agree (CI run 44197056910). One evaluator test then parted, <code>(true).a</code>, which the interpreter leaves stuck: the compiled run now stops as indeterminate there, where it once read <code>undefined</code> and carried on, and the check counts that as agreeing. All of CI then passed (CI run 44211080673; the full tests in 92 minutes, against 77 before, so they are close to their limit), and the branch became build 50.</li>
 <li>The astrology oracle compiled whole (<code>trial/768-astrology-timed</code>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-768"><code class="ref"><b>^ticket(</b>768<b>)</b></code></a>): measured, <a href="#timed-astrology">170 times as fast as the interpreter for one reading</a>, the same answer. Its quick tests' overrun was build 49's timing rule: merged with build 50, they pass (CI run 44320263066). And the page casts compiled by default since hazeljs-oracles 0.0.16 (<a href="#timed-astrology">above</a>). Left: mixed mode's measure of it, in the full tests now running.</li>
 <li>Mixed mode across modules: a module's member that calls another module's (<code>Lines.becomes</code> in the I Ching's reading) compiled too, so the I Ching's rules compile whole.</li>
@@ -689,7 +729,7 @@ document.addEventListener("DOMContentLoaded", () => {
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-18T15:34:08Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 0, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "open", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-15T22:38:11Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "open", "title": "SInt has 32 bits everywhere, and overflow is an error", "updated": "2026-11-17T01:06:34Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}}, BUILT = "2026-11-18";
+  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-23T19:03:51Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 0, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-23T20:00:30Z", "base": "dev"}}, BUILT = "2026-11-23";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -830,6 +870,7 @@ document.addEventListener("DOMContentLoaded", () => {
  "measurements": "The sweep: the report Test_HazelJit_Agree prints at the end of the evaluator tests in CI's log (hazelgrove/hazel, GitHub Actions), build 47's fast checks (run 43887985051, job 133371195383) and the first sweep's full tests (run 43754503317). The Witch: jit.yml's Firefox check (scripts/jit_slides.py) on GitHub's machines, one run per build, the runs named in the builds table. Node microbenchmarks and hazeljs 0.0.6 checks are not builds of the app.",
  "builds": "Numbered as in reports 050 to 052. Build 45 is fc1103900d; '45 + N' is build 45 with ticket N's change alone; build 46 is the six changes merged (59f28470c3); build 47 adds the type-hole rule (f4f969588b) and is trial/694-view-jit since 2026-11-16.",
  "files": [
+  "data/lists-bench.json",
   "data/meta.json",
   "data/numbers.json",
   "data/slide-timing.tsv",
@@ -1779,6 +1820,187 @@ document.addEventListener("DOMContentLoaded", () => {
      "17 ms",
      "17 ms",
      "16 ms"
+    ]
+   ]
+  },
+  {
+   "section": "Lists as JavaScript arrays, and holes",
+   "section_id": "lists",
+   "columns": [
+    "elements",
+    "workload",
+    "cells (today)",
+    "arrays",
+    "hybrid"
+   ],
+   "rows": [
+    [
+     "10",
+     "sum by recursion over x :: rest",
+     "0.041 µs",
+     "0.308 µs",
+     "0.159 µs"
+    ],
+    [
+     "10",
+     "map, f(x) :: map(rest)",
+     "0.076 µs",
+     "0.394 µs",
+     "0.181 µs"
+    ],
+    [
+     "10",
+     "build with an accumulator, then reverse",
+     "0.064 µs",
+     "0.728 µs",
+     "0.328 µs"
+    ],
+    [
+     "10",
+     "length (a builtin)",
+     "0.012 µs",
+     "0.008 µs",
+     "0.008 µs"
+    ],
+    [
+     "10",
+     "nth, the middle (a builtin)",
+     "0.008 µs",
+     "0.008 µs",
+     "0.008 µs"
+    ],
+    [
+     "10",
+     "nth, the middle, by recursion",
+     "0.029 µs",
+     "0.114 µs",
+     "0.056 µs"
+    ],
+    [
+     "10",
+     "a page's array in and back out",
+     "0.052 µs",
+     "0.009 µs",
+     "0.012 µs"
+    ],
+    [
+     "10",
+     "a page's array in, mapped, back out",
+     "0.116 µs",
+     "0.416 µs",
+     "0.233 µs"
+    ],
+    [
+     "100",
+     "sum by recursion over x :: rest",
+     "1.1 µs",
+     "3.7 µs",
+     "1.4 µs"
+    ],
+    [
+     "100",
+     "map, f(x) :: map(rest)",
+     "1.4 µs",
+     "9.3 µs",
+     "1.7 µs"
+    ],
+    [
+     "100",
+     "build with an accumulator, then reverse",
+     "2.2 µs",
+     "17.2 µs",
+     "2.6 µs"
+    ],
+    [
+     "100",
+     "length (a builtin)",
+     "0.147 µs",
+     "0.008 µs",
+     "0.008 µs"
+    ],
+    [
+     "100",
+     "nth, the middle (a builtin)",
+     "0.060 µs",
+     "0.008 µs",
+     "0.008 µs"
+    ],
+    [
+     "100",
+     "nth, the middle, by recursion",
+     "0.314 µs",
+     "1.9 µs",
+     "0.403 µs"
+    ],
+    [
+     "100",
+     "a page's array in and back out",
+     "0.569 µs",
+     "0.009 µs",
+     "0.012 µs"
+    ],
+    [
+     "100",
+     "a page's array in, mapped, back out",
+     "2.1 µs",
+     "10.3 µs",
+     "2.0 µs"
+    ],
+    [
+     "1,000",
+     "sum by recursion over x :: rest",
+     "13.6 µs",
+     "273 µs",
+     "15.7 µs"
+    ],
+    [
+     "1,000",
+     "map, f(x) :: map(rest)",
+     "15.3 µs",
+     "756 µs",
+     "19.3 µs"
+    ],
+    [
+     "1,000",
+     "build with an accumulator, then reverse",
+     "22.9 µs",
+     "1,592 µs",
+     "26.1 µs"
+    ],
+    [
+     "1,000",
+     "length (a builtin)",
+     "1.4 µs",
+     "0.008 µs",
+     "0.008 µs"
+    ],
+    [
+     "1,000",
+     "nth, the middle (a builtin)",
+     "0.655 µs",
+     "0.008 µs",
+     "0.008 µs"
+    ],
+    [
+     "1,000",
+     "nth, the middle, by recursion",
+     "3.4 µs",
+     "222 µs",
+     "4.4 µs"
+    ],
+    [
+     "1,000",
+     "a page's array in and back out",
+     "6.1 µs",
+     "0.009 µs",
+     "0.012 µs"
+    ],
+    [
+     "1,000",
+     "a page's array in, mapped, back out",
+     "22.3 µs",
+     "758 µs",
+     "21.0 µs"
     ]
    ]
   }

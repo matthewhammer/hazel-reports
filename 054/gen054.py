@@ -5,7 +5,7 @@ publish it, with the changes we've planned for hazel-jit, and our status on thos
 The plan is Matthew and Cyrus's meeting of 2026-11-13 (Matthew's summary in chat, 2026-11-15), as dashboard tickets
 756 to 763, and two found along the way (762, 764). Writes 054/index.html from body.html and the numbers below, each
 from a CI log or a jit.yml run named beside it, and 054/data/numbers.json."""
-import html, json, os, re, subprocess
+import html, json, math, os, re, subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -514,13 +514,41 @@ def summary_block():
     return f'<blockquote class="msg"><ul>{li}</ul></blockquote>'
 
 
-NUMS = {"updated": updated, "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
+# ---- lists as JS arrays: the microbenchmark (^ticket(795), 2026-11-23)
+LB = json.load(open(os.path.join(HERE, "data", "lists-bench.json")))
+def us(v): return f"{v:.3f} µs" if v < 1 else (f"{v:.1f} µs" if v < 100 else f"{v:,.0f} µs")
+def fig_lists():
+    rows = [r for r in LB["rows"] if r["n"] == 1000]
+    W, x0, x1 = 720, 300, 700
+    lo, hi = -3, 4
+    X = lambda v: x0 + (math.log10(max(v, 10 ** lo)) - lo) / (hi - lo) * (x1 - x0)
+    o = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A list of 1,000 Ints, three ways in compiled code: microseconds, log scale</text>']
+    for e, lab in [(-3, "1 ns"), (-1, "0.1 µs"), (1, "10 µs"), (3, "1 ms")]:
+        o.append(f'<line x1="{X(10 ** e):.1f}" y1="28" x2="{X(10 ** e):.1f}" y2="{40 + len(rows) * 40}" stroke="var(--line)"/>'
+                 f'<text x="{X(10 ** e):.1f}" y="{52 + len(rows) * 40}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{lab}</text>')
+    for i, r in enumerate(rows):
+        y = 34 + i * 40
+        o.append(f'<text x="16" y="{y + 20}" font-size="11.5" fill="var(--ink)">{esc(r["workload"])}</text>')
+        for k, (w, col) in enumerate((("cells", "#6b7280"), ("arrays", "#c2410c"), ("hybrid", "#2a78d6"))):
+            v = r[w]; yy = y + 2 + k * 11
+            o.append(f'<rect x="{x0}" y="{yy}" width="{X(v) - x0:.1f}" height="9" fill="{col}"><title>{w}: {us(v)}</title></rect>'
+                     f'<text x="{X(v) + 4:.1f}" y="{yy + 8}" font-size="9.5" fill="var(--muted)">{us(v)}</text>')
+    y = 62 + len(rows) * 40
+    for k, (w, col, what) in enumerate((("cells", "#6b7280", "cells {h, t}, today"), ("arrays", "#c2410c", "arrays, copied by ::"), ("hybrid", "#2a78d6", "cells, a tail an array segment"))):
+        o.append(f'<rect x="{16 + k * 230}" y="{y}" width="10" height="10" fill="{col}"/><text x="{30 + k * 230}" y="{y + 9}" font-size="11" fill="var(--muted)">{what}</text>')
+    return f'<svg viewBox="0 0 {W} {y + 18}" role="img" aria-label="Microseconds for eight list workloads on 1,000 elements, cells, arrays and the hybrid">' + "".join(o) + "</svg>"
+def lists_table():
+    body = "".join(f'<tr><td>{r["n"]:,}</td><td>{esc(r["workload"])}</td><td>{us(r["cells"])}</td><td>{us(r["arrays"])}</td><td>{us(r["hybrid"])}</td></tr>' for r in LB["rows"])
+    return ('<table class="nums"><thead><tr><th>elements</th><th>workload</th><th>cells (today)</th><th>arrays</th><th>hybrid</th></tr></thead>'
+            f'<tbody>{body}</tbody></table>')
+
+NUMS = {"updated": updated, "jit_pr": "2859", "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
         "tab_sint": sint_table(), "tab_slides": slides_table(), "tab_builds": builds_table(), "summary": summary_block(),
         "mixed_status": mixed_status(), "tab_mixed": mixed_table(), "fig_timing": fig_timing(), "tab_timing": timing_table(),
         "timing_summary": timing_summary(), "tab_calib": calib_table(), "tab_slide_timing": slide_table(),
-        "slide_summary": slide_summary()}
+        "slide_summary": slide_summary(), "fig_lists": fig_lists(), "tab_lists": lists_table()}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
     body = body.replace("{{" + k + "}}", v)
