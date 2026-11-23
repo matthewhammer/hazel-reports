@@ -584,6 +584,69 @@ def lists_games_table():
     return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>operation</th><th>ahead of time, cells</th><th>ahead of time, hybrid</th><th>ratio</th>'
             f'<th>jit, cells</th><th>jit, hybrid</th><th>ratio</th></tr></thead><tbody>{body}</tbody></table></div>')
 
+# ---- a page's list in and back out, through hazel-jit's compiled identity, at every size (^report(54); Matthew, 2026-11-23:
+# "the round trip of going from the outer JS main thread, into the JIT code, and back again, for each representation, at
+# different sizes ... plots where sequence size is the X axis, and Y axis is time cost ... maybe both log and linear scale
+# for each plot, and let me decide which is more informative")
+CR = json.load(open(os.path.join(HERE, "data", "crossing.json")))
+CR_WAYS = [("arrays, no conversion", "#15803d", "arrays, no conversion"),
+           ("hybrid (cells + array segments)", "#2a78d6", "hybrid: cells + array segments"),
+           ("arrays, copied", "#7c3aed", "arrays, copied each way"),
+           ("arrays of records, each converted", "#a16207", "arrays, each record converted"),
+           ("cells, converted", "#6b7280", "cells (today, ahead of time)"),
+           ("through Hazel's values (the jit)", "#eb6834", "Hazel's values (today's jit)"),
+           ("the interpreter (Hazel.run)", "#b91c1c", "the interpreter")]
+def cr_series(kind):
+    rows = [r for r in CR["rows"] if r["kind"] == kind]
+    return [(lab, col, [(r["n"], r[k]) for r in rows if r.get(k) is not None]) for k, col, lab in CR_WAYS if any(r.get(k) is not None for r in rows)]
+def fmt_ms(v):
+    if v == 0: return "0"
+    if v >= 1000: return f"{v / 1000:g} s"
+    if v >= 1: return f"{v:g} ms"
+    if v >= 0.001: return f"{v * 1000:g} µs"
+    return f"{v * 1e6:g} ns"
+def fig_crossing(kind, log):
+    ser = cr_series(kind)
+    W, H, x0, x1, y0, y1 = 720, 330, 70, 520, 296, 24
+    xs = [n for _, _, pts in ser for n, _ in pts]; ys = [v for _, _, pts in ser for _, v in pts]
+    if log:
+        lx0, lx1 = 0, 6
+        ly0, ly1 = math.floor(math.log10(min(ys))), math.ceil(math.log10(max(ys)))
+        X = lambda n: x0 + (math.log10(n) - lx0) / (lx1 - lx0) * (x1 - x0)
+        Y = lambda v: y0 - (math.log10(v) - ly0) / (ly1 - ly0) * (y0 - y1)
+        xt = [(10 ** e, f"{10 ** e:,}") for e in range(0, 7)]
+        yt = [(10 ** e, fmt_ms(10 ** e)) for e in range(ly0, ly1 + 1)]
+    else:
+        mx, my = max(xs), max(ys)
+        X = lambda n: x0 + n / mx * (x1 - x0)
+        Y = lambda v: y0 - v / my * (y0 - y1)
+        xt = [(k * mx / 4, f"{int(k * mx / 4):,}") for k in range(0, 5)]
+        raw = my / 5; base = 10 ** math.floor(math.log10(raw)); step = next(m * base for m in (1, 2, 5, 10) if m * base >= raw)
+        yt = [(k * step, fmt_ms(k * step)) for k in range(0, int(my / step) + 1)]
+    o = []
+    for v, lab in yt:
+        o.append(f'<line x1="{x0}" y1="{Y(v):.1f}" x2="{x1}" y2="{Y(v):.1f}" stroke="var(--line)"/><text x="{x0 - 6}" y="{Y(v) + 3.5:.1f}" font-size="10" text-anchor="end" fill="var(--muted)">{lab}</text>')
+    for v, lab in xt:
+        o.append(f'<line x1="{X(v):.1f}" y1="{y0}" x2="{X(v):.1f}" y2="{y0 + 4}" stroke="var(--muted)"/><text x="{X(v):.1f}" y="{y0 + 16}" font-size="10" text-anchor="middle" fill="var(--muted)">{lab}</text>')
+    o.append(f'<line x1="{x0}" y1="{y0}" x2="{x1}" y2="{y0}" stroke="var(--muted)"/><line x1="{x0}" y1="{y0}" x2="{x0}" y2="{y1}" stroke="var(--muted)"/>'
+             f'<text x="{(x0 + x1) / 2}" y="{y0 + 32}" font-size="11" text-anchor="middle" fill="var(--ink)">elements in the list{" (log scale)" if log else ""}</text>'
+             f'<text x="14" y="{(y0 + y1) / 2}" font-size="11" text-anchor="middle" fill="var(--ink)" transform="rotate(-90 14 {(y0 + y1) / 2})">time, in and back out{" (log)" if log else ""}</text>')
+    for i, (lab, col, pts) in enumerate(ser):
+        d = " ".join(f"{'M' if j == 0 else 'L'}{X(n):.1f},{Y(v):.1f}" for j, (n, v) in enumerate(pts))
+        o.append(f'<path d="{d}" fill="none" stroke="{col}" stroke-width="2"/>' + "".join(
+            f'<circle cx="{X(n):.1f}" cy="{Y(v):.1f}" r="3" fill="{col}"><title>{esc(lab)}, {n:,} elements: {fmt_ms(round(v, 6 if v < 1 else 2))}</title></circle>' for n, v in pts))
+        ly = 34 + i * 20
+        o.append(f'<line x1="532" y1="{ly}" x2="552" y2="{ly}" stroke="{col}" stroke-width="2.5"/><text x="557" y="{ly + 4}" font-size="10.5" fill="var(--ink)">{esc(lab)}</text>')
+    what = "Ints" if kind == "ints" else "records (x = Int, y = Int)"
+    o.insert(0, f'<text x="{x0}" y="14" font-size="12.5" font-weight="700" fill="var(--ink)">A list of {what}, into compiled code and back out: {"log-log" if log else "linear"}</text>')
+    return f'<svg viewBox="0 0 {W} {H + 16}" role="img" aria-label="Time to pass a list of {what} into hazel-jit\'s compiled identity and back, against its size, {"log-log" if log else "linear"} scales, one line a representation">' + "".join(o) + "</svg>"
+def crossing_table():
+    keys = [k for k, _, _ in CR_WAYS]
+    head = "".join(f"<th>{esc(lab)}</th>" for _, _, lab in CR_WAYS)
+    body = "".join(f'<tr><td>{"Ints" if r["kind"] == "ints" else "records"}</td><td>{r["n"]:,}</td>' + "".join(
+        f'<td>{fmt_ms(round(r[k], 6 if r[k] < 1 else 2)) if r.get(k) is not None else "–"}</td>' for k in keys) + "</tr>" for r in CR["rows"])
+    return f'<div style="overflow-x:auto"><table class="nums"><thead><tr><th>list of</th><th>elements</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+
 NUMS = {"updated": updated, "jit_pr": "2859", "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
@@ -591,7 +654,9 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "mixed_status": mixed_status(), "tab_mixed": mixed_table(), "fig_timing": fig_timing(), "tab_timing": timing_table(),
         "timing_summary": timing_summary(), "tab_calib": calib_table(), "tab_slide_timing": slide_table(),
         "slide_summary": slide_summary(), "fig_lists": fig_lists(), "tab_lists": lists_table(), "fig_lists_games": fig_lists_games(), "tab_lists_games": lists_games_table(),
-        "lg_aot": f"{(LG_GM('cells_aot', 'hybrid_aot') - 1) * 100:.0f}%", "lg_jit": f"{(LG_GM('cells_jit', 'hybrid_jit') - 1) * 100:.0f}%", "lg_n": str(len(LG))}
+        "lg_aot": f"{(LG_GM('cells_aot', 'hybrid_aot') - 1) * 100:.0f}%", "lg_jit": f"{(LG_GM('cells_jit', 'hybrid_jit') - 1) * 100:.0f}%", "lg_n": str(len(LG)),
+        "fig_cross_ints_log": fig_crossing("ints", True), "fig_cross_ints_lin": fig_crossing("ints", False), "fig_cross_rec_log": fig_crossing("records", True),
+        "fig_cross_rec_lin": fig_crossing("records", False), "tab_crossing": crossing_table(), "cr_cpu": esc(CR["cpu"]), "cr_node": CR["node"]}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
     body = body.replace("{{" + k + "}}", v)
