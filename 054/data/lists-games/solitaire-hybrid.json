@@ -1,0 +1,115 @@
+{
+ "game": "solitaire",
+ "when": "2026-11-23T20:24:25.726Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 7763 64-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.11",
+  "hazel": {
+   "commit": "98c482395d06ca1979ccf63213c70a1f653a17e6",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "46b42696f6df52dc45c2ec94ef1b3ce424352f6f"
+ },
+ "examples": "63fe27c2ba4abb437192d9882b822f5dad3e4c36",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 1096.886853,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 520.142965,
+  "compiledJsBytes": 32646,
+  "runtimeBytes": 20001,
+  "listShape": "hybrid",
+  "wrappedBytes": 56292,
+  "pageCompiledFrom": "5405a2e87d",
+  "compiledLoadMs": 2.169206000000031
+ },
+ "ops": [
+  {
+   "name": "a deal",
+   "ways": {
+    "jit": {
+     "ms": 0.20699150000007194,
+     "min": 0.1928259999999682,
+     "reps": 585,
+     "batch": 2,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.01701700000000983,
+     "min": 0.016147499999988213,
+     "reps": 3706,
+     "batch": 4,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.0030956250000002683,
+     "min": 0.003007335937500244,
+     "reps": 717,
+     "batch": 128,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "every legal move",
+   "ways": {
+    "jit": {
+     "ms": 0.11682100000001583,
+     "min": 0.10840524999991885,
+     "reps": 504,
+     "batch": 4,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.013279874999994945,
+     "min": 0.012984249999988151,
+     "reps": 1089,
+     "batch": 16,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.0005131874999992903,
+     "min": 0.000504417968750559,
+     "reps": 2046,
+     "batch": 256,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "a move made",
+   "ways": {
+    "jit": {
+     "ms": 0.2702264999999784,
+     "min": 0.26340000000004693,
+     "reps": 244,
+     "batch": 4,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.005345152343746662,
+     "min": 0.005185945312504714,
+     "reps": 394,
+     "batch": 128,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.00015144531249999815,
+     "min": 0.0001496450195315191,
+     "reps": 916,
+     "batch": 2048,
+     "same": true
+    }
+   }
+  }
+ ]
+}

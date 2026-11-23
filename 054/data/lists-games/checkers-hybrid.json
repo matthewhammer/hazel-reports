@@ -1,0 +1,167 @@
+{
+ "game": "checkers",
+ "when": "2026-11-23T20:24:27.795Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V74 80-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.11",
+  "hazel": {
+   "commit": "98c482395d06ca1979ccf63213c70a1f653a17e6",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "46b42696f6df52dc45c2ec94ef1b3ce424352f6f"
+ },
+ "examples": "63fe27c2ba4abb437192d9882b822f5dad3e4c36",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 748.841446,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 325.03567899999985,
+  "compiledJsBytes": 22476,
+  "runtimeBytes": 20001,
+  "listShape": "hybrid",
+  "wrappedBytes": 44837,
+  "pageCompiledFrom": "d15466c7b1",
+  "compiledLoadMs": 1.9213019999999688
+ },
+ "ops": [
+  {
+   "name": "the moves",
+   "ways": {
+    "jit": {
+     "ms": 0.01969418749999363,
+     "min": 0.018760999999997807,
+     "reps": 675,
+     "batch": 16,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.009548562500000912,
+     "min": 0.009434624999997254,
+     "reps": 1685,
+     "batch": 16,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.00041272656250157524,
+     "min": 0.0004025546875006114,
+     "reps": 5117,
+     "batch": 128,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 1 ahead",
+   "ways": {
+    "jit": {
+     "ms": 0.030642999999997755,
+     "min": 0.028185624999991887,
+     "reps": 1045,
+     "batch": 8,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.01996370312500062,
+     "min": 0.018555687499997475,
+     "reps": 430,
+     "batch": 32,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.0006824179687505705,
+     "min": 0.0006656367187503065,
+     "reps": 1557,
+     "batch": 256,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 2 ahead",
+   "ways": {
+    "jit": {
+     "ms": 0.046241124999994554,
+     "min": 0.04437962500000481,
+     "reps": 367,
+     "batch": 16,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.036763312499999756,
+     "min": 0.03620409375000122,
+     "reps": 241,
+     "batch": 32,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.0019508749999985753,
+     "min": 0.0018710468750029463,
+     "reps": 2034,
+     "batch": 64,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 3 ahead",
+   "ways": {
+    "jit": {
+     "ms": 0.10445887499997752,
+     "min": 0.1009686250000641,
+     "reps": 327,
+     "batch": 8,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.10379093749997992,
+     "min": 0.10215918750003539,
+     "reps": 171,
+     "batch": 16,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.004736601562498777,
+     "min": 0.004578203124999902,
+     "reps": 446,
+     "batch": 128,
+     "same": true
+    }
+   }
+  },
+  {
+   "name": "Hazel's move, looking 4 ahead",
+   "ways": {
+    "jit": {
+     "ms": 0.27013349999992897,
+     "min": 0.2660275000000638,
+     "reps": 263,
+     "batch": 4,
+     "same": true
+    },
+    "compiled": {
+     "ms": 0.2823217499999373,
+     "min": 0.27945500000009815,
+     "reps": 255,
+     "batch": 4,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.016722953124997275,
+     "min": 0.014276656249990083,
+     "reps": 291,
+     "batch": 64,
+     "same": true
+    }
+   }
+  }
+ ]
+}

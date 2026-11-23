@@ -158,7 +158,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-23 13:00 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-23 13:27 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -467,13 +467,23 @@ document.addEventListener("DOMContentLoaded", () => {
 <p>The first two lines the phone sent with <code>?compiled</code> came back interpreted, and the page did not say why: it fell back to hazeljs on any failure of the compiled file, silently. Since 0.0.12 it says so, in the status line and in the speed line, and with the address as <code>?compiled=1</code> the phone ran compiled, with no error.</p>
 
 <h2 id="lists">Lists as JavaScript arrays, and holes<a class="anchor" href="#lists" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lists" title="copy this section's address">copy link</button></h2>
-<p><b>Plain JavaScript arrays are the wrong shape for Hazel’s lists in compiled code: Hazel code walks a list through its patterns, <code>x :: rest</code>, and an array copies its tail at every step, so recursion over 1,000 elements runs 20 to 70 times as slow as today’s cells. A hybrid keeps cells for <code>::</code> and lets a list’s tail be a segment of a JavaScript array: within 15 to 40% of cells on recursion, constant time for length and nth, and a page’s array passed in and out with no copy (12 ns against 6 µs for 1,000 elements).</b> Matthew asked on 2026-11-23 to look at JavaScript arrays for lists, in compiled code and in the interpreter’s evaluated lists, with holes in them; and for hazel-jit to run terms with holes, not only finished programs.</p>
+<p><b>Plain JavaScript arrays are the wrong shape for Hazel’s lists in compiled code: Hazel code walks a list through its patterns, <code>x :: rest</code>, and an array copies its tail at every step, so recursion over 1,000 elements runs 20 to 70 times as slow as today’s cells. A hybrid, cells for <code>::</code> and array segments for literals and a page’s arrays, does well in a microbenchmark, but on the seventeen games of <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> it costs about 8% ahead of time and 4% through the jit, all answers the same. So cells stay, for now; the lever for the jit is the crossing, not the list’s shape.</b> Matthew asked on 2026-11-23 to look at JavaScript arrays for lists, in compiled code and in the interpreter’s evaluated lists, with holes in them; and for hazel-jit to run terms with holes, not only finished programs.</p>
 <figure class="chart">
 <svg viewBox="0 0 720 400" role="img" aria-label="Microseconds for eight list workloads on 1,000 elements, cells, arrays and the hybrid"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">A list of 1,000 Ints, three ways in compiled code: microseconds, log scale</text><line x1="300.0" y1="28" x2="300.0" y2="360" stroke="var(--line)"/><text x="300.0" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">1 ns</text><line x1="414.3" y1="28" x2="414.3" y2="360" stroke="var(--line)"/><text x="414.3" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">0.1 µs</text><line x1="528.6" y1="28" x2="528.6" y2="360" stroke="var(--line)"/><text x="528.6" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">10 µs</text><line x1="642.9" y1="28" x2="642.9" y2="360" stroke="var(--line)"/><text x="642.9" y="372" font-size="10.5" text-anchor="middle" fill="var(--muted)">1 ms</text><text x="16" y="54" font-size="11.5" fill="var(--ink)">sum by recursion over x :: rest</text><rect x="300" y="36" width="236.1" height="9" fill="#6b7280"><title>cells: 13.6 µs</title></rect><text x="540.1" y="44" font-size="9.5" fill="var(--muted)">13.6 µs</text><rect x="300" y="47" width="310.6" height="9" fill="#c2410c"><title>arrays: 273 µs</title></rect><text x="614.6" y="55" font-size="9.5" fill="var(--muted)">273 µs</text><rect x="300" y="58" width="239.7" height="9" fill="#2a78d6"><title>hybrid: 15.7 µs</title></rect><text x="543.7" y="66" font-size="9.5" fill="var(--muted)">15.7 µs</text><text x="16" y="94" font-size="11.5" fill="var(--ink)">map, f(x) :: map(rest)</text><rect x="300" y="76" width="239.1" height="9" fill="#6b7280"><title>cells: 15.3 µs</title></rect><text x="543.1" y="84" font-size="9.5" fill="var(--muted)">15.3 µs</text><rect x="300" y="87" width="335.9" height="9" fill="#c2410c"><title>arrays: 756 µs</title></rect><text x="639.9" y="95" font-size="9.5" fill="var(--muted)">756 µs</text><rect x="300" y="98" width="244.9" height="9" fill="#2a78d6"><title>hybrid: 19.3 µs</title></rect><text x="548.9" y="106" font-size="9.5" fill="var(--muted)">19.3 µs</text><text x="16" y="134" font-size="11.5" fill="var(--ink)">build with an accumulator, then reverse</text><rect x="300" y="116" width="249.1" height="9" fill="#6b7280"><title>cells: 22.9 µs</title></rect><text x="553.1" y="124" font-size="9.5" fill="var(--muted)">22.9 µs</text><rect x="300" y="127" width="354.4" height="9" fill="#c2410c"><title>arrays: 1,592 µs</title></rect><text x="658.4" y="135" font-size="9.5" fill="var(--muted)">1,592 µs</text><rect x="300" y="138" width="252.3" height="9" fill="#2a78d6"><title>hybrid: 26.1 µs</title></rect><text x="556.3" y="146" font-size="9.5" fill="var(--muted)">26.1 µs</text><text x="16" y="174" font-size="11.5" fill="var(--ink)">length (a builtin)</text><rect x="300" y="156" width="179.2" height="9" fill="#6b7280"><title>cells: 1.4 µs</title></rect><text x="483.2" y="164" font-size="9.5" fill="var(--muted)">1.4 µs</text><rect x="300" y="167" width="50.2" height="9" fill="#c2410c"><title>arrays: 0.008 µs</title></rect><text x="354.2" y="175" font-size="9.5" fill="var(--muted)">0.008 µs</text><rect x="300" y="178" width="50.9" height="9" fill="#2a78d6"><title>hybrid: 0.008 µs</title></rect><text x="354.9" y="186" font-size="9.5" fill="var(--muted)">0.008 µs</text><text x="16" y="214" font-size="11.5" fill="var(--ink)">nth, the middle (a builtin)</text><rect x="300" y="196" width="160.9" height="9" fill="#6b7280"><title>cells: 0.655 µs</title></rect><text x="464.9" y="204" font-size="9.5" fill="var(--muted)">0.655 µs</text><rect x="300" y="207" width="50.5" height="9" fill="#c2410c"><title>arrays: 0.008 µs</title></rect><text x="354.5" y="215" font-size="9.5" fill="var(--muted)">0.008 µs</text><rect x="300" y="218" width="52.3" height="9" fill="#2a78d6"><title>hybrid: 0.008 µs</title></rect><text x="356.3" y="226" font-size="9.5" fill="var(--muted)">0.008 µs</text><text x="16" y="254" font-size="11.5" fill="var(--ink)">nth, the middle, by recursion</text><rect x="300" y="236" width="201.7" height="9" fill="#6b7280"><title>cells: 3.4 µs</title></rect><text x="505.7" y="244" font-size="9.5" fill="var(--muted)">3.4 µs</text><rect x="300" y="247" width="305.5" height="9" fill="#c2410c"><title>arrays: 222 µs</title></rect><text x="609.5" y="255" font-size="9.5" fill="var(--muted)">222 µs</text><rect x="300" y="258" width="207.9" height="9" fill="#2a78d6"><title>hybrid: 4.4 µs</title></rect><text x="511.9" y="266" font-size="9.5" fill="var(--muted)">4.4 µs</text><text x="16" y="294" font-size="11.5" fill="var(--ink)">a page&#x27;s array in and back out</text><rect x="300" y="276" width="216.5" height="9" fill="#6b7280"><title>cells: 6.1 µs</title></rect><text x="520.5" y="284" font-size="9.5" fill="var(--muted)">6.1 µs</text><rect x="300" y="287" width="55.5" height="9" fill="#c2410c"><title>arrays: 0.009 µs</title></rect><text x="359.5" y="295" font-size="9.5" fill="var(--muted)">0.009 µs</text><rect x="300" y="298" width="60.9" height="9" fill="#2a78d6"><title>hybrid: 0.012 µs</title></rect><text x="364.9" y="306" font-size="9.5" fill="var(--muted)">0.012 µs</text><text x="16" y="334" font-size="11.5" fill="var(--ink)">a page&#x27;s array in, mapped, back out</text><rect x="300" y="316" width="248.5" height="9" fill="#6b7280"><title>cells: 22.3 µs</title></rect><text x="552.5" y="324" font-size="9.5" fill="var(--muted)">22.3 µs</text><rect x="300" y="327" width="336.0" height="9" fill="#c2410c"><title>arrays: 758 µs</title></rect><text x="640.0" y="335" font-size="9.5" fill="var(--muted)">758 µs</text><rect x="300" y="338" width="247.0" height="9" fill="#2a78d6"><title>hybrid: 21.0 µs</title></rect><text x="551.0" y="346" font-size="9.5" fill="var(--muted)">21.0 µs</text><rect x="16" y="382" width="10" height="10" fill="#6b7280"/><text x="30" y="391" font-size="11" fill="var(--muted)">cells {h, t}, today</text><rect x="246" y="382" width="10" height="10" fill="#c2410c"/><text x="260" y="391" font-size="11" fill="var(--muted)">arrays, copied by ::</text><rect x="476" y="382" width="10" height="10" fill="#2a78d6"/><text x="490" y="391" font-size="11" fill="var(--muted)">cells, a tail an array segment</text></svg>
 <figcaption>Not a build of the app: a microbenchmark in Node 22 on the laptop, one run, each time the median of batches (<code>054/drivers/lists-bench.mjs</code>). The workloads are what compiled Hazel code does with a list: recursion through <code>x :: rest</code>, building with <code>::</code>, the builtins, and a page’s array crossing in and out.</figcaption>
 </figure>
 <details><summary>Every workload at 10, 100 and 1,000 elements</summary>
 <table class="nums"><thead><tr><th>elements</th><th>workload</th><th>cells (today)</th><th>arrays</th><th>hybrid</th></tr></thead><tbody><tr><td>10</td><td>sum by recursion over x :: rest</td><td>0.041 µs</td><td>0.308 µs</td><td>0.159 µs</td></tr><tr><td>10</td><td>map, f(x) :: map(rest)</td><td>0.076 µs</td><td>0.394 µs</td><td>0.181 µs</td></tr><tr><td>10</td><td>build with an accumulator, then reverse</td><td>0.064 µs</td><td>0.728 µs</td><td>0.328 µs</td></tr><tr><td>10</td><td>length (a builtin)</td><td>0.012 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>10</td><td>nth, the middle (a builtin)</td><td>0.008 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>10</td><td>nth, the middle, by recursion</td><td>0.029 µs</td><td>0.114 µs</td><td>0.056 µs</td></tr><tr><td>10</td><td>a page&#x27;s array in and back out</td><td>0.052 µs</td><td>0.009 µs</td><td>0.012 µs</td></tr><tr><td>10</td><td>a page&#x27;s array in, mapped, back out</td><td>0.116 µs</td><td>0.416 µs</td><td>0.233 µs</td></tr><tr><td>100</td><td>sum by recursion over x :: rest</td><td>1.1 µs</td><td>3.7 µs</td><td>1.4 µs</td></tr><tr><td>100</td><td>map, f(x) :: map(rest)</td><td>1.4 µs</td><td>9.3 µs</td><td>1.7 µs</td></tr><tr><td>100</td><td>build with an accumulator, then reverse</td><td>2.2 µs</td><td>17.2 µs</td><td>2.6 µs</td></tr><tr><td>100</td><td>length (a builtin)</td><td>0.147 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>100</td><td>nth, the middle (a builtin)</td><td>0.060 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>100</td><td>nth, the middle, by recursion</td><td>0.314 µs</td><td>1.9 µs</td><td>0.403 µs</td></tr><tr><td>100</td><td>a page&#x27;s array in and back out</td><td>0.569 µs</td><td>0.009 µs</td><td>0.012 µs</td></tr><tr><td>100</td><td>a page&#x27;s array in, mapped, back out</td><td>2.1 µs</td><td>10.3 µs</td><td>2.0 µs</td></tr><tr><td>1,000</td><td>sum by recursion over x :: rest</td><td>13.6 µs</td><td>273 µs</td><td>15.7 µs</td></tr><tr><td>1,000</td><td>map, f(x) :: map(rest)</td><td>15.3 µs</td><td>756 µs</td><td>19.3 µs</td></tr><tr><td>1,000</td><td>build with an accumulator, then reverse</td><td>22.9 µs</td><td>1,592 µs</td><td>26.1 µs</td></tr><tr><td>1,000</td><td>length (a builtin)</td><td>1.4 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>1,000</td><td>nth, the middle (a builtin)</td><td>0.655 µs</td><td>0.008 µs</td><td>0.008 µs</td></tr><tr><td>1,000</td><td>nth, the middle, by recursion</td><td>3.4 µs</td><td>222 µs</td><td>4.4 µs</td></tr><tr><td>1,000</td><td>a page&#x27;s array in and back out</td><td>6.1 µs</td><td>0.009 µs</td><td>0.012 µs</td></tr><tr><td>1,000</td><td>a page&#x27;s array in, mapped, back out</td><td>22.3 µs</td><td>758 µs</td><td>21.0 µs</td></tr></tbody></table>
+</details>
+
+<h3 id="lists-games">Measured on the games<a class="anchor" href="#lists-games" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lists-games" title="copy this section's address">copy link</button></h3>
+<p><b>On the seventeen games the hybrid, as prototyped, costs about 8% ahead of time and 4% through the jit (geometric means over 45 operations), from a little faster to half again as slow; every answer the same.</b> Go’s search costs most, about half again (1.46 through the jit, 1.58 ahead of time); the astrology chart, made of long list literals, gains about a quarter, and a Mahjong step a little more. Every head and tail of a list now has one more test, a segment’s tail is a new small object where a cell’s tail is already there, and the two shapes meeting in the same hot loop cost the JavaScript engine more than one shape would. What the hybrid saves, constant-time length and nth and a page’s array passed in with no cells made, these games rarely use: their lists are short, and through the jit every value still crosses through Hazel’s own (<a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>’s crossing), whatever its shape.</p>
+<figure class="chart">
+<svg viewBox="0 0 720 743" role="img" aria-label="For each of 45 operations of 17 games, the time with hybrid lists divided by the time with cells, compiled and through the jit"><text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The hybrid lists against cells, every game: time with the hybrid ÷ time with cells</text><line x1="330.0" y1="32" x2="330.0" y2="715" stroke="var(--line)" stroke-width="1"/><text x="330.0" y="28" font-size="10.5" text-anchor="middle" fill="var(--muted)">½ the time</text><line x1="515.0" y1="32" x2="515.0" y2="715" stroke="var(--line)" stroke-width="2"/><text x="515.0" y="28" font-size="10.5" text-anchor="middle" fill="var(--muted)">the same</text><line x1="700.0" y1="32" x2="700.0" y2="715" stroke="var(--line)" stroke-width="1"/><text x="700.0" y="28" font-size="10.5" text-anchor="middle" fill="var(--muted)">twice</text><text x="16" y="49" font-size="10.5" fill="var(--ink)">Mahjong: a step</text><circle cx="529.9" cy="45" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="366.0" cy="45" r="3.6" fill="#2a78d6"><title>ahead of time: 0.57×</title></circle><text x="16" y="64" font-size="10.5" fill="var(--ink)">Bricks: the robot&#x27;s choice</text><circle cx="509.0" cy="60" r="3.6" fill="#eb6834"><title>jit: 0.98×</title></circle><circle cx="436.9" cy="60" r="3.6" fill="#2a78d6"><title>ahead of time: 0.75×</title></circle><text x="16" y="79" font-size="10.5" fill="var(--ink)">Astrology: a chart (interpreted: the whole pro…</text><circle cx="440.8" cy="75" r="3.6" fill="#eb6834"><title>jit: 0.76×</title></circle><circle cx="448.1" cy="75" r="3.6" fill="#2a78d6"><title>ahead of time: 0.78×</title></circle><text x="16" y="94" font-size="10.5" fill="var(--ink)">Bricks: a step</text><circle cx="537.1" cy="90" r="3.6" fill="#eb6834"><title>jit: 1.09×</title></circle><circle cx="478.4" cy="90" r="3.6" fill="#2a78d6"><title>ahead of time: 0.87×</title></circle><text x="16" y="109" font-size="10.5" fill="var(--ink)">I Ching: a cast by yarrow</text><circle cx="533.2" cy="105" r="3.6" fill="#eb6834"><title>jit: 1.07×</title></circle><circle cx="508.1" cy="105" r="3.6" fill="#2a78d6"><title>ahead of time: 0.97×</title></circle><text x="16" y="124" font-size="10.5" fill="var(--ink)">I Ching: a cast by coins</text><circle cx="528.6" cy="120" r="3.6" fill="#eb6834"><title>jit: 1.05×</title></circle><circle cx="510.3" cy="120" r="3.6" fill="#2a78d6"><title>ahead of time: 0.98×</title></circle><text x="16" y="139" font-size="10.5" fill="var(--ink)">Tarot: a deal, One</text><circle cx="531.3" cy="135" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="511.3" cy="135" r="3.6" fill="#2a78d6"><title>ahead of time: 0.99×</title></circle><text x="16" y="154" font-size="10.5" fill="var(--ink)">Solitaire: a move made</text><circle cx="521.0" cy="150" r="3.6" fill="#eb6834"><title>jit: 1.02×</title></circle><circle cx="511.5" cy="150" r="3.6" fill="#2a78d6"><title>ahead of time: 0.99×</title></circle><text x="16" y="169" font-size="10.5" fill="var(--ink)">Downhill: a step</text><circle cx="510.5" cy="165" r="3.6" fill="#eb6834"><title>jit: 0.98×</title></circle><circle cx="515.4" cy="165" r="3.6" fill="#2a78d6"><title>ahead of time: 1.00×</title></circle><text x="16" y="184" font-size="10.5" fill="var(--ink)">Light trails: the robot&#x27;s choice, looking 150</text><circle cx="543.9" cy="180" r="3.6" fill="#eb6834"><title>jit: 1.11×</title></circle><circle cx="518.3" cy="180" r="3.6" fill="#2a78d6"><title>ahead of time: 1.01×</title></circle><text x="16" y="199" font-size="10.5" fill="var(--ink)">Minesweeper: 16 by 30: a cell opened</text><circle cx="519.1" cy="195" r="3.6" fill="#eb6834"><title>jit: 1.02×</title></circle><circle cx="520.0" cy="195" r="3.6" fill="#2a78d6"><title>ahead of time: 1.02×</title></circle><text x="16" y="214" font-size="10.5" fill="var(--ink)">Downhill: the robot&#x27;s choice</text><circle cx="504.1" cy="210" r="3.6" fill="#eb6834"><title>jit: 0.96×</title></circle><circle cx="520.2" cy="210" r="3.6" fill="#2a78d6"><title>ahead of time: 1.02×</title></circle><text x="16" y="229" font-size="10.5" fill="var(--ink)">Butterfly garden: a step</text><circle cx="504.8" cy="225" r="3.6" fill="#eb6834"><title>jit: 0.96×</title></circle><circle cx="520.3" cy="225" r="3.6" fill="#2a78d6"><title>ahead of time: 1.02×</title></circle><text x="16" y="244" font-size="10.5" fill="var(--ink)">Pinball: a board</text><circle cx="529.9" cy="240" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="521.0" cy="240" r="3.6" fill="#2a78d6"><title>ahead of time: 1.02×</title></circle><text x="16" y="259" font-size="10.5" fill="var(--ink)">Solitaire: a deal</text><circle cx="530.2" cy="255" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="522.5" cy="255" r="3.6" fill="#2a78d6"><title>ahead of time: 1.03×</title></circle><text x="16" y="274" font-size="10.5" fill="var(--ink)">Tarot: a deal, CelticCross</text><circle cx="496.0" cy="270" r="3.6" fill="#eb6834"><title>jit: 0.93×</title></circle><circle cx="529.3" cy="270" r="3.6" fill="#2a78d6"><title>ahead of time: 1.05×</title></circle><text x="16" y="289" font-size="10.5" fill="var(--ink)">Snake: a step</text><circle cx="526.3" cy="285" r="3.6" fill="#eb6834"><title>jit: 1.04×</title></circle><circle cx="531.8" cy="285" r="3.6" fill="#2a78d6"><title>ahead of time: 1.06×</title></circle><text x="16" y="304" font-size="10.5" fill="var(--ink)">Minesweeper: 9 by 9: a cell opened</text><circle cx="513.5" cy="300" r="3.6" fill="#eb6834"><title>jit: 0.99×</title></circle><circle cx="532.5" cy="300" r="3.6" fill="#2a78d6"><title>ahead of time: 1.07×</title></circle><text x="16" y="319" font-size="10.5" fill="var(--ink)">Light trails: a step</text><circle cx="539.0" cy="315" r="3.6" fill="#eb6834"><title>jit: 1.09×</title></circle><circle cx="535.2" cy="315" r="3.6" fill="#2a78d6"><title>ahead of time: 1.08×</title></circle><text x="16" y="334" font-size="10.5" fill="var(--ink)">Snake: the robot&#x27;s choice (42 long)</text><circle cx="541.4" cy="330" r="3.6" fill="#eb6834"><title>jit: 1.10×</title></circle><circle cx="537.2" cy="330" r="3.6" fill="#2a78d6"><title>ahead of time: 1.09×</title></circle><text x="16" y="349" font-size="10.5" fill="var(--ink)">Gnome dig: the robot&#x27;s choice</text><circle cx="544.6" cy="345" r="3.6" fill="#eb6834"><title>jit: 1.12×</title></circle><circle cx="540.6" cy="345" r="3.6" fill="#2a78d6"><title>ahead of time: 1.10×</title></circle><text x="16" y="364" font-size="10.5" fill="var(--ink)">Minesweeper: 9 by 9: the hint (a sure move)</text><circle cx="478.0" cy="360" r="3.6" fill="#eb6834"><title>jit: 0.87×</title></circle><circle cx="541.0" cy="360" r="3.6" fill="#2a78d6"><title>ahead of time: 1.10×</title></circle><text x="16" y="379" font-size="10.5" fill="var(--ink)">Star wave: a step</text><circle cx="524.0" cy="375" r="3.6" fill="#eb6834"><title>jit: 1.03×</title></circle><circle cx="541.4" cy="375" r="3.6" fill="#2a78d6"><title>ahead of time: 1.10×</title></circle><text x="16" y="394" font-size="10.5" fill="var(--ink)">Butterfly garden: the robot&#x27;s choice</text><circle cx="529.5" cy="390" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="544.6" cy="390" r="3.6" fill="#2a78d6"><title>ahead of time: 1.12×</title></circle><text x="16" y="409" font-size="10.5" fill="var(--ink)">Pinball: a step</text><circle cx="546.2" cy="405" r="3.6" fill="#eb6834"><title>jit: 1.12×</title></circle><circle cx="545.5" cy="405" r="3.6" fill="#2a78d6"><title>ahead of time: 1.12×</title></circle><text x="16" y="424" font-size="10.5" fill="var(--ink)">Minesweeper: 9 by 9: the mines laid</text><circle cx="510.5" cy="420" r="3.6" fill="#eb6834"><title>jit: 0.98×</title></circle><circle cx="547.1" cy="420" r="3.6" fill="#2a78d6"><title>ahead of time: 1.13×</title></circle><text x="16" y="439" font-size="10.5" fill="var(--ink)">Minesweeper: 16 by 30: the hint (a sure move)</text><circle cx="463.2" cy="435" r="3.6" fill="#eb6834"><title>jit: 0.82×</title></circle><circle cx="547.3" cy="435" r="3.6" fill="#2a78d6"><title>ahead of time: 1.13×</title></circle><text x="16" y="454" font-size="10.5" fill="var(--ink)">Gnome dig: a step</text><circle cx="516.2" cy="450" r="3.6" fill="#eb6834"><title>jit: 1.00×</title></circle><circle cx="548.7" cy="450" r="3.6" fill="#2a78d6"><title>ahead of time: 1.13×</title></circle><text x="16" y="469" font-size="10.5" fill="var(--ink)">Minesweeper: 16 by 30: the mines laid</text><circle cx="589.6" cy="465" r="3.6" fill="#eb6834"><title>jit: 1.32×</title></circle><circle cx="550.9" cy="465" r="3.6" fill="#2a78d6"><title>ahead of time: 1.14×</title></circle><text x="16" y="484" font-size="10.5" fill="var(--ink)">Star wave: the robot&#x27;s choice</text><circle cx="529.3" cy="480" r="3.6" fill="#eb6834"><title>jit: 1.05×</title></circle><circle cx="551.0" cy="480" r="3.6" fill="#2a78d6"><title>ahead of time: 1.14×</title></circle><text x="16" y="499" font-size="10.5" fill="var(--ink)">Checkers: the moves</text><circle cx="538.8" cy="495" r="3.6" fill="#eb6834"><title>jit: 1.09×</title></circle><circle cx="552.5" cy="495" r="3.6" fill="#2a78d6"><title>ahead of time: 1.15×</title></circle><text x="16" y="514" font-size="10.5" fill="var(--ink)">Mahjong solitaire: a deal</text><circle cx="546.0" cy="510" r="3.6" fill="#eb6834"><title>jit: 1.12×</title></circle><circle cx="556.8" cy="510" r="3.6" fill="#2a78d6"><title>ahead of time: 1.17×</title></circle><text x="16" y="529" font-size="10.5" fill="var(--ink)">Checkers: Hazel&#x27;s move, looking 2 ahead</text><circle cx="531.9" cy="525" r="3.6" fill="#eb6834"><title>jit: 1.07×</title></circle><circle cx="558.6" cy="525" r="3.6" fill="#2a78d6"><title>ahead of time: 1.18×</title></circle><text x="16" y="544" font-size="10.5" fill="var(--ink)">Checkers: Hazel&#x27;s move, looking 1 ahead</text><circle cx="531.6" cy="540" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="558.8" cy="540" r="3.6" fill="#2a78d6"><title>ahead of time: 1.18×</title></circle><text x="16" y="559" font-size="10.5" fill="var(--ink)">Tarot: a deal, YearAhead</text><circle cx="531.7" cy="555" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="559.5" cy="555" r="3.6" fill="#2a78d6"><title>ahead of time: 1.18×</title></circle><text x="16" y="574" font-size="10.5" fill="var(--ink)">Solitaire: every legal move</text><circle cx="505.6" cy="570" r="3.6" fill="#eb6834"><title>jit: 0.97×</title></circle><circle cx="560.5" cy="570" r="3.6" fill="#2a78d6"><title>ahead of time: 1.19×</title></circle><text x="16" y="589" font-size="10.5" fill="var(--ink)">Checkers: Hazel&#x27;s move, looking 4 ahead</text><circle cx="528.3" cy="585" r="3.6" fill="#eb6834"><title>jit: 1.05×</title></circle><circle cx="561.1" cy="585" r="3.6" fill="#2a78d6"><title>ahead of time: 1.19×</title></circle><text x="16" y="604" font-size="10.5" fill="var(--ink)">I Ching: a reading</text><circle cx="525.2" cy="600" r="3.6" fill="#eb6834"><title>jit: 1.04×</title></circle><circle cx="562.0" cy="600" r="3.6" fill="#2a78d6"><title>ahead of time: 1.19×</title></circle><text x="16" y="619" font-size="10.5" fill="var(--ink)">Mahjong: a hand dealt</text><circle cx="544.0" cy="615" r="3.6" fill="#eb6834"><title>jit: 1.11×</title></circle><circle cx="562.8" cy="615" r="3.6" fill="#2a78d6"><title>ahead of time: 1.20×</title></circle><text x="16" y="634" font-size="10.5" fill="var(--ink)">Go: a move played</text><circle cx="547.9" cy="630" r="3.6" fill="#eb6834"><title>jit: 1.13×</title></circle><circle cx="563.3" cy="630" r="3.6" fill="#2a78d6"><title>ahead of time: 1.20×</title></circle><text x="16" y="649" font-size="10.5" fill="var(--ink)">Checkers: Hazel&#x27;s move, looking 3 ahead</text><circle cx="531.1" cy="645" r="3.6" fill="#eb6834"><title>jit: 1.06×</title></circle><circle cx="567.7" cy="645" r="3.6" fill="#2a78d6"><title>ahead of time: 1.22×</title></circle><text x="16" y="664" font-size="10.5" fill="var(--ink)">Mahjong solitaire: Hazel&#x27;s choice of pair</text><circle cx="443.0" cy="660" r="3.6" fill="#eb6834"><title>jit: 0.76×</title></circle><circle cx="575.8" cy="660" r="3.6" fill="#2a78d6"><title>ahead of time: 1.26×</title></circle><text x="16" y="679" font-size="10.5" fill="var(--ink)">Mahjong: your options</text><circle cx="538.2" cy="675" r="3.6" fill="#eb6834"><title>jit: 1.09×</title></circle><circle cx="594.3" cy="675" r="3.6" fill="#2a78d6"><title>ahead of time: 1.35×</title></circle><text x="16" y="694" font-size="10.5" fill="var(--ink)">Go: the score</text><circle cx="599.2" cy="690" r="3.6" fill="#eb6834"><title>jit: 1.37×</title></circle><circle cx="597.0" cy="690" r="3.6" fill="#2a78d6"><title>ahead of time: 1.36×</title></circle><text x="16" y="709" font-size="10.5" fill="var(--ink)">Go: Hazel&#x27;s choice of move</text><circle cx="616.9" cy="705" r="3.6" fill="#eb6834"><title>jit: 1.46×</title></circle><circle cx="636.6" cy="705" r="3.6" fill="#2a78d6"><title>ahead of time: 1.58×</title></circle><circle cx="22" cy="729" r="4" fill="#2a78d6"/><text x="30" y="733" font-size="11" fill="var(--muted)">compiled ahead of time</text><circle cx="202" cy="729" r="4" fill="#eb6834"/><text x="210" y="733" font-size="11" fill="var(--muted)">through the jit (values crossing through Hazel’s)</text></svg>
+<figcaption>Not a build of the app: Node 22 on GitHub’s runners, hazeljs-examples’ <code>node/package-bench.mjs --no-interpreted</code> (run 45258983579). Each game on its own runner, timed with two builds of the package’s <code>hazel-lib.js</code> one after the other: cells (<code>hazeljs</code> at 3f1d825455) and the hybrid (<code>hazeljs-lists</code> at 46b42696f6, the same with <code>hazel-jit-lists</code> merged). One run each, so a ratio within about a tenth of 1 is within what single runs vary.</figcaption>
+</figure>
+<details><summary>Every operation, both shapes</summary>
+<div style="overflow-x:auto"><table class="nums"><thead><tr><th>operation</th><th>ahead of time, cells</th><th>ahead of time, hybrid</th><th>ratio</th><th>jit, cells</th><th>jit, hybrid</th><th>ratio</th></tr></thead><tbody><tr><td>I Ching: a cast by coins</td><td>0.117 µs</td><td>0.115 µs</td><td>0.98</td><td>5.1 µs</td><td>5.4 µs</td><td>1.05</td></tr><tr><td>I Ching: a cast by yarrow</td><td>0.439 µs</td><td>0.428 µs</td><td>0.97</td><td>5.3 µs</td><td>5.7 µs</td><td>1.07</td></tr><tr><td>I Ching: a reading</td><td>2.8 µs</td><td>3.3 µs</td><td>1.19</td><td>17.7 µs</td><td>18.4 µs</td><td>1.04</td></tr><tr><td>Tarot: a deal, One</td><td>0.288 µs</td><td>0.284 µs</td><td>0.99</td><td>8.3 µs</td><td>8.8 µs</td><td>1.06</td></tr><tr><td>Tarot: a deal, CelticCross</td><td>6.9 µs</td><td>7.3 µs</td><td>1.05</td><td>61.6 µs</td><td>57.4 µs</td><td>0.93</td></tr><tr><td>Tarot: a deal, YearAhead</td><td>10.2 µs</td><td>12.1 µs</td><td>1.18</td><td>82.3 µs</td><td>87.6 µs</td><td>1.06</td></tr><tr><td>Astrology: a chart (interpreted: the whole program built each time)</td><td>452 µs</td><td>352 µs</td><td>0.78</td><td>2,170 µs</td><td>1,643 µs</td><td>0.76</td></tr><tr><td>Checkers: the moves</td><td>8.3 µs</td><td>9.5 µs</td><td>1.15</td><td>18.0 µs</td><td>19.7 µs</td><td>1.09</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 1 ahead</td><td>16.9 µs</td><td>20.0 µs</td><td>1.18</td><td>28.8 µs</td><td>30.6 µs</td><td>1.06</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 2 ahead</td><td>31.2 µs</td><td>36.8 µs</td><td>1.18</td><td>43.4 µs</td><td>46.2 µs</td><td>1.07</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 3 ahead</td><td>85.2 µs</td><td>104 µs</td><td>1.22</td><td>98.3 µs</td><td>104 µs</td><td>1.06</td></tr><tr><td>Checkers: Hazel&#x27;s move, looking 4 ahead</td><td>238 µs</td><td>282 µs</td><td>1.19</td><td>257 µs</td><td>270 µs</td><td>1.05</td></tr><tr><td>Go: a move played</td><td>4.6 µs</td><td>5.5 µs</td><td>1.20</td><td>61.8 µs</td><td>69.9 µs</td><td>1.13</td></tr><tr><td>Go: Hazel&#x27;s choice of move</td><td>121 µs</td><td>191 µs</td><td>1.58</td><td>154 µs</td><td>225 µs</td><td>1.46</td></tr><tr><td>Go: the score</td><td>145 µs</td><td>198 µs</td><td>1.36</td><td>198 µs</td><td>272 µs</td><td>1.37</td></tr><tr><td>Minesweeper: 9 by 9: the mines laid</td><td>25.7 µs</td><td>29.0 µs</td><td>1.13</td><td>291 µs</td><td>286 µs</td><td>0.98</td></tr><tr><td>Minesweeper: 9 by 9: a cell opened</td><td>9.1 µs</td><td>9.7 µs</td><td>1.07</td><td>385 µs</td><td>383 µs</td><td>0.99</td></tr><tr><td>Minesweeper: 9 by 9: the hint (a sure move)</td><td>34.6 µs</td><td>38.1 µs</td><td>1.10</td><td>204 µs</td><td>178 µs</td><td>0.87</td></tr><tr><td>Minesweeper: 16 by 30: the mines laid</td><td>152 µs</td><td>174 µs</td><td>1.14</td><td>1,778 µs</td><td>2,351 µs</td><td>1.32</td></tr><tr><td>Minesweeper: 16 by 30: a cell opened</td><td>39.1 µs</td><td>39.8 µs</td><td>1.02</td><td>3,571 µs</td><td>3,626 µs</td><td>1.02</td></tr><tr><td>Minesweeper: 16 by 30: the hint (a sure move)</td><td>186 µs</td><td>210 µs</td><td>1.13</td><td>1,355 µs</td><td>1,116 µs</td><td>0.82</td></tr><tr><td>Mahjong: a hand dealt</td><td>54.0 µs</td><td>64.5 µs</td><td>1.20</td><td>150 µs</td><td>168 µs</td><td>1.11</td></tr><tr><td>Mahjong: a step</td><td>3.2 µs</td><td>1.8 µs</td><td>0.57</td><td>114 µs</td><td>121 µs</td><td>1.06</td></tr><tr><td>Mahjong: your options</td><td>8.9 µs</td><td>11.9 µs</td><td>1.35</td><td>51.4 µs</td><td>56.1 µs</td><td>1.09</td></tr><tr><td>Solitaire: a deal</td><td>16.5 µs</td><td>17.0 µs</td><td>1.03</td><td>196 µs</td><td>207 µs</td><td>1.06</td></tr><tr><td>Solitaire: every legal move</td><td>11.2 µs</td><td>13.3 µs</td><td>1.19</td><td>121 µs</td><td>117 µs</td><td>0.97</td></tr><tr><td>Solitaire: a move made</td><td>5.4 µs</td><td>5.3 µs</td><td>0.99</td><td>264 µs</td><td>270 µs</td><td>1.02</td></tr><tr><td>Mahjong solitaire: a deal</td><td>7,959 µs</td><td>9,310 µs</td><td>1.17</td><td>9,681 µs</td><td>10,872 µs</td><td>1.12</td></tr><tr><td>Mahjong solitaire: Hazel&#x27;s choice of pair</td><td>1.0 µs</td><td>1.3 µs</td><td>1.26</td><td>755 µs</td><td>576 µs</td><td>0.76</td></tr><tr><td>Pinball: a step</td><td>34.6 µs</td><td>38.8 µs</td><td>1.12</td><td>56.4 µs</td><td>63.4 µs</td><td>1.12</td></tr><tr><td>Pinball: a board</td><td>35.2 µs</td><td>36.0 µs</td><td>1.02</td><td>310 µs</td><td>328 µs</td><td>1.06</td></tr><tr><td>Downhill: a step</td><td>6.2 µs</td><td>6.2 µs</td><td>1.00</td><td>52.0 µs</td><td>51.2 µs</td><td>0.98</td></tr><tr><td>Downhill: the robot&#x27;s choice</td><td>2.3 µs</td><td>2.4 µs</td><td>1.02</td><td>13.7 µs</td><td>13.2 µs</td><td>0.96</td></tr><tr><td>Bricks: a step</td><td>2.3 µs</td><td>2.0 µs</td><td>0.87</td><td>32.7 µs</td><td>35.5 µs</td><td>1.09</td></tr><tr><td>Bricks: the robot&#x27;s choice</td><td>0.388 µs</td><td>0.289 µs</td><td>0.75</td><td>11.4 µs</td><td>11.2 µs</td><td>0.98</td></tr><tr><td>Snake: a step</td><td>3.9 µs</td><td>4.1 µs</td><td>1.06</td><td>49.8 µs</td><td>52.0 µs</td><td>1.04</td></tr><tr><td>Snake: the robot&#x27;s choice (42 long)</td><td>161 µs</td><td>175 µs</td><td>1.09</td><td>141 µs</td><td>156 µs</td><td>1.10</td></tr><tr><td>Light trails: a step</td><td>7.0 µs</td><td>7.6 µs</td><td>1.08</td><td>48.2 µs</td><td>52.7 µs</td><td>1.09</td></tr><tr><td>Light trails: the robot&#x27;s choice, looking 150</td><td>1,205 µs</td><td>1,220 µs</td><td>1.01</td><td>1,100 µs</td><td>1,226 µs</td><td>1.11</td></tr><tr><td>Star wave: a step</td><td>17.4 µs</td><td>19.2 µs</td><td>1.10</td><td>97.4 µs</td><td>101 µs</td><td>1.03</td></tr><tr><td>Star wave: the robot&#x27;s choice</td><td>27.6 µs</td><td>31.6 µs</td><td>1.14</td><td>46.7 µs</td><td>49.3 µs</td><td>1.05</td></tr><tr><td>Butterfly garden: a step</td><td>16.6 µs</td><td>16.9 µs</td><td>1.02</td><td>129 µs</td><td>124 µs</td><td>0.96</td></tr><tr><td>Butterfly garden: the robot&#x27;s choice</td><td>47.7 µs</td><td>53.3 µs</td><td>1.12</td><td>83.4 µs</td><td>88.0 µs</td><td>1.06</td></tr><tr><td>Gnome dig: a step</td><td>26.2 µs</td><td>29.7 µs</td><td>1.13</td><td>177 µs</td><td>178 µs</td><td>1.00</td></tr><tr><td>Gnome dig: the robot&#x27;s choice</td><td>681 µs</td><td>749 µs</td><td>1.10</td><td>596 µs</td><td>665 µs</td><td>1.12</td></tr></tbody></table></div>
 </details>
 
 <h3 id="lists-how">Three ways to hold a list<a class="anchor" href="#lists-how" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="lists-how" title="copy this section's address">copy link</button></h3>
@@ -495,10 +505,10 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><b>Fall back for the call.</b> Mixed mode, on the <code>hazel-jit</code> branch now: the interpreter runs the program around its holes and calls the complete functions compiled, and a call whose argument holds a hole, or that reaches an indeterminate value, is run again by the interpreter, for that call alone. It is correct and built, but a function with a hole in it is never compiled, and a call that meets a hole pays for a compiled try and an interpreted run.</li>
 <li><b>Indeterminate values in compiled code.</b> A hole compiles to a value, <code>$R.hole(id)</code>, that carries what is needed to rebuild its term. Each elimination form checks for one: <code>a + ?</code> gives an indeterminate sum; a case whose scrutinee is indeterminate, where some pattern might match, gives an indeterminate match holding its rules and the values its variables are bound to; applying an indeterminate function gives an indeterminate application. When the answer comes back to the interpreter, these become its residual terms, so the result is the one the interpreter would give. The cost is a check at every elimination form, as the step budget checks at every call, and code to build each residual form. This is what running terms with holes means in full.</li>
 </ol>
-<p><b>Together or apart?</b> Design them together and build them apart. The list’s shape decides where an indeterminate value can sit (an element, a tail), so the hybrid should leave a cell’s tail free to be any value from the start. But the hybrid is a change to the compiler’s output, its runtime and the value boundary, measurable on the seventeen games of <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>, while indeterminate values touch every elimination form. So: the hybrid lists first, measured; then indeterminate values on top of them.</p>
+<p><b>Together or apart?</b> Design them together, build them apart, and first the crossing. The list’s shape decides where an indeterminate value can sit (an element, a tail), and a cell’s tail is already free to be any value, so holes do not need the hybrid. The games say the hybrid does not pay by itself; what costs the jit most is converting a whole value through Hazel’s own at every call (<a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>), and a converter that writes a page’s arrays straight into cells, by the function’s declared type, removes most of that with no change of shape. So: converters by type first, then indeterminate values; the hybrid stays on its branch, <code>hazel-jit-lists</code>, to try again where lists are long or indexed.</p>
 
 <h3 id="home">Where hazel-jit lives<a class="anchor" href="#home" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="home" title="copy this section's address">copy link</button></h3>
-<p>Matthew, 2026-11-23: the jit should live in as few active PRs as possible, ideally two, both meant for <code>dev</code>: one tracking the jit alone, and its integration into the one npm package branch. The jit-only PR is <a href="https://github.com/hazelgrove/hazel/pull/2859">hazelgrove/hazel#2859</a> (branch <code>hazel-jit</code>, from <code>dev</code>, on Jane Street Core): the compiler, its value boundary and mixed mode, with the agreement tests and the evaluator tests’ sweep. The package’s PR, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, merges that branch. The livelits line keeps its own hazel-jit (<a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a>, and the build of <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>), with the livelit views, on the same compiler.</p>
+<p>Matthew, 2026-11-23: the jit should live in as few active PRs as possible, ideally two, both meant for <code>dev</code>: one tracking the jit alone, and its integration into the one npm package branch. The jit-only PR is <a href="https://github.com/hazelgrove/hazel/pull/2859">hazelgrove/hazel#2859</a> (branch <code>hazel-jit</code>, from <code>dev</code>, on Jane Street Core): the compiler, its value boundary and mixed mode, with the agreement tests and the evaluator tests’ sweep. The package’s PR, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, merges that branch (since 3f1d825455) rather than carrying a copy. The livelits line keeps its own hazel-jit (<a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a>, and the build of <a href="https://github.com/hazelgrove/hazel/pull/2819">#2819</a>), with the livelit views, on the same compiler. Moving the jit to <code>dev</code> found two things the livelits line hides: <code>dev</code> keeps both entries of a tuple with a label given twice, which compiled code cannot (so such a tuple is left to the interpreter), and <code>dev</code>’s statics lower a module to lets whose patterns lose their type annotations, so mixed mode finds no declared type for a module’s members and runs them on the interpreter, for now.</p>
 
 <h2 id="questions">Questions for the team<a class="anchor" href="#questions" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="questions" title="copy this section's address">copy link</button></h2>
 <p><b>Seventeen questions are open, for the team's meeting of 2026-11-17: two PRs to review, seven on mixed mode, three on what compiled code must match, three on how it lands, and two that an app met this morning.</b> Each has our lean and what the answer decides. None blocks today's work; the answers on mixed mode decide its first step.</p>
@@ -538,10 +548,12 @@ document.addEventListener("DOMContentLoaded", () => {
 </ol>
 
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
-<p><b>hazel-jit has its own PR for <code>dev</code> now, merged into the package’s branch; next, lists in the hybrid shape, then holes as indeterminate values (<a href="#lists">above</a>).</b> In order:</p>
+<p><b>hazel-jit has its own PR for <code>dev</code> now, merged into the package’s branch; the hybrid lists, measured on the games, do not pay; next, converters by declared type, then holes as indeterminate values (<a href="#lists">above</a>).</b> In order:</p>
 <ol class="outline">
 <li>The jit-only PR, <a href="https://github.com/hazelgrove/hazel/pull/2859">hazelgrove/hazel#2859</a> (<code>hazel-jit</code>), green in CI, and <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> taking the jit from it rather than from its own copy.</li>
-<li>Lists in the hybrid shape (<a href="#lists-how">above</a>), in the compiler’s output, its runtime and the value boundary, on <code>hazel-jit</code>; measured on <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>’s seventeen games against today’s cells, with a page’s arrays passed straight in.</li>
+<li><span class="muted">Done 11-23:</span> the hybrid lists, prototyped on <code>hazel-jit-lists</code> and measured on the seventeen games: about 8% slower ahead of time and 4% through the jit (<a href="#lists-games">above</a>). Cells stay.</li>
+<li>Converters by declared type: a page’s values written straight into compiled code’s shapes and back, without Hazel’s own values between, for the jit’s calls and mixed mode’s; <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> found this crossing to be most of the jit’s time on 34 of 45 operations.</li>
+<li>Mixed mode’s types from the statics: each function’s type from the info map, not from its annotation, so a module’s members compile on <code>dev</code> and a function needs no annotation.</li>
 <li>Indeterminate values in compiled code (<a href="#holes">above</a>): a design for each elimination form’s residual, then a prototype on the hybrid lists, checked against the interpreter by the evaluator tests’ sweep, whose programs with holes it would then compile.</li>
 <li>The crossing between the interpreter and compiled code measured, before any change to the interpreter’s own lists (<a href="#lists-interp">above</a>).</li>
 <li><span class="muted">Done 11-18, build 50:</span> the slides' builtins (<code>trial/761-slide-builtins</code>): an operator passed as a function, and <code>to_lvs</code>, so more of the slides' programs compile: 20 of the 129, against 15. Its full tests had gone past their 100 minutes twice (build 49's took 72; CI runs 44146528138 and 44165874889). With the consistency check's timing runs left to the quick tests, they finish in 77 minutes (CI run 44184122601). A trail CI now prints shows the slides' check taking 13 of them, 11 of those on twenty slides, 91 to 110 in the check's order, the livelit playground's among them, each run once each way. Build 49's timing rule ran each slide at least ten times, which likely explains why its quick tests ran long whenever a test was added, as the astrology test was (not yet checked). The run found a real difference: two b2t2 examples, <code>t.get_acne</code> with <code>t</code> a list of rows, which the interpreter projects through the list, each row's field, and hazel-jit compiled as a JavaScript property read, undefined on a list. Projection now goes through the list as the interpreter's does, with two tests, and all 20 compiled slides agree (CI run 44197056910). One evaluator test then parted, <code>(true).a</code>, which the interpreter leaves stuck: the compiled run now stops as indeterminate there, where it once read <code>undefined</code> and carried on, and the check counts that as agreeing. All of CI then passed (CI run 44211080673; the full tests in 92 minutes, against 77 before, so they are close to their limit), and the branch became build 50.</li>
@@ -729,7 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-23T19:03:51Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 0, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-23T20:00:30Z", "base": "dev"}}, BUILT = "2026-11-23";
+  const CACHED = {"hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-23T20:20:32Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 0, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-23T20:16:05Z", "base": "dev"}}, BUILT = "2026-11-23";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -871,6 +883,7 @@ document.addEventListener("DOMContentLoaded", () => {
  "builds": "Numbered as in reports 050 to 052. Build 45 is fc1103900d; '45 + N' is build 45 with ticket N's change alone; build 46 is the six changes merged (59f28470c3); build 47 adds the type-hole rule (f4f969588b) and is trial/694-view-jit since 2026-11-16.",
  "files": [
   "data/lists-bench.json",
+  "data/lists-games",
   "data/meta.json",
   "data/numbers.json",
   "data/slide-timing.tsv",
@@ -2001,6 +2014,426 @@ document.addEventListener("DOMContentLoaded", () => {
      "22.3 µs",
      "758 µs",
      "21.0 µs"
+    ]
+   ]
+  },
+  {
+   "section": "Measured on the games",
+   "section_id": "lists-games",
+   "columns": [
+    "operation",
+    "ahead of time, cells",
+    "ahead of time, hybrid",
+    "ratio",
+    "jit, cells",
+    "jit, hybrid",
+    "ratio"
+   ],
+   "rows": [
+    [
+     "I Ching: a cast by coins",
+     "0.117 µs",
+     "0.115 µs",
+     "0.98",
+     "5.1 µs",
+     "5.4 µs",
+     "1.05"
+    ],
+    [
+     "I Ching: a cast by yarrow",
+     "0.439 µs",
+     "0.428 µs",
+     "0.97",
+     "5.3 µs",
+     "5.7 µs",
+     "1.07"
+    ],
+    [
+     "I Ching: a reading",
+     "2.8 µs",
+     "3.3 µs",
+     "1.19",
+     "17.7 µs",
+     "18.4 µs",
+     "1.04"
+    ],
+    [
+     "Tarot: a deal, One",
+     "0.288 µs",
+     "0.284 µs",
+     "0.99",
+     "8.3 µs",
+     "8.8 µs",
+     "1.06"
+    ],
+    [
+     "Tarot: a deal, CelticCross",
+     "6.9 µs",
+     "7.3 µs",
+     "1.05",
+     "61.6 µs",
+     "57.4 µs",
+     "0.93"
+    ],
+    [
+     "Tarot: a deal, YearAhead",
+     "10.2 µs",
+     "12.1 µs",
+     "1.18",
+     "82.3 µs",
+     "87.6 µs",
+     "1.06"
+    ],
+    [
+     "Astrology: a chart (interpreted: the whole program built each time)",
+     "452 µs",
+     "352 µs",
+     "0.78",
+     "2,170 µs",
+     "1,643 µs",
+     "0.76"
+    ],
+    [
+     "Checkers: the moves",
+     "8.3 µs",
+     "9.5 µs",
+     "1.15",
+     "18.0 µs",
+     "19.7 µs",
+     "1.09"
+    ],
+    [
+     "Checkers: Hazel's move, looking 1 ahead",
+     "16.9 µs",
+     "20.0 µs",
+     "1.18",
+     "28.8 µs",
+     "30.6 µs",
+     "1.06"
+    ],
+    [
+     "Checkers: Hazel's move, looking 2 ahead",
+     "31.2 µs",
+     "36.8 µs",
+     "1.18",
+     "43.4 µs",
+     "46.2 µs",
+     "1.07"
+    ],
+    [
+     "Checkers: Hazel's move, looking 3 ahead",
+     "85.2 µs",
+     "104 µs",
+     "1.22",
+     "98.3 µs",
+     "104 µs",
+     "1.06"
+    ],
+    [
+     "Checkers: Hazel's move, looking 4 ahead",
+     "238 µs",
+     "282 µs",
+     "1.19",
+     "257 µs",
+     "270 µs",
+     "1.05"
+    ],
+    [
+     "Go: a move played",
+     "4.6 µs",
+     "5.5 µs",
+     "1.20",
+     "61.8 µs",
+     "69.9 µs",
+     "1.13"
+    ],
+    [
+     "Go: Hazel's choice of move",
+     "121 µs",
+     "191 µs",
+     "1.58",
+     "154 µs",
+     "225 µs",
+     "1.46"
+    ],
+    [
+     "Go: the score",
+     "145 µs",
+     "198 µs",
+     "1.36",
+     "198 µs",
+     "272 µs",
+     "1.37"
+    ],
+    [
+     "Minesweeper: 9 by 9: the mines laid",
+     "25.7 µs",
+     "29.0 µs",
+     "1.13",
+     "291 µs",
+     "286 µs",
+     "0.98"
+    ],
+    [
+     "Minesweeper: 9 by 9: a cell opened",
+     "9.1 µs",
+     "9.7 µs",
+     "1.07",
+     "385 µs",
+     "383 µs",
+     "0.99"
+    ],
+    [
+     "Minesweeper: 9 by 9: the hint (a sure move)",
+     "34.6 µs",
+     "38.1 µs",
+     "1.10",
+     "204 µs",
+     "178 µs",
+     "0.87"
+    ],
+    [
+     "Minesweeper: 16 by 30: the mines laid",
+     "152 µs",
+     "174 µs",
+     "1.14",
+     "1,778 µs",
+     "2,351 µs",
+     "1.32"
+    ],
+    [
+     "Minesweeper: 16 by 30: a cell opened",
+     "39.1 µs",
+     "39.8 µs",
+     "1.02",
+     "3,571 µs",
+     "3,626 µs",
+     "1.02"
+    ],
+    [
+     "Minesweeper: 16 by 30: the hint (a sure move)",
+     "186 µs",
+     "210 µs",
+     "1.13",
+     "1,355 µs",
+     "1,116 µs",
+     "0.82"
+    ],
+    [
+     "Mahjong: a hand dealt",
+     "54.0 µs",
+     "64.5 µs",
+     "1.20",
+     "150 µs",
+     "168 µs",
+     "1.11"
+    ],
+    [
+     "Mahjong: a step",
+     "3.2 µs",
+     "1.8 µs",
+     "0.57",
+     "114 µs",
+     "121 µs",
+     "1.06"
+    ],
+    [
+     "Mahjong: your options",
+     "8.9 µs",
+     "11.9 µs",
+     "1.35",
+     "51.4 µs",
+     "56.1 µs",
+     "1.09"
+    ],
+    [
+     "Solitaire: a deal",
+     "16.5 µs",
+     "17.0 µs",
+     "1.03",
+     "196 µs",
+     "207 µs",
+     "1.06"
+    ],
+    [
+     "Solitaire: every legal move",
+     "11.2 µs",
+     "13.3 µs",
+     "1.19",
+     "121 µs",
+     "117 µs",
+     "0.97"
+    ],
+    [
+     "Solitaire: a move made",
+     "5.4 µs",
+     "5.3 µs",
+     "0.99",
+     "264 µs",
+     "270 µs",
+     "1.02"
+    ],
+    [
+     "Mahjong solitaire: a deal",
+     "7,959 µs",
+     "9,310 µs",
+     "1.17",
+     "9,681 µs",
+     "10,872 µs",
+     "1.12"
+    ],
+    [
+     "Mahjong solitaire: Hazel's choice of pair",
+     "1.0 µs",
+     "1.3 µs",
+     "1.26",
+     "755 µs",
+     "576 µs",
+     "0.76"
+    ],
+    [
+     "Pinball: a step",
+     "34.6 µs",
+     "38.8 µs",
+     "1.12",
+     "56.4 µs",
+     "63.4 µs",
+     "1.12"
+    ],
+    [
+     "Pinball: a board",
+     "35.2 µs",
+     "36.0 µs",
+     "1.02",
+     "310 µs",
+     "328 µs",
+     "1.06"
+    ],
+    [
+     "Downhill: a step",
+     "6.2 µs",
+     "6.2 µs",
+     "1.00",
+     "52.0 µs",
+     "51.2 µs",
+     "0.98"
+    ],
+    [
+     "Downhill: the robot's choice",
+     "2.3 µs",
+     "2.4 µs",
+     "1.02",
+     "13.7 µs",
+     "13.2 µs",
+     "0.96"
+    ],
+    [
+     "Bricks: a step",
+     "2.3 µs",
+     "2.0 µs",
+     "0.87",
+     "32.7 µs",
+     "35.5 µs",
+     "1.09"
+    ],
+    [
+     "Bricks: the robot's choice",
+     "0.388 µs",
+     "0.289 µs",
+     "0.75",
+     "11.4 µs",
+     "11.2 µs",
+     "0.98"
+    ],
+    [
+     "Snake: a step",
+     "3.9 µs",
+     "4.1 µs",
+     "1.06",
+     "49.8 µs",
+     "52.0 µs",
+     "1.04"
+    ],
+    [
+     "Snake: the robot's choice (42 long)",
+     "161 µs",
+     "175 µs",
+     "1.09",
+     "141 µs",
+     "156 µs",
+     "1.10"
+    ],
+    [
+     "Light trails: a step",
+     "7.0 µs",
+     "7.6 µs",
+     "1.08",
+     "48.2 µs",
+     "52.7 µs",
+     "1.09"
+    ],
+    [
+     "Light trails: the robot's choice, looking 150",
+     "1,205 µs",
+     "1,220 µs",
+     "1.01",
+     "1,100 µs",
+     "1,226 µs",
+     "1.11"
+    ],
+    [
+     "Star wave: a step",
+     "17.4 µs",
+     "19.2 µs",
+     "1.10",
+     "97.4 µs",
+     "101 µs",
+     "1.03"
+    ],
+    [
+     "Star wave: the robot's choice",
+     "27.6 µs",
+     "31.6 µs",
+     "1.14",
+     "46.7 µs",
+     "49.3 µs",
+     "1.05"
+    ],
+    [
+     "Butterfly garden: a step",
+     "16.6 µs",
+     "16.9 µs",
+     "1.02",
+     "129 µs",
+     "124 µs",
+     "0.96"
+    ],
+    [
+     "Butterfly garden: the robot's choice",
+     "47.7 µs",
+     "53.3 µs",
+     "1.12",
+     "83.4 µs",
+     "88.0 µs",
+     "1.06"
+    ],
+    [
+     "Gnome dig: a step",
+     "26.2 µs",
+     "29.7 µs",
+     "1.13",
+     "177 µs",
+     "178 µs",
+     "1.00"
+    ],
+    [
+     "Gnome dig: the robot's choice",
+     "681 µs",
+     "749 µs",
+     "1.10",
+     "596 µs",
+     "665 µs",
+     "1.12"
     ]
    ]
   }

@@ -542,13 +542,56 @@ def lists_table():
     return ('<table class="nums"><thead><tr><th>elements</th><th>workload</th><th>cells (today)</th><th>arrays</th><th>hybrid</th></tr></thead>'
             f'<tbody>{body}</tbody></table>')
 
+# ---- lists as JavaScript arrays, on the games: cells (build hazeljs 3f1d825455) against the hybrid (hazeljs-lists 46b42696f6),
+# the same runner for both, one runner a game (hazeljs-examples bench/lists-hybrid, run 45258983579)
+LG_NAME = {"i-ching": "I Ching", "tarot": "Tarot", "astrology": "Astrology", "checkers": "Checkers", "go": "Go", "minesweeper": "Minesweeper",
+           "mahjong": "Mahjong", "solitaire": "Solitaire", "mahjong-solitaire": "Mahjong solitaire", "pinball": "Pinball", "downhill": "Downhill",
+           "bricks": "Bricks", "snake": "Snake", "trails": "Light trails", "starwave": "Star wave", "bugs": "Butterfly garden", "dig": "Gnome dig"}
+LG = []
+for g in LG_NAME:
+    a = json.load(open(os.path.join(HERE, "data", "lists-games", f"{g}-cells.json")))
+    b = json.load(open(os.path.join(HERE, "data", "lists-games", f"{g}-hybrid.json")))
+    for oa, ob in zip(a["ops"], b["ops"]):
+        assert oa["name"] == ob["name"] and all(w is None or w.get("same") for w in list(oa["ways"].values()) + list(ob["ways"].values()))
+        LG.append({"game": g, "op": oa["name"], "cells_jit": oa["ways"]["jit"]["ms"], "hybrid_jit": ob["ways"]["jit"]["ms"],
+                   "cells_aot": oa["ways"]["compiled"]["ms"], "hybrid_aot": ob["ways"]["compiled"]["ms"], "cpu": a["machine"]["model"]})
+LG_GM = lambda k1, k2: math.exp(sum(math.log(r[k2] / r[k1]) for r in LG) / len(LG))
+def fig_lists_games():
+    W, x0, x1 = 720, 330, 700
+    lo, hi = math.log10(0.5), math.log10(2)
+    X = lambda v: x0 + (math.log10(v) - lo) / (hi - lo) * (x1 - x0)
+    o = ['<text x="16" y="18" font-size="12.5" font-weight="700" fill="var(--ink)">The hybrid lists against cells, every game: time with the hybrid ÷ time with cells</text>']
+    rows = sorted(LG, key=lambda r: r["hybrid_aot"] / r["cells_aot"])
+    top, step = 40, 15
+    for v, lab in [(0.5, "½ the time"), (1, "the same"), (2, "twice")]:
+        sw = "2" if v == 1 else "1"
+        o.append(f'<line x1="{X(v):.1f}" y1="{top - 8}" x2="{X(v):.1f}" y2="{top + len(rows) * step}" stroke="var(--line)" stroke-width="{sw}"/>'
+                 f'<text x="{X(v):.1f}" y="{top - 12}" font-size="10.5" text-anchor="middle" fill="var(--muted)">{lab}</text>')
+    for i, r in enumerate(rows):
+        y = top + i * step
+        lab = f'{LG_NAME[r["game"]]}: {r["op"]}'; lab = lab if len(lab) <= 48 else lab[:46] + "…"
+        a, j = r["hybrid_aot"] / r["cells_aot"], r["hybrid_jit"] / r["cells_jit"]
+        o.append(f'<text x="16" y="{y + 9}" font-size="10.5" fill="var(--ink)">{esc(lab)}</text>'
+                 f'<circle cx="{X(j):.1f}" cy="{y + 5}" r="3.6" fill="#eb6834"><title>jit: {j:.2f}×</title></circle>'
+                 f'<circle cx="{X(a):.1f}" cy="{y + 5}" r="3.6" fill="#2a78d6"><title>ahead of time: {a:.2f}×</title></circle>')
+    y = top + len(rows) * step + 14
+    o.append(f'<circle cx="22" cy="{y}" r="4" fill="#2a78d6"/><text x="30" y="{y + 4}" font-size="11" fill="var(--muted)">compiled ahead of time</text>'
+             f'<circle cx="202" cy="{y}" r="4" fill="#eb6834"/><text x="210" y="{y + 4}" font-size="11" fill="var(--muted)">through the jit (values crossing through Hazel’s)</text>')
+    return f'<svg viewBox="0 0 {W} {y + 14}" role="img" aria-label="For each of 45 operations of 17 games, the time with hybrid lists divided by the time with cells, compiled and through the jit">' + "".join(o) + "</svg>"
+def lists_games_table():
+    body = "".join(f'<tr><td>{esc(LG_NAME[r["game"]])}: {esc(r["op"])}</td><td>{us(r["cells_aot"] * 1000)}</td><td>{us(r["hybrid_aot"] * 1000)}</td><td>{r["hybrid_aot"] / r["cells_aot"]:.2f}</td>'
+                   f'<td>{us(r["cells_jit"] * 1000)}</td><td>{us(r["hybrid_jit"] * 1000)}</td><td>{r["hybrid_jit"] / r["cells_jit"]:.2f}</td></tr>' for r in LG)
+    return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>operation</th><th>ahead of time, cells</th><th>ahead of time, hybrid</th><th>ratio</th>'
+            f'<th>jit, cells</th><th>jit, hybrid</th><th>ratio</th></tr></thead><tbody>{body}</tbody></table></div>')
+
 NUMS = {"updated": updated, "jit_pr": "2859", "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
         "tab_sint": sint_table(), "tab_slides": slides_table(), "tab_builds": builds_table(), "summary": summary_block(),
         "mixed_status": mixed_status(), "tab_mixed": mixed_table(), "fig_timing": fig_timing(), "tab_timing": timing_table(),
         "timing_summary": timing_summary(), "tab_calib": calib_table(), "tab_slide_timing": slide_table(),
-        "slide_summary": slide_summary(), "fig_lists": fig_lists(), "tab_lists": lists_table()}
+        "slide_summary": slide_summary(), "fig_lists": fig_lists(), "tab_lists": lists_table(), "fig_lists_games": fig_lists_games(), "tab_lists_games": lists_games_table(),
+        "lg_aot": f"{(LG_GM('cells_aot', 'hybrid_aot') - 1) * 100:.0f}%", "lg_jit": f"{(LG_GM('cells_jit', 'hybrid_jit') - 1) * 100:.0f}%", "lg_n": str(len(LG))}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
     body = body.replace("{{" + k + "}}", v)
