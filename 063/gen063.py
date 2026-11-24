@@ -36,6 +36,15 @@ gm = lambda xs: math.exp(sum(map(math.log, xs)) / len(xs))
 ratio = lambda a, b: [o[2][a] / o[2][b] for o in OPS if a in o[2] and b in o[2]]
 share = lambda o: max(0.0, (o[2]["jit"] - o[2]["compiled"]) / o[2]["jit"])   # the jit's time not spent in compiled code
 HEAVY = [o for o in OPS if share(o) < 0.5]
+# (2026-11-24) build 5: the same package with #2857's library at a97b6f7465 (converters by declared type), GitHub run 45424324608
+CV = {g: json.load(open(os.path.join(DATA, "conv", f"{g}.json"))) for g in ORDER}
+CONV = []   # (game, op name, {way: ms} the day before, {way: ms} with the converters)
+for g in ORDER:
+    old = {o["name"]: {w: r["ms"] for w, r in o["ways"].items() if r} for o in G[g]["ops"]}
+    for o in CV[g]["ops"]:
+        assert all(r is None or r.get("same") for r in o["ways"].values()), (g, o["name"])
+        CONV.append((g, o["name"], old[o["name"]], {w: r["ms"] for w, r in o["ways"].items() if r}))
+cvr = lambda k: [n[k] / o[k] for _, _, o, n in CONV]
 LIGHT = [o for o in OPS if share(o) >= 0.5]
 
 def t(ms):
@@ -118,6 +127,28 @@ def cross_svg():
                f'<rect class="mc" x="{x0}" y="{y}" width="10" height="10"/><text class="mut" x="{x0 + 14}" y="{y + 9}">the compiled code’s own work</text>'
                f'<rect class="mj" x="{x0 + 200}" y="{y}" width="10" height="10"/><text class="mut" x="{x0 + 214}" y="{y + 9}">crossing: the values in and out</text>')
     return f'<svg viewBox="0 0 {W} {y + 16}" role="img" aria-label="Each operation\'s jit time split into the compiled code\'s own work and the crossing, sorted by the crossing\'s share">' + "".join(out) + "</svg>"
+
+
+# ---- figure (2026-11-24): each operation's jit time over its time ahead of time, the day before and with the converters
+def conv_svg():
+    W, x0, w = 640, 262, 300
+    lo, hi = math.log10(0.01), math.log10(3000)
+    X = lambda r: x0 + w * (math.log10(min(max(r, 0.01), 3000)) - lo) / (hi - lo)
+    rows = sorted(CONV, key=lambda c: c[2]["jit"] / c[2]["compiled"], reverse=True)
+    out, y = [], 18
+    for k, v in enumerate([0.01, 0.1, 1, 10, 100, 1000]):
+        out.append(f'<line class="grid" x1="{X(v):.1f}" y1="12" x2="{X(v):.1f}" y2="{18 + 14 * len(rows)}"/><text class="mut small" x="{X(v):.1f}" y="9" text-anchor="middle">{v:g}×</text>')
+    for g, name, o, n in rows:
+        a, b = o["jit"] / o["compiled"], n["jit"] / n["compiled"]; lab = f"{NAME[g]}: {name}"; lab = lab if len(lab) <= 44 else lab[:42] + "…"
+        out.append(f'<text class="lbl small" x="8" y="{y + 9}">{esc(lab)}</text><line x1="{X(a):.1f}" y1="{y + 5}" x2="{X(b):.1f}" y2="{y + 5}" stroke="var(--muted)" stroke-width="1"/>'
+                   f'<circle class="cvo" cx="{X(a):.1f}" cy="{y + 5}" r="3.6"><title>the day before: jit {t(o["jit"])}, ahead of time {t(o["compiled"])}</title></circle>'
+                   f'<circle class="cvn" cx="{X(b):.1f}" cy="{y + 5}" r="3.6"><title>with the converters: jit {t(n["jit"])}, ahead of time {t(n["compiled"])}</title></circle>'
+                   f'<text class="mut small" x="{x0 + w + 8}" y="{y + 9}">{t(o["jit"])} → {t(n["jit"])}</text>')
+        y += 14
+    out.append(f'<line x1="{X(1):.1f}" y1="12" x2="{X(1):.1f}" y2="{y}" stroke="var(--ink)" stroke-width="1.2"/>')
+    y += 10
+    out.append(f'<circle class="cvo" cx="{x0 + 6}" cy="{y + 5}" r="4"/><text class="mut" x="{x0 + 14}" y="{y + 9}">the day before (build 2)</text><circle class="cvn" cx="{x0 + 176}" cy="{y + 5}" r="4"/><text class="mut" x="{x0 + 184}" y="{y + 9}">with the converters (build 5)</text>')
+    return f'<svg viewBox="0 0 {W} {y + 20}" role="img" aria-label="Each operation\'s time through the jit as a multiple of its time ahead of time, the day before and with the converters">' + "".join(out) + "</svg>"
 
 # ---- figure: building a game's rules: interpreted, jit; and the ahead-of-time file's size
 def once_svg():
@@ -215,6 +246,7 @@ B = lambda k: [G[g]["once"][k] for g in ORDER]
 plain_games = [g for g in ORDER if any("plain JS" in o[2] for o in OPS if o[0] == g)]
 models = sorted({G[g]["machine"]["model"] for g in ORDER})
 EXTRA = """
+  .cvo { fill: var(--warn); } .cvn { fill: var(--good); }
   figure.chart svg { width: 100%; height: auto; display: block; }
   svg .lbl { fill: var(--ink); font: 13px system-ui, sans-serif; } svg .mut { fill: var(--muted); font: 12px system-ui, sans-serif; }
   svg .small { font-size: 11px; } svg .grp { fill: var(--ink); font: 700 12px system-ui, sans-serif; }
@@ -248,6 +280,12 @@ FIGS = {
     "aot_min": kb(min(B("wrappedBytes"))), "aot_max": kb(max(B("wrappedBytes"))), "runtime_kb": kb(G["dig"]["once"]["runtimeBytes"]),
     "dig_bi": t(G["dig"]["once"]["interpretedBuildMs"]), "dig_bj": t(G["dig"]["once"]["jitBuildMs"]),
     "n_models": str(len(models)), "node": G["dig"]["machine"]["node"],
+    "conv": conv_svg(), "cv_gm": x_(1 / gm(cvr("jit"))), "cv_old_ja": x_(gm([o["jit"] / o["compiled"] for _, _, o, n in CONV])), "cv_new_ja": f'{gm([n["jit"] / n["compiled"] for _, _, o, n in CONV]):.1f}×',
+    "cv_near": str(sum(1 for _, _, o, n in CONV if n["jit"] / n["compiled"] <= 1.5)),
+    "cv_i": f'{gm(cvr("interpreted")):.2f}×', "cv_c": f'{gm(cvr("compiled")):.2f}×', "cv_c_min": f'{min(cvr("compiled")):.2f}×', "cv_c_max": f'{max(cvr("compiled")):.2f}×',
+    "cv_pin_old": t(next(o["jit"] for g, nm, o, n in CONV if g == "pinball" and nm == "a board")), "cv_pin_new": t(next(n["jit"] for g, nm, o, n in CONV if g == "pinball" and nm == "a board")),
+    "cv_ms30_j": t(next(n["jit"] for g, nm, o, n in CONV if g == "minesweeper" and nm.startswith("16 by 30: a cell"))),
+    "cv_b_worst": ", ".join(f'{NAME[g]} {t(G[g]["once"]["jitBuildMs"])} → {t(CV[g]["once"]["jitBuildMs"])}' for g in sorted(ORDER, key=lambda g: -CV[g]["once"]["jitBuildMs"] / G[g]["once"]["jitBuildMs"])[:3]),
 }
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in FIGS.items(): body = body.replace("{{" + k + "}}", v)
@@ -258,7 +296,8 @@ DESC = (f"Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one
         f"from dev, and every game in hazeljs-examples timed four ways. The package's jit runs the games {x_(gm(IJ))} as fast as its interpreter "
         f"(geometric mean over {len(OPS)} operations), from {x_(min(IJ))} to {x_(max(IJ))}: on searches it is as fast as code compiled ahead of time, "
         f"but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run "
-        f"{x_(gm(IC))} as fast as interpreted, and the five written by hand in JavaScript about {x_(gm(CP))} faster again. Then the decisions before it merges into dev.")
+        f"{x_(gm(IC))} as fast as interpreted, and the five written by hand in JavaScript about {x_(gm(CP))} faster again. A day later, with #2857's converters by declared type, "
+        f"the jit ran them {x_(1 / gm(cvr('jit')))} as fast again, about even with code compiled ahead of time. Then the decisions before it merges into dev.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
