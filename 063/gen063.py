@@ -45,6 +45,18 @@ for g in ORDER:
         assert all(r is None or r.get("same") for r in o["ways"].values()), (g, o["name"])
         CONV.append((g, o["name"], old[o["name"]], {w: r["ms"] for w, r in o["ways"].items() if r}))
 cvr = lambda k: [n[k] / o[k] for _, _, o, n in CONV]
+# (2026-11-24) build 5 again, on each game's own run of states (node/package-bench.mjs --runs, GitHub run 45452623490): every way
+# from the same start, each call given that way's last answer; "jit, fresh copies" with every argument copied before each call
+RUNS = []   # (game, run name, steps, {way: run record})
+RUN_CLK = []   # each runner's performance.now(), ns a call
+for g in ORDER:
+    f = os.path.join(DATA, "runs", f"{g}-runs.json")
+    if not os.path.exists(f): continue
+    for r in json.load(open(f))["runs"]:
+        assert all(v is None or (v.get("same") and "ms" in v) for v in r["ways"].values()), (g, r["name"])
+        RUNS.append((g, r["name"], r["steps"], {w: v for w, v in r["ways"].items() if v}))
+    RUN_CLK.append(json.load(open(f))["clockNs"])
+rw = lambda a, b: [w[a]["usPerCall"] / w[b]["usPerCall"] for _, _, _, w in RUNS]
 LIGHT = [o for o in OPS if share(o) >= 0.5]
 
 def t(ms):
@@ -157,6 +169,38 @@ def conv_svg():
     out += legend([("the day before (build 2)", "cvo"), ("with the converters (build 5)", "cvn")], 12, y + 5)
     return f'<svg viewBox="0 0 {W} {y + 20}" role="img" aria-label="Each operation\'s time through the jit as a multiple of its time ahead of time, the day before and with the converters">' + "".join(out) + "</svg>"
 
+# ---- figure (2026-11-24): each game's own run, the time a call each way, on a log scale
+RUN_WAYS = [("interpreted", "mi", "interpreted"), ("jit", "mj", "jit"), ("jit, fresh copies", "mf", "jit, every argument copied"), ("compiled", "mc", "compiled ahead of time"), ("plain JS", "mp", "plain JS")]
+def run_short(g, name, steps):
+    m = re.match(r"(\d+ frames|a game of \d+ moves|a game on 9 by 9, \d+ turns|16 by 30, \d+ taps|a hand of \d+ steps|a deal, \d+ moves|a deal, \d+ pairs taken)", name)
+    return f"{NAME[g]}: {m.group(1) if m else name}"
+def runs_svg():
+    W, x0, x1 = 640, 262, 628
+    lo, hi = -1, 6                      # 10^-1 us (0.1 µs) to 10^6 us (1 s)
+    X = lambda us: x0 + (math.log10(us) - lo) / (hi - lo) * (x1 - x0)
+    out, y = [], 26
+    ticks = [(-1, "0.1 µs"), (0, "1 µs"), (1, "10 µs"), (2, "0.1 ms"), (3, "1 ms"), (4, "10 ms"), (5, "0.1 s"), (6, "1 s")]
+    for e, lab in ticks: out.append(f'<text class="mut" x="{X(10 ** e):.1f}" y="14" text-anchor="{"end" if e == hi else "middle"}">{lab}</text>')
+    top = y
+    for title, gs in GROUPS:
+        rs = [r for r in RUNS if r[0] in gs]
+        if not rs: continue
+        y += 6; out.append(f'<text class="grp" x="8" y="{y + 12}">{esc(title)}</text>'); y += 18
+        for g, name, steps, w in rs:
+            vs = [w[k]["usPerCall"] for k, _, _ in RUN_WAYS if k in w]
+            out.append(f'<text class="lbl small" x="8" y="{y + 10}">{esc(run_short(g, name, steps))}</text>'
+                       f'<line class="span" x1="{X(min(vs)):.1f}" y1="{y + 6}" x2="{X(max(vs)):.1f}" y2="{y + 6}"/>')
+            for k, cls, words in RUN_WAYS:
+                if k in w:
+                    us = w[k]["usPerCall"]
+                    out.append(f'<circle class="{cls}" cx="{X(us):.1f}" cy="{y + 6}" r="4.2"><title>{esc(NAME[g])}, {esc(name)}: {words} {t(us / 1000)} a call, {w[k]["calls"]} calls</title></circle>')
+            y += 15
+    for e, _ in ticks: out.insert(0, f'<line class="grid" x1="{X(10 ** e):.1f}" y1="{top - 6}" x2="{X(10 ** e):.1f}" y2="{y}"/>')
+    y += 10
+    out += legend([(words, cls) for _, cls, words in RUN_WAYS[:3]], 12, y)
+    out += legend([(words, cls) for _, cls, words in RUN_WAYS[3:]], 12, y + 18)
+    return f'<svg viewBox="0 0 {W} {y + 30}" role="img" aria-label="Each game\'s own run of states, the time a call five ways, on a log scale from a tenth of a microsecond to a second">' + "".join(out) + "</svg>"
+
 # ---- figure: building a game's rules: interpreted, jit; and the ahead-of-time file's size
 def once_svg():
     W, x0, w = 640, 150, 330
@@ -258,7 +302,7 @@ EXTRA = """
   svg .lbl { fill: var(--ink); font: 13px system-ui, sans-serif; } svg .mut { fill: var(--muted); font: 12px system-ui, sans-serif; }
   svg .small { font-size: 11px; } svg .grp { fill: var(--ink); font: 700 12px system-ui, sans-serif; }
   svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
-  svg .mi { fill: #6b737d; } svg .mj { fill: #eb6834; } svg .mc { fill: #2a78d6; } svg .mp { fill: #2e9e5b; }
+  svg .mi { fill: #6b737d; } svg .mj { fill: #eb6834; } svg .mc { fill: #2a78d6; } svg .mp { fill: #2e9e5b; } svg .mf { fill: var(--paper); stroke: #eb6834; stroke-width: 2; }
   svg .pbox { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; } svg .pbox.interpreted { stroke: #6b737d; } svg .pbox.jit { stroke: #eb6834; }
   svg .pbox.compiled { stroke: #2a78d6; } svg .pbox.editor { stroke: #2e9e5b; } svg .arrow { fill: none; stroke: var(--muted); stroke-width: 1.5; }
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td:first-child, table.nums th:first-child { text-align: left; }
@@ -292,6 +336,19 @@ FIGS = {
     "cv_i": f'{gm(cvr("interpreted")):.2f}×', "cv_c": f'{gm(cvr("compiled")):.2f}×', "cv_c_min": f'{min(cvr("compiled")):.2f}×', "cv_c_max": f'{max(cvr("compiled")):.2f}×',
     "cv_pin_old": t(next(o["jit"] for g, nm, o, n in CONV if g == "pinball" and nm == "a board")), "cv_pin_new": t(next(n["jit"] for g, nm, o, n in CONV if g == "pinball" and nm == "a board")),
     "cv_ms30_j": t(next(n["jit"] for g, nm, o, n in CONV if g == "minesweeper" and nm.startswith("16 by 30: a cell"))),
+    "runs": runs_svg(), "rn_n": str(len(RUNS)), "rn_ja": f'{gm(rw("jit", "compiled")):.2f}×',
+    "rn_faster": ", ".join(f'{NAME[g]} {w["jit"]["usPerCall"] / w["compiled"]["usPerCall"]:.2f}×' for g, _, _, w in sorted(RUNS, key=lambda r: r[3]["jit"]["usPerCall"] / r[3]["compiled"]["usPerCall"])[:3]),
+    "rn_slower": ", ".join(f'{NAME[g]} {w["jit"]["usPerCall"] / w["compiled"]["usPerCall"]:.2f}×' for g, _, _, w in sorted(RUNS, key=lambda r: -r[3]["jit"]["usPerCall"] / r[3]["compiled"]["usPerCall"])[:3]),
+    "rn_fresh": f'{gm(rw("jit, fresh copies", "jit")):.1f}×',
+    "rn_fresh_top": ", ".join(f'{NAME[g]} {w["jit, fresh copies"]["usPerCall"] / w["jit"]["usPerCall"]:.0f}×' for g, _, _, w in sorted(RUNS, key=lambda r: -r[3]["jit, fresh copies"]["usPerCall"] / r[3]["jit"]["usPerCall"])[:4]),
+    "rn_fresh_c": f'{gm(rw("jit, fresh copies", "compiled")):.1f}×',
+    "rn_ij": x_(gm(rw("interpreted", "jit"))), "rn_jp": x_(gm([w["jit"]["usPerCall"] / w["plain JS"]["usPerCall"] for _, _, _, w in RUNS if "plain JS" in w])),
+    "rn_ms_j": t(next(w["jit"]["usPerCall"] for g, _, _, w in RUNS if g == "minesweeper") / 1000),
+    "rn_ms_f": t(next(w["jit, fresh copies"]["usPerCall"] for g, _, _, w in RUNS if g == "minesweeper") / 1000),
+    "rn_ms_c": t(next(w["compiled"]["usPerCall"] for g, _, _, w in RUNS if g == "minesweeper") / 1000),
+    "rn_clock": f'{sorted(RUN_CLK)[len(RUN_CLK) // 2]:.0f} ns', "rn_steps": f'{sum(s for _, _, s, _ in RUNS):,}',
+    "rn_short": "; ".join(f'{NAME[g]}, {run_short(g, n, s).split(": ", 1)[1].replace("a game of ", "").replace("a game on 9 by 9, ", "").replace("a deal, ", "").replace("a hand of ", "")}' for g, n, s, w in sorted(RUNS, key=lambda r: r[2]) if s < 120),
+    "rn_fresh_even": ", ".join(NAME[g] for g, _, _, w in RUNS if w["jit, fresh copies"]["usPerCall"] <= 1.05 * w["compiled"]["usPerCall"]),
     "cv_b_worst": ", ".join(f'{NAME[g]} {t(G[g]["once"]["jitBuildMs"])} → {t(CV[g]["once"]["jitBuildMs"])}' for g in sorted(ORDER, key=lambda g: -CV[g]["once"]["jitBuildMs"] / G[g]["once"]["jitBuildMs"])[:3]),
 }
 body = open(os.path.join(HERE, "body.html")).read()
@@ -304,7 +361,8 @@ DESC = (f"Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one
         f"(geometric mean over {len(OPS)} operations), from {x_(min(IJ))} to {x_(max(IJ))}: on searches it is as fast as code compiled ahead of time, "
         f"but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run "
         f"{x_(gm(IC))} as fast as interpreted, and the five written by hand in JavaScript about {x_(gm(CP))} faster again. A day later, with #2857's converters by declared type, "
-        f"the jit ran them {x_(1 / gm(cvr('jit')))} as fast again on the benchmark's repeated positions, about even with code compiled ahead of time. Then the decisions before it merges into dev.")
+        f"the jit ran them {x_(1 / gm(cvr('jit')))} as fast again on the benchmark's repeated positions; on each game's own run of states it takes {gm(rw('jit', 'compiled')):.2f} of the time of code compiled ahead of time, "
+        f"and {gm(rw('jit, fresh copies', 'jit')):.1f} times its own when every state is a fresh copy. Then the decisions before it merges into dev.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)

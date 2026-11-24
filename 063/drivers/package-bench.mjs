@@ -13,14 +13,17 @@
 // (as many calls as take at least a millisecond), and the median of the batches taken, per call; the interpreter at least
 // 3 times and for at least 1.5 s, the others at least 30 times and for at least 0.3 s.
 //
-//   node node/package-bench.mjs <game> <hazeljs package dir> [out.json] [--quick]
+//   node node/package-bench.mjs <game> <hazeljs package dir> [out.json] [--quick] [--runs]
+//
+// (ticket 795, 2026-11-24) --runs times a game's own run of states in place of the single operations: see "a game's own run
+// of states" below.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const QUICK = process.argv.includes("--quick");
+const QUICK = process.argv.includes("--quick"), RUNS = process.argv.includes("--runs");
 const args = process.argv.slice(2).filter(a => !a.startsWith("--"));
 const [GAME, PKG, OUT] = args;
 if (!GAME || !PKG) { console.log("usage: node node/package-bench.mjs <game> <hazeljs package dir> [out.json] [--quick]"); process.exit(2); }
@@ -128,7 +131,9 @@ function op(name, call, opts = {}) {
 }
 
 // ---- each game's operations (compare-compiled.mjs's timed ones), on positions the compiled rules make
-if (GAME === "i-ching") {
+if (RUNS) {
+  // (--runs: the single operations are not timed; their runs are, below)
+} else if (GAME === "i-ching") {
   const TAGS = ["YoungYin", "YoungYang", "OldYin", "OldYang"], six = [0, 1, 2, 3, 4, 5].map(i => ({ tag: TAGS[i % 4] }));
   op("a cast by coins", e => e.cast({ tag: "Coins" }, 0.3, 0.6, 0.1));
   op("a cast by yarrow", e => e.cast({ tag: "Yarrow" }, 0.3, 0.6, 0.1));
@@ -208,15 +213,135 @@ if (GAME === "i-ching") {
   op("the robot's choice", e => e.robot(g));
 }
 
+// ---- (ticket 795, 2026-11-24) a game's own run of states. The timings above call one operation again and again on one
+// position, so from the second call on the jit's memos find that position already converted (the converted-closed invariant:
+// a node met again was converted whole) and its crossing costs next to nothing. Here each way plays one run instead, from the
+// same start, every call given what that way's previous call answered, as a page does. The run is recorded once by the
+// compiled rules (the robot's choices with a press of chance now and then, or random legal moves), so every way makes the
+// same calls with the same inputs, and every way's last state is compared with the compiled one's.
+//
+//   jit, fresh copies   the same run through the jit, every argument copied (structuredClone, off the clock) before each
+//                       call, so no memo finds it and every call converts its arguments whole: a page that builds its own
+//                       state each frame, and the most a crossing can cost
+//
+// The clock: each call timed alone (performance.now() before and after), summed over the run. The interpreter plays the run
+// once; the others once to warm up, then again until at least 5 runs and 0.3 s (at most 50), and the median run is taken.
+const runs = [];
+const REC = n => QUICK ? Math.min(n, 40) : n;
+const clockNs = (() => { const n = 100000, t0 = now(); for (let i = 0; i < n; i++) now(); return (now() - t0) / n * 1e6; })();
+function player(e, fresh) {
+  const p = { ms: 0, calls: 0 };
+  p.call = (f, ...xs) => {
+    if (fresh) xs = xs.map(x => x !== null && typeof x === "object" ? structuredClone(x) : x);
+    const t0 = now(); const r = e[f](...xs); p.ms += now() - t0; p.calls++; return r;
+  };
+  return p;
+}
+function run(name, rec, replay) {
+  const row = { name, steps: rec.inputs.length, ways: {} };
+  const want = replay(player(C, false).call, rec);
+  const ways = [WAYS[0], WAYS[1], ["jit, fresh copies", jitted.value, true], ...WAYS.slice(2)];
+  for (const [way, impl, fresh] of ways) {
+    try {
+      const play = () => { const p = player(impl, !!fresh); const end = replay(p.call, rec); return { end, ms: p.ms, calls: p.calls }; };
+      const first = play(), per = [];
+      if (way === "interpreted") per.push(first.ms);
+      else { const t0 = now(), reps = QUICK ? 2 : 5, minMs = QUICK ? 30 : 300; while (per.length < 50 && (per.length < reps || now() - t0 < minMs)) per.push(play().ms); }
+      const ms = median(per);
+      row.ways[way] = { ms, usPerCall: ms / first.calls * 1000, calls: first.calls, reps: per.length, min: Math.min(...per), same: !differs(first.end, want) };
+    } catch (e) { row.ways[way] = { error: String(e && e.message || e).slice(0, 300) }; }
+  }
+  runs.push(row);
+  const show = w => { const r = row.ways[w]; return r == null ? "-" : r.error ? "error: " + r.error.slice(0, 80) : `${r.ms.toFixed(r.ms < 10 ? 3 : 0)} ms (${r.usPerCall < 10 ? r.usPerCall.toFixed(2) : r.usPerCall.toFixed(0)} us a call)` + (r.same ? "" : " (DIFFERS)"); };
+  console.log(`run, ${name}: ${Object.keys(row.ways).map(w => `${w} ${show(w)}`).join("; ")}`);
+}
+// the real-time games: a frame a step, at most 600 frames (ten seconds at 60 frames a second)
+const frames = (start, choose, step) => {
+  const inputs = []; let g = start;
+  for (let k = 0; k < REC(600) && !g.over; k++) { const x = choose(g); inputs.push(x); g = step(C, g, x); }
+  return { start, inputs, replay: (call, r) => { let g = r.start; for (const x of r.inputs) g = step({ step: (...a) => call("step", ...a) }, g, x); return g; } };
+};
+const frameRun = (what, f) => run(`${f.inputs.length} frames${what}`, f, f.replay);
+if (RUNS && GAME === "checkers") {
+  const start = C.start, inputs = []; let g = start;
+  for (let i = 0; i < REC(160) && !g.over; i++) { const ms = C.moves(g); if (!ms.length) break; const k = Math.floor(draw() * ms.length); inputs.push(k); g = C.apply(g, ms[k]); }
+  run(`a game of ${inputs.length} moves (each: the moves, then one made)`, { start, inputs }, (call, r) => { let g = r.start; for (const k of r.inputs) { const ms = call("moves", g); g = call("apply", g, ms[k]); } return g; });
+} else if (RUNS && GAME === "go") {
+  const start = C.fresh(9), inputs = []; let g = start;
+  for (let i = 0; i < REC(120) && !g.over; i++) { const w = C.choose(g, ints(81, 20)); inputs.push(w); g = w < 0 ? C.pass(g) : C.play(g, w); }
+  run(`a game on 9 by 9, ${inputs.length} turns (each: a move played, or a pass)`, { start, inputs }, (call, r) => { let g = r.start; for (const w of r.inputs) g = w < 0 ? call("pass", g) : call("play", g, w); return g; });
+} else if (RUNS && GAME === "minesweeper") {
+  const rows = 16, cols = 30, us = Array.from({ length: rows * cols }, draw);
+  const start = C.reveal(C.lay(rows, cols, 99, us, 8, 15), 8, 15), inputs = []; let g = start;
+  for (let i = 0; i < REC(400) && !g.over; i++) {
+    const m = C.sure(g); let r, c, flagIt = false;
+    if (m.kind) { r = Math.floor(m.at / cols); c = m.at % cols; flagIt = m.kind === 2 || m.kind === 3; }
+    else { const cl = []; g.grid.forEach((row, a) => row.forEach((x, b) => { if (!x.open && !x.flag && !x.mine) cl.push([a, b]); })); if (!cl.length) break; [r, c] = cl[Math.floor(draw() * cl.length)]; }
+    inputs.push([flagIt, r, c]); g = flagIt ? C.flag(g, r, c) : C.reveal(g, r, c);
+  }
+  run(`16 by 30, ${inputs.length} taps (each: a cell opened or flagged)`, { start, inputs }, (call, r) => { let g = r.start; for (const [f, a, b] of r.inputs) g = call(f ? "flag" : "reveal", g, a, b); return g; });
+} else if (RUNS && GAME === "mahjong") {
+  const NONE = { kind: 0, tile: -1 }, waiting = o => !!o && (o.discard || o.win || o.pung || o.kong || o.chows.length > 0 || o.kongs.length > 0);
+  const start = C.start(ints(136, 1e6)), inputs = []; let g = start;
+  for (let i = 0; i < REC(400) && g.phase !== 3; i++) {
+    const o = C.options(g), hand = g.seats[0].hand, x = draw();
+    const a = o.discard ? (o.win && x < 0.6 ? { kind: 2, tile: -1 } : { kind: 1, tile: hand[Math.floor(draw() * hand.length)] })
+      : o.win && x < 0.7 ? { kind: 8, tile: g.tile } : o.pung && x < 0.4 ? { kind: 6, tile: g.tile } : waiting(o) ? { kind: 4, tile: -1 } : NONE;
+    inputs.push(a); g = C.step(g, a);
+  }
+  run(`a hand of ${inputs.length} steps (each: your options, then a step)`, { start, inputs }, (call, r) => { let g = r.start; for (const a of r.inputs) { call("options", g); g = call("step", g, a); } return g; });
+} else if (RUNS && GAME === "solitaire") {
+  const start = C.deal(Array.from({ length: 52 }, draw), 1), inputs = []; let g = start;
+  for (let i = 0; i < REC(200); i++) { const ms = C.moves(g); if (!ms.length || C.won(g)) break; const k = Math.floor(draw() * ms.length); inputs.push(k); g = C.apply(g, ms[k]); }
+  run(`a deal, ${inputs.length} moves (each: the moves, whether it is won, then one made)`, { start, inputs }, (call, r) => { let g = r.start; for (const k of r.inputs) { const ms = call("moves", g); call("won", g); g = call("apply", g, ms[k]); } return g; });
+} else if (RUNS && GAME === "mahjong-solitaire") {
+  const start = C.deal(0, 31337), inputs = []; let g = start;
+  for (let i = 0; i < REC(80) && !C.won(g); i++) { const p = C.best(g); if (!p || p.a < 0) break; inputs.push([p.a, p.b]); g = C.take(g, p.a, p.b); }
+  run(`a deal, ${inputs.length} pairs taken (each: the free places, then a pair taken)`, { start, inputs }, (call, r) => { let g = r.start; for (const [a, b] of r.inputs) { call("frees", g); g = call("take", g, a, b); } return g; });
+} else if (RUNS && GAME === "pinball") {
+  frameRun(" (the flippers at random, the plunger when the ball waits)", frames(C.start(0),
+    g => [draw() < 0.2, draw() < 0.2, g.vx === 0 && g.vy === 0 && g.x > 540000 ? 1 + Math.floor(draw() * 100) : 0],
+    (e, g, [l, r, launch]) => e.step(0, g, l, r, launch)));
+} else if (RUNS && GAME === "downhill") {
+  frameRun(" (the robot's turns and crouches, a press of chance now and then)", frames(C.start(9, true),
+    g => { const c = C.robot(g); return [draw() < 0.05 ? (draw() < 0.5 ? -1 : 1) : c.turn, draw() < 0.1 ? !c.tuck : c.tuck]; },
+    (e, g, [turn, tuck]) => e.step(g, turn, tuck)));
+} else if (RUNS && GAME === "bricks") {
+  frameRun(" (the robot's paddle, sent elsewhere now and then)", frames(C.start(0, false),
+    g => { const c = C.robot(g); return [draw() < 0.05 ? Math.floor(draw() * 600) : c.target, c.launch]; },
+    (e, g, [target, launch]) => e.step(g, target, launch)));
+} else if (RUNS && GAME === "snake") {
+  frameRun(" (the robot's turns, one of chance now and then)", frames(C.start(5, false),
+    g => draw() < 0.05 ? Math.floor(draw() * 4) : C.robot(g),
+    (e, g, d) => e.step(g, d)));
+} else if (RUNS && GAME === "trails") {
+  const luck = () => Math.floor(draw() * 100);
+  frameRun(" (both robot riders)", frames(C.start(0),
+    g => [C.robot(g, 1, 6, 12, luck()), C.robot(g, 2, 150, 0, luck())],
+    (e, g, [a, b]) => e.step(g, a, b)));
+} else if (RUNS && GAME === "starwave") {
+  frameRun(" (the robot's moves and shots, one of chance now and then)", frames(C.start(42),
+    g => { const c = C.robot(g); return [draw() < 0.05 ? Math.floor(draw() * 3) - 1 : c.move, draw() < 0.05 ? !c.fire : c.fire]; },
+    (e, g, [move, fire]) => e.step(g, move, fire)));
+} else if (RUNS && GAME === "bugs") {
+  frameRun(" (the robot's moves and shots, one of chance now and then)", frames(C.start(42),
+    g => { const c = C.robot(g); return [draw() < 0.05 ? Math.floor(draw() * 3) - 1 : c.mx, c.my, draw() < 0.05 ? !c.fire : c.fire]; },
+    (e, g, [mx, my, fire]) => e.step(g, mx, my, fire)));
+} else if (RUNS && GAME === "dig") {
+  frameRun(" (the robot's ways, flashes and blasts, one of chance now and then)", frames(C.start(42),
+    g => { const c = C.robot(g); return [draw() < 0.05 ? Math.floor(draw() * 5) - 1 : c.dir, draw() < 0.02 ? true : c.flash, draw() < 0.02 ? true : c.blast]; },
+    (e, g, [dir, flash, blast]) => e.step(g, dir, flash, blast)));
+} else if (RUNS) console.log(`${GAME}: no run of states (each call stands alone), nothing to time with --runs`);
+
 let machine = {};
 try { machine = { cpus: os.cpus().length, model: os.cpus()[0].model, node: process.version, platform: `${os.platform()} ${os.release()}` }; } catch (e) { /* */ }
 const out = {
   game: GAME, when: new Date().toISOString(), quick: QUICK, machine,
   package: { name: pkgJson.name, version: pkgJson.version, hazel: pkgJson.hazel || null, build: Hazel.build },
   examples: (() => { try { return execSync("git rev-parse HEAD", { cwd: new URL("..", import.meta.url) }).toString().trim(); } catch (e) { return null; } })(),
-  once, ops,
+  once, ops, runs, clockNs,
 };
 console.log(`once: ${JSON.stringify(once)}`);
 if (OUT) writeFileSync(OUT, JSON.stringify(out, null, 1));
-const bad = ops.flatMap(o => Object.entries(o.ways).filter(([, r]) => r && (r.error || !r.same)).map(([w]) => `${o.name} (${w})`));
+const bad = [...ops, ...runs].flatMap(o => Object.entries(o.ways).filter(([, r]) => r && (r.error || !r.same)).map(([w]) => `${o.name} (${w})`));
 if (bad.length) { console.log("NOT THE SAME: " + bad.join("; ")); process.exit(1); }
