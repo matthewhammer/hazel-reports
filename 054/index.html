@@ -158,7 +158,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-24 14:07 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-24 15:11 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
 <li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, step counts and probes as the interpreter's, and compiling ahead of time for older phones.</li>
 <li><a href="#lists">Lists as JavaScript arrays, and holes</a>: arrays measured against today’s cells and a hybrid of the two; holes in lists, terms with holes, the order to build them in, and where hazel-jit lives now.</li>
-<li><a href="#records">Records the page’s way</a>: a record held as a page’s object crosses for nothing and builds about 12 times as fast; five decisions first, for Matthew (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>).</li>
+<li><a href="#records">Records the page’s way</a>: a record held as a page’s object crosses for nothing and builds about 12 times as fast; five decisions, for Matthew (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>); decision 1 <a href="#records-tried">tried</a>: idea A even with today as games play, faster wherever records cross new.</li>
 <li><a href="#seq">A sequence beside List</a>: a treap over array views inserts anywhere in about a microsecond at every size up to a million, and takes a page’s array for nothing; a walk costs about what cells cost (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>).</li>
 <li><a href="#envs">What a closure keeps</a>: whether <code>dev</code> trims a value’s environments to what the value uses (it does not), where that was tried, what trimming would take, and what the jit already does.</li>
 <li><a href="#questions">Questions for the team</a>: seventeen open design questions, each with our lean, for the team's meeting of 2026-11-17, two of them met by the astrology oracle this morning.</li>
@@ -549,12 +549,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h3 id="records-decide">Five decisions<a class="anchor" href="#records-decide" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="records-decide" title="copy this section's address">copy link</button></h3>
 <ol class="decide">
-<li><b>Which tuples become objects?</b> A tuple whose every entry is labeled becomes an object, its keys in its type’s order. A tuple with no labels stays an array. A tuple with some labels stays an array carrying them, as today, since an object puts a number key (a position) ahead of every label and would lose the order. When a tuple’s type is known, the statics already put its entries in the type’s order and add the labels it left out (<code>LabeledTuple.rearrange</code>, in the elaboration of a tuple against a product type). Our lean: so.</li>
+<li><b>Which tuples become objects?</b> A tuple whose every entry is labeled becomes an object, its keys in its type’s order. A tuple with no labels stays an array. A tuple with some labels stays an array carrying them, as today, since an object puts a number key (a position) ahead of every label and would lose the order. When a tuple’s type is known, the statics already put its entries in the type’s order and add the labels it left out (<code>LabeledTuple.rearrange</code>, in the elaboration of a tuple against a product type). Our lean: so. <i>Tried on 2026-11-24, at Matthew’s ask, with the two other ideas: <a href="#records-tried">below</a>.</i></li>
 <li><b>Telling a record from a cell or a constructor.</b> Some of compiled code does not know a value’s type and looks at its shape: the runtime’s projection (which also takes a column from a list of rows), its equality, the label builtins, and the value boundary’s untyped way. Today a cell is <code>{h, t}</code> and a constructor <code>{c, v}</code>, and the runtime tests one key, <code>"h" in v</code> for a cell and <code>"c" in v</code> for a constructor, so a record with a field <code>h</code> (a height) or <code>c</code> (a column) would be taken for one. Options: (a) cells and constructors made by classes, told apart with <code>instanceof</code>: about 0.7 ns more for each cell built, and a walk costs the same; (b) their fields named <code>$h</code>, <code>$t</code>, <code>$c</code> and <code>$v</code>, still plain literals: no record has a key beginning with <code>$</code>, since such a label is already kept under <code>"$" ++ label</code>; (c) no shape test at all: equality, projection and the label builtins made from the type, as the converters are. Equality made from the type took 7.6 ns, against 25.6 ns today. Either (a) or (b) changes the games’ ahead-of-time files, whose converters, written by hand, build <code>{h, t}</code> and <code>{c, v}</code>, unless those files take generated converters (<a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>, What next). Our lean: (c) wherever the type is at hand, and (b) for the rest.</li>
 <li><b>A pattern by position against a record.</b> Mostly settled already: when the matched type is labeled, the statics add its labels to a pattern by position (<code>MatchedTyp.prod</code>), so compiled code reads <code>let (a, b) = r</code> as <code>r["x"]</code> and <code>r["y"]</code>, checked on the package’s compiled output for a declared function, a <code>case</code> and an undeclared literal. Only an unknown or unlabeled matched type leaves the pattern by position, and there compiled code reads <code>r[0]</code>, which an object does not have. Checking this found a disagreement today: <code>let f = fun r -> let (a, b) = r in a - b in f((x = 5, y = 2))</code> is stuck in the interpreter, which binds <code>a</code> to the labeled entry <code>x = 5</code>, while the jit answers 3 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-851"><code class="ref"><b>^ticket(</b>851<b>)</b></code></a>). Options for that case: (a) compiled code checks that the entry at the position has no label, and a run that meets one goes to the interpreter, as hazel-jit’s rule for anything indeterminate has it; with records as objects the check is <code>Array.isArray</code>; (b) a fallback through <code>Object.values</code>, 68.4 ns a read against 1.2 ns, which would repeat today’s disagreement. Our lean: (a), which fixes <a href="https://matthewhammer.org/hazel/dashboard/#ticket-851"><code class="ref"><b>^ticket(</b>851<b>)</b></code></a> either way.</li>
 <li><b>What a page may do with an object.</b> If compiled code keeps the page’s own object, a page that changes it afterwards changes a Hazel value, and Hazel’s values never change. The converters’ memory already assumes the page will not (“the rule for a page”, in the converters’ comment in <code>HazelLibCore.re</code>), and the same goes for a record the page gets back. Options: (a) state the rule, as React does for its state: what a page gives Hazel, or gets from it, it does not change; (b) freeze what crosses (<code>Object.freeze</code>), at least in a development build; (c) copy at the edge, which gives back most of the crossing’s cost. Our lean: (a), with (b) in development.</li>
 <li><b>Checking at the edge.</b> A page may hand over <code>{x: 1.5}</code> where the type says Int. Today’s converters check each field, and a call whose value does not fit goes the old way. One pass of checks and no copy cost 3.8 ms for a million records; trusting the page costs nothing. Our lean: check, as now.</li>
 </ol>
+<h3 id="records-tried">Decision 1, tried<a class="anchor" href="#records-tried" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="records-tried" title="copy this section's address">copy link</button></h3>
+<p><b>Three ideas, at Matthew’s ask (2026-11-24: “for decision 1 -- try the first 3 best ideas (or 2 best) --- and report back”). A, a tuple with every entry labeled held as a plain object, built on a trial branch and played on every game’s own run: as a page plays, about even with today (1.01 of its time, the geometric mean over 14 games), 0.86 of it when no memo helps, and a page’s list of new records crossing 6.8 to 24 times as fast; every answer the same. B, any labeled tuple an object, is A on every game: none of them makes a tuple with some entries labeled and others not. C is today. Our lean stays A, with field reads compiled straight to the property next, the cost the games show.</b></p>
+<ul>
+<li><b>B against A: nothing to tell them apart.</b> Counted in the games’ runs (the ahead-of-time runtime’s <code>tup</code> counting each labeled tuple it makes), the fourteen games make about 565,000 labeled tuples and not one with only some entries labeled; Hazel’s own tests have one, in hazel-jit’s “an extension replacing a label”, <code>(a=1, 3, c=4)</code>. B would need keys for the unlabeled entries (<code>$1</code>) and reads by position that find them, for a case nothing uses, so it was not built.</li>
+<li><b>A, built.</b> hazelgrove/hazel <code>trial/847-records-objects</code> (off <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, ec2a330996; all CI green at 2aa0b9b451): compiled code writes such a tuple as an object literal; the runtime’s <code>tup</code>, projection, labels, extension, equality and the label builtins read and make records; a pattern by position that meets one stops for the interpreter (as <a href="https://matthewhammer.org/hazel/dashboard/#ticket-851"><code class="ref"><b>^ticket(</b>851<b>)</b></code></a> has it for arrays); the value boundary writes a record as an object and reads one back (by its type, or by its shape: a list’s cell is exactly <code>h</code> and <code>t</code>, a constructor <code>c</code> and perhaps <code>v</code>); the converters pass a record of plain values (numbers, booleans, strings) through as the page’s own object, checked, with no copy and no memo, and make a new object of any other. The games found one thing the tests had not: a program’s functions come back in its tail, now a record, and only an array’s were given their converters, so every game’s step ran on the interpreter; fixed, with a test.</li>
+</ul>
+<div style="overflow-x:auto"><table class="nums"><thead><tr><th>a call, on the game’s own run</th><th>C, as the page plays</th><th>A</th><th>A over C</th><th>C, every argument a fresh copy</th><th>A</th><th>A over C</th></tr></thead><tbody><tr><td>Mahjong solitaire</td><td>64.3 µs</td><td>42.6 µs</td><td>0.66×</td><td>403 µs</td><td>333 µs</td><td>0.83×</td></tr><tr><td>Bricks</td><td>5.2 µs</td><td>4.5 µs</td><td>0.87×</td><td>7.0 µs</td><td>5.6 µs</td><td>0.80×</td></tr><tr><td>Mahjong</td><td>21.3 µs</td><td>18.7 µs</td><td>0.87×</td><td>47.9 µs</td><td>31.5 µs</td><td>0.66×</td></tr><tr><td>Butterfly garden</td><td>5.8 µs</td><td>5.1 µs</td><td>0.88×</td><td>15.5 µs</td><td>7.3 µs</td><td>0.47×</td></tr><tr><td>Downhill</td><td>8.7 µs</td><td>8.0 µs</td><td>0.91×</td><td>9.1 µs</td><td>7.9 µs</td><td>0.87×</td></tr><tr><td>Snake</td><td>3.7 µs</td><td>3.6 µs</td><td>0.96×</td><td>2.7 µs</td><td>2.7 µs</td><td>1.03×</td></tr><tr><td>Gnome dig</td><td>40.7 µs</td><td>39.4 µs</td><td>0.97×</td><td>56.1 µs</td><td>48.4 µs</td><td>0.86×</td></tr><tr><td>Checkers</td><td>21.8 µs</td><td>21.8 µs</td><td>1.00×</td><td>17.5 µs</td><td>19.9 µs</td><td>1.14×</td></tr><tr><td>Star wave</td><td>15.6 µs</td><td>16.1 µs</td><td>1.03×</td><td>19.2 µs</td><td>17.4 µs</td><td>0.91×</td></tr><tr><td>Light trails</td><td>5.7 µs</td><td>6.5 µs</td><td>1.13×</td><td>5.5 µs</td><td>5.6 µs</td><td>1.01×</td></tr><tr><td>Go</td><td>20.0 µs</td><td>24.1 µs</td><td>1.21×</td><td>20.6 µs</td><td>25.2 µs</td><td>1.23×</td></tr><tr><td>Solitaire</td><td>8.6 µs</td><td>10.6 µs</td><td>1.24×</td><td>41.5 µs</td><td>48.4 µs</td><td>1.17×</td></tr><tr><td>Pinball</td><td>32.1 µs</td><td>41.1 µs</td><td>1.28×</td><td>29.5 µs</td><td>41.3 µs</td><td>1.40×</td></tr><tr><td>Minesweeper</td><td>17.3 µs</td><td>23.8 µs</td><td>1.38×</td><td>147 µs</td><td>50.4 µs</td><td>0.34×</td></tr></tbody></table></div>
+<p class="muted">Ideas A and C, each game on its own GitHub runner, C’s run then A’s on the same machine (hazeljs-examples <code>bench/847-a-vs-c</code>, run 45498058581; the driver <code>054/drivers/package-bench-847.mjs</code>, <code>--runs --aot-as-is --no-interp</code>): each game’s run recorded once and replayed, every call given the state the last answered; a call’s time is the run’s calls summed over their number. Both against the games’ own ahead-of-time files as the reference for the answers: the jit took 0.75 of their time with A and 0.75 with C.</p>
+<ul>
+<li><b>Where A wins:</b> Mahjong solitaire 0.66×, Bricks 0.87×, Mahjong 0.87× as the page plays; with every argument a fresh copy, Minesweeper 0.34×, Butterfly garden 0.47×, Mahjong 0.66×: a record of plain values crosses with one pass of checks, where C converts it into an array and back.</li>
+<li><b>Where A loses:</b> Minesweeper 1.38×, Pinball 1.28×, Solitaire 1.24×, Go 1.21×. Two costs, both A’s and both mendable. Every projection, <code>g.x</code>, is a call to the runtime’s <code>dot</code>, which for an object now asks <code>hasOwnProperty</code> as well, where an array went straight to <code>t[k]</code>: Pinball’s physics projects all the time. And a record of plain values handed back is checked field by field each call, where C’s memo found it in one lookup: Minesweeper’s board is 480 such records. Next: compile <code>e.k</code> to the property itself, falling back to <code>dot</code> only when it is absent (a list of rows, something indeterminate); and let a list of plain records that comes back unchanged be found by the list’s own memo, as it is now, so its records are not checked again.</li>
+</ul>
+<div style="overflow-x:auto"><table class="nums"><thead><tr><th>records in the list</th><th>C, new records</th><th>A, new records</th><th>A as fast</th><th>C, the same list again</th><th>A, again</th></tr></thead><tbody><tr><td>1</td><td>1.3 µs</td><td>0.8 µs</td><td>1.6×</td><td>0.3 µs</td><td>0.3 µs</td></tr><tr><td>10</td><td>6.5 µs</td><td>1.7 µs</td><td>3.9×</td><td>0.3 µs</td><td>0.3 µs</td></tr><tr><td>100</td><td>39.5 µs</td><td>5.9 µs</td><td>6.6×</td><td>0.3 µs</td><td>0.2 µs</td></tr><tr><td>1,000</td><td>0.22 ms</td><td>9.4 µs</td><td>23.6×</td><td>0.2 µs</td><td>0.2 µs</td></tr><tr><td>10,000</td><td>2.40 ms</td><td>99.8 µs</td><td>24.1×</td><td>0.2 µs</td><td>0.2 µs</td></tr><tr><td>100,000</td><td>45 ms</td><td>1.84 ms</td><td>24.3×</td><td>0.2 µs</td><td>0.2 µs</td></tr><tr><td>1,000,000</td><td>458 ms</td><td>67 ms</td><td>6.8×</td><td>0.3 µs</td><td>0.2 µs</td></tr></tbody></table></div>
+<p class="muted">Not a build of the app: the laptop, Node v22.23.2, a page’s list of records <code>(x = Int, y = Int)</code> into <code>Hazel.jit</code>’s compiled identity and out (<code>054/drivers/records-cross.mjs</code>), hazeljs 0.0.12 for C and the trial’s library for A, one process each; new records made off the clock for each call, or the same list handed back. At a million, A’s 67 ms (C’s 458 ms) is mostly the list itself, still converted cell by cell until a list crosses as an array (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>). Summing a field over the list in compiled code took the same time either way.</p>
+
 <p><b>The interpreter does not change.</b> Its record stays a labeled tuple of terms; only the value boundary (<code>HazelJitValue</code>, both ways) and the converters learn the new shape. With the answers, the next step is a trial branch off <code>hazeljs</code> (<code>trial/847-records-objects</code>), checked by the agreement tests and the evaluator tests’ sweep in CI, and timed on the games’ own runs as <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> times them.</p>
 
 <h2 id="seq">A sequence beside List<a class="anchor" href="#seq" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="seq" title="copy this section's address">copy link</button></h2>
@@ -835,7 +850,7 @@ document.addEventListener("DOMContentLoaded", () => {
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2015": {"author": "7h3kk1d", "comments": 2, "created": "2025-11-12T21:53:53Z", "kind": "pull", "state": "draft", "title": "cleanup: remove closure environment from FixF terms", "updated": "2026-02-03T18:16:39Z", "base": "dev"}, "hazelgrove/hazel#2222": {"author": "Negabinary", "comments": 6, "created": "2026-04-22T14:12:05Z", "kind": "pull", "state": "merged", "title": "Incremental evaluation", "updated": "2026-05-26T22:00:06Z", "base": "dev"}, "hazelgrove/hazel#2463": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-19T19:38:35Z", "kind": "pull", "state": "draft", "title": "Don't reuse a cached value that carries no environment", "updated": "2026-09-15T02:44:46Z", "base": "dev"}, "hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-11-24T21:06:17Z", "base": "dev"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2684": {"author": "disconcision", "comments": 1, "created": "2026-10-16T08:41:12Z", "kind": "pull", "state": "open", "title": "Show stuck results without inlining callees at every level", "updated": "2026-11-24T19:02:32Z", "base": "dev"}, "hazelgrove/hazel#2808": {"author": "matthewhammer", "comments": 0, "created": "2026-11-04T17:11:28Z", "kind": "pull", "state": "open", "title": "non-`dev` (`lib-floor`): A function the library hands back keeps its closure, and a test holds a call's cost to what it does", "updated": "2026-11-04T17:11:42Z", "base": "lib-floor"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-24T19:20:43Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-24T18:44:02Z", "base": "dev"}}, BUILT = "2026-11-24";
+  const CACHED = {"hazelgrove/hazel#2015": {"author": "7h3kk1d", "comments": 2, "created": "2025-11-12T21:53:53Z", "kind": "pull", "state": "draft", "title": "cleanup: remove closure environment from FixF terms", "updated": "2026-02-03T18:16:39Z", "base": "dev"}, "hazelgrove/hazel#2222": {"author": "Negabinary", "comments": 6, "created": "2026-04-22T14:12:05Z", "kind": "pull", "state": "merged", "title": "Incremental evaluation", "updated": "2026-05-26T22:00:06Z", "base": "dev"}, "hazelgrove/hazel#2463": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-19T19:38:35Z", "kind": "pull", "state": "draft", "title": "Don't reuse a cached value that carries no environment", "updated": "2026-09-15T02:44:46Z", "base": "dev"}, "hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-11-24T21:38:37Z", "base": "dev"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2684": {"author": "disconcision", "comments": 1, "created": "2026-10-16T08:41:12Z", "kind": "pull", "state": "open", "title": "Show stuck results without inlining callees at every level", "updated": "2026-11-24T19:02:32Z", "base": "dev"}, "hazelgrove/hazel#2808": {"author": "matthewhammer", "comments": 0, "created": "2026-11-04T17:11:28Z", "kind": "pull", "state": "open", "title": "non-`dev` (`lib-floor`): A function the library hands back keeps its closure, and a test holds a call's cost to what it does", "updated": "2026-11-04T17:11:42Z", "base": "lib-floor"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-24T19:20:43Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-24T18:44:02Z", "base": "dev"}}, BUILT = "2026-11-24";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -976,12 +991,15 @@ document.addEventListener("DOMContentLoaded", () => {
  "measurements": "The sweep: the report Test_HazelJit_Agree prints at the end of the evaluator tests in CI's log (hazelgrove/hazel, GitHub Actions), build 47's fast checks (run 43887985051, job 133371195383) and the first sweep's full tests (run 43754503317). The Witch: jit.yml's Firefox check (scripts/jit_slides.py) on GitHub's machines, one run per build, the runs named in the builds table. Node microbenchmarks and hazeljs 0.0.6 checks are not builds of the app.",
  "builds": "Numbered as in reports 050 to 052. Build 45 is fc1103900d; '45 + N' is build 45 with ticket N's change alone; build 46 is the six changes merged (59f28470c3); build 47 adds the type-hole rule (f4f969588b) and is trial/694-view-jit since 2026-11-16.",
  "files": [
+  "data/a-vs-c",
   "data/crossing.json",
   "data/game-shapes.json",
   "data/lists-bench.json",
   "data/lists-games",
   "data/meta.json",
   "data/numbers.json",
+  "data/records-cross-a.json",
+  "data/records-cross-c.json",
   "data/records.json",
   "data/seq.json",
   "data/slide-timing.tsv",
@@ -2874,6 +2892,217 @@ document.addEventListener("DOMContentLoaded", () => {
      "0",
      "10",
      "9%"
+    ]
+   ]
+  },
+  {
+   "section": "Decision 1, tried",
+   "section_id": "records-tried",
+   "columns": [
+    "a call, on the game’s own run",
+    "C, as the page plays",
+    "A",
+    "A over C",
+    "C, every argument a fresh copy",
+    "A",
+    "A over C"
+   ],
+   "rows": [
+    [
+     "Mahjong solitaire",
+     "64.3 µs",
+     "42.6 µs",
+     "0.66×",
+     "403 µs",
+     "333 µs",
+     "0.83×"
+    ],
+    [
+     "Bricks",
+     "5.2 µs",
+     "4.5 µs",
+     "0.87×",
+     "7.0 µs",
+     "5.6 µs",
+     "0.80×"
+    ],
+    [
+     "Mahjong",
+     "21.3 µs",
+     "18.7 µs",
+     "0.87×",
+     "47.9 µs",
+     "31.5 µs",
+     "0.66×"
+    ],
+    [
+     "Butterfly garden",
+     "5.8 µs",
+     "5.1 µs",
+     "0.88×",
+     "15.5 µs",
+     "7.3 µs",
+     "0.47×"
+    ],
+    [
+     "Downhill",
+     "8.7 µs",
+     "8.0 µs",
+     "0.91×",
+     "9.1 µs",
+     "7.9 µs",
+     "0.87×"
+    ],
+    [
+     "Snake",
+     "3.7 µs",
+     "3.6 µs",
+     "0.96×",
+     "2.7 µs",
+     "2.7 µs",
+     "1.03×"
+    ],
+    [
+     "Gnome dig",
+     "40.7 µs",
+     "39.4 µs",
+     "0.97×",
+     "56.1 µs",
+     "48.4 µs",
+     "0.86×"
+    ],
+    [
+     "Checkers",
+     "21.8 µs",
+     "21.8 µs",
+     "1.00×",
+     "17.5 µs",
+     "19.9 µs",
+     "1.14×"
+    ],
+    [
+     "Star wave",
+     "15.6 µs",
+     "16.1 µs",
+     "1.03×",
+     "19.2 µs",
+     "17.4 µs",
+     "0.91×"
+    ],
+    [
+     "Light trails",
+     "5.7 µs",
+     "6.5 µs",
+     "1.13×",
+     "5.5 µs",
+     "5.6 µs",
+     "1.01×"
+    ],
+    [
+     "Go",
+     "20.0 µs",
+     "24.1 µs",
+     "1.21×",
+     "20.6 µs",
+     "25.2 µs",
+     "1.23×"
+    ],
+    [
+     "Solitaire",
+     "8.6 µs",
+     "10.6 µs",
+     "1.24×",
+     "41.5 µs",
+     "48.4 µs",
+     "1.17×"
+    ],
+    [
+     "Pinball",
+     "32.1 µs",
+     "41.1 µs",
+     "1.28×",
+     "29.5 µs",
+     "41.3 µs",
+     "1.40×"
+    ],
+    [
+     "Minesweeper",
+     "17.3 µs",
+     "23.8 µs",
+     "1.38×",
+     "147 µs",
+     "50.4 µs",
+     "0.34×"
+    ]
+   ]
+  },
+  {
+   "section": "Decision 1, tried",
+   "section_id": "records-tried",
+   "columns": [
+    "records in the list",
+    "C, new records",
+    "A, new records",
+    "A as fast",
+    "C, the same list again",
+    "A, again"
+   ],
+   "rows": [
+    [
+     "1",
+     "1.3 µs",
+     "0.8 µs",
+     "1.6×",
+     "0.3 µs",
+     "0.3 µs"
+    ],
+    [
+     "10",
+     "6.5 µs",
+     "1.7 µs",
+     "3.9×",
+     "0.3 µs",
+     "0.3 µs"
+    ],
+    [
+     "100",
+     "39.5 µs",
+     "5.9 µs",
+     "6.6×",
+     "0.3 µs",
+     "0.2 µs"
+    ],
+    [
+     "1,000",
+     "0.22 ms",
+     "9.4 µs",
+     "23.6×",
+     "0.2 µs",
+     "0.2 µs"
+    ],
+    [
+     "10,000",
+     "2.40 ms",
+     "99.8 µs",
+     "24.1×",
+     "0.2 µs",
+     "0.2 µs"
+    ],
+    [
+     "100,000",
+     "45 ms",
+     "1.84 ms",
+     "24.3×",
+     "0.2 µs",
+     "0.2 µs"
+    ],
+    [
+     "1,000,000",
+     "458 ms",
+     "67 ms",
+     "6.8×",
+     "0.3 µs",
+     "0.2 µs"
     ]
    ]
   },

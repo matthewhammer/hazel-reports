@@ -5,7 +5,7 @@ publish it, with the changes we've planned for hazel-jit, and our status on thos
 The plan is Matthew and Cyrus's meeting of 2026-11-13 (Matthew's summary in chat, 2026-11-15), as dashboard tickets
 756 to 763, and two found along the way (762, 764). Writes 054/index.html from body.html and the numbers below, each
 from a CI log or a jit.yml run named beside it, and 054/data/numbers.json."""
-import html, json, math, os, re, subprocess
+import glob, html, json, math, os, re, subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -697,6 +697,30 @@ def seq_table():
             body += f"<tr><td>{lab}{note}</td>" + "".join(f"<td>{sqt(r[k])}</td>" for k, _ in ops) + "</tr>"
     return f'<div style="overflow-x:auto"><table class="nums"><thead><tr><th>held as</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
 
+# ---- (^ticket(847), 2026-11-24) decision 1 tried: idea A (trial/847-records-objects 2aa0b9b451) against idea C (hazeljs 0.0.12,
+# ec2a330996) on each game's own run, one runner each (hazeljs-examples bench/847-a-vs-c, run 45498058581), and a page's list
+# of records crossing at every size on the laptop (054/drivers/records-cross.mjs)
+AC = []
+for f in sorted(glob.glob(os.path.join(HERE, "data", "a-vs-c", "*-c.json"))):
+    g = os.path.basename(f)[:-7]; c = json.load(open(f)); a = json.load(open(f[:-7] + "-a.json"))
+    rc, ra = c["runs"][0]["ways"], a["runs"][0]["ways"]
+    assert all(v.get("same") and not v.get("error") for v in list(rc.values()) + list(ra.values())), g
+    AC.append({"g": g, "cj": rc["jit"]["usPerCall"], "aj": ra["jit"]["usPerCall"], "cf": rc["jit, fresh copies"]["usPerCall"], "af": ra["jit, fresh copies"]["usPerCall"], "aot": rc["compiled"]["usPerCall"]})
+XC = {r["n"]: r for r in json.load(open(os.path.join(HERE, "data", "records-cross-c.json")))["rows"]}
+XA = {r["n"]: r for r in json.load(open(os.path.join(HERE, "data", "records-cross-a.json")))["rows"]}
+gmean = lambda xs: math.exp(sum(math.log(x) for x in xs) / len(xs))
+def us_(v): return f"{v:.1f} µs" if v < 100 else f"{v:,.0f} µs"
+def ac_table():
+    body = "".join(f'<tr><td>{GNAME[r["g"]]}</td><td>{us_(r["cj"])}</td><td>{us_(r["aj"])}</td><td>{r["aj"] / r["cj"]:.2f}×</td><td>{us_(r["cf"])}</td><td>{us_(r["af"])}</td><td>{r["af"] / r["cf"]:.2f}×</td></tr>'
+                   for r in sorted(AC, key=lambda r: r["aj"] / r["cj"]))
+    return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>a call, on the game’s own run</th><th>C, as the page plays</th><th>A</th><th>A over C</th>'
+            '<th>C, every argument a fresh copy</th><th>A</th><th>A over C</th></tr></thead>' f"<tbody>{body}</tbody></table></div>")
+def cross_table():
+    def ms(v): return f"{v * 1000:.1f} µs" if v < 0.1 else (f"{v:.2f} ms" if v < 10 else f"{v:.0f} ms")
+    body = "".join(f'<tr><td>{n:,}</td><td>{ms(XC[n]["fresh"])}</td><td>{ms(XA[n]["fresh"])}</td><td>{XC[n]["fresh"] / XA[n]["fresh"]:.1f}×</td><td>{ms(XC[n]["again"])}</td><td>{ms(XA[n]["again"])}</td></tr>' for n in sorted(XC))
+    return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>records in the list</th><th>C, new records</th><th>A, new records</th><th>A as fast</th><th>C, the same list again</th><th>A, again</th></tr></thead>'
+            f"<tbody>{body}</tbody></table></div>")
+
 NUMS = {"updated": updated, "jit_pr": "2859", "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
@@ -728,6 +752,14 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "sq_li_ins_lo": sqt(min(sq(n, "list", "insert") for n in (1000, 10000, 100000, 1000000))), "sq_li_ins_hi": sqt(max(sq(n, "list", "insert") for n in (1000, 10000, 100000, 1000000))),
         "sq_li_app": sqt(sq(1000000, "list", "append")), "sq_li_get": sqt(sq(1000000, "list", "get")), "sq_li_walk": sqt(sq(1000000, "list", "sum")), "sq_li_inout": sqt(sq(1000000, "list", "inOut")),
         "sq_leaves": f'{sq(1000000, SQW[0][0], "leaves"):,}', "sq_depth": str(sq(1000000, SQW[0][0], "depth")),
+        "tab_ac": ac_table(), "tab_xab": cross_table(), "ac_n": str(len(AC)),
+        "ac_gm": f'{gmean([r["aj"] / r["cj"] for r in AC]):.2f}', "ac_fresh": f'{gmean([r["af"] / r["cf"] for r in AC]):.2f}',
+        "ac_best": ", ".join(f'{GNAME[r["g"]]} {r["aj"] / r["cj"]:.2f}×' for r in sorted(AC, key=lambda r: r["aj"] / r["cj"])[:3]),
+        "ac_worst": ", ".join(f'{GNAME[r["g"]]} {r["aj"] / r["cj"]:.2f}×' for r in sorted(AC, key=lambda r: -r["aj"] / r["cj"])[:4]),
+        "ac_fresh_best": ", ".join(f'{GNAME[r["g"]]} {r["af"] / r["cf"]:.2f}×' for r in sorted(AC, key=lambda r: r["af"] / r["cf"])[:3]),
+        "ac_aot_a": f'{gmean([r["aj"] / r["aot"] for r in AC]):.2f}', "ac_aot_c": f'{gmean([r["cj"] / r["aot"] for r in AC]):.2f}',
+        "xab_10k": f'{XC[10000]["fresh"] / XA[10000]["fresh"]:.0f}', "xab_1m": f'{XC[1000000]["fresh"] / XA[1000000]["fresh"]:.1f}',
+        "xab_1m_c": f'{XC[1000000]["fresh"]:.0f} ms', "xab_1m_a": f'{XA[1000000]["fresh"]:.0f} ms',
         "gs_mjs": f'{next(g["recShare"] for g in GS if g["game"] == "mahjong-solitaire") * 100:.0f}%'}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():

@@ -1,0 +1,69 @@
+{
+ "game": "pinball",
+ "when": "2026-11-24T22:08:46.417Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V45 96-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.12",
+  "hazel": {
+   "commit": "ec2a330996bf125166ca2856f8df717b22f16c91",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "ec2a330996bf125166ca2856f8df717b22f16c91"
+ },
+ "examples": "c3fc8143f38a9d666ac107753867c35240f57491",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 1645.322889,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 660.0037780000002,
+  "compiledJsBytes": 60194,
+  "runtimeBytes": 19813,
+  "wrappedBytes": 83593,
+  "pageCompiledFrom": "b8f3fa730e",
+  "compiledLoadMs": 3.3915719999999965,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "600 frames (the flippers at random, the plunger when the ball waits)",
+   "steps": 600,
+   "ways": {
+    "jit": {
+     "ms": 19.261173000004874,
+     "usPerCall": 32.10195500000812,
+     "calls": 600,
+     "reps": 14,
+     "min": 16.700290999996014,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 17.72200950000297,
+     "usPerCall": 29.53668250000495,
+     "calls": 600,
+     "reps": 16,
+     "min": 17.29198900000347,
+     "same": true
+    },
+    "compiled": {
+     "ms": 15.79053050000175,
+     "usPerCall": 26.317550833336252,
+     "calls": 600,
+     "reps": 18,
+     "min": 15.443458000007467,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 46.74372000000403
+}

@@ -1,0 +1,77 @@
+{
+ "game": "minesweeper",
+ "when": "2026-11-24T21:25:42.834Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V45 96-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.12",
+  "hazel": {
+   "commit": "ec2a330996bf125166ca2856f8df717b22f16c91",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "ec2a330996bf125166ca2856f8df717b22f16c91"
+ },
+ "examples": "0bdc72c15e77de9710489517ba111bc7fc880a67",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 1785.486415,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 958.4641900000001,
+  "compiledJsBytes": 86707,
+  "runtimeBytes": 19813,
+  "wrappedBytes": 109694,
+  "pageCompiledFrom": "f2cc549b3a",
+  "compiledLoadMs": 3.243568999999752,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "16 by 30, 319 taps (each: a cell opened or flagged)",
+   "steps": 319,
+   "ways": {
+    "jit": {
+     "ms": 4.307509999994181,
+     "usPerCall": 13.503166144182387,
+     "calls": 319,
+     "reps": 50,
+     "min": 3.928557999999157,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 37.88354899999695,
+     "usPerCall": 118.75720689654214,
+     "calls": 319,
+     "reps": 5,
+     "min": 29.95810099999744,
+     "same": true
+    },
+    "compiled": {
+     "ms": 12.94359699999859,
+     "usPerCall": 40.57553918494856,
+     "calls": 319,
+     "reps": 23,
+     "min": 12.458971999992173,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.16332649999822024,
+     "usPerCall": 0.5119952978000635,
+     "calls": 319,
+     "reps": 50,
+     "min": 0.14706800000385556,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 75.7732599999963
+}
