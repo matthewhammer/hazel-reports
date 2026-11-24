@@ -19,14 +19,15 @@
 //   immutable  Immutable.js's List (5.0.3): a trie of 32-element arrays, its own insert; a page's array copied into it
 //   funkia     @funkia/list (0.1.0): a relaxed radix-balanced tree; an insert is its splitAt, append and concat (it has no
 //              insert of its own); a page's array copied into it
-// (both installed from npm, with Matthew's OK of 2026-11-24, into a folder given as the second argument)
+//   list       list (2.0.19), the same library's maintained releases under another name: its own insert
+// (installed from npm, with Matthew's OKs of 2026-11-24, into the folders given after the first argument)
 //
-//   node seq-bench.mjs <out.json> [the folder holding node_modules/immutable and node_modules/@funkia/list]
+//   node seq-bench.mjs <out.json> [folders holding node_modules/immutable, node_modules/@funkia/list, node_modules/list ...]
 import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import os from "node:os";
-const OUT = process.argv[2], LIBS = process.argv[3];
+const OUT = process.argv[2], LIBS = process.argv.slice(3);
 const now = () => performance.now();
 const median = xs => { const s = [...xs].sort((a, b) => a - b); return s[s.length >> 1]; };
 // ns a call: the median of batches (as many calls as take at least 2 ms), at least 7 batches and 150 ms; a call over 1 s alone
@@ -127,18 +128,23 @@ const S = {
 
 // ---- the libraries, when given
 const LIBWAYS = [];
-if (LIBS) {
-  const req = createRequire(path.resolve(LIBS, "package.json"));
-  const Im = req("immutable"), F = req("@funkia/list");
-  LIBWAYS.push({
+for (const dir of LIBS) {
+  const req = createRequire(path.resolve(dir, "package.json")), has = name => { try { req.resolve(name); return true; } catch (e) { return false; } };
+  if (has("immutable")) { const Im = req("immutable"); LIBWAYS.push({
     name: "Immutable.js List", version: req("immutable/package.json").version,
     from: arr => Im.List(arr), insert: (l, i, x) => l.insert(i, x), append: (l, x) => l.push(x), get: (l, i) => l.get(i),
     sum: l => l.reduce((s, x) => s + x, 0), out: l => l.toArray(),
-  }, {
+  }); }
+  if (has("@funkia/list")) { const F = req("@funkia/list"); LIBWAYS.push({
     name: "@funkia/list", version: req("@funkia/list/package.json").version,
     from: arr => F.fromArray(arr), insert: (l, i, x) => { const [a, b] = F.splitAt(i, l); return F.concat(F.append(x, a), b); }, append: (l, x) => F.append(x, l), get: (l, i) => F.nth(i, l),
     sum: l => F.foldl((s, x) => s + x, 0, l), out: l => F.toArray(l),
-  });
+  }); }
+  if (has("list")) { const F = req("list"); LIBWAYS.push({
+    name: "list", version: req("list/package.json").version,
+    from: arr => F.from(arr), insert: (l, i, x) => F.insert(i, x, l), append: (l, x) => F.append(x, l), get: (l, i) => F.nth(i, l),
+    sum: l => F.foldl((s, x) => s + x, 0, l), out: l => F.toArray(l),
+  }); }
 }
 const WAYS = [A, L, H, S, ...LIBWAYS];
 

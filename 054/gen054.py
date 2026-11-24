@@ -681,7 +681,7 @@ def shapes_table():
 # ---- (^ticket(846), 2026-11-24) a sequence beside List: a treap over array views against arrays, cells and the hybrid, all
 # persistent, timed in JavaScript alone (054/drivers/seq-bench.mjs)
 SQ = json.load(open(os.path.join(HERE, "data", "seq.json")))
-SQW = [("seq: a treap over array views", "a treap over array views"), ("array, copied", "an array, copied"), ("cells", "cells, today"), ("hybrid", "the hybrid"), ("Immutable.js List", "Immutable.js’s List")]
+SQW = [("seq: a treap over array views", "a treap over array views"), ("array, copied", "an array, copied"), ("cells", "cells, today"), ("hybrid", "the hybrid"), ("Immutable.js List", "Immutable.js’s List"), ("list", "<code>list</code>, funkia’s")]
 def sqt(ns): return f"{ns:.0f} ns" if ns < 1000 else (f"{ns / 1000:.1f} µs" if ns < 1e6 else f"{ns / 1e6:.1f} ms")
 def sq(n, way, k): return next(r[k] for r in SQ["rows"] if r["n"] == n and r["way"] == way)
 def seq_table():
@@ -724,6 +724,9 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "sq_im_walk": sqt(sq(1000000, "Immutable.js List", "sum")), "sq_im_inout": sqt(sq(1000000, "Immutable.js List", "inOut")), "sq_im_app": sqt(sq(1000000, "Immutable.js List", "append")),
         "sq_im_v": next(l["version"] for l in SQ["libs"] if l["name"] == "Immutable.js List"), "sq_fl_v": next(l["version"] for l in SQ["libs"] if l["name"] == "@funkia/list"),
         "sq_fl_fail": esc(next(l["failed"] for l in SQ["libs"] if l["name"] == "@funkia/list") or "no failure"),
+        "sq_li_v": next(l["version"] for l in SQ["libs"] if l["name"] == "list"),
+        "sq_li_ins_lo": sqt(min(sq(n, "list", "insert") for n in (1000, 10000, 100000, 1000000))), "sq_li_ins_hi": sqt(max(sq(n, "list", "insert") for n in (1000, 10000, 100000, 1000000))),
+        "sq_li_app": sqt(sq(1000000, "list", "append")), "sq_li_get": sqt(sq(1000000, "list", "get")), "sq_li_walk": sqt(sq(1000000, "list", "sum")), "sq_li_inout": sqt(sq(1000000, "list", "inOut")),
         "sq_leaves": f'{sq(1000000, SQW[0][0], "leaves"):,}', "sq_depth": str(sq(1000000, SQW[0][0], "depth")),
         "gs_mjs": f'{next(g["recShare"] for g in GS if g["game"] == "mahjong-solitaire") * 100:.0f}%'}
 body = open(os.path.join(HERE, "body.html")).read()
