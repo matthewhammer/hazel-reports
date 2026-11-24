@@ -158,7 +158,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-24 11:08 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-24 12:52 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -264,6 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, step counts and probes as the interpreter's, and compiling ahead of time for older phones.</li>
 <li><a href="#lists">Lists as JavaScript arrays, and holes</a>: arrays measured against today’s cells and a hybrid of the two; holes in lists, terms with holes, the order to build them in, and where hazel-jit lives now.</li>
 <li><a href="#records">Records the page’s way</a>: a record held as a page’s object crosses for nothing and builds about 12 times as fast; five decisions first, for Matthew (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>).</li>
+<li><a href="#seq">A sequence beside List</a>: a treap over array views inserts anywhere in about a microsecond at every size up to a million, and takes a page’s array for nothing; a walk costs about what cells cost (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>).</li>
 <li><a href="#envs">What a closure keeps</a>: whether <code>dev</code> trims a value’s environments to what the value uses (it does not), where that was tried, what trimming would take, and what the jit already does.</li>
 <li><a href="#questions">Questions for the team</a>: seventeen open design questions, each with our lean, for the team's meeting of 2026-11-17, two of them met by the astrology oracle this morning.</li>
 <li><a href="#next">What next</a>, with <a href="#next-who">next steps for Matthew and others</a>, and <a href="#method">how this was put together</a>.</li>
@@ -556,6 +557,16 @@ document.addEventListener("DOMContentLoaded", () => {
 </ol>
 <p><b>The interpreter does not change.</b> Its record stays a labeled tuple of terms; only the value boundary (<code>HazelJitValue</code>, both ways) and the converters learn the new shape. With the answers, the next step is a trial branch off <code>hazeljs</code> (<code>trial/847-records-objects</code>), checked by the agreement tests and the evaluator tests’ sweep in CI, and timed on the games’ own runs as <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> times them.</p>
 
+<h2 id="seq">A sequence beside List<a class="anchor" href="#seq" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="seq" title="copy this section's address">copy link</button></h2>
+<p><b>A sequence held as a treap over views of JavaScript arrays inserts one element anywhere in 683 ns to 1.7 µs, from 1,000 elements to 1,000,000, appends one in at most 266 ns, and takes a page’s array in and out for nothing; an array copied on every edit takes 13.2 ms to insert one at a million, and cells 23.2 ms. Its costs: reading one element by position takes up to 478 ns, where an array takes tens of nanoseconds, and walking a million after twenty thousand edits takes 3.3 ms, about as long as cells (3.5 ms) and five times an array (641.9 µs).</b> This is <a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>, which Matthew asked for on 2026-11-23: “explore a new builtin sequence type, as complement to List --- Sequence or Seq, for short maybe?”, held as a balanced tree with arrays at its leaves. What matters most to him is a balance that needs no rebalancing, the levels fixing the shape so that an edit never rotates; the caching a content-determined shape allows matters less, so a level may come from any well-spread source.</p>
+<p>How it is held. A leaf is a view of an array that is never changed: the array and a start and an end, so that splitting a leaf is two views of the same array and copies nothing. A page’s array is one leaf over it. Between two leaves is a gap with a priority, drawn here from a counter’s hash, and the tree is the one the priorities determine, the highest at the root, as in fumola’s level tree (Pugh and Teitelbaum’s), where a gap’s level comes from its symbol. An insert splits the tree at the position and joins the three parts; a join puts the higher priority on top and never rotates. A leaf of fewer than 32 elements that meets another sequence goes into the leaf at its edge when the two fit in 32: a copy of at most 32 elements, and no new gap, so the shape stays the priorities’. Every edit gives a new sequence and leaves the old one whole, as a Hazel value must, and so do the other three ways here.</p>
+<div style="overflow-x:auto"><table class="nums"><thead><tr><th>held as</th><th>insert one, anywhere</th><th>append one</th><th>read one, anywhere</th><th>walk them all</th><th>a page’s array in and out</th></tr></thead><tbody><tr class="grp"><td colspan="6">1,000 elements</td></tr><tr><td>a treap over array views (88 leaves, depth 12)</td><td>683 ns</td><td>131 ns</td><td>99 ns</td><td>2.4 µs</td><td>23 ns</td></tr><tr><td>an array, copied</td><td>2.7 µs</td><td>1.2 µs</td><td>24 ns</td><td>653 ns</td><td>4 ns</td></tr><tr><td>cells, today</td><td>4.2 µs</td><td>9.8 µs</td><td>839 ns</td><td>1.7 µs</td><td>7.8 µs</td></tr><tr><td>the hybrid</td><td>6.2 µs</td><td>15.0 µs</td><td>963 ns</td><td>2.9 µs</td><td>16 ns</td></tr><tr class="grp"><td colspan="6">10,000 elements</td></tr><tr><td>a treap over array views (843 leaves, depth 21)</td><td>830 ns</td><td>123 ns</td><td>121 ns</td><td>20.9 µs</td><td>18 ns</td></tr><tr><td>an array, copied</td><td>29.8 µs</td><td>15.5 µs</td><td>30 ns</td><td>6.2 µs</td><td>11 ns</td></tr><tr><td>cells, today</td><td>54.8 µs</td><td>168.7 µs</td><td>19.4 µs</td><td>41.9 µs</td><td>96.8 µs</td></tr><tr><td>the hybrid</td><td>55.4 µs</td><td>152.0 µs</td><td>7.5 µs</td><td>20.9 µs</td><td>13 ns</td></tr><tr class="grp"><td colspan="6">100,000 elements</td></tr><tr><td>a treap over array views (8,402 leaves, depth 31)</td><td>1.3 µs</td><td>139 ns</td><td>271 ns</td><td>427.4 µs</td><td>18 ns</td></tr><tr><td>an array, copied</td><td>1.1 ms</td><td>818.6 µs</td><td>28 ns</td><td>60.3 µs</td><td>12 ns</td></tr><tr><td>cells, today</td><td>784.5 µs</td><td>3.0 ms</td><td>93.9 µs</td><td>215.1 µs</td><td>2.5 ms</td></tr><tr><td>the hybrid (one segment)</td><td>927.7 µs</td><td>3.2 ms</td><td>28 ns</td><td>62.8 µs</td><td>13 ns</td></tr><tr class="grp"><td colspan="6">1,000,000 elements</td></tr><tr><td>a treap over array views (31,456 leaves, depth 37)</td><td>1.7 µs</td><td>266 ns</td><td>478 ns</td><td>3.3 ms</td><td>18 ns</td></tr><tr><td>an array, copied</td><td>13.2 ms</td><td>9.5 ms</td><td>47 ns</td><td>641.9 µs</td><td>11 ns</td></tr><tr><td>cells, today</td><td>23.2 ms</td><td>69.5 ms</td><td>1.4 ms</td><td>3.5 ms</td><td>66.7 ms</td></tr><tr><td>the hybrid (one segment)</td><td>31.2 ms</td><td>89.4 ms</td><td>46 ns</td><td>637.7 µs</td><td>13 ns</td></tr></tbody></table></div>
+<p class="muted">Not a build of the app: Node v22.23.2 on the laptop, JavaScript alone (<code>054/drivers/seq-bench.mjs</code>), each the median of batches. Before timing, every way made the same 2,000 random edits to one sequence and came out the same. The treap, and the hybrid up to 10,000, were timed after a tenth of their size in inserts at random places (at most 20,000), so the treap has many leaves; an array and cells have one shape however they are made. At a million the treap had 31,456 leaves and depth 37.</p>
+<ul>
+<li><b>Not checked yet: JavaScript’s own candidates.</b> JavaScript has no persistent sequence built in. Immutable.js’s List (a trie of 32-element arrays) and <code>@funkia/list</code> (a relaxed radix-balanced tree) are the known libraries; timing them needs them installed from npm, which waits on Matthew’s OK.</li>
+<li><b>How a Seq would enter Hazel.</b> A builtin type beside List with its own operations (length, nth, splice, append, and conversions to and from List); in compiled code, the treap and its runtime; at the page’s edge, an array as one leaf, no conversion, under the same rule as records: a page does not change an array it gave Hazel. The interpreter would hold it as a builtin value too. These are questions for the team, after the records’ decisions, since the two share the rule at the edge.</li>
+</ul>
+
 <h2 id="envs">What a closure keeps<a class="anchor" href="#envs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="envs" title="copy this section's address">copy link</button></h2>
 <p><b>Nothing on <code>dev</code> trims an environment. A function value keeps the whole environment it was made in, used or not. A function needs only its free variables, and the statics already know them for every expression, so trimming is possible. <code>dev</code>’s empty holes keep no environment at all, so today they are no exception to it. Compiled code already trims: a compiled function holds only what it captures, and crosses back to the interpreter holding only that.</b></p>
 <p>Matthew asked, 2026-11-23: <i>"is there any aspect of dev that trims Hazel values' environments to only contain relevant values? For empty holes, the whole env is required, perhaps -- but for other terms, esp closed terms, the env can be dropped. We experimented with this as a performance PR, IIRC, but I don't recall the exact context of that work."</i></p>
@@ -824,7 +835,7 @@ document.addEventListener("DOMContentLoaded", () => {
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2015": {"author": "7h3kk1d", "comments": 2, "created": "2025-11-12T21:53:53Z", "kind": "pull", "state": "draft", "title": "cleanup: remove closure environment from FixF terms", "updated": "2026-02-03T18:16:39Z", "base": "dev"}, "hazelgrove/hazel#2222": {"author": "Negabinary", "comments": 6, "created": "2026-04-22T14:12:05Z", "kind": "pull", "state": "merged", "title": "Incremental evaluation", "updated": "2026-05-26T22:00:06Z", "base": "dev"}, "hazelgrove/hazel#2463": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-19T19:38:35Z", "kind": "pull", "state": "draft", "title": "Don't reuse a cached value that carries no environment", "updated": "2026-09-15T02:44:46Z", "base": "dev"}, "hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-11-10T04:57:00Z", "base": "dev"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2684": {"author": "disconcision", "comments": 1, "created": "2026-10-16T08:41:12Z", "kind": "pull", "state": "open", "title": "Show stuck results without inlining callees at every level", "updated": "2026-11-19T20:07:29Z", "base": "dev"}, "hazelgrove/hazel#2808": {"author": "matthewhammer", "comments": 0, "created": "2026-11-04T17:11:28Z", "kind": "pull", "state": "open", "title": "non-`dev` (`lib-floor`): A function the library hands back keeps its closure, and a test holds a call's cost to what it does", "updated": "2026-11-04T17:11:42Z", "base": "lib-floor"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-23T22:49:54Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 0, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-23T21:06:56Z", "base": "dev"}}, BUILT = "2026-11-24";
+  const CACHED = {"hazelgrove/hazel#2015": {"author": "7h3kk1d", "comments": 2, "created": "2025-11-12T21:53:53Z", "kind": "pull", "state": "draft", "title": "cleanup: remove closure environment from FixF terms", "updated": "2026-02-03T18:16:39Z", "base": "dev"}, "hazelgrove/hazel#2222": {"author": "Negabinary", "comments": 6, "created": "2026-04-22T14:12:05Z", "kind": "pull", "state": "merged", "title": "Incremental evaluation", "updated": "2026-05-26T22:00:06Z", "base": "dev"}, "hazelgrove/hazel#2463": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-19T19:38:35Z", "kind": "pull", "state": "draft", "title": "Don't reuse a cached value that carries no environment", "updated": "2026-09-15T02:44:46Z", "base": "dev"}, "hazelgrove/hazel#2469": {"author": "disconcision", "comments": 17, "created": "2026-08-27T04:14:59Z", "kind": "pull", "state": "open", "title": "Modular editors", "updated": "2026-11-10T04:57:00Z", "base": "dev"}, "hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2684": {"author": "disconcision", "comments": 1, "created": "2026-10-16T08:41:12Z", "kind": "pull", "state": "open", "title": "Show stuck results without inlining callees at every level", "updated": "2026-11-24T19:02:32Z", "base": "dev"}, "hazelgrove/hazel#2808": {"author": "matthewhammer", "comments": 0, "created": "2026-11-04T17:11:28Z", "kind": "pull", "state": "open", "title": "non-`dev` (`lib-floor`): A function the library hands back keeps its closure, and a test holds a call's cost to what it does", "updated": "2026-11-04T17:11:42Z", "base": "lib-floor"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-24T19:20:43Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-24T18:44:02Z", "base": "dev"}}, BUILT = "2026-11-24";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -972,6 +983,7 @@ document.addEventListener("DOMContentLoaded", () => {
   "data/meta.json",
   "data/numbers.json",
   "data/records.json",
+  "data/seq.json",
   "data/slide-timing.tsv",
   "data/steps.tsv",
   "data/tables.json",
@@ -2862,6 +2874,180 @@ document.addEventListener("DOMContentLoaded", () => {
      "0",
      "10",
      "9%"
+    ]
+   ]
+  },
+  {
+   "section": "A sequence beside List",
+   "section_id": "seq",
+   "columns": [
+    "held as",
+    "insert one, anywhere",
+    "append one",
+    "read one, anywhere",
+    "walk them all",
+    "a page’s array in and out"
+   ],
+   "rows": [
+    [
+     "1,000 elements",
+     "1,000 elements",
+     "1,000 elements",
+     "1,000 elements",
+     "1,000 elements",
+     "1,000 elements"
+    ],
+    [
+     "a treap over array views (88 leaves, depth 12)",
+     "683 ns",
+     "131 ns",
+     "99 ns",
+     "2.4 µs",
+     "23 ns"
+    ],
+    [
+     "an array, copied",
+     "2.7 µs",
+     "1.2 µs",
+     "24 ns",
+     "653 ns",
+     "4 ns"
+    ],
+    [
+     "cells, today",
+     "4.2 µs",
+     "9.8 µs",
+     "839 ns",
+     "1.7 µs",
+     "7.8 µs"
+    ],
+    [
+     "the hybrid",
+     "6.2 µs",
+     "15.0 µs",
+     "963 ns",
+     "2.9 µs",
+     "16 ns"
+    ],
+    [
+     "10,000 elements",
+     "10,000 elements",
+     "10,000 elements",
+     "10,000 elements",
+     "10,000 elements",
+     "10,000 elements"
+    ],
+    [
+     "a treap over array views (843 leaves, depth 21)",
+     "830 ns",
+     "123 ns",
+     "121 ns",
+     "20.9 µs",
+     "18 ns"
+    ],
+    [
+     "an array, copied",
+     "29.8 µs",
+     "15.5 µs",
+     "30 ns",
+     "6.2 µs",
+     "11 ns"
+    ],
+    [
+     "cells, today",
+     "54.8 µs",
+     "168.7 µs",
+     "19.4 µs",
+     "41.9 µs",
+     "96.8 µs"
+    ],
+    [
+     "the hybrid",
+     "55.4 µs",
+     "152.0 µs",
+     "7.5 µs",
+     "20.9 µs",
+     "13 ns"
+    ],
+    [
+     "100,000 elements",
+     "100,000 elements",
+     "100,000 elements",
+     "100,000 elements",
+     "100,000 elements",
+     "100,000 elements"
+    ],
+    [
+     "a treap over array views (8,402 leaves, depth 31)",
+     "1.3 µs",
+     "139 ns",
+     "271 ns",
+     "427.4 µs",
+     "18 ns"
+    ],
+    [
+     "an array, copied",
+     "1.1 ms",
+     "818.6 µs",
+     "28 ns",
+     "60.3 µs",
+     "12 ns"
+    ],
+    [
+     "cells, today",
+     "784.5 µs",
+     "3.0 ms",
+     "93.9 µs",
+     "215.1 µs",
+     "2.5 ms"
+    ],
+    [
+     "the hybrid (one segment)",
+     "927.7 µs",
+     "3.2 ms",
+     "28 ns",
+     "62.8 µs",
+     "13 ns"
+    ],
+    [
+     "1,000,000 elements",
+     "1,000,000 elements",
+     "1,000,000 elements",
+     "1,000,000 elements",
+     "1,000,000 elements",
+     "1,000,000 elements"
+    ],
+    [
+     "a treap over array views (31,456 leaves, depth 37)",
+     "1.7 µs",
+     "266 ns",
+     "478 ns",
+     "3.3 ms",
+     "18 ns"
+    ],
+    [
+     "an array, copied",
+     "13.2 ms",
+     "9.5 ms",
+     "47 ns",
+     "641.9 µs",
+     "11 ns"
+    ],
+    [
+     "cells, today",
+     "23.2 ms",
+     "69.5 ms",
+     "1.4 ms",
+     "3.5 ms",
+     "66.7 ms"
+    ],
+    [
+     "the hybrid (one segment)",
+     "31.2 ms",
+     "89.4 ms",
+     "46 ns",
+     "637.7 µs",
+     "13 ns"
     ]
    ]
   }

@@ -678,6 +678,24 @@ def shapes_table():
     return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>a state of</th><th>records</th><th>constructors</th><th>arrays (lists, or tuples without labels)</th><th>records, of these nodes</th></tr></thead>'
             f"<tbody>{body}</tbody></table></div>")
 
+# ---- (^ticket(846), 2026-11-24) a sequence beside List: a treap over array views against arrays, cells and the hybrid, all
+# persistent, timed in JavaScript alone (054/drivers/seq-bench.mjs)
+SQ = json.load(open(os.path.join(HERE, "data", "seq.json")))
+SQW = [("seq: a treap over array views", "a treap over array views"), ("array, copied", "an array, copied"), ("cells", "cells, today"), ("hybrid", "the hybrid")]
+def sqt(ns): return f"{ns:.0f} ns" if ns < 1000 else (f"{ns / 1000:.1f} µs" if ns < 1e6 else f"{ns / 1e6:.1f} ms")
+def sq(n, way, k): return next(r[k] for r in SQ["rows"] if r["n"] == n and r["way"] == way)
+def seq_table():
+    ops = [("insert", "insert one, anywhere"), ("append", "append one"), ("get", "read one, anywhere"), ("sum", "walk them all"), ("inOut", "a page’s array in and out")]
+    head = "".join(f"<th>{lab}</th>" for _, lab in ops)
+    body = ""
+    for n in sorted({r["n"] for r in SQ["rows"]}):
+        body += f'<tr class="grp"><td colspan="{len(ops) + 1}">{n:,} elements</td></tr>'
+        for way, lab in SQW:
+            r = next(r for r in SQ["rows"] if r["n"] == n and r["way"] == way)
+            note = f' ({r["leaves"]:,} leaves, depth {r["depth"]})' if "leaves" in r else (" (one segment)" if way == "hybrid" and not r.get("editedFirst", True) else "")
+            body += f"<tr><td>{lab}{note}</td>" + "".join(f"<td>{sqt(r[k])}</td>" for k, _ in ops) + "</tr>"
+    return f'<div style="overflow-x:auto"><table class="nums"><thead><tr><th>held as</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+
 NUMS = {"updated": updated, "jit_pr": "2859", "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
@@ -696,6 +714,12 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "rb_eq_type": ns(RBR["compare two equal records"][K_EQ]), "rb_eq_today": ns(RBR["compare two equal records"]["today"]),
         "rb_cell": f'{(RB["cellsNs"]["build, class instances"] - RB["cellsNs"]["build, literals {h, t}"]) / 1000:.1f} ns',
         "gs_ms": f'{next(g["recShare"] for g in GS if g["game"] == "minesweeper") * 100:.0f}%', "gs_bugs": f'{next(g["recShare"] for g in GS if g["game"] == "bugs") * 100:.0f}%',
+        "tab_seq": seq_table(), "sq_b": str(SQ["B"]), "sq_node": SQ["machine"]["node"],
+        "sq_ins_lo": sqt(min(sq(n, SQW[0][0], "insert") for n in (1000, 1000000))), "sq_ins_hi": sqt(sq(1000000, SQW[0][0], "insert")),
+        "sq_app": sqt(max(r["append"] for r in SQ["rows"] if r["way"] == SQW[0][0])), "sq_get_hi": sqt(sq(1000000, SQW[0][0], "get")),
+        "sq_arr_ins": sqt(sq(1000000, "array, copied", "insert")), "sq_cell_ins": sqt(sq(1000000, "cells", "insert")),
+        "sq_walk": sqt(sq(1000000, SQW[0][0], "sum")), "sq_walk_arr": sqt(sq(1000000, "array, copied", "sum")), "sq_walk_cells": sqt(sq(1000000, "cells", "sum")),
+        "sq_leaves": f'{sq(1000000, SQW[0][0], "leaves"):,}', "sq_depth": str(sq(1000000, SQW[0][0], "depth")),
         "gs_mjs": f'{next(g["recShare"] for g in GS if g["game"] == "mahjong-solitaire") * 100:.0f}%'}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
