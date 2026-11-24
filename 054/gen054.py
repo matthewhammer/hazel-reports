@@ -681,7 +681,7 @@ def shapes_table():
 # ---- (^ticket(846), 2026-11-24) a sequence beside List: a treap over array views against arrays, cells and the hybrid, all
 # persistent, timed in JavaScript alone (054/drivers/seq-bench.mjs)
 SQ = json.load(open(os.path.join(HERE, "data", "seq.json")))
-SQW = [("seq: a treap over array views", "a treap over array views"), ("array, copied", "an array, copied"), ("cells", "cells, today"), ("hybrid", "the hybrid")]
+SQW = [("seq: a treap over array views", "a treap over array views"), ("array, copied", "an array, copied"), ("cells", "cells, today"), ("hybrid", "the hybrid"), ("Immutable.js List", "Immutable.js’s List")]
 def sqt(ns): return f"{ns:.0f} ns" if ns < 1000 else (f"{ns / 1000:.1f} µs" if ns < 1e6 else f"{ns / 1e6:.1f} ms")
 def sq(n, way, k): return next(r[k] for r in SQ["rows"] if r["n"] == n and r["way"] == way)
 def seq_table():
@@ -691,7 +691,8 @@ def seq_table():
     for n in sorted({r["n"] for r in SQ["rows"]}):
         body += f'<tr class="grp"><td colspan="{len(ops) + 1}">{n:,} elements</td></tr>'
         for way, lab in SQW:
-            r = next(r for r in SQ["rows"] if r["n"] == n and r["way"] == way)
+            r = next((r for r in SQ["rows"] if r["n"] == n and r["way"] == way), None)
+            if r is None: continue
             note = f' ({r["leaves"]:,} leaves, depth {r["depth"]})' if "leaves" in r else (" (one segment)" if way == "hybrid" and not r.get("editedFirst", True) else "")
             body += f"<tr><td>{lab}{note}</td>" + "".join(f"<td>{sqt(r[k])}</td>" for k, _ in ops) + "</tr>"
     return f'<div style="overflow-x:auto"><table class="nums"><thead><tr><th>held as</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
@@ -719,6 +720,10 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "sq_app": sqt(max(r["append"] for r in SQ["rows"] if r["way"] == SQW[0][0])), "sq_get_hi": sqt(sq(1000000, SQW[0][0], "get")),
         "sq_arr_ins": sqt(sq(1000000, "array, copied", "insert")), "sq_cell_ins": sqt(sq(1000000, "cells", "insert")),
         "sq_walk": sqt(sq(1000000, SQW[0][0], "sum")), "sq_walk_arr": sqt(sq(1000000, "array, copied", "sum")), "sq_walk_cells": sqt(sq(1000000, "cells", "sum")),
+        "sq_im_ins": sqt(sq(1000000, "Immutable.js List", "insert")), "sq_im_ins_lo": sqt(sq(1000, "Immutable.js List", "insert")), "sq_im_get": sqt(sq(1000000, "Immutable.js List", "get")),
+        "sq_im_walk": sqt(sq(1000000, "Immutable.js List", "sum")), "sq_im_inout": sqt(sq(1000000, "Immutable.js List", "inOut")), "sq_im_app": sqt(sq(1000000, "Immutable.js List", "append")),
+        "sq_im_v": next(l["version"] for l in SQ["libs"] if l["name"] == "Immutable.js List"), "sq_fl_v": next(l["version"] for l in SQ["libs"] if l["name"] == "@funkia/list"),
+        "sq_fl_fail": esc(next(l["failed"] for l in SQ["libs"] if l["name"] == "@funkia/list") or "no failure"),
         "sq_leaves": f'{sq(1000000, SQW[0][0], "leaves"):,}', "sq_depth": str(sq(1000000, SQW[0][0], "depth")),
         "gs_mjs": f'{next(g["recShare"] for g in GS if g["game"] == "mahjong-solitaire") * 100:.0f}%'}
 body = open(os.path.join(HERE, "body.html")).read()

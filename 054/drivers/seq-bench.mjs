@@ -16,10 +16,17 @@
 // Each operation at sizes 1,000 to 1,000,000: insert one element at a random position, append one at the end, read the
 // element at a random position, walk every element (a sum), and a page's array in and back out.
 //
-//   node seq-bench.mjs <out.json>
+//   immutable  Immutable.js's List (5.0.3): a trie of 32-element arrays, its own insert; a page's array copied into it
+//   funkia     @funkia/list (0.1.0): a relaxed radix-balanced tree; an insert is its splitAt, append and concat (it has no
+//              insert of its own); a page's array copied into it
+// (both installed from npm, with Matthew's OK of 2026-11-24, into a folder given as the second argument)
+//
+//   node seq-bench.mjs <out.json> [the folder holding node_modules/immutable and node_modules/@funkia/list]
 import { writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import path from "node:path";
 import os from "node:os";
-const OUT = process.argv[2];
+const OUT = process.argv[2], LIBS = process.argv[3];
 const now = () => performance.now();
 const median = xs => { const s = [...xs].sort((a, b) => a - b); return s[s.length >> 1]; };
 // ns a call: the median of batches (as many calls as take at least 2 ms), at least 7 batches and 150 ms; a call over 1 s alone
@@ -118,17 +125,35 @@ const S = {
   leaves: t => t === null ? 0 : isLeaf(t) ? 1 : S.leaves(t.l) + S.leaves(t.r),
 };
 
+// ---- the libraries, when given
+const LIBWAYS = [];
+if (LIBS) {
+  const req = createRequire(path.resolve(LIBS, "package.json"));
+  const Im = req("immutable"), F = req("@funkia/list");
+  LIBWAYS.push({
+    name: "Immutable.js List", version: req("immutable/package.json").version,
+    from: arr => Im.List(arr), insert: (l, i, x) => l.insert(i, x), append: (l, x) => l.push(x), get: (l, i) => l.get(i),
+    sum: l => l.reduce((s, x) => s + x, 0), out: l => l.toArray(),
+  }, {
+    name: "@funkia/list", version: req("@funkia/list/package.json").version,
+    from: arr => F.fromArray(arr), insert: (l, i, x) => { const [a, b] = F.splitAt(i, l); return F.concat(F.append(x, a), b); }, append: (l, x) => F.append(x, l), get: (l, i) => F.nth(i, l),
+    sum: l => F.foldl((s, x) => s + x, 0, l), out: l => F.toArray(l),
+  });
+}
+const WAYS = [A, L, H, S, ...LIBWAYS];
+
 // ---- correctness first: every way, the same edits, the same sequence
 {
   const base = Array.from({ length: 500 }, (_, i) => i);
-  const vs = [A, L, H, S].map(w => w.from(base));
+  const vs = WAYS.map(w => w.from(base));
   const ref = base.slice();
   for (let k = 0; k < 2000; k++) {
     const i = rnd(ref.length + 1), x = 10000 + k, app = k % 7 === 0;
     if (app) ref.push(x); else ref.splice(i, 0, x);
-    [A, L, H, S].forEach((w, j) => { vs[j] = app ? w.append(vs[j], x) : w.insert(vs[j], i, x); });
+    // (a library that throws is left out of the timings, and the run says so)
+    WAYS.forEach((w, j) => { if (w.failed) return; try { vs[j] = app ? w.append(vs[j], x) : w.insert(vs[j], i, x); } catch (e) { w.failed = `after ${k} edits: ${e && e.message || e}`; console.log(`${w.name}: left out, it threw ${w.failed}`); } });
   }
-  [A, L, H, S].forEach((w, j) => { const got = w.out(vs[j]); if (got.length !== ref.length || got.some((v, k) => v !== ref[k])) throw new Error(w.name + " differs"); });
+  WAYS.forEach((w, j) => { if (w.failed) return; const got = w.out(vs[j]); if (got.length !== ref.length || got.some((v, k) => v !== ref[k])) throw new Error(w.name + " differs"); });
   const old = S.from(base); S.insert(old, 3, -1); if (S.out(old).length !== 500) throw new Error("seq changed in place");
   console.log(`the same sequence every way after 2,000 edits; the seq: ${vs[3].n} elements, ${S.leaves(vs[3])} leaves, depth ${S.depth(vs[3])}`);
 }
@@ -140,7 +165,7 @@ for (const n of SIZES) {
   const page = Array.from({ length: n }, (_, i) => i);
   // a sequence that has been edited: the page's array, then n / 10 inserts at random places (so the seq has many leaves)
   const edited = w => { let v = w.from(page.slice()); for (let k = 0; k < Math.min(n / 10, 20000); k++) v = w.insert(v, rnd(n), -k); return v; };
-  for (const w of [A, L, H, S]) {
+  for (const w of WAYS.filter(w => !w.failed)) {
     // (an array and cells have one shape however they were made, so they are not edited first; the hybrid is, up to 10,000,
     // beyond which its edits cost minutes, so it is timed at its best there: one segment, the page's array)
     const fresh = w === A || w === L || (w === H && n > 10000);
@@ -159,4 +184,4 @@ for (const n of SIZES) {
 }
 function fmt(ns) { return ns < 1000 ? `${ns.toFixed(0)} ns` : ns < 1e6 ? `${(ns / 1000).toFixed(1)} µs` : `${(ns / 1e6).toFixed(1)} ms`; }
 let machine = {}; try { machine = { cpus: os.cpus().length, model: os.cpus()[0].model, node: process.version }; } catch (e) { /* */ }
-if (OUT) writeFileSync(OUT, JSON.stringify({ when: new Date().toISOString(), machine, B, rows, sink }, null, 1));
+if (OUT) writeFileSync(OUT, JSON.stringify({ when: new Date().toISOString(), machine, B, libs: LIBWAYS.map(w => ({ name: w.name, version: w.version, failed: w.failed || null })), rows, sink }, null, 1));
