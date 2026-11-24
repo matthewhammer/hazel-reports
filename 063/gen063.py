@@ -297,7 +297,7 @@ DESC = (f"Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one
         f"(geometric mean over {len(OPS)} operations), from {x_(min(IJ))} to {x_(max(IJ))}: on searches it is as fast as code compiled ahead of time, "
         f"but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run "
         f"{x_(gm(IC))} as fast as interpreted, and the five written by hand in JavaScript about {x_(gm(CP))} faster again. A day later, with #2857's converters by declared type, "
-        f"the jit ran them {x_(1 / gm(cvr('jit')))} as fast again, about even with code compiled ahead of time. Then the decisions before it merges into dev.")
+        f"the jit ran them {x_(1 / gm(cvr('jit')))} as fast again on the benchmark's repeated positions, about even with code compiled ahead of time. Then the decisions before it merges into dev.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)

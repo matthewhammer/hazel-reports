@@ -6,7 +6,7 @@
 <!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hazel as an npm Package: What to Decide Next</title>
-<meta name="description" content="Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one PR (#2857) that it is built from, how that branch differs from dev, and every game in hazeljs-examples timed four ways. The package&#x27;s jit runs the games 317× as fast as its interpreter (geometric mean over 45 operations), from 4.2× to 4,955×: on searches it is as fast as code compiled ahead of time, but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run 2,392× as fast as interpreted, and the five written by hand in JavaScript about 16× faster again. A day later, with #2857&#x27;s converters by declared type, the jit ran them 9.0× as fast again, about even with code compiled ahead of time. Then the decisions before it merges into dev.">
+<meta name="description" content="Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one PR (#2857) that it is built from, how that branch differs from dev, and every game in hazeljs-examples timed four ways. The package&#x27;s jit runs the games 317× as fast as its interpreter (geometric mean over 45 operations), from 4.2× to 4,955×: on searches it is as fast as code compiled ahead of time, but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run 2,392× as fast as interpreted, and the five written by hand in JavaScript about 16× faster again. A day later, with #2857&#x27;s converters by declared type, the jit ran them 9.0× as fast again on the benchmark&#x27;s repeated positions, about even with code compiled ahead of time. Then the decisions before it merges into dev.">
 <style>  :root {
     --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
     --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
@@ -158,7 +158,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>63<b>)</b></code> · the hazeljs package · 2026-11-23, revised 2026-11-24 08:25 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> and <a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>63<b>)</b></code> · the hazeljs package · 2026-11-23, revised 2026-11-24 08:26 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> and <a href="../060/"><code class="ref"><b>^report(</b>60<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -659,7 +659,7 @@ document.addEventListener("DOMContentLoaded", () => {
 {
  "report": 63,
  "title": "Hazel as an npm Package: What to Decide Next",
- "blurb": "Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one PR (#2857) that it is built from, how that branch differs from dev, and every game in hazeljs-examples timed four ways. The package's jit runs the games 317× as fast as its interpreter (geometric mean over 45 operations), from 4.2× to 4,955×: on searches it is as fast as code compiled ahead of time, but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run 2,392× as fast as interpreted, and the five written by hand in JavaScript about 16× faster again. A day later, with #2857's converters by declared type, the jit ran them 9.0× as fast again, about even with code compiled ahead of time. Then the decisions before it merges into dev.",
+ "blurb": "Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one PR (#2857) that it is built from, how that branch differs from dev, and every game in hazeljs-examples timed four ways. The package's jit runs the games 317× as fast as its interpreter (geometric mean over 45 operations), from 4.2× to 4,955×: on searches it is as fast as code compiled ahead of time, but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run 2,392× as fast as interpreted, and the five written by hand in JavaScript about 16× faster again. A day later, with #2857's converters by declared type, the jit ran them 9.0× as fast again on the benchmark's repeated positions, about even with code compiled ahead of time. Then the decisions before it merges into dev.",
  "builds": {
   "package": "hazeljs 0.0.11 (hazelgrove/hazeljs editor-in-package b149ed58f2), not on npm",
   "hazel": "hazelgrove/hazel 98c482395d (branch hazeljs, #2857): hazel-lib.js, byte for byte the deploy's",
