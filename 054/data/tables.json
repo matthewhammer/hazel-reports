@@ -1713,5 +1713,176 @@
     "–"
    ]
   ]
+ },
+ {
+  "section": "Records the page’s way",
+  "section_id": "records",
+  "columns": [
+   "in compiled code",
+   "today: an array carrying its labels",
+   "the page’s object",
+   "how"
+  ],
+  "rows": [
+   [
+    "make a record of four fields",
+    "49.7 ns",
+    "4.0 ns",
+    "an object literal, against the runtime’s tup adding each label to an array"
+   ],
+   [
+    "a new record with one field changed",
+    "52.5 ns",
+    "5.0 ns",
+    "as a literal; 13.2 ns by spread, {...r, x}"
+   ],
+   [
+    "read a field by its label",
+    "1.1 ns",
+    "0.9 ns",
+    "the same"
+   ],
+   [
+    "read a field by its position",
+    "1.2 ns",
+    "68.4 ns",
+    "through Object.values; 1.0 ns with the label at that position from the type"
+   ],
+   [
+    "compare two equal records",
+    "25.6 ns",
+    "84.7 ns",
+    "by their own keys; 7.6 ns by the type’s fields, a comparison made from the type"
+   ],
+   [
+    "a million records into compiled code and back",
+    "173 ms",
+    "nothing",
+    "3.8 ms with each field’s type checked, no copy"
+   ],
+   [
+    "a list of 1,000 cells built",
+    "4.9 µs",
+    "5.5 µs",
+    "cells made by a class, so a plain object is a record; 6.2 µs as literals {$h, $t}, 37 µs as literals with a prototype"
+   ],
+   [
+    "the same list walked",
+    "4.8 µs",
+    "4.4 µs",
+    "5.4 µs testing instanceof at each cell; 4.4 µs as {$h, $t}"
+   ]
+  ]
+ },
+ {
+  "section": "What it would change in the games",
+  "section_id": "records-games",
+  "columns": [
+   "a state of",
+   "records",
+   "constructors",
+   "arrays (lists, or tuples without labels)",
+   "records, of these nodes"
+  ],
+  "rows": [
+   [
+    "Downhill",
+    "1",
+    "0",
+    "0",
+    "100%"
+   ],
+   [
+    "Minesweeper",
+    "481",
+    "0",
+    "17",
+    "97%"
+   ],
+   [
+    "Butterfly garden",
+    "27",
+    "0",
+    "3",
+    "90%"
+   ],
+   [
+    "Gnome dig",
+    "11",
+    "0",
+    "4",
+    "73%"
+   ],
+   [
+    "Checkers",
+    "1",
+    "0",
+    "1",
+    "50%"
+   ],
+   [
+    "Bricks",
+    "1",
+    "0",
+    "1",
+    "50%"
+   ],
+   [
+    "Snake",
+    "1",
+    "0",
+    "1",
+    "50%"
+   ],
+   [
+    "Light trails",
+    "1",
+    "0",
+    "1",
+    "50%"
+   ],
+   [
+    "Solitaire",
+    "60",
+    "52",
+    "22",
+    "45%"
+   ],
+   [
+    "Mahjong solitaire",
+    "361",
+    "0",
+    "579",
+    "38%"
+   ],
+   [
+    "Pinball",
+    "1",
+    "0",
+    "2",
+    "33%"
+   ],
+   [
+    "Star wave",
+    "1",
+    "0",
+    "3",
+    "25%"
+   ],
+   [
+    "Mahjong",
+    "5",
+    "0",
+    "17",
+    "23%"
+   ],
+   [
+    "Go",
+    "1",
+    "0",
+    "10",
+    "9%"
+   ]
+  ]
  }
 ]

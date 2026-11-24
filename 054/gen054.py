@@ -647,6 +647,37 @@ def crossing_table():
         f'<td>{fmt_ms(round(r[k], 6 if r[k] < 1 else 2)) if r.get(k) is not None else "–"}</td>' for k in keys) + "</tr>" for r in CR["rows"])
     return f'<div style="overflow-x:auto"><table class="nums"><thead><tr><th>list of</th><th>elements</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
 
+# ---- (^ticket(847), 2026-11-24) records the page's way: the shapes timed in JavaScript alone (054/drivers/records-bench.mjs),
+# and how much of each game's state is records (054/drivers/game-shapes.mjs)
+RB = json.load(open(os.path.join(HERE, "data", "records.json")))
+GS = json.load(open(os.path.join(HERE, "data", "game-shapes.json")))["games"]
+RBR = {r["name"]: r for r in RB["rows"]}
+K_CHECK, K_EQ = "as objects: each field's type checked going in, no copy", "as objects, compared by the type's fields"
+GNAME = {"checkers": "Checkers", "go": "Go", "minesweeper": "Minesweeper", "mahjong": "Mahjong", "solitaire": "Solitaire", "mahjong-solitaire": "Mahjong solitaire",
+         "pinball": "Pinball", "downhill": "Downhill", "bricks": "Bricks", "snake": "Snake", "trails": "Light trails", "starwave": "Star wave", "bugs": "Butterfly garden", "dig": "Gnome dig"}
+def ns(v): return f"{v:.1f} ns" if v < 100 else (f"{v:,.0f} ns" if v < 1000 else f"{v / 1000:.1f} µs")
+def records_table():
+    per = lambda name, k, n=1: RBR[name][k] / n
+    C = RB["cellsNs"]; X = RB["crossMs"]
+    rows = [
+        ("make a record of four fields", ns(per("make a record of four fields", "today")), ns(per("make a record of four fields", "objects")), "an object literal, against the runtime’s <code>tup</code> adding each label to an array"),
+        ("a new record with one field changed", ns(per("update one field", "today")), ns(per("update one field", "objects")), f'as a literal; {ns(per("update one field", "as objects, by spread"))} by spread, <code>{{...r, x}}</code>'),
+        ("read a field by its label", ns(per("read a field by label, 1,000 records", "today", 1000)), ns(per("read a field by label, 1,000 records", "objects", 1000)), "the same"),
+        ("read a field by its position", ns(per("read a field by position, 1,000 records", "today", 1000)), ns(per("read a field by position, 1,000 records", "objects", 1000)), f'through <code>Object.values</code>; {ns(per("read a field by position, 1,000 records", "as objects, the label from the type", 1000))} with the label at that position from the type'),
+        ("compare two equal records", ns(per("compare two equal records", "today")), ns(per("compare two equal records", "objects")), f'by their own keys; {ns(per("compare two equal records", K_EQ))} by the type’s fields, a comparison made from the type'),
+        ("a million records into compiled code and back", f'{X["today: each record converted both ways"]:.0f} ms', "nothing", f'{X[K_CHECK]:.1f} ms with each field’s type checked, no copy'),
+        ("a list of 1,000 cells built", f'{C["build, literals {h, t}"] / 1000:.1f} µs', f'{C["build, class instances"] / 1000:.1f} µs', f'cells made by a class, so a plain object is a record; {C["build, literals {$h, $t}"] / 1000:.1f} µs as literals <code>{{$h, $t}}</code>, {C["build, literals with a prototype {__proto__, h, t}"] / 1000:.0f} µs as literals with a prototype'),
+        ("the same list walked", f'{C["walk, literals, p !== null"] / 1000:.1f} µs', f'{C["walk, class instances, p !== null"] / 1000:.1f} µs', f'{C["walk, class instances, p instanceof Cell"] / 1000:.1f} µs testing <code>instanceof</code> at each cell; {C["walk, literals {$h, $t}, p !== null"] / 1000:.1f} µs as <code>{{$h, $t}}</code>'),
+    ]
+    body = "".join(f"<tr><td>{a}</td><td>{b}</td><td>{c}</td><td class=\"l\">{d}</td></tr>" for a, b, c, d in rows)
+    return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>in compiled code</th><th>today: an array carrying its labels</th><th>the page’s object</th><th class="l">how</th></tr></thead>'
+            f"<tbody>{body}</tbody></table></div>")
+def shapes_table():
+    body = "".join(f'<tr><td>{GNAME[g["game"]]}</td><td>{g["rec"]:,}</td><td>{g["ctor"]:,}</td><td>{g["arr"]:,}</td><td>{g["recShare"] * 100:.0f}%</td></tr>'
+                   for g in sorted(GS, key=lambda g: -g["recShare"]))
+    return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>a state of</th><th>records</th><th>constructors</th><th>arrays (lists, or tuples without labels)</th><th>records, of these nodes</th></tr></thead>'
+            f"<tbody>{body}</tbody></table></div>")
+
 NUMS = {"updated": updated, "jit_pr": "2859", "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
@@ -656,7 +687,16 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "slide_summary": slide_summary(), "fig_lists": fig_lists(), "tab_lists": lists_table(), "fig_lists_games": fig_lists_games(), "tab_lists_games": lists_games_table(),
         "lg_aot": f"{(LG_GM('cells_aot', 'hybrid_aot') - 1) * 100:.0f}%", "lg_jit": f"{(LG_GM('cells_jit', 'hybrid_jit') - 1) * 100:.0f}%", "lg_n": str(len(LG)),
         "fig_cross_ints_log": fig_crossing("ints", True), "fig_cross_ints_lin": fig_crossing("ints", False), "fig_cross_rec_log": fig_crossing("records", True),
-        "fig_cross_rec_lin": fig_crossing("records", False), "tab_crossing": crossing_table(), "cr_cpu": esc(CR["cpu"]), "cr_node": CR["node"]}
+        "fig_cross_rec_lin": fig_crossing("records", False), "tab_crossing": crossing_table(), "cr_cpu": esc(CR["cpu"]), "cr_node": CR["node"],
+        "tab_records": records_table(), "tab_shapes": shapes_table(), "rb_node": RB["machine"]["node"], "rb_cpu": esc(RB["machine"]["model"]),
+        "rb_make_x": f'{RBR["make a record of four fields"]["today"] / RBR["make a record of four fields"]["objects"]:.0f} times',
+        "rb_eq_x": f'{RBR["compare two equal records"]["today"] / RBR["compare two equal records"][K_EQ]:.1f} times',
+        "rb_cross": f'{RB["crossMs"]["today: each record converted both ways"]:.0f} ms', "rb_check": f'{RB["crossMs"][K_CHECK]:.1f} ms',
+        "rb_pos": ns(RBR["read a field by position, 1,000 records"]["objects"] / 1000), "rb_pos_today": ns(RBR["read a field by position, 1,000 records"]["today"] / 1000),
+        "rb_eq_type": ns(RBR["compare two equal records"][K_EQ]), "rb_eq_today": ns(RBR["compare two equal records"]["today"]),
+        "rb_cell": f'{(RB["cellsNs"]["build, class instances"] - RB["cellsNs"]["build, literals {h, t}"]) / 1000:.1f} ns',
+        "gs_ms": f'{next(g["recShare"] for g in GS if g["game"] == "minesweeper") * 100:.0f}%', "gs_bugs": f'{next(g["recShare"] for g in GS if g["game"] == "bugs") * 100:.0f}%',
+        "gs_mjs": f'{next(g["recShare"] for g in GS if g["game"] == "mahjong-solitaire") * 100:.0f}%'}
 body = open(os.path.join(HERE, "body.html")).read()
 for k, v in {**NUMS, **FIGS}.items():
     body = body.replace("{{" + k + "}}", v)
