@@ -58,6 +58,14 @@ def t(ms):
     if us >= 1: return f"{us:.1f} µs"
     return f"{us * 1000:.0f} ns"
 def x_(r): return f"{r:,.0f}×" if r >= 10 else f"{r:.1f}×"
+def legend(items, x, y):
+    """a figure's key in a row: each mark and its words, the next placed after the words' width (about 7.2 px a character at the
+    figures' size, wide enough for the widest system font), not at a fixed step, so that no two overlap"""
+    out = []
+    for words, cls in items:
+        out.append(f'<circle class="{cls}" cx="{x + 4:.1f}" cy="{y}" r="4.2"/><text class="mut" x="{x + 12:.1f}" y="{y + 4}">{esc(words)}</text>')
+        x += 12 + 7.2 * len(words) + 22
+    return out
 kb = lambda b: f"{b / 1024:.0f} kB"
 
 # ---- figure: the package's ways to run Hazel from a page
@@ -106,8 +114,7 @@ def ways_svg():
         y += 15
     for e, _ in ticks: out.insert(0, f'<line class="grid" x1="{X(10 ** e):.1f}" y1="{top - 6}" x2="{X(10 ** e):.1f}" y2="{y}"/>')
     y += 10
-    for i, (w, cls) in enumerate((("interpreted", "mi"), ("jit", "mj"), ("compiled ahead of time", "mc"), ("plain JS", "mp"))):
-        out.append(f'<circle class="{cls}" cx="{x0 + i * 100}" cy="{y}" r="4.2"/><text class="mut" x="{x0 + 8 + i * 100}" y="{y + 4}">{w}</text>')
+    out += legend([("interpreted", "mi"), ("jit", "mj"), ("compiled ahead of time", "mc"), ("plain JS", "mp")], 12, y)
     return f'<svg viewBox="0 0 {W} {y + 12}" role="img" aria-label="Every operation of the 17 games, timed four ways, on a log scale from 10 nanoseconds to 100 seconds">' + "".join(out) + "</svg>"
 
 # ---- figure: where the jit's time goes: in compiled code, or crossing
@@ -147,7 +154,7 @@ def conv_svg():
         y += 14
     out.append(f'<line x1="{X(1):.1f}" y1="12" x2="{X(1):.1f}" y2="{y}" stroke="var(--ink)" stroke-width="1.2"/>')
     y += 10
-    out.append(f'<circle class="cvo" cx="{x0 + 6}" cy="{y + 5}" r="4"/><text class="mut" x="{x0 + 14}" y="{y + 9}">the day before (build 2)</text><circle class="cvn" cx="{x0 + 176}" cy="{y + 5}" r="4"/><text class="mut" x="{x0 + 184}" y="{y + 9}">with the converters (build 5)</text>')
+    out += legend([("the day before (build 2)", "cvo"), ("with the converters (build 5)", "cvn")], 12, y + 5)
     return f'<svg viewBox="0 0 {W} {y + 20}" role="img" aria-label="Each operation\'s time through the jit as a multiple of its time ahead of time, the day before and with the converters">' + "".join(out) + "</svg>"
 
 # ---- figure: building a game's rules: interpreted, jit; and the ahead-of-time file's size
