@@ -57,6 +57,17 @@ for g in ORDER:
         RUNS.append((g, r["name"], r["steps"], {w: v for w, v in r["ways"].items() if v}))
     RUN_CLK.append(json.load(open(f))["clockNs"])
 rw = lambda a, b: [w[a]["usPerCall"] / w[b]["usPerCall"] for _, _, _, w in RUNS]
+# (2026-11-24) build 6: #2857 at ca851b422d, the converters' memos as links on the objects, not WeakMaps; the same runs
+# (hazeljs-examples bench/runs-ca851b4, GitHub run 45459402709)
+RUNS6 = {}   # game -> {way: run record}
+for g in ORDER:
+    f = os.path.join(DATA, "runs-links", f"{g}-runs.json")
+    if not os.path.exists(f): continue
+    r = json.load(open(f))["runs"][0]
+    assert all(v is None or (v.get("same") and "ms" in v) for v in r["ways"].values()), (g, r["name"])
+    RUNS6[g] = {w: v for w, v in r["ways"].items() if v}
+ja5 = {g: w["jit"]["usPerCall"] / w["compiled"]["usPerCall"] for g, _, _, w in RUNS}
+ja6 = {g: w["jit"]["usPerCall"] / w["compiled"]["usPerCall"] for g, w in RUNS6.items()}
 LIGHT = [o for o in OPS if share(o) >= 0.5]
 
 def t(ms):
@@ -200,6 +211,27 @@ def runs_svg():
     out += legend([(words, cls) for _, cls, words in RUN_WAYS[:3]], 12, y)
     out += legend([(words, cls) for _, cls, words in RUN_WAYS[3:]], 12, y + 18)
     return f'<svg viewBox="0 0 {W} {y + 30}" role="img" aria-label="Each game\'s own run of states, the time a call five ways, on a log scale from a tenth of a microsecond to a second">' + "".join(out) + "</svg>"
+
+# ---- figure (2026-11-24): each game's run, the jit's time over the ahead-of-time code's, builds 5 and 6
+def runs_cmp_svg():
+    W, x0, w = 640, 190, 330
+    lo, hi = math.log10(0.1), math.log10(3)
+    X = lambda r: x0 + w * (math.log10(min(max(r, 0.1), 3)) - lo) / (hi - lo)
+    gs = sorted(ja6, key=lambda g: -ja5[g])
+    out, y = [], 18
+    for v in [0.1, 0.2, 0.5, 1, 2]:
+        out.append(f'<line class="grid" x1="{X(v):.1f}" y1="12" x2="{X(v):.1f}" y2="{18 + 15 * len(gs)}"/><text class="mut small" x="{X(v):.1f}" y="9" text-anchor="middle">{v:g}×</text>')
+    for g in gs:
+        a, b = ja5[g], ja6[g]
+        out.append(f'<text class="lbl small" x="8" y="{y + 9}">{esc(NAME[g])}</text><line x1="{X(a):.1f}" y1="{y + 5}" x2="{X(b):.1f}" y2="{y + 5}" stroke="var(--muted)" stroke-width="1"/>'
+                   f'<circle class="cvo" cx="{X(a):.1f}" cy="{y + 5}" r="3.6"><title>{esc(NAME[g])}, build 5 (memos in WeakMaps): the jit {a:.2f}× the ahead-of-time code</title></circle>'
+                   f'<circle class="cvn" cx="{X(b):.1f}" cy="{y + 5}" r="3.6"><title>{esc(NAME[g])}, build 6 (memos as links): the jit {b:.2f}× the ahead-of-time code</title></circle>'
+                   f'<text class="mut small" x="{x0 + w + 8}" y="{y + 9}">{a:.2f}× → {b:.2f}×</text>')
+        y += 15
+    out.append(f'<line x1="{X(1):.1f}" y1="12" x2="{X(1):.1f}" y2="{y}" stroke="var(--ink)" stroke-width="1.2"/>')
+    y += 10
+    out += legend([("build 5: memos in WeakMaps", "cvo"), ("build 6: memos as links", "cvn")], 12, y + 5)
+    return f'<svg viewBox="0 0 {W} {y + 20}" role="img" aria-label="Each game\'s run: the jit\'s time over the ahead-of-time code\'s, with the memos in WeakMaps and as links on the objects">' + "".join(out) + "</svg>"
 
 # ---- figure: building a game's rules: interpreted, jit; and the ahead-of-time file's size
 def once_svg():
@@ -346,6 +378,10 @@ FIGS = {
     "rn_ms_j": t(next(w["jit"]["usPerCall"] for g, _, _, w in RUNS if g == "minesweeper") / 1000),
     "rn_ms_f": t(next(w["jit, fresh copies"]["usPerCall"] for g, _, _, w in RUNS if g == "minesweeper") / 1000),
     "rn_ms_c": t(next(w["compiled"]["usPerCall"] for g, _, _, w in RUNS if g == "minesweeper") / 1000),
+    "runs_cmp": runs_cmp_svg(), "rn6_ja": f'{gm(list(ja6.values())):.2f}×', "rn6_n": str(len(ja6)),
+    "rn6_ms": f'{ja5["mahjong-solitaire"]:.2f}× → {ja6["mahjong-solitaire"]:.2f}×', "rn6_sol": f'{ja5["solitaire"]:.2f}× → {ja6["solitaire"]:.2f}×', "rn6_dig": f'{ja5["dig"]:.2f}× → {ja6["dig"]:.2f}×',
+    "rn6_worse": ", ".join(f'{NAME[g]} {ja5[g]:.2f}× → {ja6[g]:.2f}×' for g in sorted(ja6, key=lambda g: ja5[g] / ja6[g]) if ja6[g] > ja5[g] * 1.05),
+    "rn6_aot": f'{min(RUNS6[g]["compiled"]["usPerCall"] / w["compiled"]["usPerCall"] for g, _, _, w in RUNS):.2f}× to {max(RUNS6[g]["compiled"]["usPerCall"] / w["compiled"]["usPerCall"] for g, _, _, w in RUNS):.2f}×',
     "rn_clock": f'{sorted(RUN_CLK)[len(RUN_CLK) // 2]:.0f} ns', "rn_steps": f'{sum(s for _, _, s, _ in RUNS):,}',
     "rn_short": "; ".join(f'{NAME[g]}, {run_short(g, n, s).split(": ", 1)[1].replace("a game of ", "").replace("a game on 9 by 9, ", "").replace("a deal, ", "").replace("a hand of ", "")}' for g, n, s, w in sorted(RUNS, key=lambda r: r[2]) if s < 120),
     "rn_fresh_even": ", ".join(NAME[g] for g, _, _, w in RUNS if w["jit, fresh copies"]["usPerCall"] <= 1.05 * w["compiled"]["usPerCall"]),
@@ -362,7 +398,7 @@ DESC = (f"Where the hazeljs package stands at 0.0.11, for Matthew and Cyrus: one
         f"but on light calls with a large state most of its time goes to converting values in and out. Compiled ahead of time, the games run "
         f"{x_(gm(IC))} as fast as interpreted, and the five written by hand in JavaScript about {x_(gm(CP))} faster again. A day later, with #2857's converters by declared type, "
         f"the jit ran them {x_(1 / gm(cvr('jit')))} as fast again on the benchmark's repeated positions; on each game's own run of states it takes {gm(rw('jit', 'compiled')):.2f} of the time of code compiled ahead of time, "
-        f"and {gm(rw('jit, fresh copies', 'jit')):.1f} times its own when every state is a fresh copy. Then the decisions before it merges into dev.")
+        f"and {gm(list(ja6.values())):.2f} with the converters' memos kept as links on the objects rather than in WeakMaps (build 6); {gm(rw('jit, fresh copies', 'jit')):.1f} times its own when every state is a fresh copy. Then the decisions before it merges into dev.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
