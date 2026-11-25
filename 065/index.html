@@ -137,6 +137,7 @@ h3.grp { margin-top: 1.2em; }
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
+  svg .code { fill: #2a78d6; } svg .cross { fill: #eb6834; }
   table.nums tr.gm td { font-weight: 700; border-top: 2px solid var(--line); }
   .tw table.rep { min-width: 820px; } table.rep code { word-break: normal; overflow-wrap: break-word; }
   table.rep td.chg { background: color-mix(in srgb, var(--good, #2e9e5b) 14%, transparent); }
@@ -162,7 +163,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 08:39 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 08:49 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -260,6 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#compare">Representations, then and now</a>: three of <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s five suggestions for hazel-jit’s output are done and one in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take 0.70 of the jit’s time, <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule 0.67, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#speed">Speed beside them</a>: on <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule, ReScript and Melange are still about four times as fast; the games still need versions in OCaml and ReScript.</li>
+<li><a href="#crossing">Conversion at the edges, over time</a>: from most of a call to a fraction of one in two days; now the larger part again where a whole state crosses (on the Petri rule 71% of a call), and five ways to bring it down.</li>
 <li><a href="#left">What is still left</a>: five steps in Matthew’s order, each a ticket: constructors made once, modules by name and <code>===</code> (made, being timed), the cost of exact Ints and steps (measured), and options unboxed last.</li>
 <li><a href="#choices">Choices for the description</a>: what to settle before it goes on GitHub.</li>
 <li><a href="#github">The text for GitHub</a>, to copy, and <a href="#revisions">its revisions</a>.</li>
@@ -315,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <section class="inpr"><h2 id="pr-next">Next, on this branch<a class="anchor" href="#pr-next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pr-next" title="copy this section's address">copy link</button></h2>
 <p class="tag">In the PR’s description</p>
-<ul><li>Mixed mode&#x27;s types from the statics, not from annotations: <code>dev</code> lowers a module to lets whose patterns lose their annotations, so a module&#x27;s members run on the interpreter in mixed mode for now.</li><li>Holes: indeterminate values carried through compiled code, building the interpreter&#x27;s residual terms, beyond mixed mode&#x27;s fallback per call.</li><li>The games&#x27; rules as test programs (hazeljs-examples, compiled whole).</li><li>64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.</li></ul>
+<ul><li>Mixed mode&#x27;s types from the statics, not from annotations: <code>dev</code> lowers a module to lets whose patterns lose their annotations, so a module&#x27;s members run on the interpreter in mixed mode for now.</li><li>Holes: indeterminate values carried through compiled code, building the interpreter&#x27;s residual terms, beyond mixed mode&#x27;s fallback per call.</li><li>Values across without converting: in mixed mode, the interpreter keeps a compiled call&#x27;s answer as compiled code holds it, converting only what it looks inside, so a value passed from one compiled function to another through interpreted code is never converted.</li><li>The games&#x27; rules as test programs (hazeljs-examples, compiled whole).</li><li>64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.</li></ul>
 <p>Tried and not kept: lists as cells plus array segments (<code>hazel-jit-lists</code>). On hazeljs-examples&#x27; seventeen games it cost about 8% ahead of time and 4% through the jit, all answers the same, so cells stay.</p>
 <p>The design and the measurements are in Hazel reports: <a href="https://matthewhammer.org/hazel/reports/054/#records-decide"><code class="ref"><b>^report(</b>54<b>)</b></code></a> (records, lists and holes), <a href="https://matthewhammer.org/hazel/reports/063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> (every game, four ways) and <a href="https://matthewhammer.org/hazel/reports/046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> (beside ReScript, Melange and js_of_ocaml).</p>
 </section>
@@ -398,6 +400,38 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <p><b>The games and activities of hazeljs-examples have hazel-jit’s numbers but none for the other compilers.</b> <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> timed every game four ways (on the interpreter, through the jit, compiled ahead of time, and, for five games, in JavaScript written by hand), and <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> timed each game’s own run of states as its page plays it. Neither has ReScript, Melange or js_of_ocaml: for them each game’s rules must be written again, in OCaml (for Melange and js_of_ocaml) or in ReScript. Five games already have a version in plain JavaScript, written by hand: Checkers, Go, Minesweeper, Mahjong and Solitaire. They come first (<a href="#next">What next</a>), so that each has all six: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, each playing the game’s own run of states in its own layout.</p>
 
 
+<h2 id="crossing">Conversion at the edges, over time<a class="anchor" href="#crossing" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="crossing" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<p><b>Converting values where compiled code meets the rest went from most of a call to a fraction of one in two days, and it is the larger part again where a whole state crosses: on <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s Petri rule, called as a page calls it, 4.7 µs of a 6.67 µs call is conversion, the same as before today’s changes (4.8 µs), so its share grew from 58% to 71% as the compiled code got faster.</b> Matthew asked on 2026-11-25 for this section: conversion’s cost over time, and ways to bring down what is left, among them one he and Cyrus had talked about, the interpreter keeping values as compiled code holds them, so that mixed mode does not convert them at every call.</p>
+<h3 id="crossing-time">Build by build<a class="anchor" href="#crossing-time" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="crossing-time" title="copy this section's address">copy link</button></h3>
+<p>Each step below changed what happens where values cross, or, last, only the compiled code. The yardstick is the same throughout: each game’s own <code>compiled.js</code>, compiled ahead of time by an older hazel-jit, with the converters a person wrote, unchanged since <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>’s runs. The jit’s ratio to it falls for two reasons, less conversion and better compiled code; the steps say which.</p>
+<figure class="chart">
+<svg viewBox="0 0 720 200" role="img" aria-labelledby="tlt"><title id="tlt">The jit's time a call as a share of the games' own compiled.js, build by build</title><text class="mut" x="300" y="16">the jit’s time a call, as a share of the games’ own compiled.js (the line)</text><text class="lbl" x="292" y="44" text-anchor="end">11-24 · build 5 (a97b6f7465)</text><rect class="bar" x="300" y="30" width="327.6" height="20" rx="2"/><text class="val" x="633.6" y="44">0.91</text><text class="lbl" x="292" y="72" text-anchor="end">11-24 · build 6 (ca851b422d)</text><rect class="bar" x="300" y="58" width="273.6" height="20" rx="2"/><text class="val" x="579.6" y="72">0.76</text><text class="lbl" x="292" y="100" text-anchor="end">11-24 · records as objects (f311f4e408)</text><rect class="bar" x="300" y="86" width="172.8" height="20" rx="2"/><text class="val" x="478.8" y="100">0.48</text><text class="lbl" x="292" y="128" text-anchor="end">11-25 · hazeljs 0.0.13 (20febee548)</text><rect class="bar" x="300" y="114" width="185.4" height="20" rx="2"/><text class="val" x="491.4" y="128">0.52</text><text class="lbl" x="292" y="156" text-anchor="end">11-25 · loops and JS arguments (6d041e9769)</text><rect class="bar" x="300" y="142" width="124.6" height="20" rx="2"/><text class="val" x="430.6" y="156">0.35</text><line class="one" x1="660.0" y1="24" x2="660.0" y2="176"/><text class="mut" x="660.0" y="192" text-anchor="middle">1.0</text></svg>
+<figcaption>The jit’s time a call, as a share of each game’s own <code>compiled.js</code>, on each game’s own run of states as its page plays it (the geometric mean over 14 games). From <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> (builds 5 and 6), <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> (records as objects) and today’s runs (0.0.13 and the loops and JS arguments). Before the converters, on one position again and again rather than on runs, the jit took 7.5 times the ahead-of-time time (<a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>).</figcaption>
+</figure>
+<div class="tw"><table class="nums"><thead><tr><th class="l">When</th><th class="l">Build</th><th class="l">What changed at the edge</th><th>the jit / compiled.js</th></tr></thead><tbody><tr><td class="l">2026-11-23</td><td class="l">hazeljs 0.0.11 (build 2, 98c482395d)</td><td class="l">through Hazel&#x27;s own values: a page&#x27;s value into Hazel&#x27;s, then into compiled code&#x27;s shapes, and back the same two steps</td><td>7.50</td></tr><tr><td class="l">2026-11-24</td><td class="l">build 5 (a97b6f7465)</td><td class="l">converters by declared type: a page&#x27;s values straight into compiled code&#x27;s shapes and back</td><td>0.91</td></tr><tr><td class="l">2026-11-24</td><td class="l">build 6 (ca851b422d)</td><td class="l">what was converted remembered by links on the objects, not in WeakMaps</td><td>0.76</td></tr><tr><td class="l">2026-11-24</td><td class="l">records as objects (f311f4e408)</td><td class="l">a page&#x27;s record crosses as it is</td><td>0.48</td></tr><tr><td class="l">2026-11-25</td><td class="l">hazeljs 0.0.13 (20febee548)</td><td class="l">the same as above, timed again today</td><td>0.52</td></tr><tr><td class="l">2026-11-25</td><td class="l">loops and JS arguments (6d041e9769)</td><td class="l">none at the edge: the compiled code alone</td><td>0.35</td></tr></tbody></table></div>
+<h3 id="crossing-now">What a call still converts<a class="anchor" href="#crossing-now" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="crossing-now" title="copy this section's address">copy link</button></h3>
+<figure class="chart">
+<svg viewBox="0 0 720 124" role="img" aria-labelledby="pxt"><title id="pxt">The Petri rule's call through the jit: the compiled code, and converting in and out</title><rect class="code" x="230" y="8" width="12" height="12"/><text class="mut" x="248" y="18">the compiled code</text><rect class="cross" x="390" y="8" width="12" height="12"/><text class="mut" x="408" y="18">converting the values in and out</text><text class="lbl" x="222" y="51" text-anchor="end">hazeljs 0.0.13</text><rect class="code" x="230" y="34" width="120.8" height="26"/><rect class="cross" x="350.8" y="34" width="169.2" height="26"/><text class="val" x="526.0" y="51">8.3 µs, 58% converting</text><text class="lbl" x="222" y="91" text-anchor="end">today’s, with ===</text><rect class="code" x="230" y="74" width="67.2" height="26"/><rect class="cross" x="297.2" y="74" width="166.1" height="26"/><text class="val" x="469.3" y="91">6.7 µs, 71% converting</text></svg>
+<figcaption><a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s Petri rule on the laptop, called 2,000 times, five rounds, the median µs a call. Direct: the compiled program called with values already in compiled code’s shapes (<code>petri-bench.mjs hazel</code>). Through the jit: <code>Hazel.jitProgram</code>’s function, called with the page’s shapes and answering in them (<code>petri-bench.mjs jit</code>); the difference is converting. 0.0.13: 3.45 direct, 8.29 through the jit. Today’s, with steps 1 to 3 of What is still left: 1.92 and 6.67.</figcaption>
+</figure>
+<p>What each Petri call converts: the net, whose marking is a new array of five Ints every call (five list cells in), whose transitions are the same object every call (remembered, so nothing), and the event; and the command it answers, a chain such as <code>Say(_, Take(_, _, Put(_, _, Done)))</code>, built new each call and so converted node by node, from <code>{$c, $v}</code> to the page’s <code>{tag, value}</code>. Where the rest of the cost lies, in general:</p>
+<ul>
+<li><b>A list crosses cell by cell</b>, unless it was handed back unchanged: about 6 µs for 1,000 Ints, 62 ms for a million (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, A page’s list in and back out).</li>
+<li><b>A constructor crosses node by node</b>, since the page holds <code>{tag, value}</code> and compiled code <code>{$c, $v}</code>; a record now crosses as it is.</li>
+<li><b>Whatever is new each call</b> misses the converters’ memory: given a fresh copy of every state, the jit took 2.2 times its own time (<a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>, A game’s own run of states).</li>
+<li><b>Mixed mode</b>, where the interpreter calls compiled functions, converts every call’s argument from the interpreter’s terms into JavaScript and its answer back by the declared type, with no memory between calls. In mixed mode’s first measurements, a one-line function called 500 times from interpreted code was slower than not compiling it (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, Mixed mode).</li>
+</ul>
+<h3 id="crossing-next">Ways to bring it down, soon<a class="anchor" href="#crossing-next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="crossing-next" title="copy this section's address">copy link</button></h3>
+<ol>
+<li><b>The interpreter keeps compiled values as they are.</b> In mixed mode, a compiled call’s answer stays the JavaScript value, held by the interpreter as a value of a new kind: the JS value and its type. Passed to another compiled function, it goes as it is. Only when the interpreter looks inside it (a case, a projection, an operator, a probe, the answer shown) is it converted, one layer at a time, each layer’s parts kept as they are until they are looked at. A game’s state handed from step to step through interpreted code would then never be converted. The cost: a new form of value in the interpreter, which its steps, its matching and its printing must know, and the way back for the parts it shows.</li>
+<li><b>Mixed mode remembers what it converted.</b> As the package’s converters do for a page: under js_of_ocaml an OCaml value is a JavaScript object, so a <code>WeakMap</code> can lead from the interpreter’s term to its JavaScript value, and a link on the JavaScript value back to the term. A state the interpreter hands back unchanged then crosses with no walk, and only what changed is converted. Less to build than the first, and it covers the case where the interpreter only passes values along.</li>
+<li><b>Constructors in one shape.</b> If the page and compiled code held a constructor the same way, it would cross for nothing, as a record does now. Either way round, pages that keep compiled code would see the change, as they saw the records’.</li>
+<li><b>Lists as arrays at the edge</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>, how Seq enters Hazel): a page’s array read where it is, not turned into cells first. Lists as cells plus array segments cost 8% in compiled code (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>), so a type the program asks for, not every list.</li>
+<li><b>The converters call the direct form.</b> A page’s call with several arguments is gathered into one array, which the function’s one-argument form takes apart again; the converters could call <code>$d</code> with the parts.</li>
+</ol>
+<p>The first two would show in mixed mode, which nothing in the app turns on yet; the last three in every page’s call through <code>Hazel.jit</code>.</p>
+
 <h2 id="left">What is still left<a class="anchor" href="#left" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="left" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
 <p><b>Five steps, in the order Matthew set on 2026-11-25, each a ticket on the work dashboard; the first three are made and being timed, the fourth is measured, and options unboxed come last, after a decision.</b> Matthew: “let’s keep going, skipping 1 (unboxed options) until all others are done”, with the priority below; and “please document our plan for the day as a ticket, or several that link to each other”. The day’s plan is <a href="https://matthewhammer.org/hazel/dashboard/#ticket-853"><code class="ref"><b>^ticket(</b>853<b>)</b></code></a>, whose first two steps (the loops and the JS arguments, <a href="#today">above</a>) are merged; each ticket below links to it and to its neighbours. Steps 1 to 3 are one wave on a trial branch, <code>trial/853-jit-more</code>, each its own commit and its own build of the package, timed one after another on the games’ runners and merged together on Matthew’s word.</p>
@@ -428,7 +462,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 
 <h2 id="github">The text for GitHub<a class="anchor" href="#github" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="github" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
-<p><b>The whole description as GitHub will show it, 1,977 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
+<p><b>The whole description as GitHub will show it, 2,019 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
 <p><button class="copy-md" type="button" onclick="(async b=>{try{await navigator.clipboard.writeText(document.getElementById('pr-md').textContent);b.textContent='Copied'}catch(e){b.textContent='Select the text below instead'}})(this)">Copy the description’s Markdown</button></p>
 <details><summary>The Markdown</summary>
 <pre class="md">🤖 hazel-jit, for `dev`: a compiler from Hazel to JavaScript, with the tests that hold it to the interpreter&#x27;s answers. This is the one PR that tracks the jit. The npm package&#x27;s branch, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> (`hazeljs`), merges it rather than keeping a copy of its own.
@@ -513,6 +547,7 @@ Since it opened:
 
 - Mixed mode&#x27;s types from the statics, not from annotations: `dev` lowers a module to lets whose patterns lose their annotations, so a module&#x27;s members run on the interpreter in mixed mode for now.
 - Holes: indeterminate values carried through compiled code, building the interpreter&#x27;s residual terms, beyond mixed mode&#x27;s fallback per call.
+- Values across without converting: in mixed mode, the interpreter keeps a compiled call&#x27;s answer as compiled code holds it, converting only what it looks inside, so a value passed from one compiled function to another through interpreted code is never converted.
 - The games&#x27; rules as test programs (hazeljs-examples, compiled whole).
 - 64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.
 
@@ -605,6 +640,7 @@ Since it opened:
 
 - Mixed mode's types from the statics, not from annotations: `dev` lowers a module to lets whose patterns lose their annotations, so a module's members run on the interpreter in mixed mode for now.
 - Holes: indeterminate values carried through compiled code, building the interpreter's residual terms, beyond mixed mode's fallback per call.
+- Values across without converting: in mixed mode, the interpreter keeps a compiled call's answer as compiled code holds it, converting only what it looks inside, so a value passed from one compiled function to another through interpreted code is never converted.
 - The games' rules as test programs (hazeljs-examples, compiled whole).
 - 64-bit SInt, with #2828.
 
@@ -618,6 +654,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
 <h2 id="revisions">Revisions<a class="anchor" href="#revisions" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="revisions" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
 <ul>
+<li><b>2026-11-25, conversion at the edges.</b> A new section, at Matthew’s ask: conversion’s cost build by build, what a call still converts (the Petri rule direct and through the jit), and five ways to bring it down, the interpreter keeping compiled values as they are first.</li>
 <li><b>2026-11-25, steps 1 to 4 timed.</b> <a href="#left-timed">Steps 1 to 4, timed</a>: the three changes together 0.95 on the games, exact Ints about 12% of a call, the step count about 21%.</li>
 <li><b>2026-11-25, now is now.</b> Representations, then and now: the table’s “now” is hazel-jit as merged today (43828037c9), and the intermediate columns are gone (Matthew: “replace the "now" column to reflect the current "now" --- no need to keep all intermediate steps”).</li>
 <li><b>2026-11-25, the plan as tickets.</b> What is still left is now the day’s plan in Matthew’s order, each step a ticket (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-853"><code class="ref"><b>^ticket(</b>853<b>)</b></code></a> to <a href="https://matthewhammer.org/hazel/dashboard/#ticket-859"><code class="ref"><b>^ticket(</b>859<b>)</b></code></a>).</li>
@@ -632,6 +669,8 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
 <li>Write the rules of Checkers, Go, Minesweeper, Mahjong and Solitaire in OCaml and in ReScript, and time each game’s own run of states six ways: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, on GitHub’s runners.</li>
 <li>Time steps 1 to 4 of What is still left on the games, one change at a time (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-854"><code class="ref"><b>^ticket(</b>854<b>)</b></code></a> to <a href="https://matthewhammer.org/hazel/dashboard/#ticket-857"><code class="ref"><b>^ticket(</b>857<b>)</b></code></a>), and merge steps 1 to 3 into <code>hazel-jit</code> and <code>hazeljs</code> on Matthew’s word.</li>
 <li>Try options unboxed on a trial of their own, timed on the Petri rule, and set out what pages would have to change, for Matthew to decide (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-858"><code class="ref"><b>^ticket(</b>858<b>)</b></code></a>).</li>
+<li>In mixed mode, keep compiled values as they are in the interpreter, converting only what it looks inside (Conversion at the edges, way 1), or first remember what was converted (way 2); measured on a program that hands a state from step to step through interpreted code.</li>
+<li>Constructors in one shape for pages and compiled code, and the converters calling the direct form (Conversion at the edges, ways 3 and 5), timed through <code>Hazel.jit</code> on the games and the Petri rule.</li>
 <li>Measure what the sweep costs CI: the Fast checks and the Full tests on <code>dev</code> against <code>hazel-jit</code>.</li>
 <li>Bring <code>HazelJit.re</code>’s header comment up to date with the layout of values.</li>
 </ol>
@@ -947,14 +986,18 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
  },
  "ticket_853_split": "matthewhammer/hazeljs-examples bench/853-split, GitHub run 45641693384: the base, loops alone (hazelgrove/hazel trial/853-pkg-loops, db27761a79: hazeljs with 50b70d5a40 merged), both (trial/853-pkg, 6d041e9769), one after another on one runner a game; and the Petri rule on the laptop the same three ways, five rounds (data/petri-split-runs.jsonl)",
  "ticket_853_more": "matthewhammer/hazeljs-examples bench/853-more, GitHub run 45645748545: six builds one after another on one runner a game: the base (hazelgrove/hazel trial/853-pkg 6d041e9769, loops and JS arguments, as merged), c1 (trial/853-pkg-c1 a14e698ec8: constructors without arguments made once), c2 (trial/853-pkg-c2 bc9d98db6b: a module's members by name), c3 (trial/853-pkg-c3 f111bb00ac: == against a literal as ===), noint (b471f761fb: c3 with Ints as plain JS numbers, a bench build only) and nostep (ae9611d03f: c3 with no step counted, a bench build only); and the Petri rule on the laptop the same six ways, five rounds (data/petri-more-runs.jsonl)",
+ "crossing": "#crossing: data/crossing-timeline.json (the jit against the games' own compiled.js, build by build, from reports 063 and 054 and today's runs); data/petri-crossing-runs.jsonl (the Petri rule direct into compiled code, petri-bench.mjs hazel, and through Hazel.jitProgram as a page calls it, petri-bench.mjs jit; hazeljs 0.0.13 and trial/853-pkg-c3; five rounds on the laptop)",
  "files": [
+  "data/crossing-timeline.json",
   "data/games-853",
   "data/games-853-more",
   "data/games-853-split",
   "data/meta.json",
   "data/petri-046.json",
   "data/petri-853.json",
+  "data/petri-crossing-runs.jsonl",
   "data/petri-more-runs.jsonl",
+  "data/petri-opt-runs.jsonl",
   "data/petri-runs.jsonl",
   "data/petri-split-runs.jsonl",
   "data/representations.json",
@@ -1521,6 +1564,54 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "Hazel's interpreter",
      "358",
      ""
+    ]
+   ]
+  },
+  {
+   "section": "Build by build",
+   "section_id": "crossing-time",
+   "columns": [
+    "When",
+    "Build",
+    "What changed at the edge",
+    "the jit / compiled.js"
+   ],
+   "rows": [
+    [
+     "2026-11-23",
+     "hazeljs 0.0.11 (build 2, 98c482395d)",
+     "through Hazel's own values: a page's value into Hazel's, then into compiled code's shapes, and back the same two steps",
+     "7.50"
+    ],
+    [
+     "2026-11-24",
+     "build 5 (a97b6f7465)",
+     "converters by declared type: a page's values straight into compiled code's shapes and back",
+     "0.91"
+    ],
+    [
+     "2026-11-24",
+     "build 6 (ca851b422d)",
+     "what was converted remembered by links on the objects, not in WeakMaps",
+     "0.76"
+    ],
+    [
+     "2026-11-24",
+     "records as objects (f311f4e408)",
+     "a page's record crosses as it is",
+     "0.48"
+    ],
+    [
+     "2026-11-25",
+     "hazeljs 0.0.13 (20febee548)",
+     "the same as above, timed again today",
+     "0.52"
+    ],
+    [
+     "2026-11-25",
+     "loops and JS arguments (6d041e9769)",
+     "none at the edge: the compiled code alone",
+     "0.35"
     ]
    ]
   },

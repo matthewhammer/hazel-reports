@@ -96,4 +96,23 @@ if (mode === "others") {
     mh = performH(cmd, mh);
   }
   console.log(JSON.stringify({ hazel: { ...us(th), end: mh, build: Hazel.build, direct: typeof V.on_event.$d === "function" } }));
-} else throw new Error("usage: petri-bench.mjs others | hazel <hazel-lib.js>");
+} else if (mode === "jit") {
+  // (^report(65) #crossing) the same rule as a page calls it through Hazel.jitProgram: the net and the event in the page's
+  // shapes (a record an object, a list an array, a constructor {tag, value}), converted in and the command out by the
+  // function's declared types; the transitions are the same object every call, as a page hands back what it was given
+  await import(pathToFileURL(process.argv[3]).href);
+  const Hazel = globalThis.Hazel;
+  const read = f => readFileSync(new URL("../../../../hazeljs-examples/petri-net/rules/" + f, import.meta.url), "utf8").replace(/\s+$/, "");
+  const spec = { preamble: read("preamble.hz"), modules: [{ name: "Common", text: read("Common.hz") }, { name: "Rules", text: read("Rules.hz") }, { name: "Main", text: read("Main.hz") }],
+                 tail: "(transitions = Main.transitions, marking = Main.marking, on_event = Main.on_event)" };
+  const J = Hazel.jitProgram(spec);
+  if (!J.compiled) throw new Error("not compiled: " + J.reason);
+  const V = J.value;
+  let mp = V.marking.slice(), tp = [];
+  for (let i = 0; i < N; i++) {
+    const n = { marking: mp, transitions: V.transitions, draw: 0.7 };
+    const t0 = performance.now(); const cmd = V.on_event(n, { tag: "Fire", value: i % 4 }); tp.push(performance.now() - t0);
+    mp = perform(cmd, mp);
+  }
+  console.log(JSON.stringify({ jit: { ...us(tp), end: mp, build: Hazel.build } }));
+} else throw new Error("usage: petri-bench.mjs others | hazel <hazel-lib.js> | jit <hazel-lib.js>");

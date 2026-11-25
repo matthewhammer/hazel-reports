@@ -183,6 +183,46 @@ FIGS.update({"more_table": more_table(),
              "mw_int_top": ", ".join(f'{GNAME[g]} {mr("noint", "c3", g):.2f}' for g in sorted(GAMES, key=lambda g: mr("noint", "c3", g))[:3]),
              "mw_step_top": ", ".join(f'{GNAME[g]} {mr("nostep", "c3", g):.2f}' for g in sorted(GAMES, key=lambda g: mr("nostep", "c3", g))[:3]),
              "pm_base": f'{pmm("base"):.2f}', "pm_c1": f'{pmm("c1"):.2f}', "pm_c2": f'{pmm("c2"):.2f}', "pm_c3": f'{pmm("c3"):.2f}', "pm_noint": f'{pmm("noint"):.2f}', "pm_nostep": f'{pmm("nostep"):.2f}'})
+# (#crossing) conversion at the edges over time, and the Petri rule's call direct against through the jit
+TL = json.load(open(os.path.join(DATA, "crossing-timeline.json")))
+def timeline_svg():
+    rows = [r for r in TL["rows"] if r["measure"] == "runs"]
+    W, L, top, bh, gap = 720, 300, 30, 20, 8
+    x = lambda v: L + v * (W - L - 60)
+    h = top + len(rows) * (bh + gap) + 30
+    bars = "".join(f'<text class="lbl" x="{L - 8}" y="{top + i * (bh + gap) + 14}" text-anchor="end">{esc(r["date"][5:])} · {esc(r["build"])}</text>'
+                   f'<rect class="bar" x="{L}" y="{top + i * (bh + gap)}" width="{x(r["ratio"]) - L:.1f}" height="{bh}" rx="2"/>'
+                   f'<text class="val" x="{x(r["ratio"]) + 6:.1f}" y="{top + i * (bh + gap) + 14}">{r["ratio"]:.2f}</text>' for i, r in enumerate(rows))
+    one = x(1.0)
+    return (f'<svg viewBox="0 0 {W} {h}" role="img" aria-labelledby="tlt"><title id="tlt">The jit\'s time a call as a share of the games\' own compiled.js, build by build</title>'
+            f'<text class="mut" x="{L}" y="16">the jit’s time a call, as a share of the games’ own compiled.js (the line)</text>{bars}'
+            f'<line class="one" x1="{one:.1f}" y1="{top - 6}" x2="{one:.1f}" y2="{h - 24}"/><text class="mut" x="{one:.1f}" y="{h - 8}" text-anchor="middle">1.0</text></svg>')
+def timeline_table():
+    rows = "".join(f'<tr><td class="l">{esc(r["date"])}</td><td class="l">{esc(r["build"])}</td><td class="l">{esc(r["change"])}</td><td>{r["ratio"]:.2f}</td></tr>' for r in TL["rows"])
+    return ('<div class="tw"><table class="nums"><thead><tr><th class="l">When</th><th class="l">Build</th><th class="l">What changed at the edge</th><th>the jit / compiled.js</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>')
+PX = [json.loads(l) for l in open(os.path.join(DATA, "petri-crossing-runs.jsonl"))]
+pxm = lambda b, m: sorted(r["r"]["hazel" if m == "hazel" else "jit"]["median_us"] for r in PX if r["build"] == b and r["mode"] == m)[2]
+def petri_cross_svg():
+    W, L, top, bh, gap = 720, 230, 34, 26, 14
+    rows = [("hazeljs 0.0.13", "base"), ("today’s, with ===", "c3")]
+    mx = max(pxm(b, "jit") for _, b in rows)
+    x = lambda v: L + v / mx * (W - L - 200)
+    out = []
+    for i, (name, b) in enumerate(rows):
+        y = top + i * (bh + gap); d = pxm(b, "hazel"); j = pxm(b, "jit")
+        out.append(f'<text class="lbl" x="{L - 8}" y="{y + 17}" text-anchor="end">{esc(name)}</text>'
+                   f'<rect class="code" x="{L}" y="{y}" width="{x(d) - L:.1f}" height="{bh}"/>'
+                   f'<rect class="cross" x="{x(d):.1f}" y="{y}" width="{x(j) - x(d):.1f}" height="{bh}"/>'
+                   f'<text class="val" x="{x(j) + 6:.1f}" y="{y + 17}">{j:.1f} µs, {100 * (j - d) / j:.0f}% converting</text>')
+    h = top + len(rows) * (bh + gap) + 10
+    return (f'<svg viewBox="0 0 {W} {h}" role="img" aria-labelledby="pxt"><title id="pxt">The Petri rule\'s call through the jit: the compiled code, and converting in and out</title>'
+            f'<rect class="code" x="{L}" y="8" width="12" height="12"/><text class="mut" x="{L + 18}" y="18">the compiled code</text>'
+            f'<rect class="cross" x="{L + 160}" y="8" width="12" height="12"/><text class="mut" x="{L + 178}" y="18">converting the values in and out</text>{"".join(out)}</svg>')
+FIGS.update({"timeline_svg": timeline_svg(), "timeline_table": timeline_table(), "petri_cross_svg": petri_cross_svg(),
+             "px_base_d": f'{pxm("base", "hazel"):.2f}', "px_base_j": f'{pxm("base", "jit"):.2f}', "px_c3_d": f'{pxm("c3", "hazel"):.2f}', "px_c3_j": f'{pxm("c3", "jit"):.2f}',
+             "px_base_x": f'{pxm("base", "jit") - pxm("base", "hazel"):.1f}', "px_c3_x": f'{pxm("c3", "jit") - pxm("c3", "hazel"):.1f}',
+             "px_base_share": f'{100 * (1 - pxm("base", "hazel") / pxm("base", "jit")):.0f}%', "px_c3_share": f'{100 * (1 - pxm("c3", "hazel") / pxm("c3", "jit")):.0f}%'})
 PS = [json.loads(l) for l in open(os.path.join(DATA, "petri-split-runs.jsonl"))]
 pmed = lambda w: sorted(r["r"]["hazel"]["median_us"] for r in PS if r["way"] == w)[2]
 FIGS.update({"split_table": split_table(), "sp_loops": f'{gm([r["loops"] / r["base"] for r in SPL]):.2f}', "sp_both": f'{gm([r["both"] / r["base"] for r in SPL]):.2f}',
@@ -205,6 +245,7 @@ EXTRA = """
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
+  svg .code { fill: #2a78d6; } svg .cross { fill: #eb6834; }
   table.nums tr.gm td { font-weight: 700; border-top: 2px solid var(--line); }
   .tw table.rep { min-width: 820px; } table.rep code { word-break: normal; overflow-wrap: break-word; }
   table.rep td.chg { background: color-mix(in srgb, var(--good, #2e9e5b) 14%, transparent); }
@@ -263,6 +304,7 @@ meta = {"title": TITLE, "blurb": DESC,
                        "petri": "065/drivers/petri/petri-bench.mjs on this laptop, one way per process, five rounds (data/petri-runs.jsonl)"},
         "ticket_853_split": "matthewhammer/hazeljs-examples bench/853-split, GitHub run 45641693384: the base, loops alone (hazelgrove/hazel trial/853-pkg-loops, db27761a79: hazeljs with 50b70d5a40 merged), both (trial/853-pkg, 6d041e9769), one after another on one runner a game; and the Petri rule on the laptop the same three ways, five rounds (data/petri-split-runs.jsonl)",
         "ticket_853_more": "matthewhammer/hazeljs-examples bench/853-more, GitHub run 45645748545: six builds one after another on one runner a game: the base (hazelgrove/hazel trial/853-pkg 6d041e9769, loops and JS arguments, as merged), c1 (trial/853-pkg-c1 a14e698ec8: constructors without arguments made once), c2 (trial/853-pkg-c2 bc9d98db6b: a module's members by name), c3 (trial/853-pkg-c3 f111bb00ac: == against a literal as ===), noint (b471f761fb: c3 with Ints as plain JS numbers, a bench build only) and nostep (ae9611d03f: c3 with no step counted, a bench build only); and the Petri rule on the laptop the same six ways, five rounds (data/petri-more-runs.jsonl)",
-        "files": ["pr-2859.md", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
+        "crossing": "#crossing: data/crossing-timeline.json (the jit against the games' own compiled.js, build by build, from reports 063 and 054 and today's runs); data/petri-crossing-runs.jsonl (the Petri rule direct into compiled code, petri-bench.mjs hazel, and through Hazel.jitProgram as a page calls it, petri-bench.mjs jit; hazeljs 0.0.13 and trial/853-pkg-c3; five rounds on the laptop)",
+        "files": ["pr-2859.md", "data/crossing-timeline.json", "data/petri-crossing-runs.jsonl", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
 json.dump(meta, open(os.path.join(DATA, "meta.json"), "w"), indent=1, ensure_ascii=False)
 print("wrote 065/index.html;", updated)

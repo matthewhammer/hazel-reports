@@ -12,6 +12,7 @@
 <li><a href="#compare">Representations, then and now</a>: three of report 046’s five suggestions for hazel-jit’s output are done and one in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take {{g853_gm}} of the jit’s time, report 046’s rule {{p853_ratio}}, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#speed">Speed beside them</a>: on report 046’s rule, ReScript and Melange are still about four times as fast; the games still need versions in OCaml and ReScript.</li>
+<li><a href="#crossing">Conversion at the edges, over time</a>: from most of a call to a fraction of one in two days; now the larger part again where a whole state crosses (on the Petri rule {{px_c3_share}} of a call), and five ways to bring it down.</li>
 <li><a href="#left">What is still left</a>: five steps in Matthew’s order, each a ticket: constructors made once, modules by name and <code>===</code> (made, being timed), the cost of exact Ints and steps (measured), and options unboxed last.</li>
 <li><a href="#choices">Choices for the description</a>: what to settle before it goes on GitHub.</li>
 <li><a href="#github">The text for GitHub</a>, to copy, and <a href="#revisions">its revisions</a>.</li>
@@ -117,6 +118,38 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <p><b>The games and activities of hazeljs-examples have hazel-jit’s numbers but none for the other compilers.</b> Report 063 timed every game four ways (on the interpreter, through the jit, compiled ahead of time, and, for five games, in JavaScript written by hand), and report 054 timed each game’s own run of states as its page plays it. Neither has ReScript, Melange or js_of_ocaml: for them each game’s rules must be written again, in OCaml (for Melange and js_of_ocaml) or in ReScript. Five games already have a version in plain JavaScript, written by hand: Checkers, Go, Minesweeper, Mahjong and Solitaire. They come first (<a href="#next">What next</a>), so that each has all six: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, each playing the game’s own run of states in its own layout.</p>
 
 
+<h2 id="crossing">Conversion at the edges, over time</h2>
+<p class="tag own">This report’s</p>
+<p><b>Converting values where compiled code meets the rest went from most of a call to a fraction of one in two days, and it is the larger part again where a whole state crosses: on report 046’s Petri rule, called as a page calls it, {{px_c3_x}} µs of a {{px_c3_j}} µs call is conversion, the same as before today’s changes ({{px_base_x}} µs), so its share grew from {{px_base_share}} to {{px_c3_share}} as the compiled code got faster.</b> Matthew asked on 2026-11-25 for this section: conversion’s cost over time, and ways to bring down what is left, among them one he and Cyrus had talked about, the interpreter keeping values as compiled code holds them, so that mixed mode does not convert them at every call.</p>
+<h3 id="crossing-time">Build by build</h3>
+<p>Each step below changed what happens where values cross, or, last, only the compiled code. The yardstick is the same throughout: each game’s own <code>compiled.js</code>, compiled ahead of time by an older hazel-jit, with the converters a person wrote, unchanged since report 063’s runs. The jit’s ratio to it falls for two reasons, less conversion and better compiled code; the steps say which.</p>
+<figure class="chart">
+{{timeline_svg}}
+<figcaption>The jit’s time a call, as a share of each game’s own <code>compiled.js</code>, on each game’s own run of states as its page plays it (the geometric mean over 14 games). From report 063 (builds 5 and 6), report 054 (records as objects) and today’s runs (0.0.13 and the loops and JS arguments). Before the converters, on one position again and again rather than on runs, the jit took 7.5 times the ahead-of-time time (report 063).</figcaption>
+</figure>
+{{timeline_table}}
+<h3 id="crossing-now">What a call still converts</h3>
+<figure class="chart">
+{{petri_cross_svg}}
+<figcaption>Report 046’s Petri rule on the laptop, called 2,000 times, five rounds, the median µs a call. Direct: the compiled program called with values already in compiled code’s shapes (<code>petri-bench.mjs hazel</code>). Through the jit: <code>Hazel.jitProgram</code>’s function, called with the page’s shapes and answering in them (<code>petri-bench.mjs jit</code>); the difference is converting. 0.0.13: {{px_base_d}} direct, {{px_base_j}} through the jit. Today’s, with steps 1 to 3 of What is still left: {{px_c3_d}} and {{px_c3_j}}.</figcaption>
+</figure>
+<p>What each Petri call converts: the net, whose marking is a new array of five Ints every call (five list cells in), whose transitions are the same object every call (remembered, so nothing), and the event; and the command it answers, a chain such as <code>Say(_, Take(_, _, Put(_, _, Done)))</code>, built new each call and so converted node by node, from <code>{$c, $v}</code> to the page’s <code>{tag, value}</code>. Where the rest of the cost lies, in general:</p>
+<ul>
+<li><b>A list crosses cell by cell</b>, unless it was handed back unchanged: about 6 µs for 1,000 Ints, 62 ms for a million (report 054, A page’s list in and back out).</li>
+<li><b>A constructor crosses node by node</b>, since the page holds <code>{tag, value}</code> and compiled code <code>{$c, $v}</code>; a record now crosses as it is.</li>
+<li><b>Whatever is new each call</b> misses the converters’ memory: given a fresh copy of every state, the jit took 2.2 times its own time (report 063, A game’s own run of states).</li>
+<li><b>Mixed mode</b>, where the interpreter calls compiled functions, converts every call’s argument from the interpreter’s terms into JavaScript and its answer back by the declared type, with no memory between calls. In mixed mode’s first measurements, a one-line function called 500 times from interpreted code was slower than not compiling it (report 054, Mixed mode).</li>
+</ul>
+<h3 id="crossing-next">Ways to bring it down, soon</h3>
+<ol>
+<li><b>The interpreter keeps compiled values as they are.</b> In mixed mode, a compiled call’s answer stays the JavaScript value, held by the interpreter as a value of a new kind: the JS value and its type. Passed to another compiled function, it goes as it is. Only when the interpreter looks inside it (a case, a projection, an operator, a probe, the answer shown) is it converted, one layer at a time, each layer’s parts kept as they are until they are looked at. A game’s state handed from step to step through interpreted code would then never be converted. The cost: a new form of value in the interpreter, which its steps, its matching and its printing must know, and the way back for the parts it shows.</li>
+<li><b>Mixed mode remembers what it converted.</b> As the package’s converters do for a page: under js_of_ocaml an OCaml value is a JavaScript object, so a <code>WeakMap</code> can lead from the interpreter’s term to its JavaScript value, and a link on the JavaScript value back to the term. A state the interpreter hands back unchanged then crosses with no walk, and only what changed is converted. Less to build than the first, and it covers the case where the interpreter only passes values along.</li>
+<li><b>Constructors in one shape.</b> If the page and compiled code held a constructor the same way, it would cross for nothing, as a record does now. Either way round, pages that keep compiled code would see the change, as they saw the records’.</li>
+<li><b>Lists as arrays at the edge</b> (^ticket(846), how Seq enters Hazel): a page’s array read where it is, not turned into cells first. Lists as cells plus array segments cost 8% in compiled code (report 054), so a type the program asks for, not every list.</li>
+<li><b>The converters call the direct form.</b> A page’s call with several arguments is gathered into one array, which the function’s one-argument form takes apart again; the converters could call <code>$d</code> with the parts.</li>
+</ol>
+<p>The first two would show in mixed mode, which nothing in the app turns on yet; the last three in every page’s call through <code>Hazel.jit</code>.</p>
+
 <h2 id="left">What is still left</h2>
 <p class="tag own">This report’s</p>
 <p><b>Five steps, in the order Matthew set on 2026-11-25, each a ticket on the work dashboard; the first three are made and being timed, the fourth is measured, and options unboxed come last, after a decision.</b> Matthew: “let’s keep going, skipping 1 (unboxed options) until all others are done”, with the priority below; and “please document our plan for the day as a ticket, or several that link to each other”. The day’s plan is ^ticket(853), whose first two steps (the loops and the JS arguments, <a href="#today">above</a>) are merged; each ticket below links to it and to its neighbours. Steps 1 to 3 are one wave on a trial branch, <code>trial/853-jit-more</code>, each its own commit and its own build of the package, timed one after another on the games’ runners and merged together on Matthew’s word.</p>
@@ -157,6 +190,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <h2 id="revisions">Revisions</h2>
 <p class="tag own">This report’s</p>
 <ul>
+<li><b>2026-11-25, conversion at the edges.</b> A new section, at Matthew’s ask: conversion’s cost build by build, what a call still converts (the Petri rule direct and through the jit), and five ways to bring it down, the interpreter keeping compiled values as they are first.</li>
 <li><b>2026-11-25, steps 1 to 4 timed.</b> <a href="#left-timed">Steps 1 to 4, timed</a>: the three changes together {{mw_all}} on the games, exact Ints about {{mw_int_cost}} of a call, the step count about {{mw_step_cost}}.</li>
 <li><b>2026-11-25, now is now.</b> Representations, then and now: the table’s “now” is hazel-jit as merged today (43828037c9), and the intermediate columns are gone (Matthew: “replace the "now" column to reflect the current "now" --- no need to keep all intermediate steps”).</li>
 <li><b>2026-11-25, the plan as tickets.</b> What is still left is now the day’s plan in Matthew’s order, each step a ticket (^ticket(853) to ^ticket(859)).</li>
@@ -171,6 +205,8 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <li>Write the rules of Checkers, Go, Minesweeper, Mahjong and Solitaire in OCaml and in ReScript, and time each game’s own run of states six ways: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, on GitHub’s runners.</li>
 <li>Time steps 1 to 4 of What is still left on the games, one change at a time (^ticket(854) to ^ticket(857)), and merge steps 1 to 3 into <code>hazel-jit</code> and <code>hazeljs</code> on Matthew’s word.</li>
 <li>Try options unboxed on a trial of their own, timed on the Petri rule, and set out what pages would have to change, for Matthew to decide (^ticket(858)).</li>
+<li>In mixed mode, keep compiled values as they are in the interpreter, converting only what it looks inside (Conversion at the edges, way 1), or first remember what was converted (way 2); measured on a program that hands a state from step to step through interpreted code.</li>
+<li>Constructors in one shape for pages and compiled code, and the converters calling the direct form (Conversion at the edges, ways 3 and 5), timed through <code>Hazel.jit</code> on the games and the Petri rule.</li>
 <li>Measure what the sweep costs CI: the Fast checks and the Full tests on <code>dev</code> against <code>hazel-jit</code>.</li>
 <li>Bring <code>HazelJit.re</code>’s header comment up to date with the layout of values.</li>
 </ol>
