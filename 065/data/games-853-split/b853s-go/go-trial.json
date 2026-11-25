@@ -1,0 +1,77 @@
+{
+ "game": "go",
+ "when": "2026-11-25T15:08:15.318Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V74 80-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "6d041e97691be6836972d0acd2235dee34cd83ae"
+ },
+ "examples": "882345c229ea5b21e4af8e4414a74f25411c9d60",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 1009.9097989999999,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 396.3392600000002,
+  "compiledJsBytes": 55476,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 81573,
+  "pageCompiledFrom": "5405a2e87d",
+  "compiledLoadMs": 2.422243999999864,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "a game on 9 by 9, 89 turns (each: a move played, or a pass)",
+   "steps": 89,
+   "ways": {
+    "jit": {
+     "ms": 1.1271195000005036,
+     "usPerCall": 12.66426404494948,
+     "calls": 89,
+     "reps": 50,
+     "min": 0.7664360000005672,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 1.1029859999999871,
+     "usPerCall": 12.393101123595361,
+     "calls": 89,
+     "reps": 50,
+     "min": 1.0478530000027604,
+     "same": true
+    },
+    "compiled": {
+     "ms": 2.0193125000009786,
+     "usPerCall": 22.688904494393018,
+     "calls": 89,
+     "reps": 50,
+     "min": 1.452049999999872,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.5008105000001706,
+     "usPerCall": 5.627084269664838,
+     "calls": 89,
+     "reps": 50,
+     "min": 0.22070000000030632,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 66.06255000000147
+}

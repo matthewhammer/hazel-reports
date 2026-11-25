@@ -142,6 +142,25 @@ def games853_table():
     return ('<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>calls in its run</th><th>base</th><th>base, again</th><th>loops and JS arguments</th>'
             f'<th>share of the base’s mean</th><th>its own compiled.js, same file</th></tr></thead><tbody>{rows}</tbody></table></div>')
 rs = sorted(G853, key=lambda r: r["ratio"])
+# (bench/853-split, run 45641693384) the two changes apart, on one runner a game: the base, loops alone, both
+SPL = []
+for g in GAMES:
+    def get(k):
+        r = json.load(open(os.path.join(DATA, "games-853-split", f"b853s-{g}", f"{g}-{k}.json")))["runs"][0]
+        assert all(v is None or v.get("same") for v in r["ways"].values()), (g, k)
+        return {w: v["usPerCall"] for w, v in r["ways"].items() if v}
+    b, l, t = get("base"), get("loops"), get("trial")
+    SPL.append({"game": g, "base": b["jit"], "loops": l["jit"], "both": t["jit"], "aot_l": l["compiled"] / b["compiled"], "aot_b": t["compiled"] / b["compiled"]})
+def split_table():
+    rows = "".join(f'<tr><td class="l">{esc(GNAME[r["game"]])}</td><td>{t_us(r["base"])}</td><td>{t_us(r["loops"])}</td><td>{r["loops"] / r["base"]:.2f}</td><td>{t_us(r["both"])}</td><td>{r["both"] / r["base"]:.2f}</td></tr>' for r in SPL)
+    return ('<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>base</th><th>loops alone</th><th>share</th><th>both</th><th>share</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>')
+PS = [json.loads(l) for l in open(os.path.join(DATA, "petri-split-runs.jsonl"))]
+pmed = lambda w: sorted(r["r"]["hazel"]["median_us"] for r in PS if r["way"] == w)[2]
+FIGS.update({"split_table": split_table(), "sp_loops": f'{gm([r["loops"] / r["base"] for r in SPL]):.2f}', "sp_both": f'{gm([r["both"] / r["base"] for r in SPL]):.2f}',
+             "sp_lo": f'{min(r["loops"] / r["base"] for r in SPL):.2f}', "sp_hi": f'{max(r["loops"] / r["base"] for r in SPL):.2f}',
+             "sp_aot": f'{gm([r["aot_l"] for r in SPL]):.2f} and {gm([r["aot_b"] for r in SPL]):.2f}',
+             "ps_base": f'{pmed("base"):.2f}', "ps_loops": f'{pmed("loops"):.2f}', "ps_both": f'{pmed("trial"):.2f}'})
 FIGS.update({"petri853_table": petri853_table(), "games853_svg": games853_svg(), "games853_table": games853_table(),
              "g853_gm": f'{gm([r["ratio"] for r in G853]):.2f}', "g853_n": str(len(G853)),
              "g853_best": ", ".join(f'{GNAME[r["game"]]} {r["ratio"]:.2f}' for r in rs[:4]),
@@ -212,6 +231,7 @@ meta = {"title": TITLE, "blurb": DESC,
         "ticket_853": {"what": "2026-11-25: hazel-jit with self tail calls as loops and named functions' tuple parts as JS arguments (trial/853-jit-loops-args 50b70d5a40 and 43828037c9), against the base (hazel-jit as on #2859, 9ec865976d, in hazeljs 0.0.13)",
                        "games": "matthewhammer/hazeljs-examples bench/853, GitHub run 45640411958: each game's own run of states (node/package-bench.mjs --runs --aot-as-is --no-interp), one runner a game, the base, the trial (hazelgrove/hazel trial/853-pkg 6d041e9769, hazeljs with the trial merged), the base again; usPerCall: microseconds a call, the run's calls summed over their number; every answer the same as the games' own compiled.js",
                        "petri": "065/drivers/petri/petri-bench.mjs on this laptop, one way per process, five rounds (data/petri-runs.jsonl)"},
-        "files": ["pr-2859.md", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/games-853/", "drivers/petri/"]}
+        "ticket_853_split": "matthewhammer/hazeljs-examples bench/853-split, GitHub run 45641693384: the base, loops alone (hazelgrove/hazel trial/853-pkg-loops, db27761a79: hazeljs with 50b70d5a40 merged), both (trial/853-pkg, 6d041e9769), one after another on one runner a game; and the Petri rule on the laptop the same three ways, five rounds (data/petri-split-runs.jsonl)",
+        "files": ["pr-2859.md", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
 json.dump(meta, open(os.path.join(DATA, "meta.json"), "w"), indent=1, ensure_ascii=False)
 print("wrote 065/index.html;", updated)

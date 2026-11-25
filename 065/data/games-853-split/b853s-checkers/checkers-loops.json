@@ -1,0 +1,77 @@
+{
+ "game": "checkers",
+ "when": "2026-11-25T15:08:13.594Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 7763 64-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "db27761a7919662c76f84b6589df081081e09bb6"
+ },
+ "examples": "882345c229ea5b21e4af8e4414a74f25411c9d60",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 917.688509,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 419.29537900000014,
+  "compiledJsBytes": 33835,
+  "runtimeBytes": 22687,
+  "wrappedBytes": 59022,
+  "pageCompiledFrom": "d15466c7b1",
+  "compiledLoadMs": 2.783775999999989,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "a game of 46 moves (each: the moves, then one made)",
+   "steps": 46,
+   "ways": {
+    "jit": {
+     "ms": 1.7731789999992316,
+     "usPerCall": 19.27368478260034,
+     "calls": 92,
+     "reps": 50,
+     "min": 1.0767029999988154,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 1.4072429999995393,
+     "usPerCall": 15.296119565212384,
+     "calls": 92,
+     "reps": 50,
+     "min": 1.1578790000007757,
+     "same": true
+    },
+    "compiled": {
+     "ms": 1.8276334999985693,
+     "usPerCall": 19.865581521723577,
+     "calls": 92,
+     "reps": 50,
+     "min": 1.0670739999998204,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.14628049999987525,
+     "usPerCall": 1.5900054347812527,
+     "calls": 92,
+     "reps": 50,
+     "min": 0.12034900000139714,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 78.07905000000119
+}
