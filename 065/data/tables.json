@@ -26,7 +26,7 @@
    [
     "Tests",
     "test/Test_HazelJit.re, test/Test_HazelJit_Agree.re, a hook in test/evaluator/Test_Evaluator_Prelude.re",
-    "Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter's answer shape by shape; agreement on the language's forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, and records whose labels look like the runtime's own keys; values carried back; diffs; what is not compiled and why; mixed mode."
+    "Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter's answer shape by shape; agreement on the language's forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, records whose labels look like the runtime's own keys, loops and JS arguments; values carried back; diffs; what is not compiled and why; mixed mode."
    ]
   ]
  },
@@ -56,7 +56,7 @@
    ],
    [
     "A function",
-    "A JS function of one argument; a function of a tuple takes an array"
+    "A JS function of one argument; a function of a tuple takes an array. A named function of a tuple pattern also has a direct form, f.$d(a, b), its parts as JS arguments"
    ]
   ]
  },
@@ -101,7 +101,7 @@
    ],
    [
     "A function of two",
-    "one argument, an array",
+    "a named one: f.$d(a, b); else one argument, an array",
     "f(a, b)",
     "f(a, b)",
     "f(a, b)"
@@ -115,7 +115,7 @@
    ],
    [
     "A tail call",
-    "a call",
+    "of itself: a loop; else a call",
     "a loop",
     "a loop",
     "a loop"

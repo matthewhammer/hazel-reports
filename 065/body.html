@@ -51,7 +51,7 @@
 
 <h2 id="today">Loops and JS arguments, made on 2026-11-25</h2>
 <p class="tag own">This report’s</p>
-<p><b>With a recursive function’s calls of itself in tail position as a loop, and a named function’s tuple parts as JS arguments, the games take {{g853_gm}} of the jit’s time as their pages play them (the geometric mean over {{g853_n}} games), every answer the same; report 046’s Petri rule takes {{p853_ratio}} of it.</b> Matthew asked on 2026-11-25 for the three changes this report had filed as not yet: “let’s work on turning tail calls into loops next. followed by passing function arguments as JS arguments. Unboxing options is least important, but would also be nice.” The first two are on a trial branch off <code>hazel-jit</code>, <code>trial/853-jit-loops-args</code> (50b70d5a40 for the loops, 43828037c9 for the arguments), and hazel-jit’s fast checks pass on both, their new tests included. The third is not done (<a href="#left">What is still left</a>).</p>
+<p><b>With a recursive function’s calls of itself in tail position as a loop, and a named function’s tuple parts as JS arguments, the games take {{g853_gm}} of the jit’s time as their pages play them (the geometric mean over {{g853_n}} games), every answer the same; report 046’s Petri rule takes {{p853_ratio}} of it.</b> Matthew asked on 2026-11-25 for the three changes this report had filed as not yet: “let’s work on turning tail calls into loops next. followed by passing function arguments as JS arguments. Unboxing options is least important, but would also be nice.” The first two were made on a trial branch off <code>hazel-jit</code>, <code>trial/853-jit-loops-args</code> (50b70d5a40 for the loops, 43828037c9 for the arguments); with hazel-jit’s CI green on them, full tests included, they are merged on Matthew’s word (“Yes, merge it”): <code>hazel-jit</code> (#2859) is at 43828037c9, and <code>hazeljs</code> (#2857) merges it (4cbf7483bf). The third waits for the others (<a href="#left">What is still left</a>).</p>
 <figure class="chart">
 {{games853_svg}}
 <figcaption>Each game’s own run of states through the jit, as its page plays it, a call’s time as a share of the base’s. The base is hazeljs 0.0.13 (hazelgrove/hazel 20febee548, hazel-jit as on #2859); the trial is the same package with the library of <code>trial/853-pkg</code> (6d041e9769: the <code>hazeljs</code> branch with the trial merged). GitHub run 45640411958, one runner a game: the base, the trial, then the base again; the base’s time is the mean of its two runs.</figcaption>
@@ -152,6 +152,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <h2 id="revisions">Revisions</h2>
 <p class="tag own">This report’s</p>
 <ul>
+<li><b>2026-11-25, later still.</b> The loops and JS arguments merged into <code>hazel-jit</code> and <code>hazeljs</code>; the description’s draft says so (its engineering summary, its tables of values and of the other compilers, what came since it opened).</li>
 <li><b>2026-11-25, later.</b> Today’s two changes, made and timed (<a href="#today">Loops and JS arguments</a>), and report 046’s rule timed again; the representations and the suggestions updated; what is still left. The description itself waits for the trial to be merged into <code>hazel-jit</code>.</li>
 <li><b>2026-11-25, first version.</b> From the draft sent to Matthew in chat that morning: the executive and engineering summaries are new, and so is the section beside ReScript, Melange and js_of_ocaml. Checked against the code, the draft’s “Ints compare with <code>===</code>” was wrong: an Int’s <code>==</code> is <code>$R.eq</code>, and only Floats compare with <code>===</code> directly. The sweep’s numbers are from hazel-jit’s own CI.</li>
 </ul>
@@ -160,7 +161,6 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <ol>
 <li>Iterate on the executive and engineering summaries with Matthew, in this report, until he is happy with them; then post the description on #2859.</li>
 <li>Write the rules of Checkers, Go, Minesweeper, Mahjong and Solitaire in OCaml and in ReScript, and time each game’s own run of states six ways: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, on GitHub’s runners.</li>
-<li>Merge the trial into <code>hazel-jit</code> and through it into <code>hazeljs</code>, and update the description’s tables (functions, tail calls) to match.</li>
 <li>Try options unboxed on a trial of their own, timed on the games, and set out what pages would have to change, for Matthew to decide.</li>
 <li>Time the smaller costs listed under What is still left, one change at a time.</li>
 <li>Measure what the sweep costs CI: the Fast checks and the Full tests on <code>dev</code> against <code>hazel-jit</code>.</li>
