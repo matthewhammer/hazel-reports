@@ -155,6 +155,34 @@ def split_table():
     rows = "".join(f'<tr><td class="l">{esc(GNAME[r["game"]])}</td><td>{t_us(r["base"])}</td><td>{t_us(r["loops"])}</td><td>{r["loops"] / r["base"]:.2f}</td><td>{t_us(r["both"])}</td><td>{r["both"] / r["base"]:.2f}</td></tr>' for r in SPL)
     return ('<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>base</th><th>loops alone</th><th>share</th><th>both</th><th>share</th></tr></thead>'
             f'<tbody>{rows}</tbody></table></div>')
+# (bench/853-more, run 45645748545) the next wave, one build after another on one runner a game: the base (loops and JS
+# arguments, as merged), constructors made once (c1), modules by name (c2), === against a literal (c3), and on top of c3
+# Ints as plain numbers (noint) and no step counted (nostep), both bench builds only
+MW = ["base", "c1", "c2", "c3", "noint", "nostep"]
+MORE = {}
+for g in GAMES:
+    MORE[g] = {}
+    for w in MW:
+        r = json.load(open(os.path.join(DATA, "games-853-more", f"b853m-{g}", f"{g}-{w}.json")))["runs"][0]
+        assert all(v is None or v.get("same") for v in r["ways"].values()), (g, w)
+        MORE[g][w] = {k: v["usPerCall"] for k, v in r["ways"].items() if v}
+mr = lambda a, b, g, k="jit": MORE[g][a][k] / MORE[g][b][k]
+def more_table():
+    head = "".join(f"<th>{h}</th>" for h in ["base", "constructors once", "modules by name", "=== too", "Ints plain", "no steps"])
+    rows = "".join(f'<tr><td class="l">{esc(GNAME[g])}</td><td>{t_us(MORE[g]["base"]["jit"])}</td>' + "".join(f'<td>{mr(w, "base", g):.2f}</td>' for w in MW[1:]) + "</tr>" for g in GAMES)
+    foot = '<tr class="gm"><td class="l">geometric mean</td><td></td>' + "".join(f'<td>{gm([mr(w, "base", g) for g in GAMES]):.2f}</td>' for w in MW[1:]) + "</tr>"
+    return f'<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th>{head}</tr></thead><tbody>{rows}{foot}</tbody></table></div>'
+PM = [json.loads(l) for l in open(os.path.join(DATA, "petri-more-runs.jsonl"))]
+pmm = lambda w: sorted(r["r"]["hazel"]["median_us"] for r in PM if r["way"] == w)[2]
+FIGS.update({"more_table": more_table(),
+             "mw_c1": f'{gm([mr("c1", "base", g) for g in GAMES]):.2f}', "mw_c2": f'{gm([mr("c2", "c1", g) for g in GAMES]):.2f}', "mw_c3": f'{gm([mr("c3", "c2", g) for g in GAMES]):.2f}',
+             "mw_all": f'{gm([mr("c3", "base", g) for g in GAMES]):.2f}',
+             "mw_noint": f'{gm([mr("noint", "c3", g) for g in GAMES]):.2f}', "mw_nostep": f'{gm([mr("nostep", "c3", g) for g in GAMES]):.2f}',
+             "mw_int_cost": f'{100 * (1 / gm([mr("noint", "c3", g) for g in GAMES]) - 1):.0f}%', "mw_step_cost": f'{100 * (1 / gm([mr("nostep", "c3", g) for g in GAMES]) - 1):.0f}%',
+             "mw_aot": f'{gm([mr("c3", "base", g, "compiled") for g in GAMES]):.2f}',
+             "mw_int_top": ", ".join(f'{GNAME[g]} {mr("noint", "c3", g):.2f}' for g in sorted(GAMES, key=lambda g: mr("noint", "c3", g))[:3]),
+             "mw_step_top": ", ".join(f'{GNAME[g]} {mr("nostep", "c3", g):.2f}' for g in sorted(GAMES, key=lambda g: mr("nostep", "c3", g))[:3]),
+             "pm_base": f'{pmm("base"):.2f}', "pm_c1": f'{pmm("c1"):.2f}', "pm_c2": f'{pmm("c2"):.2f}', "pm_c3": f'{pmm("c3"):.2f}', "pm_noint": f'{pmm("noint"):.2f}', "pm_nostep": f'{pmm("nostep"):.2f}'})
 PS = [json.loads(l) for l in open(os.path.join(DATA, "petri-split-runs.jsonl"))]
 pmed = lambda w: sorted(r["r"]["hazel"]["median_us"] for r in PS if r["way"] == w)[2]
 FIGS.update({"split_table": split_table(), "sp_loops": f'{gm([r["loops"] / r["base"] for r in SPL]):.2f}', "sp_both": f'{gm([r["both"] / r["base"] for r in SPL]):.2f}',
@@ -177,6 +205,7 @@ EXTRA = """
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
+  table.nums tr.gm td { font-weight: 700; border-top: 2px solid var(--line); }
   .tw table.rep { min-width: 820px; } table.rep code { word-break: normal; overflow-wrap: break-word; }
   table.rep td.chg { background: color-mix(in srgb, var(--good, #2e9e5b) 14%, transparent); }
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
@@ -233,6 +262,7 @@ meta = {"title": TITLE, "blurb": DESC,
                        "games": "matthewhammer/hazeljs-examples bench/853, GitHub run 45640411958: each game's own run of states (node/package-bench.mjs --runs --aot-as-is --no-interp), one runner a game, the base, the trial (hazelgrove/hazel trial/853-pkg 6d041e9769, hazeljs with the trial merged), the base again; usPerCall: microseconds a call, the run's calls summed over their number; every answer the same as the games' own compiled.js",
                        "petri": "065/drivers/petri/petri-bench.mjs on this laptop, one way per process, five rounds (data/petri-runs.jsonl)"},
         "ticket_853_split": "matthewhammer/hazeljs-examples bench/853-split, GitHub run 45641693384: the base, loops alone (hazelgrove/hazel trial/853-pkg-loops, db27761a79: hazeljs with 50b70d5a40 merged), both (trial/853-pkg, 6d041e9769), one after another on one runner a game; and the Petri rule on the laptop the same three ways, five rounds (data/petri-split-runs.jsonl)",
-        "files": ["pr-2859.md", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
+        "ticket_853_more": "matthewhammer/hazeljs-examples bench/853-more, GitHub run 45645748545: six builds one after another on one runner a game: the base (hazelgrove/hazel trial/853-pkg 6d041e9769, loops and JS arguments, as merged), c1 (trial/853-pkg-c1 a14e698ec8: constructors without arguments made once), c2 (trial/853-pkg-c2 bc9d98db6b: a module's members by name), c3 (trial/853-pkg-c3 f111bb00ac: == against a literal as ===), noint (b471f761fb: c3 with Ints as plain JS numbers, a bench build only) and nostep (ae9611d03f: c3 with no step counted, a bench build only); and the Petri rule on the laptop the same six ways, five rounds (data/petri-more-runs.jsonl)",
+        "files": ["pr-2859.md", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
 json.dump(meta, open(os.path.join(DATA, "meta.json"), "w"), indent=1, ensure_ascii=False)
 print("wrote 065/index.html;", updated)

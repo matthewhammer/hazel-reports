@@ -1,0 +1,69 @@
+{
+ "game": "starwave",
+ "when": "2026-11-25T15:29:52.367Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V74 80-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "f111bb00acd156ee3b248c6209ad7bb68478e990"
+ },
+ "examples": "2591b7f293c1915dbe94d242c001747155648155",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 831.246619,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 410.6471200000001,
+  "compiledJsBytes": 41916,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 67985,
+  "pageCompiledFrom": "0d739f2b25",
+  "compiledLoadMs": 1.4720159999999396,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "600 frames (the robot's moves and shots, one of chance now and then)",
+   "steps": 600,
+   "ways": {
+    "jit": {
+     "ms": 4.162604500002658,
+     "usPerCall": 6.937674166671097,
+     "calls": 600,
+     "reps": 50,
+     "min": 3.5827590000012606,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 4.561619999999266,
+     "usPerCall": 7.6026999999987765,
+     "calls": 600,
+     "reps": 32,
+     "min": 4.49731099999758,
+     "same": true
+    },
+    "compiled": {
+     "ms": 11.013670999995384,
+     "usPerCall": 18.35611833332564,
+     "calls": 600,
+     "reps": 26,
+     "min": 9.42299200000798,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 53.00354999999854
+}

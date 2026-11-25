@@ -1,0 +1,69 @@
+{
+ "game": "bugs",
+ "when": "2026-11-25T15:29:53.913Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V74 80-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "b471f761fbe2d98d25040297baad2b5b3cc7b01f"
+ },
+ "examples": "2591b7f293c1915dbe94d242c001747155648155",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 949.719496,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 448.857303,
+  "compiledJsBytes": 50519,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 76799,
+  "pageCompiledFrom": "6e70a3ab3a",
+  "compiledLoadMs": 1.5901780000001509,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "600 frames (the robot's moves and shots, one of chance now and then)",
+   "steps": 600,
+   "ways": {
+    "jit": {
+     "ms": 1.2778340000005528,
+     "usPerCall": 2.1297233333342547,
+     "calls": 600,
+     "reps": 50,
+     "min": 0.8498009999948408,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 2.250043499997332,
+     "usPerCall": 3.7500724999955537,
+     "calls": 600,
+     "reps": 24,
+     "min": 1.7601409999986117,
+     "same": true
+    },
+    "compiled": {
+     "ms": 11.861846000008427,
+     "usPerCall": 19.769743333347378,
+     "calls": 600,
+     "reps": 25,
+     "min": 11.68016200000784,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 55.614499999999225
+}
