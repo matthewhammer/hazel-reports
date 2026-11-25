@@ -721,6 +721,27 @@ def cross_table():
     return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>records in the list</th><th>C, new records</th><th>A, new records</th><th>A as fast</th><th>C, the same list again</th><th>A, again</th></tr></thead>'
             f"<tbody>{body}</tbody></table></div>")
 
+# ---- (^ticket(847), 2026-11-24, Matthew: "A, add direct reads") A with e.k read in place and eq kept small (trial 0e055e04c9)
+# against C (hazeljs 0.0.12, ec2a330996) and C with the same reads simulated (054/drivers/direct-sim.mjs), each game on one
+# runner, C's run, C's with reads, then A's (hazeljs-examples bench/847-direct; 054/drivers/package-bench-847-direct.yml)
+AD = []
+for f in sorted(glob.glob(os.path.join(HERE, "data", "a-vs-c-direct", "*-c.json"))):
+    g = os.path.basename(f)[:-7]
+    W = {s: json.load(open(f"{f[:-7]}-{s}.json"))["runs"][0]["ways"] for s in ("c", "cd", "a")}
+    assert all(v.get("same") and not v.get("error") for w in W.values() for v in w.values()), g
+    u = lambda s, k="jit": W[s][k]["usPerCall"]
+    AD.append({"g": g, "c": u("c"), "cd": u("cd"), "a": u("a"), "cf": u("c", "jit, fresh copies"), "af": u("a", "jit, fresh copies"), "aot": u("c", "compiled")})
+AD_RUN = json.load(open(os.path.join(HERE, "data", "a-vs-c-direct", "run.json")))
+def ad_list(rs): return ", ".join(f'{GNAME[r["g"]]} {r["a"] / r["c"]:.2f}×' for r in rs)
+def ad_table():
+    body = "".join(f'<tr><td>{GNAME[r["g"]]}</td><td>{us_(r["c"])}</td><td>{us_(r["cd"])}</td><td>{us_(r["a"])}</td><td>{r["a"] / r["c"]:.2f}×</td><td>{r["a"] / r["cd"]:.2f}×</td><td>{r["af"] / r["cf"]:.2f}×</td></tr>'
+                   for r in sorted(AD, key=lambda r: r["a"] / r["c"]))
+    foot = (f'<tr><td><b>all {len(AD)}</b> (geometric mean)</td><td></td><td></td><td></td><td><b>{gmean([r["a"] / r["c"] for r in AD]):.2f}×</b></td>'
+            f'<td><b>{gmean([r["a"] / r["cd"] for r in AD]):.2f}×</b></td><td><b>{gmean([r["af"] / r["cf"] for r in AD]):.2f}×</b></td></tr>')
+    return ('<div style="overflow-x:auto"><table class="nums"><thead><tr><th>a call, on the game’s own run, as the page plays</th><th>C, today</th><th>C, reads in place (simulated)</th>'
+            '<th>A, reads in place</th><th>A over C</th><th>A over C with reads</th><th>A over C, every argument a fresh copy</th></tr></thead>'
+            f"<tbody>{body}{foot}</tbody></table></div>")
+
 NUMS = {"updated": updated, "jit_pr": "2859", "checks": str(SWEEP["checks"]), "compiled": str(SWEEP["compiled"]), "agreed": str(SWEEP["agreed"]),
         "not_a_value": str(SWEEP["not_a_value"]), "by_rule": str(BY_RULE), "by_limit": str(BY_LIMIT), "cyrus": esc(CYRUS)}
 FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_sweep(), "fig_witch": fig_witch(), "tab_plan": plan_table(), "tab_sweep": sweep_table(),
@@ -752,6 +773,16 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "sq_li_ins_lo": sqt(min(sq(n, "list", "insert") for n in (1000, 10000, 100000, 1000000))), "sq_li_ins_hi": sqt(max(sq(n, "list", "insert") for n in (1000, 10000, 100000, 1000000))),
         "sq_li_app": sqt(sq(1000000, "list", "append")), "sq_li_get": sqt(sq(1000000, "list", "get")), "sq_li_walk": sqt(sq(1000000, "list", "sum")), "sq_li_inout": sqt(sq(1000000, "list", "inOut")),
         "sq_leaves": f'{sq(1000000, SQW[0][0], "leaves"):,}', "sq_depth": str(sq(1000000, SQW[0][0], "depth")),
+        "tab_ad": ad_table(), "ad_n": str(len(AD)), "ad_run": str(AD_RUN["run"]), "ad_commit": AD_RUN["commit"],
+        "ad_gm": f'{gmean([r["a"] / r["c"] for r in AD]):.2f}', "ad_gm_cd": f'{gmean([r["a"] / r["cd"] for r in AD]):.2f}',
+        "ad_cd": f'{gmean([r["cd"] / r["c"] for r in AD]):.2f}', "ad_fresh": f'{gmean([r["af"] / r["cf"] for r in AD]):.2f}',
+        "ad_best": ", ".join(f'{GNAME[r["g"]]} {r["a"] / r["c"]:.2f}×' for r in sorted(AD, key=lambda r: r["a"] / r["c"])[:3]),
+        "ad_worst": ", ".join(f'{GNAME[r["g"]]} {r["a"] / r["c"]:.2f}×' for r in sorted(AD, key=lambda r: -r["a"] / r["c"])[:2]),
+        "ad_slower": str(sum(1 for r in AD if r["a"] > r["c"] * 1.05)),
+        "ad_slower_text": (lambda sl: ("no game by more than 5%; the closest to today are " + ad_list(sorted(AD, key=lambda r: -r["a"] / r["c"])[:2]) + ".")
+                           if not sl else (ad_list(sl) + ".")) (sorted([r for r in AD if r["a"] > r["c"] * 1.05], key=lambda r: -r["a"] / r["c"])),
+        "ad_noise": (lambda r: f'{GNAME[r["g"]]} {r["cd"] / r["c"]:.2f}×')(max(AD, key=lambda r: r["cd"] / r["c"])),
+        "ad_aot_a": f'{gmean([r["a"] / r["aot"] for r in AD]):.2f}', "ad_aot_c": f'{gmean([r["c"] / r["aot"] for r in AD]):.2f}',
         "tab_ac": ac_table(), "tab_xab": cross_table(), "ac_n": str(len(AC)),
         "ac_gm": f'{gmean([r["aj"] / r["cj"] for r in AC]):.2f}', "ac_fresh": f'{gmean([r["af"] / r["cf"] for r in AC]):.2f}',
         "ac_best": ", ".join(f'{GNAME[r["g"]]} {r["aj"] / r["cj"]:.2f}×' for r in sorted(AC, key=lambda r: r["aj"] / r["cj"])[:3]),

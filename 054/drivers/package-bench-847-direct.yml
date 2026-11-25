@@ -1,0 +1,53 @@
+# (ticket 847, 2026-11-24, then with direct reads: Matthew, "A, add direct reads", e2529357f0) records the page's way, idea A against idea C: each game's own run of states (node/package-bench.mjs
+# --runs) twice on one runner, through the jit of hazeljs 0.0.12 (hazelgrove/hazel ec2a330996, build 6: records as arrays
+# carrying their labels, idea C) and through the jit of hazelgrove/hazel's trial/847-records-objects (records as plain objects,
+# idea A), the games' own compiled.js as the ahead-of-time reference for both (--aot-as-is), the interpreter left out. Runs on
+# a push to a bench/ branch, so main and the site are untouched.
+name: package bench
+on:
+  push:
+    branches: ["bench/**"]
+  workflow_dispatch:
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [checkers, go, minesweeper, mahjong, solitaire, mahjong-solitaire, pinball, downhill, bricks, snake, trails, starwave, bugs, dig]
+    steps:
+      - uses: actions/checkout@v4
+      # hazeljs 0.0.12, not on npm: hazelgrove/hazeljs's editor-in-package at the commit that made it (hazel-lib.js from ec2a330996)
+      - uses: actions/checkout@v4
+        with:
+          repository: hazelgrove/hazeljs
+          ref: 41c6cb05a4134fb4c12cc73639116a212685b239
+          path: pkg-c
+      - name: The same package with the trial's library (idea A)
+        run: |
+          cp -r pkg-c pkg-a
+          curl -sfL -A "Mozilla/5.0" https://build.hazel.org/trial/847-records-objects/hazel-lib.js -o pkg-a/hazel-lib.js
+          grep -o 'build:"[0-9a-f]*"' pkg-c/hazel-lib.js | head -1
+          grep -o 'build:"[0-9a-f]*"' pkg-a/hazel-lib.js | head -1
+          grep -q 'build:"ec2a330996' pkg-c/hazel-lib.js
+          grep -q 'build:"e2529357f0' pkg-a/hazel-lib.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The machine
+        run: |
+          mkdir -p bench
+          { nproc; grep -m1 'model name' /proc/cpuinfo; node --version; } | tee bench/${{ matrix.game }}-machine.txt
+      - name: Idea C, today's C with direct reads simulated, then idea A with direct reads, on this runner
+        run: |
+          ulimit -s unlimited || ulimit -s 65536
+          set -o pipefail
+          node --stack-size=30000 --max-old-space-size=6000 node/package-bench.mjs ${{ matrix.game }} pkg-c bench/${{ matrix.game }}-c.json --runs --aot-as-is --no-interp | tee bench/${{ matrix.game }}-c.txt
+          node --import ./node/direct-sim.mjs --stack-size=30000 --max-old-space-size=6000 node/package-bench.mjs ${{ matrix.game }} pkg-c bench/${{ matrix.game }}-cd.json --runs --aot-as-is --no-interp | tee bench/${{ matrix.game }}-cd.txt
+          node --stack-size=30000 --max-old-space-size=6000 node/package-bench.mjs ${{ matrix.game }} pkg-a bench/${{ matrix.game }}-a.json --runs --aot-as-is --no-interp | tee bench/${{ matrix.game }}-a.txt
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: acd-${{ matrix.game }}
+          path: bench/

@@ -158,7 +158,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-24 15:11 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>54<b>)</b></code> · hazel-jit · 2026-11-16, revised 2026-11-24 18:30 MST · <span class="wip">work in progress</span> · after <a href="../052/"><code class="ref"><b>^report(</b>52<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#found">Found along the way</a>: an interpreter crash on modulo by zero, fixed on a PR, and a cost of undeclared result types.</li>
 <li><a href="#beyond">Beyond livelits</a>: compiling any piece of a program, what today's design assumes, what is new in general, mixed mode, the direction chosen, step counts and probes as the interpreter's, and compiling ahead of time for older phones.</li>
 <li><a href="#lists">Lists as JavaScript arrays, and holes</a>: arrays measured against today’s cells and a hybrid of the two; holes in lists, terms with holes, the order to build them in, and where hazel-jit lives now.</li>
-<li><a href="#records">Records the page’s way</a>: a record held as a page’s object crosses for nothing and builds about 12 times as fast; five decisions, for Matthew (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>); decision 1 <a href="#records-tried">tried</a>: idea A even with today as games play, faster wherever records cross new.</li>
+<li><a href="#records">Records the page’s way</a>: a record held as a page’s object crosses for nothing and builds about 12 times as fast; five decisions, for Matthew (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>); decision 1 <a href="#records-tried">chosen</a>: A, records as objects, with field reads in place, takes 0.64 of today’s time as the games play.</li>
 <li><a href="#seq">A sequence beside List</a>: a treap over array views inserts anywhere in about a microsecond at every size up to a million, and takes a page’s array for nothing; a walk costs about what cells cost (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>).</li>
 <li><a href="#envs">What a closure keeps</a>: whether <code>dev</code> trims a value’s environments to what the value uses (it does not), where that was tried, what trimming would take, and what the jit already does.</li>
 <li><a href="#questions">Questions for the team</a>: seventeen open design questions, each with our lean, for the team's meeting of 2026-11-17, two of them met by the astrology oracle this morning.</li>
@@ -549,28 +549,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h3 id="records-decide">Five decisions<a class="anchor" href="#records-decide" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="records-decide" title="copy this section's address">copy link</button></h3>
 <ol class="decide">
-<li><b>Which tuples become objects?</b> A tuple whose every entry is labeled becomes an object, its keys in its type’s order. A tuple with no labels stays an array. A tuple with some labels stays an array carrying them, as today, since an object puts a number key (a position) ahead of every label and would lose the order. When a tuple’s type is known, the statics already put its entries in the type’s order and add the labels it left out (<code>LabeledTuple.rearrange</code>, in the elaboration of a tuple against a product type). Our lean: so. <i>Tried on 2026-11-24, at Matthew’s ask, with the two other ideas: <a href="#records-tried">below</a>.</i></li>
+<li><b>Which tuples become objects?</b> A tuple whose every entry is labeled becomes an object, its keys in its type’s order. A tuple with no labels stays an array. A tuple with some labels stays an array carrying them, as today, since an object puts a number key (a position) ahead of every label and would lose the order. When a tuple’s type is known, the statics already put its entries in the type’s order and add the labels it left out (<code>LabeledTuple.rearrange</code>, in the elaboration of a tuple against a product type). Our lean: so. <i>Tried on 2026-11-24, at Matthew’s ask, with the two other ideas; Matthew chose A, with field reads in place: <a href="#records-tried">below</a>.</i></li>
 <li><b>Telling a record from a cell or a constructor.</b> Some of compiled code does not know a value’s type and looks at its shape: the runtime’s projection (which also takes a column from a list of rows), its equality, the label builtins, and the value boundary’s untyped way. Today a cell is <code>{h, t}</code> and a constructor <code>{c, v}</code>, and the runtime tests one key, <code>"h" in v</code> for a cell and <code>"c" in v</code> for a constructor, so a record with a field <code>h</code> (a height) or <code>c</code> (a column) would be taken for one. Options: (a) cells and constructors made by classes, told apart with <code>instanceof</code>: about 0.7 ns more for each cell built, and a walk costs the same; (b) their fields named <code>$h</code>, <code>$t</code>, <code>$c</code> and <code>$v</code>, still plain literals: no record has a key beginning with <code>$</code>, since such a label is already kept under <code>"$" ++ label</code>; (c) no shape test at all: equality, projection and the label builtins made from the type, as the converters are. Equality made from the type took 7.6 ns, against 25.6 ns today. Either (a) or (b) changes the games’ ahead-of-time files, whose converters, written by hand, build <code>{h, t}</code> and <code>{c, v}</code>, unless those files take generated converters (<a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>, What next). Our lean: (c) wherever the type is at hand, and (b) for the rest.</li>
 <li><b>A pattern by position against a record.</b> Mostly settled already: when the matched type is labeled, the statics add its labels to a pattern by position (<code>MatchedTyp.prod</code>), so compiled code reads <code>let (a, b) = r</code> as <code>r["x"]</code> and <code>r["y"]</code>, checked on the package’s compiled output for a declared function, a <code>case</code> and an undeclared literal. Only an unknown or unlabeled matched type leaves the pattern by position, and there compiled code reads <code>r[0]</code>, which an object does not have. Checking this found a disagreement today: <code>let f = fun r -> let (a, b) = r in a - b in f((x = 5, y = 2))</code> is stuck in the interpreter, which binds <code>a</code> to the labeled entry <code>x = 5</code>, while the jit answers 3 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-851"><code class="ref"><b>^ticket(</b>851<b>)</b></code></a>). Options for that case: (a) compiled code checks that the entry at the position has no label, and a run that meets one goes to the interpreter, as hazel-jit’s rule for anything indeterminate has it; with records as objects the check is <code>Array.isArray</code>; (b) a fallback through <code>Object.values</code>, 68.4 ns a read against 1.2 ns, which would repeat today’s disagreement. Our lean: (a), which fixes <a href="https://matthewhammer.org/hazel/dashboard/#ticket-851"><code class="ref"><b>^ticket(</b>851<b>)</b></code></a> either way.</li>
 <li><b>What a page may do with an object.</b> If compiled code keeps the page’s own object, a page that changes it afterwards changes a Hazel value, and Hazel’s values never change. The converters’ memory already assumes the page will not (“the rule for a page”, in the converters’ comment in <code>HazelLibCore.re</code>), and the same goes for a record the page gets back. Options: (a) state the rule, as React does for its state: what a page gives Hazel, or gets from it, it does not change; (b) freeze what crosses (<code>Object.freeze</code>), at least in a development build; (c) copy at the edge, which gives back most of the crossing’s cost. Our lean: (a), with (b) in development.</li>
 <li><b>Checking at the edge.</b> A page may hand over <code>{x: 1.5}</code> where the type says Int. Today’s converters check each field, and a call whose value does not fit goes the old way. One pass of checks and no copy cost 3.8 ms for a million records; trusting the page costs nothing. Our lean: check, as now.</li>
 </ol>
-<h3 id="records-tried">Decision 1, tried<a class="anchor" href="#records-tried" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="records-tried" title="copy this section's address">copy link</button></h3>
-<p><b>Three ideas, at Matthew’s ask (2026-11-24: “for decision 1 -- try the first 3 best ideas (or 2 best) --- and report back”). A, a tuple with every entry labeled held as a plain object, built on a trial branch and played on every game’s own run: as a page plays, about even with today (1.01 of its time, the geometric mean over 14 games), 0.86 of it when no memo helps, and a page’s list of new records crossing 6.8 to 24 times as fast; every answer the same. B, any labeled tuple an object, is A on every game: none of them makes a tuple with some entries labeled and others not. C is today. Our lean stays A, with field reads compiled straight to the property next, the cost the games show.</b></p>
+<h3 id="records-tried">Decision 1: A, with field reads in place<a class="anchor" href="#records-tried" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="records-tried" title="copy this section's address">copy link</button></h3>
+<p><b>Matthew chose A on 2026-11-24 (“A, add direct reads”): a tuple whose every entry is labeled is a plain JavaScript object, and a field read <code>g.x</code> compiles to the property itself. As the games play, A now takes 0.64 of today’s time (the geometric mean over 14 games), and 0.66 of it when every argument is a fresh copy. The best are Pinball 0.30×, Mahjong solitaire 0.31×, Minesweeper 0.41×. Every answer is the same as today’s.</b> Three ideas were tried first, at Matthew’s ask (“for decision 1 -- try the first 3 best ideas (or 2 best) --- and report back”): A; B, any tuple with a label an object; and C, today’s arrays carrying their labels. B is A on every game. A alone was about even with today, for the reasons <a href="#records-ideas">below</a>, and the two changes here mend them.</p>
+<div style="overflow-x:auto"><table class="nums"><thead><tr><th>a call, on the game’s own run, as the page plays</th><th>C, today</th><th>C, reads in place (simulated)</th><th>A, reads in place</th><th>A over C</th><th>A over C with reads</th><th>A over C, every argument a fresh copy</th></tr></thead><tbody><tr><td>Pinball</td><td>52.8 µs</td><td>20.6 µs</td><td>15.8 µs</td><td>0.30×</td><td>0.77×</td><td>0.31×</td></tr><tr><td>Mahjong solitaire</td><td>35.6 µs</td><td>27.3 µs</td><td>11.1 µs</td><td>0.31×</td><td>0.41×</td><td>0.65×</td></tr><tr><td>Minesweeper</td><td>27.3 µs</td><td>14.8 µs</td><td>11.1 µs</td><td>0.41×</td><td>0.75×</td><td>0.23×</td></tr><tr><td>Butterfly garden</td><td>4.5 µs</td><td>4.4 µs</td><td>2.3 µs</td><td>0.50×</td><td>0.51×</td><td>0.33×</td></tr><tr><td>Downhill</td><td>5.7 µs</td><td>4.8 µs</td><td>3.3 µs</td><td>0.57×</td><td>0.69×</td><td>0.53×</td></tr><tr><td>Bricks</td><td>5.2 µs</td><td>5.0 µs</td><td>3.0 µs</td><td>0.58×</td><td>0.61×</td><td>0.60×</td></tr><tr><td>Solitaire</td><td>12.5 µs</td><td>8.1 µs</td><td>8.1 µs</td><td>0.65×</td><td>1.00×</td><td>1.13×</td></tr><tr><td>Gnome dig</td><td>41.3 µs</td><td>42.4 µs</td><td>31.4 µs</td><td>0.76×</td><td>0.74×</td><td>0.79×</td></tr><tr><td>Snake</td><td>5.0 µs</td><td>4.8 µs</td><td>4.1 µs</td><td>0.83×</td><td>0.86×</td><td>0.89×</td></tr><tr><td>Star wave</td><td>9.7 µs</td><td>9.6 µs</td><td>8.4 µs</td><td>0.86×</td><td>0.87×</td><td>0.84×</td></tr><tr><td>Mahjong</td><td>14.1 µs</td><td>14.6 µs</td><td>12.4 µs</td><td>0.88×</td><td>0.85×</td><td>0.81×</td></tr><tr><td>Checkers</td><td>19.7 µs</td><td>21.8 µs</td><td>18.3 µs</td><td>0.93×</td><td>0.84×</td><td>0.85×</td></tr><tr><td>Light trails</td><td>7.9 µs</td><td>5.4 µs</td><td>7.5 µs</td><td>0.96×</td><td>1.40×</td><td>1.19×</td></tr><tr><td>Go</td><td>24.2 µs</td><td>23.4 µs</td><td>25.2 µs</td><td>1.04×</td><td>1.07×</td><td>1.04×</td></tr><tr><td><b>all 14</b> (geometric mean)</td><td></td><td></td><td></td><td><b>0.64×</b></td><td><b>0.78×</b></td><td><b>0.66×</b></td></tr></tbody></table></div>
+<p class="muted">Three builds, each game on its own GitHub runner, one after another (hazeljs-examples <code>bench/847-direct</code>, run 45526044221; <code>054/drivers/package-bench-847-direct.yml</code>, with <code>054/drivers/package-bench-847.mjs</code>, <code>--runs --aot-as-is --no-interp</code>). <b>A</b>: hazelgrove/hazel <code>trial/847-records-objects</code> at 0e055e04c9, CI green. <b>C</b>: hazeljs 0.0.12 (ec2a330996). <b>C, reads in place</b>: 0.0.12 with its compiled code’s field reads rewritten as A’s compiler writes them (<code>054/drivers/direct-sim.mjs</code>); only reads of a variable are rewritten, so it gives C a little less than the compiler would. Each game’s run is recorded once and replayed, every call given the state the last answered; a call’s time is the run’s calls summed over their number. The jit took 0.49 of the games’ own ahead-of-time files’ time with A, and 0.77 with C.</p>
+<ul>
+<li><b>Field reads in place.</b> Before, <code>g.x</code> compiled to a call, <code>$R.dot(g, "x")</code>, which read the field by a key it was given: one place in the runtime reading every label of every program, a read the engine cannot cache, and for an object it also asked <code>hasOwnProperty</code>. Now <code>g.x</code> compiles to <code>g["x"]</code> behind a check that <code>g</code> is an object holding <code>x</code> and not a list’s cell, and the engine caches that read by the record’s shape. Anything else still goes to <code>$R.dot</code>, so the answer is the same: a list of rows (a table’s column), the empty list, or something the interpreter would be stuck on. Today’s arrays gain from this too: C with the same reads takes 0.82 of C’s time, and A takes 0.78 of that, so holding records as objects is worth that much on its own.</li>
+<li><b>Equality kept small.</b> Go was still slower with A after the reads: 1.11 times C with reads, on GitHub. Hazel’s <code>==</code> on Ints compiles to the runtime’s <code>eq</code>, and Go’s membership tests compare Ints all the time. A had added a record’s case to <code>eq</code>, which made it too big for the engine to inline where it is called. With the objects’ cases moved into a second function, <code>eqo</code>, Go’s run on the laptop went from 1.15 times today’s to 0.96.</li>
+<li><b>The other fix, not made.</b> The first trial suggested a second change: plain records under a list that comes back unchanged would skip their checks. Profiled on Minesweeper with the reads in place, those checks are 0.6% of the time. The converters’ links on the way out are 8.5%. So it was not worth making.</li>
+<li><b>Where A is still slower:</b> no game by more than 5%; the closest to today are Go 1.04×, Light trails 0.96×. C with reads in place, which should never be slower than C, came out at Checkers 1.10× C’s time in this run, so a few percent either way on one game is within one run’s noise.</li>
+</ul>
+<h3 id="records-ideas">The three ideas, before the reads<a class="anchor" href="#records-ideas" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="records-ideas" title="copy this section's address">copy link</button></h3>
+<p><b>As a page plays, A alone was about even with today (1.01 of its time over 14 games), 0.86 of it when no memo helps, and a page’s list of new records crossed 6.8 to 24 times as fast; every answer the same. B, any labeled tuple an object, is A on every game: none of them makes a tuple with some entries labeled and others not.</b></p>
 <ul>
 <li><b>B against A: nothing to tell them apart.</b> Counted in the games’ runs (the ahead-of-time runtime’s <code>tup</code> counting each labeled tuple it makes), the fourteen games make about 565,000 labeled tuples and not one with only some entries labeled; Hazel’s own tests have one, in hazel-jit’s “an extension replacing a label”, <code>(a=1, 3, c=4)</code>. B would need keys for the unlabeled entries (<code>$1</code>) and reads by position that find them, for a case nothing uses, so it was not built.</li>
 <li><b>A, built.</b> hazelgrove/hazel <code>trial/847-records-objects</code> (off <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, ec2a330996; all CI green at 2aa0b9b451): compiled code writes such a tuple as an object literal; the runtime’s <code>tup</code>, projection, labels, extension, equality and the label builtins read and make records; a pattern by position that meets one stops for the interpreter (as <a href="https://matthewhammer.org/hazel/dashboard/#ticket-851"><code class="ref"><b>^ticket(</b>851<b>)</b></code></a> has it for arrays); the value boundary writes a record as an object and reads one back (by its type, or by its shape: a list’s cell is exactly <code>h</code> and <code>t</code>, a constructor <code>c</code> and perhaps <code>v</code>); the converters pass a record of plain values (numbers, booleans, strings) through as the page’s own object, checked, with no copy and no memo, and make a new object of any other. The games found one thing the tests had not: a program’s functions come back in its tail, now a record, and only an array’s were given their converters, so every game’s step ran on the interpreter; fixed, with a test.</li>
 </ul>
 <div style="overflow-x:auto"><table class="nums"><thead><tr><th>a call, on the game’s own run</th><th>C, as the page plays</th><th>A</th><th>A over C</th><th>C, every argument a fresh copy</th><th>A</th><th>A over C</th></tr></thead><tbody><tr><td>Mahjong solitaire</td><td>64.3 µs</td><td>42.6 µs</td><td>0.66×</td><td>403 µs</td><td>333 µs</td><td>0.83×</td></tr><tr><td>Bricks</td><td>5.2 µs</td><td>4.5 µs</td><td>0.87×</td><td>7.0 µs</td><td>5.6 µs</td><td>0.80×</td></tr><tr><td>Mahjong</td><td>21.3 µs</td><td>18.7 µs</td><td>0.87×</td><td>47.9 µs</td><td>31.5 µs</td><td>0.66×</td></tr><tr><td>Butterfly garden</td><td>5.8 µs</td><td>5.1 µs</td><td>0.88×</td><td>15.5 µs</td><td>7.3 µs</td><td>0.47×</td></tr><tr><td>Downhill</td><td>8.7 µs</td><td>8.0 µs</td><td>0.91×</td><td>9.1 µs</td><td>7.9 µs</td><td>0.87×</td></tr><tr><td>Snake</td><td>3.7 µs</td><td>3.6 µs</td><td>0.96×</td><td>2.7 µs</td><td>2.7 µs</td><td>1.03×</td></tr><tr><td>Gnome dig</td><td>40.7 µs</td><td>39.4 µs</td><td>0.97×</td><td>56.1 µs</td><td>48.4 µs</td><td>0.86×</td></tr><tr><td>Checkers</td><td>21.8 µs</td><td>21.8 µs</td><td>1.00×</td><td>17.5 µs</td><td>19.9 µs</td><td>1.14×</td></tr><tr><td>Star wave</td><td>15.6 µs</td><td>16.1 µs</td><td>1.03×</td><td>19.2 µs</td><td>17.4 µs</td><td>0.91×</td></tr><tr><td>Light trails</td><td>5.7 µs</td><td>6.5 µs</td><td>1.13×</td><td>5.5 µs</td><td>5.6 µs</td><td>1.01×</td></tr><tr><td>Go</td><td>20.0 µs</td><td>24.1 µs</td><td>1.21×</td><td>20.6 µs</td><td>25.2 µs</td><td>1.23×</td></tr><tr><td>Solitaire</td><td>8.6 µs</td><td>10.6 µs</td><td>1.24×</td><td>41.5 µs</td><td>48.4 µs</td><td>1.17×</td></tr><tr><td>Pinball</td><td>32.1 µs</td><td>41.1 µs</td><td>1.28×</td><td>29.5 µs</td><td>41.3 µs</td><td>1.40×</td></tr><tr><td>Minesweeper</td><td>17.3 µs</td><td>23.8 µs</td><td>1.38×</td><td>147 µs</td><td>50.4 µs</td><td>0.34×</td></tr></tbody></table></div>
-<p class="muted">Ideas A and C, each game on its own GitHub runner, C’s run then A’s on the same machine (hazeljs-examples <code>bench/847-a-vs-c</code>, run 45498058581; the driver <code>054/drivers/package-bench-847.mjs</code>, <code>--runs --aot-as-is --no-interp</code>): each game’s run recorded once and replayed, every call given the state the last answered; a call’s time is the run’s calls summed over their number. Both against the games’ own ahead-of-time files as the reference for the answers: the jit took 0.75 of their time with A and 0.75 with C.</p>
+<p class="muted">A at 2aa0b9b451, before the reads, and C (hazeljs 0.0.12), each game on its own GitHub runner, C’s run then A’s on the same machine (hazeljs-examples <code>bench/847-a-vs-c</code>, run 45498058581; the driver <code>054/drivers/package-bench-847.mjs</code>, <code>--runs --aot-as-is --no-interp</code>): each game’s run recorded once and replayed, every call given the state the last answered; a call’s time is the run’s calls summed over their number. Both against the games’ own ahead-of-time files as the reference for the answers: the jit took 0.75 of their time with A and 0.75 with C.</p>
 <ul>
 <li><b>Where A wins:</b> Mahjong solitaire 0.66×, Bricks 0.87×, Mahjong 0.87× as the page plays; with every argument a fresh copy, Minesweeper 0.34×, Butterfly garden 0.47×, Mahjong 0.66×: a record of plain values crosses with one pass of checks, where C converts it into an array and back.</li>
-<li><b>Where A loses:</b> Minesweeper 1.38×, Pinball 1.28×, Solitaire 1.24×, Go 1.21×. Two costs, both A’s and both mendable. Every projection, <code>g.x</code>, is a call to the runtime’s <code>dot</code>, which for an object now asks <code>hasOwnProperty</code> as well, where an array went straight to <code>t[k]</code>: Pinball’s physics projects all the time. And a record of plain values handed back is checked field by field each call, where C’s memo found it in one lookup: Minesweeper’s board is 480 such records. Next: compile <code>e.k</code> to the property itself, falling back to <code>dot</code> only when it is absent (a list of rows, something indeterminate); and let a list of plain records that comes back unchanged be found by the list’s own memo, as it is now, so its records are not checked again.</li>
+<li><b>Where A lost:</b> Minesweeper 1.38×, Pinball 1.28×, Solitaire 1.24×, Go 1.21×. Two costs were suspected. Every projection, <code>g.x</code>, was a call to the runtime’s <code>dot</code>, which for an object also asked <code>hasOwnProperty</code>, where an array went straight to <code>t[k]</code>; Pinball’s physics projects all the time. And a record of plain values handed back was checked field by field each call, where C’s memo found it in one lookup; Minesweeper’s board is 480 such records. The first was the cost, and reads in place mend it (<a href="#records-tried">above</a>); the second turned out small.</li>
 </ul>
 <div style="overflow-x:auto"><table class="nums"><thead><tr><th>records in the list</th><th>C, new records</th><th>A, new records</th><th>A as fast</th><th>C, the same list again</th><th>A, again</th></tr></thead><tbody><tr><td>1</td><td>1.3 µs</td><td>0.8 µs</td><td>1.6×</td><td>0.3 µs</td><td>0.3 µs</td></tr><tr><td>10</td><td>6.5 µs</td><td>1.7 µs</td><td>3.9×</td><td>0.3 µs</td><td>0.3 µs</td></tr><tr><td>100</td><td>39.5 µs</td><td>5.9 µs</td><td>6.6×</td><td>0.3 µs</td><td>0.2 µs</td></tr><tr><td>1,000</td><td>0.22 ms</td><td>9.4 µs</td><td>23.6×</td><td>0.2 µs</td><td>0.2 µs</td></tr><tr><td>10,000</td><td>2.40 ms</td><td>99.8 µs</td><td>24.1×</td><td>0.2 µs</td><td>0.2 µs</td></tr><tr><td>100,000</td><td>45 ms</td><td>1.84 ms</td><td>24.3×</td><td>0.2 µs</td><td>0.2 µs</td></tr><tr><td>1,000,000</td><td>458 ms</td><td>67 ms</td><td>6.8×</td><td>0.3 µs</td><td>0.2 µs</td></tr></tbody></table></div>
 <p class="muted">Not a build of the app: the laptop, Node v22.23.2, a page’s list of records <code>(x = Int, y = Int)</code> into <code>Hazel.jit</code>’s compiled identity and out (<code>054/drivers/records-cross.mjs</code>), hazeljs 0.0.12 for C and the trial’s library for A, one process each; new records made off the clock for each call, or the same list handed back. At a million, A’s 67 ms (C’s 458 ms) is mostly the list itself, still converted cell by cell until a list crosses as an array (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>). Summing a field over the list in compiled code took the same time either way.</p>
 
-<p><b>The interpreter does not change.</b> Its record stays a labeled tuple of terms; only the value boundary (<code>HazelJitValue</code>, both ways) and the converters learn the new shape. With the answers, the next step is a trial branch off <code>hazeljs</code> (<code>trial/847-records-objects</code>), checked by the agreement tests and the evaluator tests’ sweep in CI, and timed on the games’ own runs as <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> times them.</p>
+<p><b>The interpreter does not change.</b> Its record stays a labeled tuple of terms; only the value boundary (<code>HazelJitValue</code>, both ways) and the converters learn the new shape. Next: decisions 2 to 5, above, for Matthew; then the trial goes into hazel-jit’s branch (<a href="https://github.com/hazelgrove/hazel/pull/2859">#2859</a>), checked by the agreement tests and the evaluator tests’ sweep in CI as it is now, and the package can be published, which waits on this ticket.</p>
 
 <h2 id="seq">A sequence beside List<a class="anchor" href="#seq" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="seq" title="copy this section's address">copy link</button></h2>
 <p><b>A sequence held as a treap over views of JavaScript arrays inserts one element anywhere in 706 ns to 1.6 µs, from 1,000 elements to 1,000,000, appends one in at most 273 ns, and takes a page’s array in and out for nothing; an array copied on every edit takes 15.0 ms to insert one at a million, and cells 35.3 ms. Its costs: reading one element by position takes up to 469 ns, where an array takes tens of nanoseconds, and walking a million after twenty thousand edits takes 3.1 ms, about as long as cells (3.2 ms) and five times an array (593.0 µs).</b> This is <a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>, which Matthew asked for on 2026-11-23: “explore a new builtin sequence type, as complement to List --- Sequence or Seq, for short maybe?”, held as a balanced tree with arrays at its leaves. What matters most to him is a balance that needs no rebalancing, the levels fixing the shape so that an edit never rotates; the caching a content-determined shape allows matters less, so a level may come from any well-spread source.</p>
@@ -992,6 +1002,7 @@ document.addEventListener("DOMContentLoaded", () => {
  "builds": "Numbered as in reports 050 to 052. Build 45 is fc1103900d; '45 + N' is build 45 with ticket N's change alone; build 46 is the six changes merged (59f28470c3); build 47 adds the type-hole rule (f4f969588b) and is trial/694-view-jit since 2026-11-16.",
  "files": [
   "data/a-vs-c",
+  "data/a-vs-c-direct",
   "data/crossing.json",
   "data/game-shapes.json",
   "data/lists-bench.json",
@@ -2896,8 +2907,158 @@ document.addEventListener("DOMContentLoaded", () => {
    ]
   },
   {
-   "section": "Decision 1, tried",
+   "section": "Decision 1: A, with field reads in place",
    "section_id": "records-tried",
+   "columns": [
+    "a call, on the game’s own run, as the page plays",
+    "C, today",
+    "C, reads in place (simulated)",
+    "A, reads in place",
+    "A over C",
+    "A over C with reads",
+    "A over C, every argument a fresh copy"
+   ],
+   "rows": [
+    [
+     "Pinball",
+     "52.8 µs",
+     "20.6 µs",
+     "15.8 µs",
+     "0.30×",
+     "0.77×",
+     "0.31×"
+    ],
+    [
+     "Mahjong solitaire",
+     "35.6 µs",
+     "27.3 µs",
+     "11.1 µs",
+     "0.31×",
+     "0.41×",
+     "0.65×"
+    ],
+    [
+     "Minesweeper",
+     "27.3 µs",
+     "14.8 µs",
+     "11.1 µs",
+     "0.41×",
+     "0.75×",
+     "0.23×"
+    ],
+    [
+     "Butterfly garden",
+     "4.5 µs",
+     "4.4 µs",
+     "2.3 µs",
+     "0.50×",
+     "0.51×",
+     "0.33×"
+    ],
+    [
+     "Downhill",
+     "5.7 µs",
+     "4.8 µs",
+     "3.3 µs",
+     "0.57×",
+     "0.69×",
+     "0.53×"
+    ],
+    [
+     "Bricks",
+     "5.2 µs",
+     "5.0 µs",
+     "3.0 µs",
+     "0.58×",
+     "0.61×",
+     "0.60×"
+    ],
+    [
+     "Solitaire",
+     "12.5 µs",
+     "8.1 µs",
+     "8.1 µs",
+     "0.65×",
+     "1.00×",
+     "1.13×"
+    ],
+    [
+     "Gnome dig",
+     "41.3 µs",
+     "42.4 µs",
+     "31.4 µs",
+     "0.76×",
+     "0.74×",
+     "0.79×"
+    ],
+    [
+     "Snake",
+     "5.0 µs",
+     "4.8 µs",
+     "4.1 µs",
+     "0.83×",
+     "0.86×",
+     "0.89×"
+    ],
+    [
+     "Star wave",
+     "9.7 µs",
+     "9.6 µs",
+     "8.4 µs",
+     "0.86×",
+     "0.87×",
+     "0.84×"
+    ],
+    [
+     "Mahjong",
+     "14.1 µs",
+     "14.6 µs",
+     "12.4 µs",
+     "0.88×",
+     "0.85×",
+     "0.81×"
+    ],
+    [
+     "Checkers",
+     "19.7 µs",
+     "21.8 µs",
+     "18.3 µs",
+     "0.93×",
+     "0.84×",
+     "0.85×"
+    ],
+    [
+     "Light trails",
+     "7.9 µs",
+     "5.4 µs",
+     "7.5 µs",
+     "0.96×",
+     "1.40×",
+     "1.19×"
+    ],
+    [
+     "Go",
+     "24.2 µs",
+     "23.4 µs",
+     "25.2 µs",
+     "1.04×",
+     "1.07×",
+     "1.04×"
+    ],
+    [
+     "all 14 (geometric mean)",
+     "",
+     "",
+     "",
+     "0.64×",
+     "0.78×",
+     "0.66×"
+    ]
+   ]
+  },
+  {
+   "section": "The three ideas, before the reads",
+   "section_id": "records-ideas",
    "columns": [
     "a call, on the game’s own run",
     "C, as the page plays",
@@ -3037,8 +3198,8 @@ document.addEventListener("DOMContentLoaded", () => {
    ]
   },
   {
-   "section": "Decision 1, tried",
-   "section_id": "records-tried",
+   "section": "The three ideas, before the reads",
+   "section_id": "records-ideas",
    "columns": [
     "records in the list",
     "C, new records",
