@@ -52,7 +52,7 @@
    ],
    [
     "A constructor, Some(3); None",
-    "{$c: \"Some\", $v: 3}; {$c: \"None\"}"
+    "{$c: \"Some\", $v: 3}; {$c: \"None\"}, one constant made once for each constructor without an argument"
    ],
    [
     "A function",
@@ -108,7 +108,7 @@
    ],
    [
     "i == 0 on Ints",
-    "$R.eq(i, 0)",
+    "i === 0 against a literal; else $R.eq(a, b)",
     "i === 0",
     "i === 0",
     "0 === i"
@@ -169,7 +169,7 @@
    [
     "Done (no argument)",
     "{c: \"Done\"}",
-    "{$c: \"Done\"}",
+    "one constant made once, {$c: \"Done\"}",
     "\"Done\"",
     "0",
     "0"
@@ -177,7 +177,7 @@
    [
     "Some(t); None",
     "{c: \"Some\", v: t}; {c: \"None\"}",
-    "{$c: \"Some\", $v: t}; {$c: \"None\"}",
+    "{$c: \"Some\", $v: t}; None one constant",
     "t; undefined",
     "t; undefined",
     "[0, t]; 0"
@@ -193,7 +193,7 @@
    [
     "a field read r.x",
     "$R.dot(r, \"x\")",
-    "r[\"x\"] behind a check",
+    "r[\"x\"] behind a check; a module's member, its own variable",
     "r.x",
     "r.x",
     "r[1]"
@@ -201,7 +201,7 @@
    [
     "i == 0 on Ints",
     "$R.eq(i, 0)",
-    "$R.eq(i, 0), small enough to inline",
+    "i === 0 against a literal; else $R.eq(a, b)",
     "i === 0",
     "i === 0",
     "0 === i"
@@ -520,6 +520,162 @@
   ]
  },
  {
+  "section": "Four ways, on the games",
+  "section_id": "fourway",
+  "columns": [
+   "Game",
+   "calls in its run",
+   "the interpreter",
+   "hazel-jit, 2026-11-19",
+   "hazel-jit now",
+   "plain JS",
+   "now against the interpreter",
+   "now against 11-19"
+  ],
+  "rows": [
+   [
+    "Checkers",
+    "46",
+    "18.4 ms",
+    "11.5 µs",
+    "11.2 µs",
+    "1.44 µs",
+    "1,648×",
+    "1.0×"
+   ],
+   [
+    "Go",
+    "89",
+    "74.3 ms",
+    "25.8 µs",
+    "13.2 µs",
+    "4.22 µs",
+    "5,647×",
+    "2.0×"
+   ],
+   [
+    "Minesweeper",
+    "319",
+    "71.0 ms",
+    "64.9 µs",
+    "8.57 µs",
+    "0.69 µs",
+    "8,275×",
+    "7.6×"
+   ],
+   [
+    "Mahjong",
+    "137",
+    "22.8 ms",
+    "21.4 µs",
+    "12.4 µs",
+    "8.55 µs",
+    "1,830×",
+    "1.7×"
+   ],
+   [
+    "Solitaire",
+    "200",
+    "40.7 ms",
+    "10.0 µs",
+    "4.10 µs",
+    "1.14 µs",
+    "9,926×",
+    "2.4×"
+   ],
+   [
+    "Mahjong solitaire",
+    "72",
+    "73.2 ms",
+    "53.7 µs",
+    "10.6 µs",
+    "–",
+    "6,896×",
+    "5.1×"
+   ],
+   [
+    "Pinball",
+    "600",
+    "90.3 ms",
+    "33.3 µs",
+    "6.56 µs",
+    "–",
+    "13,780×",
+    "5.1×"
+   ],
+   [
+    "Downhill",
+    "600",
+    "12.4 ms",
+    "11.5 µs",
+    "3.63 µs",
+    "–",
+    "3,406×",
+    "3.2×"
+   ],
+   [
+    "Bricks",
+    "600",
+    "14.3 ms",
+    "7.32 µs",
+    "2.19 µs",
+    "–",
+    "6,533×",
+    "3.3×"
+   ],
+   [
+    "Snake",
+    "116",
+    "2.7 ms",
+    "4.79 µs",
+    "4.63 µs",
+    "–",
+    "587×",
+    "1.0×"
+   ],
+   [
+    "Light trails",
+    "22",
+    "10.6 ms",
+    "8.46 µs",
+    "4.05 µs",
+    "–",
+    "2,614×",
+    "2.1×"
+   ],
+   [
+    "Star wave",
+    "600",
+    "36.6 ms",
+    "16.4 µs",
+    "6.56 µs",
+    "–",
+    "5,586×",
+    "2.5×"
+   ],
+   [
+    "Butterfly garden",
+    "600",
+    "3.6 ms",
+    "13.6 µs",
+    "1.33 µs",
+    "–",
+    "2,730×",
+    "10.2×"
+   ],
+   [
+    "Gnome dig",
+    "600",
+    "76.1 ms",
+    "34.2 µs",
+    "9.55 µs",
+    "–",
+    "7,963×",
+    "3.6×"
+   ]
+  ]
+ },
+ {
   "section": "Speed beside them",
   "section_id": "speed",
   "columns": [
@@ -605,6 +761,12 @@
     "loops and JS arguments (6d041e9769)",
     "none at the edge: the compiled code alone",
     "0.35"
+   ],
+   [
+    "2026-11-25",
+    "all of today’s changes (2c4a61560f)",
+    "none at the edge: constructors made once, modules by name, === against a literal",
+    "0.34"
    ]
   ]
  },

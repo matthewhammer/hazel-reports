@@ -223,6 +223,49 @@ FIGS.update({"timeline_svg": timeline_svg(), "timeline_table": timeline_table(),
              "px_base_d": f'{pxm("base", "hazel"):.2f}', "px_base_j": f'{pxm("base", "jit"):.2f}', "px_c3_d": f'{pxm("c3", "hazel"):.2f}', "px_c3_j": f'{pxm("c3", "jit"):.2f}',
              "px_base_x": f'{pxm("base", "jit") - pxm("base", "hazel"):.1f}', "px_c3_x": f'{pxm("c3", "jit") - pxm("c3", "hazel"):.1f}',
              "px_base_share": f'{100 * (1 - pxm("base", "hazel") / pxm("base", "jit")):.0f}%', "px_c3_share": f'{100 * (1 - pxm("c3", "hazel") / pxm("c3", "jit")):.0f}%'})
+# (#fourway) four ways on each game's own run (bench/4way, run 45650465391): the interpreter, hazel-jit as of 2026-11-19 (each
+# game's own compiled.js), hazel-jit now (Hazel.jitProgram, hazeljs 2c4a61560f), plain JS (five games)
+FW = {}
+FWSTEPS = {}
+for g in GAMES:
+    r = json.load(open(os.path.join(DATA, "games-4way", f"b4way-{g}", f"{g}-4way.json")))["runs"][0]
+    assert all(v is None or v.get("same") for v in r["ways"].values()), g
+    FW[g] = {k: v["usPerCall"] for k, v in r["ways"].items() if v}
+    FWSTEPS[g] = r["steps"]
+WAYS4 = [("interpreted", "the interpreter", "mi"), ("compiled", "hazel-jit, 2026-11-19", "mc"), ("jit", "hazel-jit now", "mj"), ("plain JS", "plain JS", "mp")]
+PLAIN = [g for g in GAMES if "plain JS" in FW[g]]
+def fw_svg():
+    import math as _m
+    W, L, top, rh = 720, 150, 44, 22
+    lo, hi = 0.3, 300000.0
+    x = lambda v: L + (_m.log10(v) - _m.log10(lo)) / (_m.log10(hi) - _m.log10(lo)) * (W - L - 20)
+    h = top + len(GAMES) * rh + 40
+    ticks = "".join(f'<line class="grid" x1="{x(t):.1f}" y1="{top - 8}" x2="{x(t):.1f}" y2="{top + len(GAMES) * rh}"/><text class="mut" x="{x(t):.1f}" y="{top + len(GAMES) * rh + 16}" text-anchor="middle">{lab}</text>'
+                    for t, lab in [(1, "1 µs"), (10, "10 µs"), (100, "100 µs"), (1000, "1 ms"), (10000, "10 ms"), (100000, "100 ms")])
+    legend = "".join(f'<circle class="{c}" cx="{L + i * 145 + 6}" cy="16" r="5"/><text class="mut" x="{L + i * 145 + 16}" y="20">{esc(n)}</text>' for i, (_, n, c) in enumerate(WAYS4))
+    rows = ""
+    for i, g in enumerate(GAMES):
+        y = top + i * rh + rh / 2
+        vals = [FW[g][k] for k, _, _ in WAYS4 if k in FW[g]]
+        rows += f'<text class="lbl" x="{L - 8}" y="{y + 4:.1f}" text-anchor="end">{esc(GNAME[g])}</text><line class="span" x1="{x(min(vals)):.1f}" y1="{y:.1f}" x2="{x(max(vals)):.1f}" y2="{y:.1f}"/>'
+        rows += "".join(f'<circle class="{c}" cx="{x(FW[g][k]):.1f}" cy="{y:.1f}" r="5"><title>{esc(n)}: {t_us(FW[g][k]) if FW[g][k] < 1000 else f"{FW[g][k] / 1000:.1f} ms"}</title></circle>' for k, n, c in WAYS4 if k in FW[g])
+    return (f'<svg viewBox="0 0 {W} {h}" role="img" aria-labelledby="fwt"><title id="fwt">Each game\'s time a call, four ways, on a log scale</title>{legend}{ticks}{rows}</svg>')
+def fmt_us(v):
+    return f"{v / 1000:,.1f} ms" if v >= 1000 else t_us(v)
+def fw_table():
+    head = "".join(f"<th>{esc(n)}</th>" for _, n, _ in WAYS4)
+    rows = "".join(f'<tr><td class="l">{esc(GNAME[g])}</td><td>{FWSTEPS[g]:,}</td>' + "".join(f'<td>{fmt_us(FW[g][k]) if k in FW[g] else "–"}</td>' for k, _, _ in WAYS4) + f'<td>{FW[g]["interpreted"] / FW[g]["jit"]:,.0f}×</td><td>{FW[g]["compiled"] / FW[g]["jit"]:.1f}×</td></tr>' for g in GAMES)
+    return (f'<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>calls in its run</th>{head}<th>now against the interpreter</th><th>now against 11-19</th></tr></thead><tbody>{rows}</tbody></table></div>')
+gm4 = lambda k, gs: gm([FW[g][k] for g in gs])
+FIGS.update({"fw_svg": fw_svg(), "fw_table": fw_table(),
+             "fw_ij": f'{gm([FW[g]["interpreted"] / FW[g]["jit"] for g in GAMES]):,.0f}', "fw_ic": f'{gm([FW[g]["interpreted"] / FW[g]["compiled"] for g in GAMES]):,.0f}',
+             "fw_cj": f'{gm([FW[g]["compiled"] / FW[g]["jit"] for g in GAMES]):.1f}',
+             "fw_jp": f'{gm([FW[g]["jit"] / FW[g]["plain JS"] for g in PLAIN]):.1f}', "fw_cp": f'{gm([FW[g]["compiled"] / FW[g]["plain JS"] for g in PLAIN]):.1f}',
+             "fw_ip": f'{gm([FW[g]["interpreted"] / FW[g]["plain JS"] for g in PLAIN]):,.0f}',
+             "fw5_i": fmt_us(gm4("interpreted", PLAIN)), "fw5_c": fmt_us(gm4("compiled", PLAIN)), "fw5_j": fmt_us(gm4("jit", PLAIN)), "fw5_p": fmt_us(gm4("plain JS", PLAIN)),
+             "fw_plain": ", ".join(GNAME[g] for g in PLAIN), "fw_n": str(len(GAMES)), "fw_steps": f'{sum(FWSTEPS.values()):,}',
+             "fw_best": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: -FW[g]["compiled"] / FW[g]["jit"])[:3]),
+             "fw_least": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: FW[g]["compiled"] / FW[g]["jit"])[:3])})
 PS = [json.loads(l) for l in open(os.path.join(DATA, "petri-split-runs.jsonl"))]
 pmed = lambda w: sorted(r["r"]["hazel"]["median_us"] for r in PS if r["way"] == w)[2]
 FIGS.update({"split_table": split_table(), "sp_loops": f'{gm([r["loops"] / r["base"] for r in SPL]):.2f}', "sp_both": f'{gm([r["both"] / r["base"] for r in SPL]):.2f}',
@@ -245,6 +288,7 @@ EXTRA = """
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
+  svg .mi { fill: #6b737d; } svg .mc { fill: #2a78d6; } svg .mj { fill: #eb6834; } svg .mp { fill: #2e9e5b; } svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
   svg .code { fill: #2a78d6; } svg .cross { fill: #eb6834; }
   table.nums tr.gm td { font-weight: 700; border-top: 2px solid var(--line); }
   .tw table.rep { min-width: 820px; } table.rep code { word-break: normal; overflow-wrap: break-word; }
@@ -268,8 +312,8 @@ DESC = ("A working draft of the description for hazelgrove/hazel#2859, hazel-jit
         "an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. "
         f"Every evaluator test also runs compiled where it compiles: {SWEEP['compiled']} of {SWEEP['checks']} do, and none differs from the interpreter. "
         "Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. "
-        f"On a trial made the same day, its tail calls are loops and its named functions take their tuple's parts as JS arguments: the games take {FIGS['g853_gm']} of the jit's time, every answer the same. "
-        "Options and constructors are still its own, and the other compilers' speed on the games is still to measure.")
+        f"Four ways on the games of hazeljs-examples: hazel-jit now runs their rules {FIGS['fw_ij']} times as fast as the interpreter and {FIGS['fw_cj']} times as fast as on 2026-11-19, and takes {FIGS['fw_jp']} times the time of the same game written by hand in JavaScript, where it took {FIGS['fw_cp']} times. "
+        "With the day's changes merged: tail calls as loops, a named function's tuple parts as JS arguments, constructors without arguments made once, a module's members by name; and where conversion at the edges still costs, and how to bring it down.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w", encoding="utf-8").write(head + body)
@@ -306,6 +350,7 @@ meta = {"title": TITLE, "blurb": DESC,
         "ticket_853_more": "matthewhammer/hazeljs-examples bench/853-more, GitHub run 45645748545: six builds one after another on one runner a game: the base (hazelgrove/hazel trial/853-pkg 6d041e9769, loops and JS arguments, as merged), c1 (trial/853-pkg-c1 a14e698ec8: constructors without arguments made once), c2 (trial/853-pkg-c2 bc9d98db6b: a module's members by name), c3 (trial/853-pkg-c3 f111bb00ac: == against a literal as ===), noint (b471f761fb: c3 with Ints as plain JS numbers, a bench build only) and nostep (ae9611d03f: c3 with no step counted, a bench build only); and the Petri rule on the laptop the same six ways, five rounds (data/petri-more-runs.jsonl)",
         "crossing": "#crossing: data/crossing-timeline.json (the jit against the games' own compiled.js, build by build, from reports 063 and 054 and today's runs); data/petri-crossing-runs.jsonl (the Petri rule direct into compiled code, petri-bench.mjs hazel, and through Hazel.jitProgram as a page calls it, petri-bench.mjs jit; hazeljs 0.0.13 and trial/853-pkg-c3; five rounds on the laptop)",
         "options_bench": "data/petri-opt-runs.jsonl: the Petri rule on the laptop, seven rounds, trial/853-pkg-c3 (f111bb00ac) against trial/853-pkg-opt (bee76969b5, a bench build only: options unboxed in compiled code)",
-        "files": ["pr-2859.md", "data/petri-opt-runs.jsonl", "data/crossing-timeline.json", "data/petri-crossing-runs.jsonl", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
+        "fourway": "matthewhammer/hazeljs-examples bench/4way, GitHub run 45650465391: each game's own run of states (node/package-bench.mjs --runs --aot-as-is, the interpreter included), one runner a game, with the library of hazelgrove/hazel hazeljs at 2c4a61560f: interpreted (Hazel.runProgram), jit (Hazel.jitProgram: hazel-jit now), compiled (each game's own compiled.js, compiled ahead of time by hazel-jit on trial/794-games-aot between 11-20 and 11-23, whose compiler, HazelJit.re, last changed on 11-17 and its value boundary on 11-18: hazel-jit as of Thursday 11-19), and plain JS (<game>/plain.js, five games); every answer the same",
+        "files": ["pr-2859.md", "data/games-4way/", "img/gnome-world.jpg", "data/petri-opt-runs.jsonl", "data/crossing-timeline.json", "data/petri-crossing-runs.jsonl", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
 json.dump(meta, open(os.path.join(DATA, "meta.json"), "w"), indent=1, ensure_ascii=False)
 print("wrote 065/index.html;", updated)

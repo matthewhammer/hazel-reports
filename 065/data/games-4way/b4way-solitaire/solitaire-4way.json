@@ -1,0 +1,85 @@
+{
+ "game": "solitaire",
+ "when": "2026-11-25T16:02:15.407Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "Intel(R) Xeon(R) 6975P-C",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1016-aws"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "2c4a61560f22850146835684331f33992d21e9a6"
+ },
+ "examples": "84760bea3de0bce42a3536850caf5790b94bd1f9",
+ "once": {
+  "interpretedBuildMs": 977.4626249999999,
+  "jitBuildMs": 391.46741900000006,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 316.2605410000001,
+  "compiledJsBytes": 58114,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 85471,
+  "pageCompiledFrom": "5405a2e87d",
+  "compiledLoadMs": 1.7072899999998299,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "a deal, 200 moves (each: the moves, whether it is won, then one made)",
+   "steps": 200,
+   "ways": {
+    "interpreted": {
+     "ms": 24391.491658999978,
+     "usPerCall": 40652.4860983333,
+     "calls": 600,
+     "reps": 1,
+     "min": 24391.491658999978,
+     "same": true
+    },
+    "jit": {
+     "ms": 2.4572184999688034,
+     "usPerCall": 4.095364166614672,
+     "calls": 600,
+     "reps": 50,
+     "min": 1.7659090000088327,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 22.599771500037605,
+     "usPerCall": 37.666285833396,
+     "calls": 600,
+     "reps": 6,
+     "min": 20.488429000015458,
+     "same": true
+    },
+    "compiled": {
+     "ms": 6.006071999978303,
+     "usPerCall": 10.01011999996384,
+     "calls": 600,
+     "reps": 47,
+     "min": 5.301058999968518,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.6851540000170644,
+     "usPerCall": 1.141923333361774,
+     "calls": 600,
+     "reps": 50,
+     "min": 0.4518630000275152,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 60.277450000000954
+}

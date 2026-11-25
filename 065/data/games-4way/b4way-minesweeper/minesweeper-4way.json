@@ -1,0 +1,85 @@
+{
+ "game": "minesweeper",
+ "when": "2026-11-25T16:02:13.490Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 9V74 80-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "2c4a61560f22850146835684331f33992d21e9a6"
+ },
+ "examples": "84760bea3de0bce42a3536850caf5790b94bd1f9",
+ "once": {
+  "interpretedBuildMs": 4620.3268,
+  "jitBuildMs": 1460.694544,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 1461.9452389999997,
+  "compiledJsBytes": 120044,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 146790,
+  "pageCompiledFrom": "f2cc549b3a",
+  "compiledLoadMs": 2.5938259999993534,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "16 by 30, 319 taps (each: a cell opened or flagged)",
+   "steps": 319,
+   "ways": {
+    "interpreted": {
+     "ms": 22634.834501999998,
+     "usPerCall": 70955.59405015674,
+     "calls": 319,
+     "reps": 1,
+     "min": 22634.834501999998,
+     "same": true
+    },
+    "jit": {
+     "ms": 2.7352060000484926,
+     "usPerCall": 8.574313479775839,
+     "calls": 319,
+     "reps": 50,
+     "min": 1.9238310000182537,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 11.76678200006063,
+     "usPerCall": 36.886463950033324,
+     "calls": 319,
+     "reps": 5,
+     "min": 9.266976000038994,
+     "same": true
+    },
+    "compiled": {
+     "ms": 20.695383499974923,
+     "usPerCall": 64.87581034474897,
+     "calls": 319,
+     "reps": 14,
+     "min": 19.358923000003415,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.2190569999966101,
+     "usPerCall": 0.6866990595505019,
+     "calls": 319,
+     "reps": 50,
+     "min": 0.17938299996603746,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 76.67069999999512
+}

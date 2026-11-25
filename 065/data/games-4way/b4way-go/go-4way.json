@@ -1,0 +1,85 @@
+{
+ "game": "go",
+ "when": "2026-11-25T16:01:53.094Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 7763 64-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "2c4a61560f22850146835684331f33992d21e9a6"
+ },
+ "examples": "84760bea3de0bce42a3536850caf5790b94bd1f9",
+ "once": {
+  "interpretedBuildMs": 2167.7081810000004,
+  "jitBuildMs": 567.6633449999999,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 477.1642810000003,
+  "compiledJsBytes": 54714,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 80811,
+  "pageCompiledFrom": "5405a2e87d",
+  "compiledLoadMs": 2.9273809999999685,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "a game on 9 by 9, 89 turns (each: a move played, or a pass)",
+   "steps": 89,
+   "ways": {
+    "interpreted": {
+     "ms": 6616.674741999996,
+     "usPerCall": 74344.66002247186,
+     "calls": 89,
+     "reps": 1,
+     "min": 6616.674741999996,
+     "same": true
+    },
+    "jit": {
+     "ms": 1.171659999999065,
+     "usPerCall": 13.16471910111309,
+     "calls": 89,
+     "reps": 50,
+     "min": 0.94138500000372,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 1.3952740000040649,
+     "usPerCall": 15.677235955101853,
+     "calls": 89,
+     "reps": 50,
+     "min": 1.3157239999945887,
+     "same": true
+    },
+    "compiled": {
+     "ms": 2.2933964999992895,
+     "usPerCall": 25.768499999992017,
+     "calls": 89,
+     "reps": 50,
+     "min": 1.7430449999974371,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.3757755000051475,
+     "usPerCall": 4.22219662927132,
+     "calls": 89,
+     "reps": 50,
+     "min": 0.31713899999158457,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 100.87630999999874
+}

@@ -1,5 +1,5 @@
 {
- "what": "how each compiler lays out values in JavaScript: hazel-jit on 2026-11-07 and report 046's three others, from report 046's table; hazel-jit now from HazelJit.re on hazel-jit (#2859) at 43828037c9, with the loops and JS arguments merged on 2026-11-25",
+ "what": "how each compiler lays out values in JavaScript: hazel-jit on 2026-11-07 and report 046's three others, from report 046's table; hazel-jit now from HazelJit.re on hazel-jit (#2859) at be44756900, with the day's changes merged on 2026-11-25 (loops, JS arguments, constructors made once, a module's members by name, === against a literal)",
  "columns": [
   "hazel-jit 2026-11-07",
   "hazel-jit now",
@@ -43,7 +43,7 @@
   {
    "value": "Done (no argument)",
    "hazel-jit 2026-11-07": "{c: \"Done\"}",
-   "hazel-jit now": "{$c: \"Done\"}",
+   "hazel-jit now": "one constant made once, {$c: \"Done\"}",
    "ReScript 12": "\"Done\"",
    "Melange 5": "0",
    "js_of_ocaml 5.9": "0"
@@ -51,7 +51,7 @@
   {
    "value": "Some(t); None",
    "hazel-jit 2026-11-07": "{c: \"Some\", v: t}; {c: \"None\"}",
-   "hazel-jit now": "{$c: \"Some\", $v: t}; {$c: \"None\"}",
+   "hazel-jit now": "{$c: \"Some\", $v: t}; None one constant",
    "ReScript 12": "t; undefined",
    "Melange 5": "t; undefined",
    "js_of_ocaml 5.9": "[0, t]; 0"
@@ -67,7 +67,7 @@
   {
    "value": "a field read r.x",
    "hazel-jit 2026-11-07": "$R.dot(r, \"x\")",
-   "hazel-jit now": "r[\"x\"] behind a check",
+   "hazel-jit now": "r[\"x\"] behind a check; a module's member, its own variable",
    "ReScript 12": "r.x",
    "Melange 5": "r.x",
    "js_of_ocaml 5.9": "r[1]"
@@ -75,7 +75,7 @@
   {
    "value": "i == 0 on Ints",
    "hazel-jit 2026-11-07": "$R.eq(i, 0)",
-   "hazel-jit now": "$R.eq(i, 0), small enough to inline",
+   "hazel-jit now": "i === 0 against a literal; else $R.eq(a, b)",
    "ReScript 12": "i === 0",
    "Melange 5": "i === 0",
    "js_of_ocaml 5.9": "0 === i"
@@ -100,7 +100,7 @@
    "what": "Compare Ints with ===.",
    "status": "part",
    "status_text": "in part",
-   "now": "== is still $R.eq, but $R.eq is now three lines whose first compares with ===, small enough for the engine to inline (0e055e04c9: Go had been slower with records as objects until then)."
+   "now": "== against a number, string or boolean written out is === (0ce95a2e8f, merged); between two Ints held in variables it is still $R.eq, which is small enough for the engine to inline."
   },
   {
    "what": "Turn tail calls into loops.",
@@ -110,9 +110,9 @@
   },
   {
    "what": "Unbox options, and make constructors flat.",
-   "status": "open",
-   "status_text": "not yet",
-   "now": "Some(t) is still {$c: \"Some\", $v: t}, and Take(a, b, k) still holds its arguments in an inner array."
+   "status": "part",
+   "status_text": "in part",
+   "now": "Constructors without arguments, None among them, are one constant each (ae29353ff0, merged), so None is no longer made anew; Some(t) is still {$c: \"Some\", $v: t}, and Take(a, b, k) still holds its arguments in an inner array. Options unboxed were measured from a bench build only (^ticket(858))."
   },
   {
    "what": "Lay out labeled tuples as objects only.",
