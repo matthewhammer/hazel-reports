@@ -782,6 +782,8 @@ FIGS = {"fig_mixed": fig_mixed(), "fig_board": fig_board(), "fig_sweep": fig_swe
         "ad_slower_text": (lambda sl: ("no game by more than 5%; the closest to today are " + ad_list(sorted(AD, key=lambda r: -r["a"] / r["c"])[:2]) + ".")
                            if not sl else (ad_list(sl) + ".")) (sorted([r for r in AD if r["a"] > r["c"] * 1.05], key=lambda r: -r["a"] / r["c"])),
         "ad_noise": (lambda r: f'{GNAME[r["g"]]} {r["cd"] / r["c"]:.2f}×')(max(AD, key=lambda r: r["cd"] / r["c"])),
+        "tr_aot_lo": f'{min(json.load(open(os.path.join(HERE, "data", "a-vs-c-direct", f"trails-{x}.json")))["runs"][0]["ways"]["compiled"]["ms"] for x in ("c", "cd", "a")):.2f} ms',
+        "tr_aot_hi": f'{max(json.load(open(os.path.join(HERE, "data", "a-vs-c-direct", f"trails-{x}.json")))["runs"][0]["ways"]["compiled"]["ms"] for x in ("c", "cd", "a")):.2f} ms',
         "ad_aot_a": f'{gmean([r["a"] / r["aot"] for r in AD]):.2f}', "ad_aot_c": f'{gmean([r["c"] / r["aot"] for r in AD]):.2f}',
         "tab_ac": ac_table(), "tab_xab": cross_table(), "ac_n": str(len(AC)),
         "ac_gm": f'{gmean([r["aj"] / r["cj"] for r in AC]):.2f}', "ac_fresh": f'{gmean([r["af"] / r["cf"] for r in AC]):.2f}',

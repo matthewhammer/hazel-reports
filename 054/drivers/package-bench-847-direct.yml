@@ -1,4 +1,4 @@
-# (ticket 847, 2026-11-24, then with direct reads: Matthew, "A, add direct reads", e2529357f0) records the page's way, idea A against idea C: each game's own run of states (node/package-bench.mjs
+# (ticket 847, 2026-11-24, then with direct reads: Matthew, "A, add direct reads", e2529357f0; eq kept small, 0e055e04c9; decisions 2 and 4, cells and constructors keyed $h/$t/$c/$v, f311f4e408) records the page's way, idea A against idea C: each game's own run of states (node/package-bench.mjs
 # --runs) twice on one runner, through the jit of hazeljs 0.0.12 (hazelgrove/hazel ec2a330996, build 6: records as arrays
 # carrying their labels, idea C) and through the jit of hazelgrove/hazel's trial/847-records-objects (records as plain objects,
 # idea A), the games' own compiled.js as the ahead-of-time reference for both (--aot-as-is), the interpreter left out. Runs on
@@ -31,7 +31,7 @@ jobs:
           grep -o 'build:"[0-9a-f]*"' pkg-c/hazel-lib.js | head -1
           grep -o 'build:"[0-9a-f]*"' pkg-a/hazel-lib.js | head -1
           grep -q 'build:"ec2a330996' pkg-c/hazel-lib.js
-          grep -q 'build:"e2529357f0' pkg-a/hazel-lib.js
+          grep -q 'build:"f311f4e408' pkg-a/hazel-lib.js
       - uses: actions/setup-node@v4
         with:
           node-version: 22
