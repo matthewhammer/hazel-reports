@@ -1,0 +1,260 @@
+[
+ {
+  "section": "What it holds",
+  "section_id": "holds",
+  "columns": [
+   "Part",
+   "Files",
+   "What it does"
+  ],
+  "rows": [
+   [
+    "The compiler",
+    "src/language/dynamics/HazelJit.re",
+    "An elaborated term as the body of a JavaScript function of its runtime ($R), and the runtime's source. A form it does not compile raises Unsupported with the reason, and the caller runs the interpreter."
+   ],
+   [
+    "The values across",
+    "src/language/dynamics/HazelJitValue.re",
+    "A Hazel value into compiled code's shapes and back, by the types the compiled term records; a compiled program instantiated; an answer carried back as a diff against the last one."
+   ],
+   [
+    "Mixed mode",
+    "src/language/dynamics/HazelJitMixed.re, 5 lines in Builtins.re, 8 in Transition.re",
+    "The interpreter calls a program's complete functions compiled, as builtins made at run time. Nothing in the app turns it on yet."
+   ],
+   [
+    "Tests",
+    "test/Test_HazelJit.re, test/Test_HazelJit_Agree.re, a hook in test/evaluator/Test_Evaluator_Prelude.re",
+    "Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter's answer shape by shape; agreement on the language's forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, and records whose labels look like the runtime's own keys; values carried back; diffs; what is not compiled and why; mixed mode."
+   ]
+  ]
+ },
+ {
+  "section": "How compiled values look",
+  "section_id": "values",
+  "columns": [
+   "Hazel",
+   "Compiled JavaScript"
+  ],
+  "rows": [
+   [
+    "A tuple whose every entry is labeled, (x = 1, y = 2)",
+    "A plain object, {x: 1, y: 2}, its keys in the type's order"
+   ],
+   [
+    "Any other tuple, (1, 2) or (1, y = 2)",
+    "An array, carrying its labels under Symbol.for(\"hazel-jit.labels\")"
+   ],
+   [
+    "A list",
+    "null, or a cell {$h, $t}"
+   ],
+   [
+    "A constructor, Some(3); None",
+    "{$c: \"Some\", $v: 3}; {$c: \"None\"}"
+   ],
+   [
+    "A function",
+    "A JS function of one argument; a function of a tuple takes an array"
+   ]
+  ]
+ },
+ {
+  "section": "Beside other compilers to JavaScript",
+  "section_id": "beside",
+  "columns": [
+   "Value",
+   "hazel-jit",
+   "ReScript 12",
+   "Melange 5",
+   "js_of_ocaml 5.9"
+  ],
+  "rows": [
+   [
+    "A list cell; the empty list",
+    "{$h, $t}; null",
+    "{hd, tl}; 0",
+    "{hd, tl}; 0",
+    "[0, hd, tl]; 0"
+   ],
+   [
+    "A record",
+    "an object by label",
+    "an object by field",
+    "an object by field",
+    "[0, f1, f2]"
+   ],
+   [
+    "Take(a, b, k)",
+    "{$c: \"Take\", $v: [a, b, k]}",
+    "{TAG: \"Take\", _0, _1, _2}",
+    "{TAG: 0, _0, _1, _2}",
+    "[0, a, b, k]"
+   ],
+   [
+    "Some(t); None",
+    "{$c: \"Some\", $v: t}; {$c: \"None\"}",
+    "t; undefined",
+    "t; undefined",
+    "[0, t]; 0"
+   ],
+   [
+    "A function of two",
+    "one argument, an array",
+    "f(a, b)",
+    "f(a, b)",
+    "f(a, b)"
+   ],
+   [
+    "i == 0 on Ints",
+    "$R.eq(i, 0)",
+    "i === 0",
+    "i === 0",
+    "0 === i"
+   ],
+   [
+    "A tail call",
+    "a call",
+    "a loop",
+    "a loop",
+    "a loop"
+   ]
+  ]
+ },
+ {
+  "section": "Representations, then and now",
+  "section_id": "compare",
+  "columns": [
+   "Value",
+   "hazel-jit 2026-11-07",
+   "hazel-jit now",
+   "ReScript 12",
+   "Melange 5",
+   "js_of_ocaml 5.9"
+  ],
+  "rows": [
+   [
+    "a list cell; the empty list",
+    "{h, t}; null",
+    "{$h, $t}; null",
+    "{hd, tl}; 0",
+    "{hd, tl}; 0",
+    "[0, hd, tl]; 0"
+   ],
+   [
+    "a record, or labeled tuple",
+    "an array, each label also a property",
+    "an object by label",
+    "an object by field",
+    "an object by field",
+    "[0, f1, f2, …]"
+   ],
+   [
+    "an unlabeled tuple (a, b)",
+    "[a, b]",
+    "[a, b]",
+    "[a, b]",
+    "[a, b]",
+    "[0, a, b]"
+   ],
+   [
+    "Take(a, b, k)",
+    "{c: \"Take\", v: [a, b, k]}",
+    "{$c: \"Take\", $v: [a, b, k]}",
+    "{TAG: \"Take\", _0, _1, _2}",
+    "{TAG: 0, _0, _1, _2}",
+    "[0, a, b, k]"
+   ],
+   [
+    "Done (no argument)",
+    "{c: \"Done\"}",
+    "{$c: \"Done\"}",
+    "\"Done\"",
+    "0",
+    "0"
+   ],
+   [
+    "Some(t); None",
+    "{c: \"Some\", v: t}; {c: \"None\"}",
+    "{$c: \"Some\", $v: t}; {$c: \"None\"}",
+    "t; undefined",
+    "t; undefined",
+    "[0, t]; 0"
+   ],
+   [
+    "a function of two",
+    "one argument, an array [a, b]",
+    "one argument, an array [a, b]",
+    "f(a, b)",
+    "f(a, b)",
+    "f(a, b)"
+   ],
+   [
+    "a field read r.x",
+    "$R.dot(r, \"x\")",
+    "r[\"x\"] behind a check",
+    "r.x",
+    "r.x",
+    "r[1]"
+   ],
+   [
+    "i == 0 on Ints",
+    "$R.eq(i, 0)",
+    "$R.eq(i, 0), small enough to inline",
+    "i === 0",
+    "i === 0",
+    "0 === i"
+   ],
+   [
+    "a tail call",
+    "a call",
+    "a call",
+    "a while loop",
+    "a while loop",
+    "a for loop"
+   ]
+  ]
+ },
+ {
+  "section": "Speed beside them",
+  "section_id": "speed",
+  "columns": [
+   "Compiler",
+   "µs a call, median",
+   "the fastest call"
+  ],
+  "rows": [
+   [
+    "Melange 5.0.0",
+    "0.46",
+    "0.35"
+   ],
+   [
+    "ReScript 12.3.1",
+    "0.55",
+    "0.38"
+   ],
+   [
+    "js_of_ocaml 5.9.1 (the rule inlined into the loop)",
+    "0.71",
+    "0.40"
+   ],
+   [
+    "JS written by hand",
+    "0.90",
+    "0.71"
+   ],
+   [
+    "hazel-jit, 2026-11-07",
+    "1.59",
+    "0.66"
+   ],
+   [
+    "Hazel's interpreter",
+    "358",
+    ""
+   ]
+  ]
+ }
+]

@@ -1,0 +1,96 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 065 · hazel-jit · 2026-11-25, revised {{updated}} MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<h1>hazel-jit’s PR, Described</h1>
+<p class="sub">What should the description of hazelgrove/hazel#2859, hazel-jit for <code>dev</code>, say to the people who decide on it and the people who review it? Matthew asked on 2026-11-25 for a report “to iterate on the content of the PR description there”, “esp the executive and engineering summaries”, with a section comparing the compilers from OCaml to JavaScript that report 046 looked at, by how they lay out values, and by speed on the games, “which we largely didn’t have before”. The description is drafted here, section by section; the sections marked as the PR’s are the text for GitHub, and the rest is this report’s. Nothing is posted until Matthew says so.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#opening">The opening line</a>: what the PR is, in one sentence.</li>
+<li><a href="#exec">Executive summary</a>: what hazel-jit is, why, what it changes in <code>dev</code>, how it is checked, who uses it, and what to review.</li>
+<li><a href="#eng">Engineering summary</a>: what goes in and comes out, how the code is written, its values, what it leaves to the interpreter, mixed mode, and its speed on the tests.</li>
+<li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
+<li><a href="#compare">Representations, then and now</a>: one of report 046’s five suggestions for hazel-jit’s output is done and one is done in part; records now look as ReScript’s and Melange’s do.</li>
+<li><a href="#speed">Speed beside them</a>: what has been measured (one small rule, before the changes) and what the games still need.</li>
+<li><a href="#choices">Choices for the description</a>: what to settle before it goes on GitHub.</li>
+<li><a href="#github">The text for GitHub</a>, to copy, and <a href="#revisions">its revisions</a>.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="opening">The opening line</h2>
+<p class="tag own">This report’s</p>
+<p><b>The description opens with one sentence saying what the PR is, and that it is the only PR that tracks the jit.</b> The npm package’s branch, #2857, takes the jit by merging this branch, so there is one place to review it.</p>
+{{pr_preamble}}
+
+{{pr_exec}}
+
+{{pr_eng}}
+
+{{pr_holds}}
+
+{{pr_values}}
+
+{{pr_beside}}
+
+{{pr_origin}}
+
+{{pr_differs}}
+
+{{pr_pr_next}}
+
+<h2 id="compare">Representations, then and now</h2>
+<p class="tag own">This report’s</p>
+<p><b>Since report 046 (2026-11-07), hazel-jit lays out records as ReScript and Melange do, as plain objects read by their labels; its lists, constructors, options, calls and tail calls are still its own.</b> Report 046 compiled one small rule (a Petri net’s step, report 043’s) with ReScript, Melange, js_of_ocaml and hazel-jit, and put the four layouts side by side. The table below is that table with a column for hazel-jit as it is on #2859 now (9ec865976d); the cells that changed are shaded.</p>
+{{rep_table}}
+<p>ReScript and Melange come from one family, BuckleScript’s: OCaml’s (or ReScript’s) front end and type checker, then a back end that writes the JavaScript a careful person would write, module by module. js_of_ocaml, which builds Hazel itself, compiles OCaml’s bytecode, a whole program at once, and keeps OCaml’s memory layout: every block an array with its tag first. hazel-jit is a third kind: it compiles Hazel’s elaborated terms in the page, while the program runs, with a runtime of its own.</p>
+<p>Report 046 ended with five changes to hazel-jit’s output, each something these compilers already do, in the order they would likely help that rule (<a href="../046/#suggests">its section</a>). Where each stands:</p>
+{{sugg_list}}
+<p>Two changes came from elsewhere, not from that list: field reads compiled in place (where they had gone through a call that read every label of every program), and the <code>$</code> on the keys of cells and constructors, so that a record is never taken for either. Each change to the layout is a change on both sides of the boundary too: what <code>HazelJitValue</code> reads and writes, and what the npm package’s converters do (#2857).</p>
+
+<h2 id="speed">Speed beside them</h2>
+<p class="tag own">This report’s</p>
+<p><b>Only one small rule has been measured with all of them, and hazel-jit has changed since: on 2026-11-07 ReScript’s and Melange’s code ran it about three times as fast as hazel-jit’s, and the hand-written JavaScript about twice as fast.</b> Each answered the same 2,000 events and ended on the same marking (report 046, in Node 22 on one laptop):</p>
+{{petri_table}}
+<p>That hazel-jit had records as arrays, field reads through a call, and an equality too big to inline. On the games of hazeljs-examples, the records change alone took hazel-jit to 0.63 of its time (report 054), so the gap on this rule is likely smaller now. It is not measured yet.</p>
+<p><b>The games and activities of hazeljs-examples have hazel-jit’s numbers but none for the other compilers.</b> Report 063 timed every game four ways (on the interpreter, through the jit, compiled ahead of time, and, for five games, in JavaScript written by hand), and report 054 timed each game’s own run of states as its page plays it. Neither has ReScript, Melange or js_of_ocaml: for them each game’s rules must be written again, in OCaml (for Melange and js_of_ocaml) or in ReScript. Five games already have a version in plain JavaScript, written by hand: Checkers, Go, Minesweeper, Mahjong and Solitaire. They come first (<a href="#next">What next</a>), so that each has all six: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, each playing the game’s own run of states in its own layout.</p>
+
+<h2 id="choices">Choices for the description</h2>
+<p class="tag own">This report’s</p>
+<p><b>Six things to settle before the description goes on GitHub.</b> Each is a choice for Matthew; the draft above takes the first option of each.</p>
+<ol>
+<li><b>How long the summaries are.</b> Six points each now. Or shorter: three sentences for the executive summary, and the engineering summary’s points as one paragraph.</li>
+<li><b>Which speed to quote first.</b> The draft quotes the games compiled ahead of time against the interpreter (2,392 times as fast, the geometric mean over 45 operations, measured with hazeljs 0.0.11 for report 063). The other candidates: the evaluator tests’ median, 395 times; or one game’s step, Gnome dig’s 82 ms against 0.28 ms through the jit. The first is the broadest, but its build is two days older than the layout this PR has.</li>
+<li><b>Whether the comparison with ReScript, Melange and js_of_ocaml belongs in the PR.</b> It helps a reviewer who knows those compilers; it also invites the question of why hazel-jit doesn’t use one of them (report 046’s answer: none compiles Hazel, and hazel-jit compiles in the page while the program runs). Or leave it to this report and link it.</li>
+<li><b>Whether to say what the sweep costs CI.</b> Every evaluator test runs a second time, compiled, and a third, mixed. Not measured yet: the Fast checks’ time on <code>dev</code> against <code>hazel-jit</code>.</li>
+<li><b>Whether the reports are linked from the PR.</b> The draft links reports 046, 054 and 063 at its end. Another choice is to link this report once, for the details and the history.</li>
+<li><b>The compiler’s header comment, out of date.</b> <code>HazelJit.re</code> opens with the layout of values, and it still says a tuple is an array with its labels as properties. A fix on the branch (a comment only), merged into #2857 as usual.</li>
+</ol>
+
+<h2 id="github">The text for GitHub</h2>
+<p class="tag own">This report’s</p>
+<p><b>The whole description as GitHub will show it, {{pr_words}} words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
+<p><button class="copy-md" type="button" onclick="(async b=>{try{await navigator.clipboard.writeText(document.getElementById('pr-md').textContent);b.textContent='Copied'}catch(e){b.textContent='Select the text below instead'}})(this)">Copy the description’s Markdown</button></p>
+<details><summary>The Markdown</summary>
+<pre class="md">{{pr_md_shown}}</pre>
+</details>
+<script type="text/plain" id="pr-md">{{pr_md}}</script>
+
+<h2 id="revisions">Revisions</h2>
+<p class="tag own">This report’s</p>
+<ul>
+<li><b>2026-11-25, first version.</b> From the draft sent to Matthew in chat that morning: the executive and engineering summaries are new, and so is the section beside ReScript, Melange and js_of_ocaml. Checked against the code, the draft’s “Ints compare with <code>===</code>” was wrong: an Int’s <code>==</code> is <code>$R.eq</code>, and only Floats compare with <code>===</code> directly. The sweep’s numbers are from hazel-jit’s own CI.</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Iterate on the executive and engineering summaries with Matthew, in this report, until he is happy with them; then post the description on #2859.</li>
+<li>Write the rules of Checkers, Go, Minesweeper, Mahjong and Solitaire in OCaml and in ReScript, and time each game’s own run of states six ways: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, on GitHub’s runners.</li>
+<li>Time report 046’s Petri net rule again with today’s hazel-jit, beside the three compilers’ code from that day.</li>
+<li>Measure what the sweep costs CI: the Fast checks and the Full tests on <code>dev</code> against <code>hazel-jit</code>.</li>
+<li>Bring <code>HazelJit.re</code>’s header comment up to date with the layout of values.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>The description is one Markdown file, <code>065/pr-2859.md</code>, in GitHub’s Markdown; <code>065/gen065.py</code> renders its sections into this page between the report’s own, and carries the file in the page to copy. The sweep’s numbers are the summary lines the agreement tests print at the end of hazel-jit’s Fast checks (hazelgrove/hazel CI run {{sw_run}}, at 9ec865976d): {{sw_checks}} evaluator checks, {{sw_compiled}} compiled, {{sw_agreed}} agreed, none differed, {{sw_not_value}} with an interpreter result that is not a value. Gnome dig’s step is hazeljs 0.0.13 in Node 22 on one laptop, 20 steps, the same answers both ways. The games’ numbers are report 063’s and report 054’s, and the other compilers’ are report 046’s, each named where it is quoted. The layout of values is read from <code>HazelJit.re</code> at 9ec865976d. The numbers the text quotes are in <code>065/data/</code>, and in the page as JSON.</p>
+</main>
+</body>
+</html>

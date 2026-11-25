@@ -1,0 +1,1132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hazel-jit’s PR, Described</title>
+<meta name="description" content="A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects; its constructors, options, calls and tail calls not yet. Their speed on the games of hazeljs-examples is still to measure.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  section.inpr { border-left: 3px solid var(--accent, #2a78d6); padding-left: 14px; margin-left: -17px; }
+  section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
+  p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tw { overflow-x: auto; margin: 0.6em 0 1em; }
+  table.rep td.chg { background: color-mix(in srgb, var(--good, #2e9e5b) 14%, transparent); }
+  table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
+  ol.sugg li { margin-bottom: 0.5em; } .st { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 0.8em; font-weight: 600; color: #fff; }
+  .st.done { background: #2e9e5b; } .st.part { background: #b07d10; } .st.open { background: #6b737d; }
+  pre.md { white-space: pre-wrap; font-size: 0.85em; max-height: 32em; overflow: auto; }
+  button.copy-md { font: inherit; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+li.anchored .anchor { margin-left: 6px; color: var(--muted); text-decoration: none; opacity: 0.5; } li.anchored .copyanchor { opacity: 0.8; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 07:30 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>hazel-jit’s PR, Described</h1>
+<p class="sub">What should the description of <a href="https://github.com/hazelgrove/hazel/pull/2859">hazelgrove/hazel#2859</a>, hazel-jit for <code>dev</code>, say to the people who decide on it and the people who review it? Matthew asked on 2026-11-25 for a report “to iterate on the content of the PR description there”, “esp the executive and engineering summaries”, with a section comparing the compilers from OCaml to JavaScript that <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> looked at, by how they lay out values, and by speed on the games, “which we largely didn’t have before”. The description is drafted here, section by section; the sections marked as the PR’s are the text for GitHub, and the rest is this report’s. Nothing is posted until Matthew says so.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#opening">The opening line</a>: what the PR is, in one sentence.</li>
+<li><a href="#exec">Executive summary</a>: what hazel-jit is, why, what it changes in <code>dev</code>, how it is checked, who uses it, and what to review.</li>
+<li><a href="#eng">Engineering summary</a>: what goes in and comes out, how the code is written, its values, what it leaves to the interpreter, mixed mode, and its speed on the tests.</li>
+<li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
+<li><a href="#compare">Representations, then and now</a>: one of <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s five suggestions for hazel-jit’s output is done and one is done in part; records now look as ReScript’s and Melange’s do.</li>
+<li><a href="#speed">Speed beside them</a>: what has been measured (one small rule, before the changes) and what the games still need.</li>
+<li><a href="#choices">Choices for the description</a>: what to settle before it goes on GitHub.</li>
+<li><a href="#github">The text for GitHub</a>, to copy, and <a href="#revisions">its revisions</a>.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<h2 id="opening">The opening line<a class="anchor" href="#opening" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="opening" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<p><b>The description opens with one sentence saying what the PR is, and that it is the only PR that tracks the jit.</b> The npm package’s branch, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>, takes the jit by merging this branch, so there is one place to review it.</p>
+<section class="inpr"><p class="tag">In the PR’s description: its opening line</p>
+<p>🤖 hazel-jit, for <code>dev</code>: a compiler from Hazel to JavaScript, with the tests that hold it to the interpreter&#x27;s answers. This is the one PR that tracks the jit. The npm package&#x27;s branch, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> (<code>hazeljs</code>), merges it rather than keeping a copy of its own.</p>
+</section>
+
+<section class="inpr"><h2 id="exec">Executive summary<a class="anchor" href="#exec" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="exec" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<ul><li><b>What it is.</b> hazel-jit compiles a complete Hazel program to JavaScript and runs that in place of the interpreter. Where it can&#x27;t (a hole, a test, an error the interpreter would show), the interpreter runs the program as it does today, so an answer never changes.</li><li><b>Why.</b> Speed, toward 60 frames a second for small edits. Compiled ahead of time, the games of hazeljs-examples run 2,392 times as fast as on the interpreter (the geometric mean over 45 operations in 17 games). Gnome dig&#x27;s step takes 82 ms on the interpreter and 0.28 ms through the jit.</li><li>**What it changes in <code>dev</code>.** It adds new files, and 13 lines to two of <code>dev</code>&#x27;s, <code>Builtins.re</code> and <code>Transition.re</code>, for mixed mode. Nothing in the app turns hazel-jit on yet: the editor, the evaluator and the stepper run as before.</li><li><b>How it is checked.</b> Every evaluator test also runs compiled, where it compiles, and must give the interpreter&#x27;s answer. Of the 289 checks, 234 compile; 211 of those give the interpreter&#x27;s answer and none differs. The other 23 end where the interpreter&#x27;s result is not a value, which the sweep doesn&#x27;t compare. hazel-jit also has 13 tests of its own.</li><li><b>Who uses it.</b> The hazeljs npm package (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>): its <code>Hazel.jit</code> and <code>Hazel.compile</code> are hazel-jit. And the games of hazeljs-examples, which keep their rules compiled ahead of time.</li><li><b>What to review.</b> The two hooks into the interpreter; the shapes compiled code gives values, which pages that keep compiled code depend on; and the list of what is left to the interpreter.</li></ul>
+</section>
+
+<section class="inpr"><h2 id="eng">Engineering summary<a class="anchor" href="#eng" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="eng" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<ul><li><b>In and out.</b> The input is the elaborated term the interpreter would run, with the types the statics gave it. The output is JavaScript source: the body of a function of one argument, <code>$R</code>, the runtime (about 23 KB of source: equality, lists, numbers, the builtins). The caller makes it a function with <code>new Function</code> and calls it.</li><li><b>How the code is written.</b> Expressions all the way down. A <code>let</code>&#x27;s bindings are assigned, in a comma expression, to variables declared at the top of the enclosing function, so a <code>let</code> makes no closure. Every binding gets a JS name of its own (<code>x$12</code>), so shadowing can&#x27;t clash. A builtin written in OCaml is the runtime&#x27;s JS version of it; one written in Hazel (<code>List.map</code>) is compiled once, before the program.</li><li><b>Values.</b> Close to what a person would write in JavaScript: numbers, strings and booleans as themselves, a record as a plain object, a list as cells <code>{$h, $t}</code> (so <code>::</code> is O(1)), a constructor as <code>{$c, $v}</code> (the table below). An Int is exact, as the interpreter&#x27;s is: a JS number while it is a safe integer, a BigInt past that. An SInt is 32 bits, each result checked. A field read <code>e.x</code> is the property itself, behind a check.</li><li><b>What is left to the interpreter.</b> By rule, not by gap: holes, the stepper&#x27;s filters, an operation the interpreter stops at with an error, undefined, and a run past its budget. For a form, the compiler raises <code>Unsupported(reason)</code>; at run time, the compiled run stops. Either way the interpreter&#x27;s run is the answer.</li><li><b>Back to Hazel.</b> <code>HazelJitValue</code> turns a compiled value back into a Hazel value by the types the term records, or into a diff against the last answer.</li><li><b>Mixed mode.</b> The interpreter runs a program around its holes and calls its complete functions (whole types declared) compiled, as builtins made at run time. A call that can&#x27;t finish compiled falls back to the interpreter, for that call alone.</li><li><b>Speed on the tests.</b> Over the 208 evaluator programs that compile and agree, the median program runs 395 times as fast compiled, run after run. On a first run, with its JS parsed, it runs 6.9 times as fast; compiling all 208 took 65 ms, against the interpreter&#x27;s 143 ms for their first runs.</li></ul>
+</section>
+
+<section class="inpr"><h2 id="holds">What it holds<a class="anchor" href="#holds" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="holds" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<div class="tw"><table><thead><tr><th>Part</th><th>Files</th><th>What it does</th></tr></thead><tbody><tr><td>The compiler</td><td><code>src/language/dynamics/HazelJit.re</code></td><td>An elaborated term as the body of a JavaScript function of its runtime (<code>$R</code>), and the runtime&#x27;s source. A form it does not compile raises <code>Unsupported</code> with the reason, and the caller runs the interpreter.</td></tr><tr><td>The values across</td><td><code>src/language/dynamics/HazelJitValue.re</code></td><td>A Hazel value into compiled code&#x27;s shapes and back, by the types the compiled term records; a compiled program instantiated; an answer carried back as a diff against the last one.</td></tr><tr><td>Mixed mode</td><td><code>src/language/dynamics/HazelJitMixed.re</code>, 5 lines in <code>Builtins.re</code>, 8 in <code>Transition.re</code></td><td>The interpreter calls a program&#x27;s complete functions compiled, as builtins made at run time. Nothing in the app turns it on yet.</td></tr><tr><td>Tests</td><td><code>test/Test_HazelJit.re</code>, <code>test/Test_HazelJit_Agree.re</code>, a hook in <code>test/evaluator/Test_Evaluator_Prelude.re</code></td><td>Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter&#x27;s answer shape by shape; agreement on the language&#x27;s forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, and records whose labels look like the runtime&#x27;s own keys; values carried back; diffs; what is not compiled and why; mixed mode.</td></tr></tbody></table></div>
+</section>
+
+<section class="inpr"><h2 id="values">How compiled values look<a class="anchor" href="#values" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="values" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<div class="tw"><table><thead><tr><th>Hazel</th><th>Compiled JavaScript</th></tr></thead><tbody><tr><td>A tuple whose every entry is labeled, <code>(x = 1, y = 2)</code></td><td>A plain object, <code>{x: 1, y: 2}</code>, its keys in the type&#x27;s order</td></tr><tr><td>Any other tuple, <code>(1, 2)</code> or <code>(1, y = 2)</code></td><td>An array, carrying its labels under <code>Symbol.for(&quot;hazel-jit.labels&quot;)</code></td></tr><tr><td>A list</td><td><code>null</code>, or a cell <code>{$h, $t}</code></td></tr><tr><td>A constructor, <code>Some(3)</code>; <code>None</code></td><td><code>{$c: &quot;Some&quot;, $v: 3}</code>; <code>{$c: &quot;None&quot;}</code></td></tr><tr><td>A function</td><td>A JS function of one argument; a function of a tuple takes an array</td></tr></tbody></table></div>
+<ul><li>A field read <code>e.x</code> compiles to the property itself, <code>e[&quot;x&quot;]</code>, behind a check that <code>e</code> is an object holding <code>x</code> and not a list&#x27;s cell. Anything else (a list of rows, the empty list, a value the interpreter would be stuck on) goes to the runtime&#x27;s <code>$R.dot</code>, so the answer is the same.</li><li>A label named <code>length</code> or <code>__proto__</code>, or starting with <code>$</code>, is kept as <code>$</code> and the label. So no record has the keys <code>$h</code>, <code>$t</code>, <code>$c</code> or <code>$v</code>, and a record is never taken for a cell or a constructor.</li><li><code>==</code> is <code>$R.eq</code>, which is small enough for the engine to inline: its first line compares two numbers, strings or booleans with <code>===</code>, and objects go on to <code>$R.eqo</code>. Floats compare with <code>===</code> directly.</li></ul>
+<p>These shapes are Matthew&#x27;s decisions of 2026-11-24. Measured on the games as their pages play them, records as objects take 0.63 of the time that records as arrays took (the geometric mean over 14 games), with every answer the same.</p>
+</section>
+
+<section class="inpr"><h2 id="beside">Beside other compilers to JavaScript<a class="anchor" href="#beside" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="beside" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<div class="tw"><table><thead><tr><th>Value</th><th>hazel-jit</th><th>ReScript 12</th><th>Melange 5</th><th>js_of_ocaml 5.9</th></tr></thead><tbody><tr><td>A list cell; the empty list</td><td><code>{$h, $t}</code>; <code>null</code></td><td><code>{hd, tl}</code>; <code>0</code></td><td><code>{hd, tl}</code>; <code>0</code></td><td><code>[0, hd, tl]</code>; <code>0</code></td></tr><tr><td>A record</td><td>an object by label</td><td>an object by field</td><td>an object by field</td><td><code>[0, f1, f2]</code></td></tr><tr><td><code>Take(a, b, k)</code></td><td><code>{$c: &quot;Take&quot;, $v: [a, b, k]}</code></td><td><code>{TAG: &quot;Take&quot;, _0, _1, _2}</code></td><td><code>{TAG: 0, _0, _1, _2}</code></td><td><code>[0, a, b, k]</code></td></tr><tr><td><code>Some(t)</code>; <code>None</code></td><td><code>{$c: &quot;Some&quot;, $v: t}</code>; <code>{$c: &quot;None&quot;}</code></td><td><code>t</code>; <code>undefined</code></td><td><code>t</code>; <code>undefined</code></td><td><code>[0, t]</code>; <code>0</code></td></tr><tr><td>A function of two</td><td>one argument, an array</td><td><code>f(a, b)</code></td><td><code>f(a, b)</code></td><td><code>f(a, b)</code></td></tr><tr><td><code>i == 0</code> on Ints</td><td><code>$R.eq(i, 0)</code></td><td><code>i === 0</code></td><td><code>i === 0</code></td><td><code>0 === i</code></td></tr><tr><td>A tail call</td><td>a call</td><td>a loop</td><td>a loop</td><td>a loop</td></tr></tbody></table></div>
+<p>hazel-jit&#x27;s records now look like ReScript&#x27;s and Melange&#x27;s; its constructors, options and calls do not yet. On one small rule (a Petri net&#x27;s step), ReScript&#x27;s and Melange&#x27;s code ran about 3 times as fast as hazel-jit&#x27;s did on 2026-11-07, before the changes above.</p>
+</section>
+
+<section class="inpr"><h2 id="origin">Where it comes from<a class="anchor" href="#origin" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="origin" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<p>The compiler and its tests come from the livelits line&#x27;s <code>trial/794-games-aot</code> (the jit of <a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a>), ported to Jane Street Core, with the arms for livelit-only forms (<code>Quote</code>, <code>Unquote</code>, <code>Bind</code>, <code>Splice</code>, a module&#x27;s <code>ModVal</code>) taken out. The livelit views compiled (<code>HazelJitRun</code>, <code>HazelJitDOM</code>) and their tests stay on the livelits line.</p>
+<p>Since it opened:</p>
+<ul><li><b>Records as objects</b> (9ec865976d), above.</li><li><b>A recursive function&#x27;s own capture</b>, undefined when the function was made, is bound again by its <code>FixF</code> on the way back (5ec4ff4307).</li><li><b>A pattern by position that meets a labeled entry</b> leaves the run to the interpreter (e0a5925f3b).</li></ul>
+</section>
+
+<section class="inpr"><h2 id="differs">Where it differs from the interpreter on <code>dev</code><a class="anchor" href="#differs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="differs" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<ul><li><b>SInt overflow.</b> hazel-jit stops a 32-bit SInt that overflows at <code>IntegerOverflow</code>; <code>dev</code>&#x27;s interpreter wraps it (2147483647 + 1 is -2147483648). SInt is to have 64 bits everywhere, with overflow an error (<a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>). The jit&#x27;s 64-bit SInt is on <code>trial/758-sint64-jit</code> and comes here with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>. The evaluator tests have no such program, so the sweep does not meet it.</li><li><b>A tuple with a label given twice</b> is not compiled, since keying it by its labels would lose one entry. The interpreter runs it, keeping both entries as <code>dev</code> has since <a href="https://github.com/hazelgrove/hazel/pull/2472">#2472</a>.</li></ul>
+</section>
+
+<section class="inpr"><h2 id="pr-next">Next, on this branch<a class="anchor" href="#pr-next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pr-next" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<ul><li>Mixed mode&#x27;s types from the statics, not from annotations: <code>dev</code> lowers a module to lets whose patterns lose their annotations, so a module&#x27;s members run on the interpreter in mixed mode for now.</li><li>Holes: indeterminate values carried through compiled code, building the interpreter&#x27;s residual terms, beyond mixed mode&#x27;s fallback per call.</li><li>The games&#x27; rules as test programs (hazeljs-examples, compiled whole).</li><li>64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.</li></ul>
+<p>Tried and not kept: lists as cells plus array segments (<code>hazel-jit-lists</code>). On hazeljs-examples&#x27; seventeen games it cost about 8% ahead of time and 4% through the jit, all answers the same, so cells stay.</p>
+<p>The design and the measurements are in Hazel reports: <a href="https://matthewhammer.org/hazel/reports/054/#records-decide"><code class="ref"><b>^report(</b>54<b>)</b></code></a> (records, lists and holes), <a href="https://matthewhammer.org/hazel/reports/063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> (every game, four ways) and <a href="https://matthewhammer.org/hazel/reports/046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> (beside ReScript, Melange and js_of_ocaml).</p>
+</section>
+
+<h2 id="compare">Representations, then and now<a class="anchor" href="#compare" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="compare" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<p><b>Since <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> (2026-11-07), hazel-jit lays out records as ReScript and Melange do, as plain objects read by their labels; its lists, constructors, options, calls and tail calls are still its own.</b> <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> compiled one small rule (a Petri net’s step, <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>’s) with ReScript, Melange, js_of_ocaml and hazel-jit, and put the four layouts side by side. The table below is that table with a column for hazel-jit as it is on <a href="https://github.com/hazelgrove/hazel/pull/2859">#2859</a> now (9ec865976d); the cells that changed are shaded.</p>
+<div class="tw"><table class="rep"><thead><tr><th>Value</th><th>hazel-jit 2026-11-07</th><th>hazel-jit now</th><th>ReScript 12</th><th>Melange 5</th><th>js_of_ocaml 5.9</th></tr></thead><tbody><tr><td>a list cell; the empty list</td><td class=""><code>{h, t}; null</code></td><td class="chg"><code>{$h, $t}; null</code></td><td class=""><code>{hd, tl}; 0</code></td><td class=""><code>{hd, tl}; 0</code></td><td class=""><code>[0, hd, tl]; 0</code></td></tr><tr><td>a record, or labeled tuple</td><td class=""><code>an array, each label also a property</code></td><td class="chg"><code>an object by label</code></td><td class=""><code>an object by field</code></td><td class=""><code>an object by field</code></td><td class=""><code>[0, f1, f2, …]</code></td></tr><tr><td>an unlabeled tuple (a, b)</td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[0, a, b]</code></td></tr><tr><td>Take(a, b, k)</td><td class=""><code>{c: &quot;Take&quot;, v: [a, b, k]}</code></td><td class="chg"><code>{$c: &quot;Take&quot;, $v: [a, b, k]}</code></td><td class=""><code>{TAG: &quot;Take&quot;, _0, _1, _2}</code></td><td class=""><code>{TAG: 0, _0, _1, _2}</code></td><td class=""><code>[0, a, b, k]</code></td></tr><tr><td>Done (no argument)</td><td class=""><code>{c: &quot;Done&quot;}</code></td><td class="chg"><code>{$c: &quot;Done&quot;}</code></td><td class=""><code>&quot;Done&quot;</code></td><td class=""><code>0</code></td><td class=""><code>0</code></td></tr><tr><td>Some(t); None</td><td class=""><code>{c: &quot;Some&quot;, v: t}; {c: &quot;None&quot;}</code></td><td class="chg"><code>{$c: &quot;Some&quot;, $v: t}; {$c: &quot;None&quot;}</code></td><td class=""><code>t; undefined</code></td><td class=""><code>t; undefined</code></td><td class=""><code>[0, t]; 0</code></td></tr><tr><td>a function of two</td><td class=""><code>one argument, an array [a, b]</code></td><td class=""><code>one argument, an array [a, b]</code></td><td class=""><code>f(a, b)</code></td><td class=""><code>f(a, b)</code></td><td class=""><code>f(a, b)</code></td></tr><tr><td>a field read r.x</td><td class=""><code>$R.dot(r, &quot;x&quot;)</code></td><td class="chg"><code>r[&quot;x&quot;] behind a check</code></td><td class=""><code>r.x</code></td><td class=""><code>r.x</code></td><td class=""><code>r[1]</code></td></tr><tr><td>i == 0 on Ints</td><td class=""><code>$R.eq(i, 0)</code></td><td class="chg"><code>$R.eq(i, 0), small enough to inline</code></td><td class=""><code>i === 0</code></td><td class=""><code>i === 0</code></td><td class=""><code>0 === i</code></td></tr><tr><td>a tail call</td><td class=""><code>a call</code></td><td class=""><code>a call</code></td><td class=""><code>a while loop</code></td><td class=""><code>a while loop</code></td><td class=""><code>a for loop</code></td></tr></tbody></table></div>
+<p>ReScript and Melange come from one family, BuckleScript’s: OCaml’s (or ReScript’s) front end and type checker, then a back end that writes the JavaScript a careful person would write, module by module. js_of_ocaml, which builds Hazel itself, compiles OCaml’s bytecode, a whole program at once, and keeps OCaml’s memory layout: every block an array with its tag first. hazel-jit is a third kind: it compiles Hazel’s elaborated terms in the page, while the program runs, with a runtime of its own.</p>
+<p><a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> ended with five changes to hazel-jit’s output, each something these compilers already do, in the order they would likely help that rule (<a href="../046/#suggests">its section</a>). Where each stands:</p>
+<ol class="sugg"><li><span class="st open">not yet</span> <b>Pass a function&#x27;s arguments as JS arguments.</b> A function of a tuple still takes one array, so each call makes one and reads it back.</li><li><span class="st part">in part</span> <b>Compare Ints with ===.</b> == is still $R.eq, but $R.eq is now three lines whose first compares with ===, small enough for the engine to inline (0e055e04c9: Go had been slower with records as objects until then).</li><li><span class="st open">not yet</span> <b>Turn tail calls into loops.</b> A tail call is still a call: slower, and a long enough list overflows the stack.</li><li><span class="st open">not yet</span> <b>Unbox options, and make constructors flat.</b> Some(t) is still {$c: &quot;Some&quot;, $v: t}, and Take(a, b, k) still holds its arguments in an inner array.</li><li><span class="st done">done</span> <b>Lay out labeled tuples as objects only.</b> A tuple whose every entry is labeled is a plain object (9ec865976d), and a field read is the property behind a check: 0.63 of the time on the games.</li></ol>
+<p>Two changes came from elsewhere, not from that list: field reads compiled in place (where they had gone through a call that read every label of every program), and the <code>$</code> on the keys of cells and constructors, so that a record is never taken for either. Each change to the layout is a change on both sides of the boundary too: what <code>HazelJitValue</code> reads and writes, and what the npm package’s converters do (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>).</p>
+
+<h2 id="speed">Speed beside them<a class="anchor" href="#speed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="speed" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<p><b>Only one small rule has been measured with all of them, and hazel-jit has changed since: on 2026-11-07 ReScript’s and Melange’s code ran it about three times as fast as hazel-jit’s, and the hand-written JavaScript about twice as fast.</b> Each answered the same 2,000 events and ended on the same marking (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>, in Node 22 on one laptop):</p>
+<div class="tw"><table class="nums"><thead><tr><th class="l">Compiler</th><th>µs a call, median</th><th>the fastest call</th></tr></thead><tbody><tr><td class="l">Melange 5.0.0</td><td>0.46</td><td>0.35</td></tr><tr><td class="l">ReScript 12.3.1</td><td>0.55</td><td>0.38</td></tr><tr><td class="l">js_of_ocaml 5.9.1 (the rule inlined into the loop)</td><td>0.71</td><td>0.40</td></tr><tr><td class="l">JS written by hand</td><td>0.90</td><td>0.71</td></tr><tr><td class="l">hazel-jit, 2026-11-07</td><td>1.59</td><td>0.66</td></tr><tr><td class="l">Hazel&#x27;s interpreter</td><td>358</td><td></td></tr></tbody></table></div>
+<p>That hazel-jit had records as arrays, field reads through a call, and an equality too big to inline. On the games of hazeljs-examples, the records change alone took hazel-jit to 0.63 of its time (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>), so the gap on this rule is likely smaller now. It is not measured yet.</p>
+<p><b>The games and activities of hazeljs-examples have hazel-jit’s numbers but none for the other compilers.</b> <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> timed every game four ways (on the interpreter, through the jit, compiled ahead of time, and, for five games, in JavaScript written by hand), and <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> timed each game’s own run of states as its page plays it. Neither has ReScript, Melange or js_of_ocaml: for them each game’s rules must be written again, in OCaml (for Melange and js_of_ocaml) or in ReScript. Five games already have a version in plain JavaScript, written by hand: Checkers, Go, Minesweeper, Mahjong and Solitaire. They come first (<a href="#next">What next</a>), so that each has all six: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, each playing the game’s own run of states in its own layout.</p>
+
+<h2 id="choices">Choices for the description<a class="anchor" href="#choices" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="choices" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<p><b>Six things to settle before the description goes on GitHub.</b> Each is a choice for Matthew; the draft above takes the first option of each.</p>
+<ol>
+<li><b>How long the summaries are.</b> Six points each now. Or shorter: three sentences for the executive summary, and the engineering summary’s points as one paragraph.</li>
+<li><b>Which speed to quote first.</b> The draft quotes the games compiled ahead of time against the interpreter (2,392 times as fast, the geometric mean over 45 operations, measured with hazeljs 0.0.11 for <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>). The other candidates: the evaluator tests’ median, 395 times; or one game’s step, Gnome dig’s 82 ms against 0.28 ms through the jit. The first is the broadest, but its build is two days older than the layout this PR has.</li>
+<li><b>Whether the comparison with ReScript, Melange and js_of_ocaml belongs in the PR.</b> It helps a reviewer who knows those compilers; it also invites the question of why hazel-jit doesn’t use one of them (<a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s answer: none compiles Hazel, and hazel-jit compiles in the page while the program runs). Or leave it to this report and link it.</li>
+<li><b>Whether to say what the sweep costs CI.</b> Every evaluator test runs a second time, compiled, and a third, mixed. Not measured yet: the Fast checks’ time on <code>dev</code> against <code>hazel-jit</code>.</li>
+<li><b>Whether the reports are linked from the PR.</b> The draft links reports 046, 054 and 063 at its end. Another choice is to link this report once, for the details and the history.</li>
+<li><b>The compiler’s header comment, out of date.</b> <code>HazelJit.re</code> opens with the layout of values, and it still says a tuple is an array with its labels as properties. A fix on the branch (a comment only), merged into <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> as usual.</li>
+</ol>
+
+<h2 id="github">The text for GitHub<a class="anchor" href="#github" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="github" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<p><b>The whole description as GitHub will show it, 1,770 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
+<p><button class="copy-md" type="button" onclick="(async b=>{try{await navigator.clipboard.writeText(document.getElementById('pr-md').textContent);b.textContent='Copied'}catch(e){b.textContent='Select the text below instead'}})(this)">Copy the description’s Markdown</button></p>
+<details><summary>The Markdown</summary>
+<pre class="md">🤖 hazel-jit, for `dev`: a compiler from Hazel to JavaScript, with the tests that hold it to the interpreter&#x27;s answers. This is the one PR that tracks the jit. The npm package&#x27;s branch, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> (`hazeljs`), merges it rather than keeping a copy of its own.
+
+## Executive summary
+
+- **What it is.** hazel-jit compiles a complete Hazel program to JavaScript and runs that in place of the interpreter. Where it can&#x27;t (a hole, a test, an error the interpreter would show), the interpreter runs the program as it does today, so an answer never changes.
+- **Why.** Speed, toward 60 frames a second for small edits. Compiled ahead of time, the games of hazeljs-examples run 2,392 times as fast as on the interpreter (the geometric mean over 45 operations in 17 games). Gnome dig&#x27;s step takes 82 ms on the interpreter and 0.28 ms through the jit.
+- **What it changes in `dev`.** It adds new files, and 13 lines to two of `dev`&#x27;s, `Builtins.re` and `Transition.re`, for mixed mode. Nothing in the app turns hazel-jit on yet: the editor, the evaluator and the stepper run as before.
+- **How it is checked.** Every evaluator test also runs compiled, where it compiles, and must give the interpreter&#x27;s answer. Of the 289 checks, 234 compile; 211 of those give the interpreter&#x27;s answer and none differs. The other 23 end where the interpreter&#x27;s result is not a value, which the sweep doesn&#x27;t compare. hazel-jit also has 13 tests of its own.
+- **Who uses it.** The hazeljs npm package (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>): its `Hazel.jit` and `Hazel.compile` are hazel-jit. And the games of hazeljs-examples, which keep their rules compiled ahead of time.
+- **What to review.** The two hooks into the interpreter; the shapes compiled code gives values, which pages that keep compiled code depend on; and the list of what is left to the interpreter.
+
+## Engineering summary
+
+- **In and out.** The input is the elaborated term the interpreter would run, with the types the statics gave it. The output is JavaScript source: the body of a function of one argument, `$R`, the runtime (about 23 KB of source: equality, lists, numbers, the builtins). The caller makes it a function with `new Function` and calls it.
+- **How the code is written.** Expressions all the way down. A `let`&#x27;s bindings are assigned, in a comma expression, to variables declared at the top of the enclosing function, so a `let` makes no closure. Every binding gets a JS name of its own (`x$12`), so shadowing can&#x27;t clash. A builtin written in OCaml is the runtime&#x27;s JS version of it; one written in Hazel (`List.map`) is compiled once, before the program.
+- **Values.** Close to what a person would write in JavaScript: numbers, strings and booleans as themselves, a record as a plain object, a list as cells `{$h, $t}` (so `::` is O(1)), a constructor as `{$c, $v}` (the table below). An Int is exact, as the interpreter&#x27;s is: a JS number while it is a safe integer, a BigInt past that. An SInt is 32 bits, each result checked. A field read `e.x` is the property itself, behind a check.
+- **What is left to the interpreter.** By rule, not by gap: holes, the stepper&#x27;s filters, an operation the interpreter stops at with an error, undefined, and a run past its budget. For a form, the compiler raises `Unsupported(reason)`; at run time, the compiled run stops. Either way the interpreter&#x27;s run is the answer.
+- **Back to Hazel.** `HazelJitValue` turns a compiled value back into a Hazel value by the types the term records, or into a diff against the last answer.
+- **Mixed mode.** The interpreter runs a program around its holes and calls its complete functions (whole types declared) compiled, as builtins made at run time. A call that can&#x27;t finish compiled falls back to the interpreter, for that call alone.
+- **Speed on the tests.** Over the 208 evaluator programs that compile and agree, the median program runs 395 times as fast compiled, run after run. On a first run, with its JS parsed, it runs 6.9 times as fast; compiling all 208 took 65 ms, against the interpreter&#x27;s 143 ms for their first runs.
+
+## What it holds
+
+| Part | Files | What it does |
+|---|---|---|
+| The compiler | `src/language/dynamics/HazelJit.re` | An elaborated term as the body of a JavaScript function of its runtime (`$R`), and the runtime&#x27;s source. A form it does not compile raises `Unsupported` with the reason, and the caller runs the interpreter. |
+| The values across | `src/language/dynamics/HazelJitValue.re` | A Hazel value into compiled code&#x27;s shapes and back, by the types the compiled term records; a compiled program instantiated; an answer carried back as a diff against the last one. |
+| Mixed mode | `src/language/dynamics/HazelJitMixed.re`, 5 lines in `Builtins.re`, 8 in `Transition.re` | The interpreter calls a program&#x27;s complete functions compiled, as builtins made at run time. Nothing in the app turns it on yet. |
+| Tests | `test/Test_HazelJit.re`, `test/Test_HazelJit_Agree.re`, a hook in `test/evaluator/Test_Evaluator_Prelude.re` | Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter&#x27;s answer shape by shape; agreement on the language&#x27;s forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, and records whose labels look like the runtime&#x27;s own keys; values carried back; diffs; what is not compiled and why; mixed mode. |
+
+## How compiled values look
+
+| Hazel | Compiled JavaScript |
+|---|---|
+| A tuple whose every entry is labeled, `(x = 1, y = 2)` | A plain object, `{x: 1, y: 2}`, its keys in the type&#x27;s order |
+| Any other tuple, `(1, 2)` or `(1, y = 2)` | An array, carrying its labels under `Symbol.for(&quot;hazel-jit.labels&quot;)` |
+| A list | `null`, or a cell `{$h, $t}` |
+| A constructor, `Some(3)`; `None` | `{$c: &quot;Some&quot;, $v: 3}`; `{$c: &quot;None&quot;}` |
+| A function | A JS function of one argument; a function of a tuple takes an array |
+
+- A field read `e.x` compiles to the property itself, `e[&quot;x&quot;]`, behind a check that `e` is an object holding `x` and not a list&#x27;s cell. Anything else (a list of rows, the empty list, a value the interpreter would be stuck on) goes to the runtime&#x27;s `$R.dot`, so the answer is the same.
+- A label named `length` or `__proto__`, or starting with `$`, is kept as `$` and the label. So no record has the keys `$h`, `$t`, `$c` or `$v`, and a record is never taken for a cell or a constructor.
+- `==` is `$R.eq`, which is small enough for the engine to inline: its first line compares two numbers, strings or booleans with `===`, and objects go on to `$R.eqo`. Floats compare with `===` directly.
+
+These shapes are Matthew&#x27;s decisions of 2026-11-24. Measured on the games as their pages play them, records as objects take 0.63 of the time that records as arrays took (the geometric mean over 14 games), with every answer the same.
+
+## Beside other compilers to JavaScript
+
+| Value | hazel-jit | ReScript 12 | Melange 5 | js_of_ocaml 5.9 |
+|---|---|---|---|---|
+| A list cell; the empty list | `{$h, $t}`; `null` | `{hd, tl}`; `0` | `{hd, tl}`; `0` | `[0, hd, tl]`; `0` |
+| A record | an object by label | an object by field | an object by field | `[0, f1, f2]` |
+| `Take(a, b, k)` | `{$c: &quot;Take&quot;, $v: [a, b, k]}` | `{TAG: &quot;Take&quot;, _0, _1, _2}` | `{TAG: 0, _0, _1, _2}` | `[0, a, b, k]` |
+| `Some(t)`; `None` | `{$c: &quot;Some&quot;, $v: t}`; `{$c: &quot;None&quot;}` | `t`; `undefined` | `t`; `undefined` | `[0, t]`; `0` |
+| A function of two | one argument, an array | `f(a, b)` | `f(a, b)` | `f(a, b)` |
+| `i == 0` on Ints | `$R.eq(i, 0)` | `i === 0` | `i === 0` | `0 === i` |
+| A tail call | a call | a loop | a loop | a loop |
+
+hazel-jit&#x27;s records now look like ReScript&#x27;s and Melange&#x27;s; its constructors, options and calls do not yet. On one small rule (a Petri net&#x27;s step), ReScript&#x27;s and Melange&#x27;s code ran about 3 times as fast as hazel-jit&#x27;s did on 2026-11-07, before the changes above.
+
+## Where it comes from
+
+The compiler and its tests come from the livelits line&#x27;s `trial/794-games-aot` (the jit of <a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a>), ported to Jane Street Core, with the arms for livelit-only forms (`Quote`, `Unquote`, `Bind`, `Splice`, a module&#x27;s `ModVal`) taken out. The livelit views compiled (`HazelJitRun`, `HazelJitDOM`) and their tests stay on the livelits line.
+
+Since it opened:
+
+- **Records as objects** (9ec865976d), above.
+- **A recursive function&#x27;s own capture**, undefined when the function was made, is bound again by its `FixF` on the way back (5ec4ff4307).
+- **A pattern by position that meets a labeled entry** leaves the run to the interpreter (e0a5925f3b).
+
+## Where it differs from the interpreter on `dev`
+
+- **SInt overflow.** hazel-jit stops a 32-bit SInt that overflows at `IntegerOverflow`; `dev`&#x27;s interpreter wraps it (2147483647 + 1 is -2147483648). SInt is to have 64 bits everywhere, with overflow an error (<a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>). The jit&#x27;s 64-bit SInt is on `trial/758-sint64-jit` and comes here with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>. The evaluator tests have no such program, so the sweep does not meet it.
+- **A tuple with a label given twice** is not compiled, since keying it by its labels would lose one entry. The interpreter runs it, keeping both entries as `dev` has since <a href="https://github.com/hazelgrove/hazel/pull/2472">#2472</a>.
+
+## Next, on this branch
+
+- Mixed mode&#x27;s types from the statics, not from annotations: `dev` lowers a module to lets whose patterns lose their annotations, so a module&#x27;s members run on the interpreter in mixed mode for now.
+- Holes: indeterminate values carried through compiled code, building the interpreter&#x27;s residual terms, beyond mixed mode&#x27;s fallback per call.
+- The games&#x27; rules as test programs (hazeljs-examples, compiled whole).
+- 64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.
+
+Tried and not kept: lists as cells plus array segments (`hazel-jit-lists`). On hazeljs-examples&#x27; seventeen games it cost about 8% ahead of time and 4% through the jit, all answers the same, so cells stay.
+
+The design and the measurements are in Hazel reports: [report 54](https://matthewhammer.org/hazel/reports/054/#records-decide) (records, lists and holes), [report 63](https://matthewhammer.org/hazel/reports/063/) (every game, four ways) and [report 46](https://matthewhammer.org/hazel/reports/046/) (beside ReScript, Melange and js_of_ocaml).
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+</pre>
+</details>
+<script type="text/plain" id="pr-md">🤖 hazel-jit, for `dev`: a compiler from Hazel to JavaScript, with the tests that hold it to the interpreter's answers. This is the one PR that tracks the jit. The npm package's branch, #2857 (`hazeljs`), merges it rather than keeping a copy of its own.
+
+## Executive summary
+
+- **What it is.** hazel-jit compiles a complete Hazel program to JavaScript and runs that in place of the interpreter. Where it can't (a hole, a test, an error the interpreter would show), the interpreter runs the program as it does today, so an answer never changes.
+- **Why.** Speed, toward 60 frames a second for small edits. Compiled ahead of time, the games of hazeljs-examples run 2,392 times as fast as on the interpreter (the geometric mean over 45 operations in 17 games). Gnome dig's step takes 82 ms on the interpreter and 0.28 ms through the jit.
+- **What it changes in `dev`.** It adds new files, and 13 lines to two of `dev`'s, `Builtins.re` and `Transition.re`, for mixed mode. Nothing in the app turns hazel-jit on yet: the editor, the evaluator and the stepper run as before.
+- **How it is checked.** Every evaluator test also runs compiled, where it compiles, and must give the interpreter's answer. Of the 289 checks, 234 compile; 211 of those give the interpreter's answer and none differs. The other 23 end where the interpreter's result is not a value, which the sweep doesn't compare. hazel-jit also has 13 tests of its own.
+- **Who uses it.** The hazeljs npm package (#2857): its `Hazel.jit` and `Hazel.compile` are hazel-jit. And the games of hazeljs-examples, which keep their rules compiled ahead of time.
+- **What to review.** The two hooks into the interpreter; the shapes compiled code gives values, which pages that keep compiled code depend on; and the list of what is left to the interpreter.
+
+## Engineering summary
+
+- **In and out.** The input is the elaborated term the interpreter would run, with the types the statics gave it. The output is JavaScript source: the body of a function of one argument, `$R`, the runtime (about 23 KB of source: equality, lists, numbers, the builtins). The caller makes it a function with `new Function` and calls it.
+- **How the code is written.** Expressions all the way down. A `let`'s bindings are assigned, in a comma expression, to variables declared at the top of the enclosing function, so a `let` makes no closure. Every binding gets a JS name of its own (`x$12`), so shadowing can't clash. A builtin written in OCaml is the runtime's JS version of it; one written in Hazel (`List.map`) is compiled once, before the program.
+- **Values.** Close to what a person would write in JavaScript: numbers, strings and booleans as themselves, a record as a plain object, a list as cells `{$h, $t}` (so `::` is O(1)), a constructor as `{$c, $v}` (the table below). An Int is exact, as the interpreter's is: a JS number while it is a safe integer, a BigInt past that. An SInt is 32 bits, each result checked. A field read `e.x` is the property itself, behind a check.
+- **What is left to the interpreter.** By rule, not by gap: holes, the stepper's filters, an operation the interpreter stops at with an error, undefined, and a run past its budget. For a form, the compiler raises `Unsupported(reason)`; at run time, the compiled run stops. Either way the interpreter's run is the answer.
+- **Back to Hazel.** `HazelJitValue` turns a compiled value back into a Hazel value by the types the term records, or into a diff against the last answer.
+- **Mixed mode.** The interpreter runs a program around its holes and calls its complete functions (whole types declared) compiled, as builtins made at run time. A call that can't finish compiled falls back to the interpreter, for that call alone.
+- **Speed on the tests.** Over the 208 evaluator programs that compile and agree, the median program runs 395 times as fast compiled, run after run. On a first run, with its JS parsed, it runs 6.9 times as fast; compiling all 208 took 65 ms, against the interpreter's 143 ms for their first runs.
+
+## What it holds
+
+| Part | Files | What it does |
+|---|---|---|
+| The compiler | `src/language/dynamics/HazelJit.re` | An elaborated term as the body of a JavaScript function of its runtime (`$R`), and the runtime's source. A form it does not compile raises `Unsupported` with the reason, and the caller runs the interpreter. |
+| The values across | `src/language/dynamics/HazelJitValue.re` | A Hazel value into compiled code's shapes and back, by the types the compiled term records; a compiled program instantiated; an answer carried back as a diff against the last one. |
+| Mixed mode | `src/language/dynamics/HazelJitMixed.re`, 5 lines in `Builtins.re`, 8 in `Transition.re` | The interpreter calls a program's complete functions compiled, as builtins made at run time. Nothing in the app turns it on yet. |
+| Tests | `test/Test_HazelJit.re`, `test/Test_HazelJit_Agree.re`, a hook in `test/evaluator/Test_Evaluator_Prelude.re` | Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter's answer shape by shape; agreement on the language's forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, and records whose labels look like the runtime's own keys; values carried back; diffs; what is not compiled and why; mixed mode. |
+
+## How compiled values look
+
+| Hazel | Compiled JavaScript |
+|---|---|
+| A tuple whose every entry is labeled, `(x = 1, y = 2)` | A plain object, `{x: 1, y: 2}`, its keys in the type's order |
+| Any other tuple, `(1, 2)` or `(1, y = 2)` | An array, carrying its labels under `Symbol.for("hazel-jit.labels")` |
+| A list | `null`, or a cell `{$h, $t}` |
+| A constructor, `Some(3)`; `None` | `{$c: "Some", $v: 3}`; `{$c: "None"}` |
+| A function | A JS function of one argument; a function of a tuple takes an array |
+
+- A field read `e.x` compiles to the property itself, `e["x"]`, behind a check that `e` is an object holding `x` and not a list's cell. Anything else (a list of rows, the empty list, a value the interpreter would be stuck on) goes to the runtime's `$R.dot`, so the answer is the same.
+- A label named `length` or `__proto__`, or starting with `$`, is kept as `$` and the label. So no record has the keys `$h`, `$t`, `$c` or `$v`, and a record is never taken for a cell or a constructor.
+- `==` is `$R.eq`, which is small enough for the engine to inline: its first line compares two numbers, strings or booleans with `===`, and objects go on to `$R.eqo`. Floats compare with `===` directly.
+
+These shapes are Matthew's decisions of 2026-11-24. Measured on the games as their pages play them, records as objects take 0.63 of the time that records as arrays took (the geometric mean over 14 games), with every answer the same.
+
+## Beside other compilers to JavaScript
+
+| Value | hazel-jit | ReScript 12 | Melange 5 | js_of_ocaml 5.9 |
+|---|---|---|---|---|
+| A list cell; the empty list | `{$h, $t}`; `null` | `{hd, tl}`; `0` | `{hd, tl}`; `0` | `[0, hd, tl]`; `0` |
+| A record | an object by label | an object by field | an object by field | `[0, f1, f2]` |
+| `Take(a, b, k)` | `{$c: "Take", $v: [a, b, k]}` | `{TAG: "Take", _0, _1, _2}` | `{TAG: 0, _0, _1, _2}` | `[0, a, b, k]` |
+| `Some(t)`; `None` | `{$c: "Some", $v: t}`; `{$c: "None"}` | `t`; `undefined` | `t`; `undefined` | `[0, t]`; `0` |
+| A function of two | one argument, an array | `f(a, b)` | `f(a, b)` | `f(a, b)` |
+| `i == 0` on Ints | `$R.eq(i, 0)` | `i === 0` | `i === 0` | `0 === i` |
+| A tail call | a call | a loop | a loop | a loop |
+
+hazel-jit's records now look like ReScript's and Melange's; its constructors, options and calls do not yet. On one small rule (a Petri net's step), ReScript's and Melange's code ran about 3 times as fast as hazel-jit's did on 2026-11-07, before the changes above.
+
+## Where it comes from
+
+The compiler and its tests come from the livelits line's `trial/794-games-aot` (the jit of #2817), ported to Jane Street Core, with the arms for livelit-only forms (`Quote`, `Unquote`, `Bind`, `Splice`, a module's `ModVal`) taken out. The livelit views compiled (`HazelJitRun`, `HazelJitDOM`) and their tests stay on the livelits line.
+
+Since it opened:
+
+- **Records as objects** (9ec865976d), above.
+- **A recursive function's own capture**, undefined when the function was made, is bound again by its `FixF` on the way back (5ec4ff4307).
+- **A pattern by position that meets a labeled entry** leaves the run to the interpreter (e0a5925f3b).
+
+## Where it differs from the interpreter on `dev`
+
+- **SInt overflow.** hazel-jit stops a 32-bit SInt that overflows at `IntegerOverflow`; `dev`'s interpreter wraps it (2147483647 + 1 is -2147483648). SInt is to have 64 bits everywhere, with overflow an error (#2828). The jit's 64-bit SInt is on `trial/758-sint64-jit` and comes here with #2828. The evaluator tests have no such program, so the sweep does not meet it.
+- **A tuple with a label given twice** is not compiled, since keying it by its labels would lose one entry. The interpreter runs it, keeping both entries as `dev` has since #2472.
+
+## Next, on this branch
+
+- Mixed mode's types from the statics, not from annotations: `dev` lowers a module to lets whose patterns lose their annotations, so a module's members run on the interpreter in mixed mode for now.
+- Holes: indeterminate values carried through compiled code, building the interpreter's residual terms, beyond mixed mode's fallback per call.
+- The games' rules as test programs (hazeljs-examples, compiled whole).
+- 64-bit SInt, with #2828.
+
+Tried and not kept: lists as cells plus array segments (`hazel-jit-lists`). On hazeljs-examples' seventeen games it cost about 8% ahead of time and 4% through the jit, all answers the same, so cells stay.
+
+The design and the measurements are in Hazel reports: [report 54](https://matthewhammer.org/hazel/reports/054/#records-decide) (records, lists and holes), [report 63](https://matthewhammer.org/hazel/reports/063/) (every game, four ways) and [report 46](https://matthewhammer.org/hazel/reports/046/) (beside ReScript, Melange and js_of_ocaml).
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+</script>
+
+<h2 id="revisions">Revisions<a class="anchor" href="#revisions" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="revisions" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<ul>
+<li><b>2026-11-25, first version.</b> From the draft sent to Matthew in chat that morning: the executive and engineering summaries are new, and so is the section beside ReScript, Melange and js_of_ocaml. Checked against the code, the draft’s “Ints compare with <code>===</code>” was wrong: an Int’s <code>==</code> is <code>$R.eq</code>, and only Floats compare with <code>===</code> directly. The sweep’s numbers are from hazel-jit’s own CI.</li>
+</ul>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>Iterate on the executive and engineering summaries with Matthew, in this report, until he is happy with them; then post the description on <a href="https://github.com/hazelgrove/hazel/pull/2859">#2859</a>.</li>
+<li>Write the rules of Checkers, Go, Minesweeper, Mahjong and Solitaire in OCaml and in ReScript, and time each game’s own run of states six ways: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, on GitHub’s runners.</li>
+<li>Time <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s Petri net rule again with today’s hazel-jit, beside the three compilers’ code from that day.</li>
+<li>Measure what the sweep costs CI: the Fast checks and the Full tests on <code>dev</code> against <code>hazel-jit</code>.</li>
+<li>Bring <code>HazelJit.re</code>’s header comment up to date with the layout of values.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>The description is one Markdown file, <code>065/pr-2859.md</code>, in GitHub’s Markdown; <code>065/gen065.py</code> renders its sections into this page between the report’s own, and carries the file in the page to copy. The sweep’s numbers are the summary lines the agreement tests print at the end of hazel-jit’s Fast checks (hazelgrove/hazel CI run 45540053889, at 9ec865976d): 289 evaluator checks, 234 compiled, 211 agreed, none differed, 23 with an interpreter result that is not a value. Gnome dig’s step is hazeljs 0.0.13 in Node 22 on one laptop, 20 steps, the same answers both ways. The games’ numbers are <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>’s and <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>’s, and the other compilers’ are <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s, each named where it is quoted. The layout of values is read from <code>HazelJit.re</code> at 9ec865976d. The numbers the text quotes are in <code>065/data/</code>, and in the page as JSON.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/065/data"><code>065/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main>
+<!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2472": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-28T13:52:38Z", "kind": "pull", "state": "merged", "title": "Migrate src/language to Jane Street Core", "updated": "2026-11-19T21:40:57Z", "base": "cleanup/core-idioms"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-25T03:58:19Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-25T03:27:01Z", "base": "dev"}}, BUILT = "2026-11-25";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 65,
+ "title": "hazel-jit’s PR, Described",
+ "blurb": "A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects; its constructors, options, calls and tail calls not yet. Their speed on the games of hazeljs-examples is still to measure.",
+ "source": "065/pr-2859.md: the description for hazelgrove/hazel#2859, in GitHub's Markdown; the page renders it and carries it to copy",
+ "builds": {
+  "hazel-jit": "hazelgrove/hazel hazel-jit at 9ec865976d (#2859), on dev at 21da4ae66b",
+  "sweep": "hazelgrove/hazel CI run 45540053889, job 138956103809 (Fast checks), the sweep's summary line",
+  "package": "hazeljs 0.0.13 (hazelgrove/hazeljs editor-in-package 3a4a1cd, built from hazelgrove/hazel 20febee548), Node 22, one laptop: Gnome dig's step",
+  "games": "report 063 (GitHub run 45247119864, hazeljs 0.0.11) and report 054 (GitHub run 45532448010, trial/847-records-objects f311f4e408)",
+  "others": "report 046 (2026-11-07): ReScript 12.3.1, Melange 5.0.0, js_of_ocaml 5.9.1, hazel-jit of that day, Node 22.23.2, one laptop"
+ },
+ "files": [
+  "data/meta.json",
+  "data/petri-046.json",
+  "data/representations.json",
+  "data/sweep.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "What it holds",
+   "section_id": "holds",
+   "columns": [
+    "Part",
+    "Files",
+    "What it does"
+   ],
+   "rows": [
+    [
+     "The compiler",
+     "src/language/dynamics/HazelJit.re",
+     "An elaborated term as the body of a JavaScript function of its runtime ($R), and the runtime's source. A form it does not compile raises Unsupported with the reason, and the caller runs the interpreter."
+    ],
+    [
+     "The values across",
+     "src/language/dynamics/HazelJitValue.re",
+     "A Hazel value into compiled code's shapes and back, by the types the compiled term records; a compiled program instantiated; an answer carried back as a diff against the last one."
+    ],
+    [
+     "Mixed mode",
+     "src/language/dynamics/HazelJitMixed.re, 5 lines in Builtins.re, 8 in Transition.re",
+     "The interpreter calls a program's complete functions compiled, as builtins made at run time. Nothing in the app turns it on yet."
+    ],
+    [
+     "Tests",
+     "test/Test_HazelJit.re, test/Test_HazelJit_Agree.re, a hook in test/evaluator/Test_Evaluator_Prelude.re",
+     "Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter's answer shape by shape; agreement on the language's forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, and records whose labels look like the runtime's own keys; values carried back; diffs; what is not compiled and why; mixed mode."
+    ]
+   ]
+  },
+  {
+   "section": "How compiled values look",
+   "section_id": "values",
+   "columns": [
+    "Hazel",
+    "Compiled JavaScript"
+   ],
+   "rows": [
+    [
+     "A tuple whose every entry is labeled, (x = 1, y = 2)",
+     "A plain object, {x: 1, y: 2}, its keys in the type's order"
+    ],
+    [
+     "Any other tuple, (1, 2) or (1, y = 2)",
+     "An array, carrying its labels under Symbol.for(\"hazel-jit.labels\")"
+    ],
+    [
+     "A list",
+     "null, or a cell {$h, $t}"
+    ],
+    [
+     "A constructor, Some(3); None",
+     "{$c: \"Some\", $v: 3}; {$c: \"None\"}"
+    ],
+    [
+     "A function",
+     "A JS function of one argument; a function of a tuple takes an array"
+    ]
+   ]
+  },
+  {
+   "section": "Beside other compilers to JavaScript",
+   "section_id": "beside",
+   "columns": [
+    "Value",
+    "hazel-jit",
+    "ReScript 12",
+    "Melange 5",
+    "js_of_ocaml 5.9"
+   ],
+   "rows": [
+    [
+     "A list cell; the empty list",
+     "{$h, $t}; null",
+     "{hd, tl}; 0",
+     "{hd, tl}; 0",
+     "[0, hd, tl]; 0"
+    ],
+    [
+     "A record",
+     "an object by label",
+     "an object by field",
+     "an object by field",
+     "[0, f1, f2]"
+    ],
+    [
+     "Take(a, b, k)",
+     "{$c: \"Take\", $v: [a, b, k]}",
+     "{TAG: \"Take\", _0, _1, _2}",
+     "{TAG: 0, _0, _1, _2}",
+     "[0, a, b, k]"
+    ],
+    [
+     "Some(t); None",
+     "{$c: \"Some\", $v: t}; {$c: \"None\"}",
+     "t; undefined",
+     "t; undefined",
+     "[0, t]; 0"
+    ],
+    [
+     "A function of two",
+     "one argument, an array",
+     "f(a, b)",
+     "f(a, b)",
+     "f(a, b)"
+    ],
+    [
+     "i == 0 on Ints",
+     "$R.eq(i, 0)",
+     "i === 0",
+     "i === 0",
+     "0 === i"
+    ],
+    [
+     "A tail call",
+     "a call",
+     "a loop",
+     "a loop",
+     "a loop"
+    ]
+   ]
+  },
+  {
+   "section": "Representations, then and now",
+   "section_id": "compare",
+   "columns": [
+    "Value",
+    "hazel-jit 2026-11-07",
+    "hazel-jit now",
+    "ReScript 12",
+    "Melange 5",
+    "js_of_ocaml 5.9"
+   ],
+   "rows": [
+    [
+     "a list cell; the empty list",
+     "{h, t}; null",
+     "{$h, $t}; null",
+     "{hd, tl}; 0",
+     "{hd, tl}; 0",
+     "[0, hd, tl]; 0"
+    ],
+    [
+     "a record, or labeled tuple",
+     "an array, each label also a property",
+     "an object by label",
+     "an object by field",
+     "an object by field",
+     "[0, f1, f2, …]"
+    ],
+    [
+     "an unlabeled tuple (a, b)",
+     "[a, b]",
+     "[a, b]",
+     "[a, b]",
+     "[a, b]",
+     "[0, a, b]"
+    ],
+    [
+     "Take(a, b, k)",
+     "{c: \"Take\", v: [a, b, k]}",
+     "{$c: \"Take\", $v: [a, b, k]}",
+     "{TAG: \"Take\", _0, _1, _2}",
+     "{TAG: 0, _0, _1, _2}",
+     "[0, a, b, k]"
+    ],
+    [
+     "Done (no argument)",
+     "{c: \"Done\"}",
+     "{$c: \"Done\"}",
+     "\"Done\"",
+     "0",
+     "0"
+    ],
+    [
+     "Some(t); None",
+     "{c: \"Some\", v: t}; {c: \"None\"}",
+     "{$c: \"Some\", $v: t}; {$c: \"None\"}",
+     "t; undefined",
+     "t; undefined",
+     "[0, t]; 0"
+    ],
+    [
+     "a function of two",
+     "one argument, an array [a, b]",
+     "one argument, an array [a, b]",
+     "f(a, b)",
+     "f(a, b)",
+     "f(a, b)"
+    ],
+    [
+     "a field read r.x",
+     "$R.dot(r, \"x\")",
+     "r[\"x\"] behind a check",
+     "r.x",
+     "r.x",
+     "r[1]"
+    ],
+    [
+     "i == 0 on Ints",
+     "$R.eq(i, 0)",
+     "$R.eq(i, 0), small enough to inline",
+     "i === 0",
+     "i === 0",
+     "0 === i"
+    ],
+    [
+     "a tail call",
+     "a call",
+     "a call",
+     "a while loop",
+     "a while loop",
+     "a for loop"
+    ]
+   ]
+  },
+  {
+   "section": "Speed beside them",
+   "section_id": "speed",
+   "columns": [
+    "Compiler",
+    "µs a call, median",
+    "the fastest call"
+   ],
+   "rows": [
+    [
+     "Melange 5.0.0",
+     "0.46",
+     "0.35"
+    ],
+    [
+     "ReScript 12.3.1",
+     "0.55",
+     "0.38"
+    ],
+    [
+     "js_of_ocaml 5.9.1 (the rule inlined into the loop)",
+     "0.71",
+     "0.40"
+    ],
+    [
+     "JS written by hand",
+     "0.90",
+     "0.71"
+    ],
+    [
+     "hazel-jit, 2026-11-07",
+     "1.59",
+     "0.66"
+    ],
+    [
+     "Hazel's interpreter",
+     "358",
+     ""
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/065/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+</body>
+</html>

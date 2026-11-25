@@ -1,0 +1,125 @@
+{
+ "what": "how each compiler lays out values in JavaScript: hazel-jit on 2026-11-07 and report 046's three others, from report 046's table; hazel-jit now from HazelJit.re at 9ec865976d",
+ "columns": [
+  "hazel-jit 2026-11-07",
+  "hazel-jit now",
+  "ReScript 12",
+  "Melange 5",
+  "js_of_ocaml 5.9"
+ ],
+ "rows": [
+  {
+   "value": "a list cell; the empty list",
+   "hazel-jit 2026-11-07": "{h, t}; null",
+   "hazel-jit now": "{$h, $t}; null",
+   "ReScript 12": "{hd, tl}; 0",
+   "Melange 5": "{hd, tl}; 0",
+   "js_of_ocaml 5.9": "[0, hd, tl]; 0"
+  },
+  {
+   "value": "a record, or labeled tuple",
+   "hazel-jit 2026-11-07": "an array, each label also a property",
+   "hazel-jit now": "an object by label",
+   "ReScript 12": "an object by field",
+   "Melange 5": "an object by field",
+   "js_of_ocaml 5.9": "[0, f1, f2, …]"
+  },
+  {
+   "value": "an unlabeled tuple (a, b)",
+   "hazel-jit 2026-11-07": "[a, b]",
+   "hazel-jit now": "[a, b]",
+   "ReScript 12": "[a, b]",
+   "Melange 5": "[a, b]",
+   "js_of_ocaml 5.9": "[0, a, b]"
+  },
+  {
+   "value": "Take(a, b, k)",
+   "hazel-jit 2026-11-07": "{c: \"Take\", v: [a, b, k]}",
+   "hazel-jit now": "{$c: \"Take\", $v: [a, b, k]}",
+   "ReScript 12": "{TAG: \"Take\", _0, _1, _2}",
+   "Melange 5": "{TAG: 0, _0, _1, _2}",
+   "js_of_ocaml 5.9": "[0, a, b, k]"
+  },
+  {
+   "value": "Done (no argument)",
+   "hazel-jit 2026-11-07": "{c: \"Done\"}",
+   "hazel-jit now": "{$c: \"Done\"}",
+   "ReScript 12": "\"Done\"",
+   "Melange 5": "0",
+   "js_of_ocaml 5.9": "0"
+  },
+  {
+   "value": "Some(t); None",
+   "hazel-jit 2026-11-07": "{c: \"Some\", v: t}; {c: \"None\"}",
+   "hazel-jit now": "{$c: \"Some\", $v: t}; {$c: \"None\"}",
+   "ReScript 12": "t; undefined",
+   "Melange 5": "t; undefined",
+   "js_of_ocaml 5.9": "[0, t]; 0"
+  },
+  {
+   "value": "a function of two",
+   "hazel-jit 2026-11-07": "one argument, an array [a, b]",
+   "hazel-jit now": "one argument, an array [a, b]",
+   "ReScript 12": "f(a, b)",
+   "Melange 5": "f(a, b)",
+   "js_of_ocaml 5.9": "f(a, b)"
+  },
+  {
+   "value": "a field read r.x",
+   "hazel-jit 2026-11-07": "$R.dot(r, \"x\")",
+   "hazel-jit now": "r[\"x\"] behind a check",
+   "ReScript 12": "r.x",
+   "Melange 5": "r.x",
+   "js_of_ocaml 5.9": "r[1]"
+  },
+  {
+   "value": "i == 0 on Ints",
+   "hazel-jit 2026-11-07": "$R.eq(i, 0)",
+   "hazel-jit now": "$R.eq(i, 0), small enough to inline",
+   "ReScript 12": "i === 0",
+   "Melange 5": "i === 0",
+   "js_of_ocaml 5.9": "0 === i"
+  },
+  {
+   "value": "a tail call",
+   "hazel-jit 2026-11-07": "a call",
+   "hazel-jit now": "a call",
+   "ReScript 12": "a while loop",
+   "Melange 5": "a while loop",
+   "js_of_ocaml 5.9": "a for loop"
+  }
+ ],
+ "suggestions": [
+  {
+   "what": "Pass a function's arguments as JS arguments.",
+   "status": "open",
+   "status_text": "not yet",
+   "now": "A function of a tuple still takes one array, so each call makes one and reads it back."
+  },
+  {
+   "what": "Compare Ints with ===.",
+   "status": "part",
+   "status_text": "in part",
+   "now": "== is still $R.eq, but $R.eq is now three lines whose first compares with ===, small enough for the engine to inline (0e055e04c9: Go had been slower with records as objects until then)."
+  },
+  {
+   "what": "Turn tail calls into loops.",
+   "status": "open",
+   "status_text": "not yet",
+   "now": "A tail call is still a call: slower, and a long enough list overflows the stack."
+  },
+  {
+   "what": "Unbox options, and make constructors flat.",
+   "status": "open",
+   "status_text": "not yet",
+   "now": "Some(t) is still {$c: \"Some\", $v: t}, and Take(a, b, k) still holds its arguments in an inner array."
+  },
+  {
+   "what": "Lay out labeled tuples as objects only.",
+   "status": "done",
+   "status_text": "done",
+   "now": "A tuple whose every entry is labeled is a plain object (9ec865976d), and a field read is the property behind a check: 0.63 of the time on the games."
+  }
+ ],
+ "suggestions_from": "report 046, What it suggests for hazel-jit (#suggests), five changes in the order they would likely help"
+}
