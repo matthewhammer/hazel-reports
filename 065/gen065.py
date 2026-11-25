@@ -236,20 +236,25 @@ WAYS4 = [("interpreted", "the interpreter", "mi"), ("compiled", "hazel-jit, 2026
 PLAIN = [g for g in GAMES if "plain JS" in FW[g]]
 def fw_svg():
     import math as _m
-    W, L, top, rh = 720, 150, 44, 22
+    W, L, top, rh = 720, 150, 64, 22
     lo, hi = 0.3, 300000.0
     x = lambda v: L + (_m.log10(v) - _m.log10(lo)) / (_m.log10(hi) - _m.log10(lo)) * (W - L - 20)
     h = top + len(GAMES) * rh + 40
     ticks = "".join(f'<line class="grid" x1="{x(t):.1f}" y1="{top - 8}" x2="{x(t):.1f}" y2="{top + len(GAMES) * rh}"/><text class="mut" x="{x(t):.1f}" y="{top + len(GAMES) * rh + 16}" text-anchor="middle">{lab}</text>'
                     for t, lab in [(1, "1 µs"), (10, "10 µs"), (100, "100 µs"), (1000, "1 ms"), (10000, "10 ms"), (100000, "100 ms")])
-    legend = "".join(f'<circle class="{c}" cx="{L + i * 145 + 6}" cy="16" r="5"/><text class="mut" x="{L + i * 145 + 16}" y="20">{esc(n)}</text>' for i, (_, n, c) in enumerate(WAYS4))
+    # (Matthew, 2026-11-25: "reorder the legend to fit the order of the results: plain JS, then jit now, then older jit, then
+    # interpreter"; "add the 16.7ms line --- for what is 60FPS if that's the only work")
+    legend = "".join(f'<circle class="{c}" cx="{L + i * 145 + 6}" cy="16" r="5"/><text class="mut" x="{L + i * 145 + 16}" y="20">{esc(n)}</text>' for i, (_, n, c) in enumerate(WAYS4[::-1]))
+    fx = x(16667)
+    frame = (f'<line class="frame" x1="{fx:.1f}" y1="{top - 30}" x2="{fx:.1f}" y2="{top + len(GAMES) * rh}"/>'
+             f'<text class="framel" x="{fx - 6:.1f}" y="{top - 18}" text-anchor="end">16.7 ms: a frame at 60 fps, were a call all of its work</text>')
     rows = ""
     for i, g in enumerate(GAMES):
         y = top + i * rh + rh / 2
         vals = [FW[g][k] for k, _, _ in WAYS4 if k in FW[g]]
         rows += f'<text class="lbl" x="{L - 8}" y="{y + 4:.1f}" text-anchor="end">{esc(GNAME[g])}</text><line class="span" x1="{x(min(vals)):.1f}" y1="{y:.1f}" x2="{x(max(vals)):.1f}" y2="{y:.1f}"/>'
         rows += "".join(f'<circle class="{c}" cx="{x(FW[g][k]):.1f}" cy="{y:.1f}" r="5"><title>{esc(n)}: {t_us(FW[g][k]) if FW[g][k] < 1000 else f"{FW[g][k] / 1000:.1f} ms"}</title></circle>' for k, n, c in WAYS4 if k in FW[g])
-    return (f'<svg viewBox="0 0 {W} {h}" role="img" aria-labelledby="fwt"><title id="fwt">Each game\'s time a call, four ways, on a log scale</title>{legend}{ticks}{rows}</svg>')
+    return (f'<svg viewBox="0 0 {W} {h}" role="img" aria-labelledby="fwt"><title id="fwt">Each game\'s time a call, four ways, on a log scale, and a 60 fps frame</title>{legend}{ticks}{frame}{rows}</svg>')
 def fmt_us(v):
     return f"{v / 1000:,.1f} ms" if v >= 1000 else t_us(v)
 def fw_table():
@@ -263,6 +268,9 @@ FIGS.update({"fw_svg": fw_svg(), "fw_table": fw_table(),
              "fw_jp": f'{gm([FW[g]["jit"] / FW[g]["plain JS"] for g in PLAIN]):.1f}', "fw_cp": f'{gm([FW[g]["compiled"] / FW[g]["plain JS"] for g in PLAIN]):.1f}',
              "fw_ip": f'{gm([FW[g]["interpreted"] / FW[g]["plain JS"] for g in PLAIN]):,.0f}',
              "fw5_i": fmt_us(gm4("interpreted", PLAIN)), "fw5_c": fmt_us(gm4("compiled", PLAIN)), "fw5_j": fmt_us(gm4("jit", PLAIN)), "fw5_p": fmt_us(gm4("plain JS", PLAIN)),
+             "fw_over": str(sum(FW[g]["interpreted"] > 16667 for g in GAMES)),
+             "fw_under": ", ".join(f'{GNAME[g]} {FW[g]["interpreted"] / 1000:.1f} ms' for g in sorted((g for g in GAMES if FW[g]["interpreted"] <= 16667), key=lambda g: FW[g]["interpreted"])),
+             "fw_slowest_jit": max((fmt_us(FW[g]["jit"]) + " (" + GNAME[g] + ")" for g in GAMES), key=lambda t: float(t.split()[0].replace(",", ""))),
              "fw_plain": ", ".join(GNAME[g] for g in PLAIN), "fw_n": str(len(GAMES)), "fw_steps": f'{sum(FWSTEPS.values()):,}',
              "fw_best": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: -FW[g]["compiled"] / FW[g]["jit"])[:3]),
              "fw_least": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: FW[g]["compiled"] / FW[g]["jit"])[:3])})
@@ -290,6 +298,7 @@ EXTRA = """
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
   svg .mi { fill: #6b737d; } svg .mc { fill: #2a78d6; } svg .mj { fill: #eb6834; } svg .mp { fill: #2e9e5b; } svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
   svg .code { fill: #2a78d6; } svg .cross { fill: #eb6834; }
+  svg .frame { stroke: #c0392b; stroke-width: 1.5; stroke-dasharray: 5 4; } svg .framel { fill: #c0392b; font: 12px system-ui, sans-serif; }
   table.nums tr.gm td { font-weight: 700; border-top: 2px solid var(--line); }
   .tw table.rep { min-width: 820px; } table.rep code { word-break: normal; overflow-wrap: break-word; }
   table.rep td.chg { background: color-mix(in srgb, var(--good, #2e9e5b) 14%, transparent); }
