@@ -223,8 +223,8 @@ FIGS.update({"timeline_svg": timeline_svg(), "timeline_table": timeline_table(),
              "px_base_d": f'{pxm("base", "hazel"):.2f}', "px_base_j": f'{pxm("base", "jit"):.2f}', "px_c3_d": f'{pxm("c3", "hazel"):.2f}', "px_c3_j": f'{pxm("c3", "jit"):.2f}',
              "px_base_x": f'{pxm("base", "jit") - pxm("base", "hazel"):.1f}', "px_c3_x": f'{pxm("c3", "jit") - pxm("c3", "hazel"):.1f}',
              "px_base_share": f'{100 * (1 - pxm("base", "hazel") / pxm("base", "jit")):.0f}%', "px_c3_share": f'{100 * (1 - pxm("c3", "hazel") / pxm("c3", "jit")):.0f}%'})
-# (#fourway) four ways on each game's own run (bench/4way, run 45650465391): the interpreter, hazel-jit as of 2026-11-19 (each
-# game's own compiled.js), hazel-jit now (Hazel.jitProgram, hazeljs 2c4a61560f), plain JS (five games)
+# (#fourway) four ways on each game's own run (bench/4way, run 45665568030): the interpreter, hazel-jit as of 2026-11-19 (each
+# game's own compiled.js), hazel-jit now (Hazel.jitProgram, hazeljs 2c4a61560f), plain JS (thirteen games; five until 2026-11-25)
 FW = {}
 FWSTEPS = {}
 for g in GAMES:
@@ -271,7 +271,8 @@ FIGS.update({"fw_svg": fw_svg(), "fw_table": fw_table(),
              "fw_over": str(sum(FW[g]["interpreted"] > 16667 for g in GAMES)),
              "fw_under": ", ".join(f'{GNAME[g]} {FW[g]["interpreted"] / 1000:.1f} ms' for g in sorted((g for g in GAMES if FW[g]["interpreted"] <= 16667), key=lambda g: FW[g]["interpreted"])),
              "fw_slowest_jit": max((fmt_us(FW[g]["jit"]) + " (" + GNAME[g] + ")" for g in GAMES), key=lambda t: float(t.split()[0].replace(",", ""))),
-             "fw_plain": ", ".join(GNAME[g] for g in PLAIN), "fw_n": str(len(GAMES)), "fw_steps": f'{sum(FWSTEPS.values()):,}',
+             "fw_plain": ", ".join(GNAME[g] for g in PLAIN), "fw_np": str(len(PLAIN)), "fw_noplain": ", ".join(GNAME[g] for g in GAMES if g not in PLAIN) or "none",
+             "fw_nunder": str(sum(FW[g]["interpreted"] <= 16667 for g in GAMES)), "fw_n": str(len(GAMES)), "fw_steps": f'{sum(FWSTEPS.values()):,}',
              "fw_best": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: -FW[g]["compiled"] / FW[g]["jit"])[:3]),
              "fw_least": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: FW[g]["compiled"] / FW[g]["jit"])[:3])})
 PS = [json.loads(l) for l in open(os.path.join(DATA, "petri-split-runs.jsonl"))]
@@ -359,7 +360,7 @@ meta = {"title": TITLE, "blurb": DESC,
         "ticket_853_more": "matthewhammer/hazeljs-examples bench/853-more, GitHub run 45645748545: six builds one after another on one runner a game: the base (hazelgrove/hazel trial/853-pkg 6d041e9769, loops and JS arguments, as merged), c1 (trial/853-pkg-c1 a14e698ec8: constructors without arguments made once), c2 (trial/853-pkg-c2 bc9d98db6b: a module's members by name), c3 (trial/853-pkg-c3 f111bb00ac: == against a literal as ===), noint (b471f761fb: c3 with Ints as plain JS numbers, a bench build only) and nostep (ae9611d03f: c3 with no step counted, a bench build only); and the Petri rule on the laptop the same six ways, five rounds (data/petri-more-runs.jsonl)",
         "crossing": "#crossing: data/crossing-timeline.json (the jit against the games' own compiled.js, build by build, from reports 063 and 054 and today's runs); data/petri-crossing-runs.jsonl (the Petri rule direct into compiled code, petri-bench.mjs hazel, and through Hazel.jitProgram as a page calls it, petri-bench.mjs jit; hazeljs 0.0.13 and trial/853-pkg-c3; five rounds on the laptop)",
         "options_bench": "data/petri-opt-runs.jsonl: the Petri rule on the laptop, seven rounds, trial/853-pkg-c3 (f111bb00ac) against trial/853-pkg-opt (bee76969b5, a bench build only: options unboxed in compiled code)",
-        "fourway": "matthewhammer/hazeljs-examples bench/4way, GitHub run 45650465391: each game's own run of states (node/package-bench.mjs --runs --aot-as-is, the interpreter included), one runner a game, with the library of hazelgrove/hazel hazeljs at 2c4a61560f: interpreted (Hazel.runProgram), jit (Hazel.jitProgram: hazel-jit now), compiled (each game's own compiled.js, compiled ahead of time by hazel-jit on trial/794-games-aot between 11-20 and 11-23, whose compiler, HazelJit.re, last changed on 11-17 and its value boundary on 11-18: hazel-jit as of Thursday 11-19), and plain JS (<game>/plain.js, five games); every answer the same",
+        "fourway": "matthewhammer/hazeljs-examples bench/4way, GitHub run 45665568030: each game's own run of states (node/package-bench.mjs --runs --aot-as-is, the interpreter included), one runner a game, with the library of hazelgrove/hazel hazeljs at 2c4a61560f: interpreted (Hazel.runProgram), jit (Hazel.jitProgram: hazel-jit now), compiled (each game's own compiled.js, compiled ahead of time by hazel-jit on trial/794-games-aot between 11-20 and 11-23, whose compiler, HazelJit.re, last changed on 11-17 and its value boundary on 11-18: hazel-jit as of Thursday 11-19), and plain JS (<game>/plain.js, thirteen games: all but Gnome dig); every answer the same",
         "files": ["pr-2859.md", "data/games-4way/", "img/gnome-world.jpg", "data/petri-opt-runs.jsonl", "data/crossing-timeline.json", "data/petri-crossing-runs.jsonl", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
 json.dump(meta, open(os.path.join(DATA, "meta.json"), "w"), indent=1, ensure_ascii=False)
 print("wrote 065/index.html;", updated)
