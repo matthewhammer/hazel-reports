@@ -6,7 +6,7 @@
 <!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gnome World: Which Parts Are Hazel</title>
-<meta name="description" content="Which parts of Gnome world are Hazel and which JavaScript, asked of event handling, physics, the world&#x27;s state and the drawing. Hazel decides what the world is and how the gnome moves: the plan from a seed, the gnome&#x27;s step 60 times a second (0.016 ms a call, compiled by hazel-jit), the beavers&#x27; minds, the villagers&#x27; words, the roots. JavaScript holds all the state (nine arrays of 186,368 tiles), takes the input, runs everything else that moves (the water is 2.2 ms of a 2.4 ms step) and draws it all: 92% of the code, 70% of it drawing. Clover the rabbit is Hazel&#x27;s gnome step with JavaScript around it.">
+<meta name="description" content="Which parts of Gnome world are Hazel and which JavaScript, asked of event handling, physics, the world&#x27;s state and the drawing. Hazel decides what the world is and how the gnome moves: the plan from a seed, the gnome&#x27;s step 60 times a second (0.016 ms a call, compiled by hazel-jit), the beavers&#x27; minds, the villagers&#x27; words, the roots. JavaScript holds all the state (nine arrays of 186,368 tiles), takes the input, runs everything else that moves (the water is 2.2 ms of a 2.4 ms step) and draws it all: 92% of the code, 70% of it drawing. Clover the rabbit is Hazel&#x27;s gnome step with JavaScript around it. Since 0.0.107 the magic carpet&#x27;s flight is Hazel&#x27;s too, the first piece of a plan to move the logic over piece by piece, each piece checked against the JavaScript it replaces and timed.">
 <style>  :root {
     --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
     --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
@@ -133,11 +133,12 @@ h3.grp { margin-top: 1.2em; }
   table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
   .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
 
+  .cvo { fill: var(--warn); } .cvn { fill: var(--good); }
   figure.chart svg { width: 100%; height: auto; display: block; }
   svg .lbl { fill: var(--ink); font: 13px system-ui, sans-serif; } svg .mut { fill: var(--muted); font: 12px system-ui, sans-serif; }
   svg .small { font-size: 11px; } svg .grp { fill: var(--ink); font: 700 12px system-ui, sans-serif; }
   svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
-  svg .mi { fill: #6b737d; } svg .mj { fill: #eb6834; } svg .mc { fill: #2a78d6; } svg .mp { fill: #2e9e5b; }
+  svg .mi { fill: #6b737d; } svg .mj { fill: #eb6834; } svg .mc { fill: #2a78d6; } svg .mp { fill: #2e9e5b; } svg .mf { fill: var(--paper); stroke: #eb6834; stroke-width: 2; }
   svg .pbox { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; } svg .pbox.interpreted { stroke: #6b737d; } svg .pbox.jit { stroke: #eb6834; }
   svg .pbox.compiled { stroke: #2a78d6; } svg .pbox.editor { stroke: #2e9e5b; } svg .arrow { fill: none; stroke: var(--muted); stroke-width: 1.5; }
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td:first-child, table.nums th:first-child { text-align: left; }
@@ -162,7 +163,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>64<b>)</b></code> · Gnome world · 2026-11-24 · <span class="wip">work in progress</span> · after <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>64<b>)</b></code> · Gnome world · 2026-11-24, revised 2026-11-25 · <span class="wip">work in progress</span> · after <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -260,8 +261,11 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#state">The world’s state</a>: all of it in JavaScript; Hazel keeps nothing between calls.</li>
 <li><a href="#drawing">Procedural drawing</a>: Hazel plans where things are and grows the roots; JavaScript draws everything.</li>
 <li><a href="#why">Why the line falls there</a>: what Hazel in a page can and cannot do well today.</li>
+<li><a href="#migrate">Moving the logic into Hazel, piece by piece</a>: the plan, eight pieces in order, each its own module calling nothing in World, each checked against the JavaScript it replaces and timed.</li>
+<li><a href="#fly">Piece 1: the magic carpet’s flight</a>: done in 0.0.107; the same answer at every step, and 1.5 µs a step in Hazel against 0.27 in JavaScript, a ten-thousandth of a frame.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
+<p class="update"><b>Update, 2026-11-25.</b> Since this report first looked (at 0.0.103), Gnome world has gained N’s magic carpet (0.0.106, in JavaScript), and then its flight became Hazel’s (0.0.107): the first piece of a migration Matthew asked for, “More and more of gnome world’s game logic into hazel, from JS”, with this report revised as the work goes (<a href="#migrate">the plan</a>, <a href="#fly">the first piece</a>). The sections before them describe 0.0.103, as they did.</p>
 
 <h2 id="split">The split<a class="anchor" href="#split" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="split" title="copy this section's address">copy link</button></h2>
 <p><b>Hazel decides what the world is and how the gnome moves; JavaScript does everything that touches the tiles, the screen or the clock.</b> By size, the Hazel is 40,213 characters of code in 32 functions (World.hz, comments left out), and the JavaScript 443,696 in 160 functions (app.js): 92% of the code, 70% of it drawing.</p>
@@ -311,17 +315,46 @@ document.addEventListener("DOMContentLoaded", () => {
 <li>Speed: compiled by hazel-jit, a step is 0.016 ms; interpreted (hazeljs 0.0.4 from npm), the page’s own note says about 4 ms, too slow for 60 steps a second with drawing.</li>
 </ul>
 
+<h2 id="migrate">Moving the logic into Hazel, piece by piece<a class="anchor" href="#migrate" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="migrate" title="copy this section's address">copy link</button></h2>
+<p><b>The plan: eight pieces, in order, each the move of one part of the step from the page’s JavaScript into a Hazel module of its own, each done when its Hazel gives the same answers as the JavaScript it replaces and is timed against it.</b> Matthew asked on 2026-11-25: “More and more of gnome world’s game logic into hazel, from JS. Suggest a migration plan, where we work piece by piece. We have a report about this topic already. Let’s revise and amend that document as we work. Suggest the first piece to migrate, and without waiting for me, do it, and measure the performance difference pre/post migration.” The order puts first what fits Hazel as it is today (a function of small records, called each step), then what needs more of it.</p>
+<table><thead><tr><th>Piece</th><th>What moves</th><th>In and out</th><th>Needs</th><th>State</th></tr></thead><tbody>
+<tr><td>1</td><td>The magic carpet’s flight</td><td>the gnome, its window of tiles, the keys, the carpet; the gnome and the carpet</td><td>nothing new</td><td><b>done</b>, 0.0.107 (<a href="#fly">below</a>)</td></tr>
+<tr><td>2</td><td>Clover’s ride: what she may climb (dug earth) or swim, her hop and leap, the bank she goes back to</td><td>the window and the keys before World.step, and its answer after it; the window and keys to give it, then the gnome and her state</td><td>two functions round World.step</td><td>next</td></tr>
+<tr><td>3</td><td>The boulders: each one’s wobble, fall and landing, and a boulder on the gnome</td><td>a boulder, what is under it, whether it is wet, where the gnome is; the boulder and a hurt</td><td>a call a boulder a step (a few dozen)</td><td></td></tr>
+<tr><td>4</td><td>Picking things up: the gem, heart or thing the gnome touches</td><td>the gnome and the places near it; which it takes</td><td>a short list a step</td><td></td></tr>
+<tr><td>5</td><td>The wind: its wandering aim, its gusts</td><td>the wind and a few random numbers from the page; the wind</td><td>random numbers given in</td><td></td></tr>
+<tr><td>6</td><td>The animals’ minds: the bunnies’ hops, the birds’ perches, the frogs’ jumps, as World.beaver decides the beavers’</td><td>an animal and what is near it; its next move</td><td>random numbers given in</td><td></td></tr>
+<tr><td>7</td><td>The water seeping through the ground</td><td>a row of tiles at a time</td><td>arrays, or sequences (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>)</td><td>waits</td></tr>
+<tr><td>8</td><td>The trees’ shapes, as lines, like the roots</td><td>a tree; its limbs as lines</td><td>nothing new, but large answers</td><td></td></tr>
+</tbody></table>
+<p>Every piece works under the same rules, learned on the first:</p>
+<ul>
+<li><b>A module of its own, calling nothing in World.</b> World.hz is at the browser’s limit for one module’s definitions, and a module that calls another costs the build seconds. The new module reads the same window of tiles World.step reads, and its own helpers (a remainder, the window’s tiles) live inside its one function.</li>
+<li><b>No new names in the preamble.</b> The program as a whole sits at the browser’s stack for building it: two record types added to the preamble overflowed it (<code>Stack_overflow</code>, in the page) where the same types written out in the function’s signature did not. The least stack the program builds in, in Node, is 975 KB with the new module and without it.</li>
+<li><b>The JavaScript stays beside it, made to agree.</b> The JavaScript is rewritten as a pure function of the same records, giving the same answer (the page’s own while the rules build, or if an edit breaks them; and a switch in the page to use it), and a check in Node, also run on GitHub, takes the JavaScript from the page’s own file and compares the two at every step of a long random run.</li>
+<li><b>Timed before and after</b>, a step of each in Node and in the page, and the step’s share of a frame.</li>
+</ul>
+
+<h2 id="fly">Piece 1: the magic carpet’s flight<a class="anchor" href="#fly" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fly" title="copy this section's address">copy link</button></h2>
+<p><b>Done in Gnome world 0.0.107: <code>Fly.step</code> in Hazel gives the same answer as the page’s JavaScript at every one of 20,000 steps, and takes 1.5 µs a step to the JavaScript’s 0.27, in Node; 0.009% of a frame.</b> N’s magic carpet came in 0.0.106, its flight written in JavaScript: it floats where it is until an arrow is held, its speed comes up in a few steps and stops as quickly, fast across, through open air and not through ground, rock, a boulder or into the water. It was the first piece because it is a function of small records called each step, it reads only the window World.step reads, and it was new, so the JavaScript it replaced was known exactly.</p>
+<figure class="fig" id="fig-fly"><div class="figscroll"><svg viewBox="0 0 760 150" role="img" aria-label="The carpet's step: the page's JavaScript against Hazel's Fly.step through the jit, microseconds a step"><style>.l{fill:var(--ink);font:600 13px system-ui,sans-serif}.s{fill:var(--muted);font:12px system-ui,sans-serif}</style><text class="l" x="180" y="33" text-anchor="end">Node, the laptop</text><rect x="190" y="18" width="43.9" height="20" fill="var(--accent2)"/><text class="s" x="239.9" y="33">JavaScript 0.27 µs</text><rect x="190" y="42" width="246.7" height="20" fill="var(--accent)"/><text class="s" x="442.7" y="57">Hazel, Fly.step 1.51 µs</text><text class="l" x="180" y="97" text-anchor="end">the page (Chromium)</text><rect x="190" y="82" width="54.5" height="20" fill="var(--accent2)"/><text class="s" x="250.5" y="97">JavaScript 0.33 µs</text><rect x="190" y="106" width="420.0" height="20" fill="var(--accent)"/><text class="s" x="616.0" y="121">Hazel, Fly.step 2.57 µs</text></svg></div><figcaption>The carpet’s step, before the move (the page’s JavaScript, flyJS) and after it (Hazel’s Fly.step through hazel-jit, its records converted in and out included), in microseconds. Node: node/fly-check.mjs, 20,000 steps of random flight in a made-up world, seven batches, the median, on the laptop, with the library of hazelgrove/hazel hazeljs at 2c4a61560f. The page: 3,000 recorded steps of flight in world 7, seven batches, the median, in the app’s browser pane (Chromium).</figcaption></figure>
+<ul>
+<li><b>Rules/Fly.hz</b>, one function, <code>Fly.step(gnome, near, pad, carpet)</code>, in Hazel’s editor beside World on the page: the speed eased toward the keys’ (233 thousandths of a tile a step across, 150 up or down), each axis moved if the box (0.76 tiles across, from 0.92 above the feet to 0.28 below them) meets nothing there, the gnome and the carpet given back.</li>
+<li><b>The same answer:</b> 20,000 of 20,000 steps in Node (the flight moved at 16,689 of them and was held back by something at 2,572), and 3,000 of 3,000 in the page in world 7. The check runs in the world save check on GitHub with each push.</li>
+<li><b>The time:</b> 5.6 times the JavaScript’s in Node on the laptop, 5.8 times on GitHub’s runner (0.21 µs against 1.25, the world save check of 0.0.107), 7.7 times in the page, and either way thousandths of a millisecond in a frame of 16.7. Most of Hazel’s time is the crossing: four records converted in and two out, each step, where the JavaScript reads them where they are (<a href="../065/"><code class="ref"><b>^report(</b>65<b>)</b></code></a>, Conversion at the edges).</li>
+</ul>
+
 <h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol>
-<li><b>Clover’s ride in Hazel.</b> A Ride module of its own, calling nothing in World: the hop, the leap, and what she may climb or swim, from the same window of tiles.</li>
+<li><b>Piece 2, Clover’s ride in Hazel</b> (<a href="#migrate">the plan</a>). A Ride module of its own, calling nothing in World: the hop, the leap, and what she may climb (dug earth, since 0.0.106) or swim, from the same window of tiles.</li>
 <li><b>The animals’ minds in Hazel, as the beavers’.</b> A bird’s or a bunny’s next move from a small record: where it is, how far the gnome is, the perches near.</li>
-<li><b>The water in Hazel, once Hazel has arrays.</b> With ^ticket(846)’s sequences, a row at a time, timed against the JavaScript’s 2.2 ms.</li>
+<li><b>The water in Hazel, once Hazel has arrays.</b> With <a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>’s sequences, a row at a time, timed against the JavaScript’s 2.2 ms.</li>
 <li><b>Tree shapes as Hazel geometry, like the roots.</b> World.limbs already plans a great tree’s limbs; the drawn limbs could come back from Hazel as lines.</li>
-<li><b>Time the crossing.</b> Gnome, Near and Pad go in and a Gnome comes out 60 times a second; with the converters by declared type (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>), measure what that costs.</li>
+<li><b>Time the crossing.</b> Gnome, Near and Pad go in and a Gnome comes out 60 times a second; with the converters by declared type (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>), measure what that costs. The first piece’s numbers say most of a Hazel call is the crossing.</li>
 </ol>
 
 <h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
-<p>Read World.hz, preamble.hz and app.js at matthewhammer/hazeljs-examples <code>02b73ab</code> (0.0.103). Sizes: each Hazel top-level definition’s code with its comments taken out; the JavaScript’s top-level functions grouped by name (drawing: <code>draw*</code>, <code>paint*</code>, sprites, the gnome, birds, rabbits, trees, the HUD; simulation: <code>tick</code> and the steps it calls, the ride; building the world: <code>build</code> and its helpers; the speed run: <code>bot*</code>; save and load; the rest). Times: in the page with <code>?test=1</code>, on the laptop, in the app’s browser pane (Chromium), the rules compiled by hazel-jit from build.hazel.org’s hazeljs build; each Hazel function called the stated number of times and averaged, once (one run is not a trend). The step’s 2.4 ms and the water’s 2.2 ms come from timing added for a while during 0.0.102’s development. The roots are World.roots’ and World.threads’ own output for the first oak of world 7.</p>
+<p>Read World.hz, preamble.hz and app.js at matthewhammer/hazeljs-examples <code>02b73ab</code> (0.0.103). Sizes: each Hazel top-level definition’s code with its comments taken out; the JavaScript’s top-level functions grouped by name (drawing: <code>draw*</code>, <code>paint*</code>, sprites, the gnome, birds, rabbits, trees, the HUD; simulation: <code>tick</code> and the steps it calls, the ride; building the world: <code>build</code> and its helpers; the speed run: <code>bot*</code>; save and load; the rest). Times: in the page with <code>?test=1</code>, on the laptop, in the app’s browser pane (Chromium), the rules compiled by hazel-jit from build.hazel.org’s hazeljs build; each Hazel function called the stated number of times and averaged, once (one run is not a trend). The step’s 2.4 ms and the water’s 2.2 ms come from timing added for a while during 0.0.102’s development. The roots are World.roots’ and World.threads’ own output for the first oak of world 7. The migration’s first piece (2026-11-25): matthewhammer/hazeljs-examples 0.0.107 (<code>11ae1ac</code>), <code>node/fly-check.mjs</code> in Node 22 on the laptop with the library of hazelgrove/hazel <code>hazeljs</code> at 2c4a61560f (data/fly-check.json), the least stack it builds in found by halving (data/stack-margin.txt), and the page’s numbers in the browser pane with <code>?test=1</code>.</p>
 <script type="application/json" id="report-data">{
  "build": "hazeljs-examples 0.0.103 (02b73ab), lib build.hazel.org/hazeljs (hazelgrove/hazel#2857)",
  "sizes": {
@@ -376,17 +409,161 @@ document.addEventListener("DOMContentLoaded", () => {
   },
   "lines": 617,
   "threads": 245
+ },
+ "migration": {
+  "plan": "the pieces in order, in #migrate",
+  "fly": {
+   "node": {
+    "when": "2026-11-25T16:40:08.448Z",
+    "node": "v22.23.2",
+    "build": "2c4a61560f22850146835684331f33992d21e9a6",
+    "buildMs": 4787,
+    "steps": 20000,
+    "same": 20000,
+    "first": null,
+    "moved": 16689,
+    "stopped": 2572,
+    "usJS": 0.2686,
+    "usHazel": 1.5077
+   },
+   "page": {
+    "usJS": 0.333,
+    "usHazel": 2.567,
+    "steps": 3000,
+    "same": 3000,
+    "where": "the page, ?test=1, the app's browser pane (Chromium) on the laptop, 7 batches of 3,000 recorded steps, the median"
+   },
+   "stack": "the least --stack-size the program builds at in Node: 975 KB with Fly and without (data/stack-margin.txt)"
+  }
  }
 }</script>
-
-<!-- data-line: begin -->
-<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
-<ul>
-  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/064/data"><code>064/data/</code></a>.</li>
-</ul>
-<!-- data-line: end -->
-
-</main>
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
 <!-- pr-cards: begin -->
 <style>
   /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
@@ -410,7 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-23T22:49:54Z", "base": "dev"}}, BUILT = "2026-11-24";
+  const CACHED = {"hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-25T16:22:02Z", "base": "dev"}}, BUILT = "2026-11-25";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -539,126 +716,6 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 <!-- steps: end -->
-<!-- theme: begin -->
-<style>
-  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
-    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
-    cursor: pointer; opacity: 0.85; }
-  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
-  @media print { .theme-toggle { display: none; } }
-</style>
-<script>
-/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
-(() => {
-  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
-  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
-  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
-                                  : document.documentElement.setAttribute("data-theme", m);
-  const b = document.createElement("button");
-  b.type = "button"; b.className = "theme-toggle";
-  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
-    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
-  b.addEventListener("click", () => {
-    const m = order[(order.indexOf(get()) + 1) % 3];
-    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
-    apply(m); show();
-  });
-  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
-  show(); document.body.append(b);
-})();
-</script>
-<!-- theme: end -->
-<!-- report-data: begin -->
-<script type="application/json" id="report-data">
-{
- "report": 64,
- "title": "Gnome World: Which Parts Are Hazel",
- "builds": {
-  "examples": "matthewhammer/hazeljs-examples 02b73ab (0.0.103): world/rules/World.hz, world/rules/preamble.hz, world/app.js",
-  "hazel": "the rules compiled in the page by hazel-jit, from build.hazel.org/hazeljs (hazelgrove/hazel#2857, branch hazeljs)",
-  "run": "the laptop, the Claude desktop app's browser pane (Chromium), Gnome world with ?test=1, 2026-11-24 08:0x MST, one run"
- },
- "measures": {
-  "callMs": "milliseconds a call, each Hazel function called in the page (World.step 2,000 times, World.plan 5, World.roots 20, the others 2,000 or 500) and averaged, once",
-  "stepMs": "a step of the world without drawing, and its water step, from timing added during 0.0.102's development",
-  "sizes": "characters of code: each Hazel top-level definition with its comments taken out; JavaScript's top-level functions grouped by name"
- },
- "raw": [
-  "measured.json"
- ],
- "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
- "tables": [
-  {
-   "section": "The split",
-   "section_id": "split",
-   "columns": [
-    "Hazel function",
-    "what it decides",
-    "when the page calls it",
-    "ms a call"
-   ],
-   "rows": [
-    [
-     "World.plan",
-     "the world from its seed: the land, the layers of rock, the water table, the rivers, the beavers' lodges and dams, the villages, the great trees, the trees, bushes, flowers and mushrooms, and the places under the ground (500 places)",
-     "once a world, and at Restart and Load",
-     "2.06"
-    ],
-    [
-     "World.step (with finish, slope_at, slide_vx, dig_ahead, tile)",
-     "the gnome's step: running, jumping, falling, climbing, swimming, the slopes, digging",
-     "every step: 60 a second",
-     "0.016"
-    ],
-    [
-     "World.beaver",
-     "a beaver's next job: rest, go to a tree, gnaw it, cut a log, drag it to the dam, lay it",
-     "every sixth step, for each of five beavers: 50 a second",
-     "0.0017"
-    ],
-    [
-     "World.water_row",
-     "how high a dam holds its river, by its logs",
-     "when a dam's logs change",
-     "0.0004"
-    ],
-    [
-     "World.greet",
-     "a villager's words: 768 greetings, from 166 lines, none said by two villagers",
-     "when the gnome stops by a villager",
-     "0.0068"
-    ],
-    [
-     "World.roots, World.threads",
-     "a tree's roots and its mycelium, as lines",
-     "the first time a tree is in view",
-     "1.26"
-    ],
-    [
-     "World.ground, World.dig_steps",
-     "each kind of ground: its pores, how water flows through it, its color, the steps to dig it with each digger",
-     "once a world (90 digging steps kept)",
-     "—"
-    ],
-    [
-     "World.village, World.furnish, World.limbs, World.styles",
-     "a village's rooms and their things; a great tree's limbs and what is on each; the sixteen styles of tree house",
-     "once a world",
-     "—"
-    ]
-   ]
-  }
- ],
- "files": [
-  "data/card.json",
-  "data/measured.json",
-  "data/meta.json",
-  "data/tables.json"
- ],
- "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/064/data"
-}
-</script>
-<!-- report-data: end -->
 <!-- anchors (tools/add_anchors.py) -->
 <script id="anchors-js">
 /* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
