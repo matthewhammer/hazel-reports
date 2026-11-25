@@ -6,6 +6,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 M = json.load(open(os.path.join(HERE, "data/measured.json")))
 head063 = open(os.path.join(HERE, "../063/index.html"), encoding="utf-8").read()
 style = head063[head063.index("<style>"):head063.index("</style>") + len("</style>")]
+style = style.replace("</style>", "  table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }\n</style>")   # (the table of each piece so far)
 E = html.escape
 HZ, JS = "var(--accent)", "var(--accent2)"
 T = M["times"]
@@ -195,7 +196,7 @@ BLURB = ("Which parts of Gnome world are Hazel and which JavaScript, asked of ev
   "(0.016 ms a call, compiled by hazel-jit), the beavers' minds, the villagers' words, the roots. JavaScript holds all the state "
   "(nine arrays of 186,368 tiles), takes the input, runs everything else that moves (the water is 2.2 ms of a 2.4 ms step) and "
   "draws it all: 92% of the code, 70% of it drawing. Clover the rabbit is Hazel's gnome step with JavaScript around it. "
-  "Since 0.0.107 the magic carpet's flight is Hazel's too, the first piece of a plan to move the logic over piece by piece, each piece checked against the JavaScript it replaces and timed.")
+  "Since 0.0.107 the magic carpet's flight is Hazel's too, the cat tail's flight was written in Hazel from the start (0.0.116), and since 0.0.134 Clover's ride is Hazel's: pieces of a plan to move the logic over piece by piece, each checked against the JavaScript it replaces and timed (in Hazel each takes 3 to 6 times the JavaScript's time, under 1.3 µs a step).")
 page = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -224,9 +225,10 @@ page = f'''<!doctype html>
 <li><a href="#why">Why the line falls there</a>: what Hazel in a page can and cannot do well today.</li>
 <li><a href="#migrate">Moving the logic into Hazel, piece by piece</a>: the plan, eight pieces in order, each its own module calling nothing in World, each checked against the JavaScript it replaces and timed.</li>
 <li><a href="#fly">Piece 1: the magic carpet’s flight</a>: done in 0.0.107; the same answer at every step, and 1.5 µs a step in Hazel against 0.27 in JavaScript, a ten-thousandth of a frame.</li>
+<li><a href="#ride">Piece 2: Clover’s ride</a>: done in 0.0.134; two functions round the gnome’s step, the same ride at every step, 0.89 µs a step in Hazel against 0.28 in JavaScript; and <a href="#sofar">each piece so far</a>, timed the same way.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
-<p class="update"><b>Update, 2026-11-25.</b> Since this report first looked (at 0.0.103), Gnome world has gained N’s magic carpet (0.0.106, in JavaScript), and then its flight became Hazel’s (0.0.107): the first piece of a migration Matthew asked for, “More and more of gnome world’s game logic into hazel, from JS”, with this report revised as the work goes (<a href="#migrate">the plan</a>, <a href="#fly">the first piece</a>). The sections before them describe 0.0.103, as they did.</p>
+<p class="update"><b>Update, 2026-11-25.</b> Since this report first looked (at 0.0.103), three pieces of Gnome world’s logic have become Hazel’s: the magic carpet’s flight (0.0.107), the cat tail’s flight (written in Hazel from the start, 0.0.116), and Clover’s ride (0.0.134), in a migration Matthew asked for, “More and more of gnome world’s game logic into hazel, from JS”, and went on with: “porting the gnome world JS into Hazel, module by module ... let’s profile the difference as we go”. This report is revised as the work goes (<a href="#migrate">the plan</a>, <a href="#fly">piece 1</a>, <a href="#ride">piece 2</a>, <a href="#sofar">each piece so far</a>). The sections before them describe 0.0.103, as they did; since then the water has gone from 2.2 ms a step to about 0.6 (0.0.131, stepped only where it moves).</p>
 
 <h2 id="split">The split</h2>
 <p><b>Hazel decides what the world is and how the gnome moves; JavaScript does everything that touches the tiles, the screen or the clock.</b> By size, the Hazel is 40,213 characters of code in 32 functions (World.hz, comments left out), and the JavaScript 443,696 in 160 functions (app.js): 92% of the code, 70% of it drawing.</p>
@@ -280,8 +282,9 @@ page = f'''<!doctype html>
 <p><b>The plan: eight pieces, in order, each the move of one part of the step from the page’s JavaScript into a Hazel module of its own, each done when its Hazel gives the same answers as the JavaScript it replaces and is timed against it.</b> Matthew asked on 2026-11-25: “More and more of gnome world’s game logic into hazel, from JS. Suggest a migration plan, where we work piece by piece. We have a report about this topic already. Let’s revise and amend that document as we work. Suggest the first piece to migrate, and without waiting for me, do it, and measure the performance difference pre/post migration.” The order puts first what fits Hazel as it is today (a function of small records, called each step), then what needs more of it.</p>
 <table><thead><tr><th>Piece</th><th>What moves</th><th>In and out</th><th>Needs</th><th>State</th></tr></thead><tbody>
 <tr><td>1</td><td>The magic carpet’s flight</td><td>the gnome, its window of tiles, the keys, the carpet; the gnome and the carpet</td><td>nothing new</td><td><b>done</b>, 0.0.107 (<a href="#fly">below</a>)</td></tr>
-<tr><td>2</td><td>Clover’s ride: what she may climb (dug earth) or swim, her hop and leap, the bank she goes back to</td><td>the window and the keys before World.step, and its answer after it; the window and keys to give it, then the gnome and her state</td><td>two functions round World.step</td><td>next</td></tr>
-<tr><td>3</td><td>The boulders: each one’s wobble, fall and landing, and a boulder on the gnome</td><td>a boulder, what is under it, whether it is wet, where the gnome is; the boulder and a hurt</td><td>a call a boulder a step (a few dozen)</td><td></td></tr>
+<tr><td>·</td><td>The cat tail’s flight (not in the plan: N’s, new)</td><td>the gnome, the keys, the tail; the gnome, the keys and the tail</td><td>nothing new</td><td><b>done</b>, written in Hazel from the start, 0.0.116</td></tr>
+<tr><td>2</td><td>Clover’s ride: her hop and leap, her digging, the bank she goes back to</td><td>the keys and her state before World.step, and its answer after it; the keys to give it, then the gnome and her state</td><td>two functions round World.step</td><td><b>done</b>, 0.0.134 (<a href="#ride">below</a>)</td></tr>
+<tr><td>3</td><td>The boulders: each one’s wobble, fall and landing, and a boulder on the gnome</td><td>a boulder, what is under it, whether it is wet, where the gnome is; the boulder and a hurt</td><td>a call a boulder a step (a few dozen)</td><td>next</td></tr>
 <tr><td>4</td><td>Picking things up: the gem, heart or thing the gnome touches</td><td>the gnome and the places near it; which it takes</td><td>a short list a step</td><td></td></tr>
 <tr><td>5</td><td>The wind: its wandering aim, its gusts</td><td>the wind and a few random numbers from the page; the wind</td><td>random numbers given in</td><td></td></tr>
 <tr><td>6</td><td>The animals’ minds: the bunnies’ hops, the birds’ perches, the frogs’ jumps, as World.beaver decides the beavers’</td><td>an animal and what is near it; its next move</td><td>random numbers given in</td><td></td></tr>
@@ -305,9 +308,28 @@ page = f'''<!doctype html>
 <li><b>The time:</b> 5.6 times the JavaScript’s in Node on the laptop, 5.8 times on GitHub’s runner (0.21 µs against 1.25, the world save check of 0.0.107), 7.7 times in the page, and either way thousandths of a millisecond in a frame of 16.7. Most of Hazel’s time is the crossing: four records converted in and two out, each step, where the JavaScript reads them where they are (^report(65), Conversion at the edges).</li>
 </ul>
 
+<h2 id="ride">Piece 2: Clover’s ride</h2>
+<p><b>Done in Gnome world 0.0.134: <code>Ride.pre</code> and <code>Ride.post</code> in Hazel give the same answers as the page’s JavaScript at all 20,000 made-up steps in Node, and the same ride, step for step, in the page; her ride takes 0.89 µs a step in Hazel against 0.28 in JavaScript in Node (3.2 times), 3.97 against 0.83 in the page (4.8 times): a few thousandths of a percent of a frame.</b> Matthew, after the first piece and the cat tail: “I’m inspired by going further with porting the gnome world JS into Hazel, module by module. please keep going, and let’s profile the difference as we go.”</p>
+<ul>
+<li><b>Rules/Ride.hz</b>, two functions round the gnome’s own step, World.step, in Hazel’s editor beside World on the page. <code>Ride.pre(gnome, keys, clover)</code>: the keys as the page holds them and her state (a press of up kept for when she lands, whether she leapt with up still held, in the air from a hop or a leap, her last safe place) give the keys World.step gets (across twice as fast, but not digging; up held while she rises, so a hop or a leap is not cut short), whether this step leaps, and her state. <code>Ride.post(gnome, keys, clover, leap, wet)</code>: World.step’s gnome becomes hers: a jump taken is her leap (360 thousandths of a tile a step) or her hop (165); she digs three times as fast; in the water without the diving gear, not climbing, back to her last safe place; standing dry, a new safe place.</li>
+<li><b>What stays in the page:</b> her window of tiles, built from the world (where water walls her in, what she may climb: dug earth, ladders, stairs, hatches), as the gnome’s own window is, and whether the water has reached her safe place (the page holds the water; it says so to <code>Ride.post</code> as one Bool). Her state is the record the page saved before, so a save is unchanged.</li>
+<li><b>The same answers.</b> In Node (<code>node/fly-check.mjs</code>, also in the world save check on GitHub with each push): 20,000 of 20,000 made-up steps, the gnome on the ground or in the air, climbing or in the water, a jump just taken or not, a safe place or none, wet or dry (4,732 leaps, 2,698 hops, 934 times back to a safe place, 3,307 new safe places). In the page: the same scripted ride of 3,000 steps from the same fresh world, once with Hazel’s and once with the JavaScript (running, digging down, leaping, hopping), the gnome and her state the same at all 3,000 steps (2,806 places along the way, 42 leaps, 2 hops).</li>
+<li><b>The time,</b> her ride’s own part a step, pre and post together, records in and out included: in Node on the laptop, 0.892 µs in Hazel, 0.283 in JavaScript (the median of three runs, each the median of seven batches of the 20,000; hazel-lib.js of build.hazel.org, hazel-jit as of 2026-11-25); in the page, in the app’s browser pane (Chromium 152), 3.97 µs and 0.83 (the median of three rides each way, each timed call by call, the timing’s own cost in both). The ride’s step, World.step included, is 1 to 1.7 ms either way, as the world is new: the water settling, not her ride.</li>
+<li><b>The stack:</b> a module of its own again, its record written out in its signature; the program builds in the same least stack in Node, 968 KB, and in the page.</li>
+</ul>
+
+<h2 id="sofar">Each piece so far</h2>
+<p><b>Each piece in Hazel takes 3 to 6 times its JavaScript’s time, and none more than 1.3 µs a step: together under a thousandth of a frame.</b> Timed the same way, in Node on the laptop, hazel-lib.js of build.hazel.org (hazel-jit as of 2026-11-25), each the median of three runs of <code>node/fly-check.mjs</code>, each run the median of seven batches of its 20,000 made-up steps:</p>
+<table class="nums"><thead><tr><th class="l">Piece</th><th>In Gnome world</th><th>JavaScript, a step</th><th>Hazel, a step</th><th>Hazel’s time against the JavaScript’s</th></tr></thead><tbody>
+<tr><td class="l">1, the magic carpet’s flight (<code>Fly.step</code>)</td><td>0.0.107</td><td>0.204 µs</td><td>1.264 µs</td><td>6.2×</td></tr>
+<tr><td class="l">·, the cat tail’s flight (<code>Tail.step</code>)</td><td>0.0.116</td><td>0.123 µs</td><td>0.372 µs</td><td>3.0×</td></tr>
+<tr><td class="l">2, Clover’s ride (<code>Ride.pre</code> and <code>Ride.post</code>)</td><td>0.0.134</td><td>0.283 µs</td><td>0.892 µs</td><td>3.2×</td></tr>
+</tbody></table>
+<p>Most of what Hazel’s time costs is the crossing (records converted in and out, ^report(65)’s <i>Conversion at the edges</i>): the carpet’s step takes four records in and gives two back, so it costs the most against its JavaScript; the tail and the ride, two or three small ones. Under ⚡ (Gnome world 0.0.133) the page runs each piece’s JavaScript instead.</p>
+
 <h2 id="next">What next</h2>
 <ol>
-<li><b>Piece 2, Clover’s ride in Hazel</b> (<a href="#migrate">the plan</a>). A Ride module of its own, calling nothing in World: the hop, the leap, and what she may climb (dug earth, since 0.0.106) or swim, from the same window of tiles.</li>
+<li><b>Piece 3, the boulders in Hazel</b> (<a href="#migrate">the plan</a>). A Boulder module: a boulder’s wobble, fall and landing, and a boulder on the gnome, from the boulder and what is under it; a call a boulder a step, a few dozen.</li>
 <li><b>The animals’ minds in Hazel, as the beavers’.</b> A bird’s or a bunny’s next move from a small record: where it is, how far the gnome is, the perches near.</li>
 <li><b>The water in Hazel, once Hazel has arrays.</b> With ^ticket(846)’s sequences, a row at a time, timed against the JavaScript’s 2.2 ms.</li>
 <li><b>Tree shapes as Hazel geometry, like the roots.</b> World.limbs already plans a great tree’s limbs; the drawn limbs could come back from Hazel as lines.</li>
