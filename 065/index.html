@@ -6,7 +6,7 @@
 <!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>hazel-jit’s PR, Described</title>
-<meta name="description" content="A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 3,823 times as fast as the interpreter and 2.9 times as fast as on 2026-11-19, and takes 4.4 times the time of the same game written by hand in JavaScript, where it took 12.4 times. With the day&#x27;s changes merged: tail calls as loops, a named function&#x27;s tuple parts as JS arguments, constructors without arguments made once, a module&#x27;s members by name; and where conversion at the edges still costs, and how to bring it down.">
+<meta name="description" content="A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 4,148 times as fast as the interpreter and 3.1 times as fast as on 2026-11-19, and takes 3.8 times the time of the same game written by hand in JavaScript, where it took 11.9 times. With the day&#x27;s changes merged: tail calls as loops, a named function&#x27;s tuple parts as JS arguments, constructors without arguments made once, a module&#x27;s members by name; and where conversion at the edges still costs, and how to bring it down.">
 <style>  :root {
     --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
     --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
@@ -165,7 +165,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 10:32 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 10:38 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -262,7 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
 <li><a href="#compare">Representations, then and now</a>: three of <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s five suggestions for hazel-jit’s output are done and the other two in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take 0.70 of the jit’s time, <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule 0.67, every answer the same; nearly all of it from the JS arguments.</li>
-<li><a href="#fourway">Four ways, on the games</a>: hazel-jit now is 3,823 times as fast as the interpreter, 2.9 times as fast as on 2026-11-19, and 4.4 times plain JS’s time.</li>
+<li><a href="#fourway">Four ways, on the games</a>: hazel-jit now is 4,148 times as fast as the interpreter, 3.1 times as fast as on 2026-11-19, and 3.8 times plain JS’s time.</li>
 <li><a href="#speed">Speed beside them</a>: on <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule, ReScript and Melange are still about four times as fast; the games still need versions in OCaml and ReScript.</li>
 <li><a href="#crossing">Conversion at the edges, over time</a>: from most of a call to a fraction of one in two days; now the larger part again where a whole state crosses (on the Petri rule 71% of a call), and five ways to bring it down.</li>
 <li><a href="#left">What is still left</a>: five steps in Matthew’s order, each a ticket: constructors made once, modules by name and <code>===</code> (made, being timed), the cost of exact Ints and steps (measured), and options unboxed last.</li>
@@ -399,26 +399,26 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 
 <h2 id="fourway">Four ways, on the games<a class="anchor" href="#fourway" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="fourway" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
-<p><b>On the games of hazeljs-examples, each played through its own run of states, hazel-jit now runs their rules 3,823 times as fast as Hazel’s interpreter and 2.9 times as fast as hazel-jit did on Thursday 2026-11-19; where a game also has a version written by hand in JavaScript, hazel-jit now takes 4.4 times its time, where it took 12.4 times on 11-19.</b> Every answer is the same all four ways. Matthew asked on 2026-11-25 for this comparison, on a common set of the examples: the interpreter, hazel-jit as of last Thursday, hazel-jit now, and plain JS.</p>
+<p><b>On the games of hazeljs-examples, each played through its own run of states, hazel-jit now runs their rules 4,148 times as fast as Hazel’s interpreter and 3.1 times as fast as hazel-jit did on Thursday 2026-11-19; where a game also has a version written by hand in JavaScript, hazel-jit now takes 3.8 times its time, where it took 11.9 times on 11-19.</b> Every answer is the same all four ways. Matthew asked on 2026-11-25 for this comparison, on a common set of the examples: the interpreter, hazel-jit as of last Thursday, hazel-jit now, and plain JS.</p>
 <figure class="chart">
-<svg viewBox="0 0 720 412" role="img" aria-labelledby="fwt"><title id="fwt">Each game's time a call, four ways, on a log scale, and a 60 fps frame</title><circle class="mp" cx="156" cy="16" r="5"/><text class="mut" x="166" y="20">plain JS</text><circle class="mj" cx="301" cy="16" r="5"/><text class="mut" x="311" y="20">hazel-jit now</text><circle class="mc" cx="446" cy="16" r="5"/><text class="mut" x="456" y="20">hazel-jit, 2026-11-19</text><circle class="mi" cx="591" cy="16" r="5"/><text class="mut" x="601" y="20">the interpreter</text><line class="grid" x1="197.9" y1="56" x2="197.9" y2="372"/><text class="mut" x="197.9" y="388" text-anchor="middle">1 µs</text><line class="grid" x1="289.6" y1="56" x2="289.6" y2="372"/><text class="mut" x="289.6" y="388" text-anchor="middle">10 µs</text><line class="grid" x1="381.3" y1="56" x2="381.3" y2="372"/><text class="mut" x="381.3" y="388" text-anchor="middle">100 µs</text><line class="grid" x1="472.9" y1="56" x2="472.9" y2="372"/><text class="mut" x="472.9" y="388" text-anchor="middle">1 ms</text><line class="grid" x1="564.6" y1="56" x2="564.6" y2="372"/><text class="mut" x="564.6" y="388" text-anchor="middle">10 ms</text><line class="grid" x1="656.3" y1="56" x2="656.3" y2="372"/><text class="mut" x="656.3" y="388" text-anchor="middle">100 ms</text><line class="frame" x1="584.9" y1="34" x2="584.9" y2="372"/><text class="framel" x="578.9" y="46" text-anchor="end">16.7 ms: a frame at 60 fps, were a call all of its work</text><text class="lbl" x="142" y="79.0" text-anchor="end">Checkers</text><line class="span" x1="217.3" y1="75.0" x2="603.2" y2="75.0"/><circle class="mi" cx="603.2" cy="75.0" r="5"><title>the interpreter: 26.3 ms</title></circle><circle class="mc" cx="311.3" cy="75.0" r="5"><title>hazel-jit, 2026-11-19: 17.2 µs</title></circle><circle class="mj" cx="316.0" cy="75.0" r="5"><title>hazel-jit now: 19.4 µs</title></circle><circle class="mp" cx="217.3" cy="75.0" r="5"><title>plain JS: 1.63 µs</title></circle><text class="lbl" x="142" y="101.0" text-anchor="end">Go</text><line class="span" x1="259.2" y1="97.0" x2="649.0" y2="97.0"/><circle class="mi" cx="649.0" cy="97.0" r="5"><title>the interpreter: 83.3 ms</title></circle><circle class="mc" cx="338.7" cy="97.0" r="5"><title>hazel-jit, 2026-11-19: 34.3 µs</title></circle><circle class="mj" cx="303.5" cy="97.0" r="5"><title>hazel-jit now: 14.2 µs</title></circle><circle class="mp" cx="259.2" cy="97.0" r="5"><title>plain JS: 4.66 µs</title></circle><text class="lbl" x="142" y="123.0" text-anchor="end">Minesweeper</text><line class="span" x1="192.9" y1="119.0" x2="650.4" y2="119.0"/><circle class="mi" cx="650.4" cy="119.0" r="5"><title>the interpreter: 86.4 ms</title></circle><circle class="mc" cx="398.5" cy="119.0" r="5"><title>hazel-jit, 2026-11-19: 154.2 µs</title></circle><circle class="mj" cx="294.8" cy="119.0" r="5"><title>hazel-jit now: 11.4 µs</title></circle><circle class="mp" cx="192.9" cy="119.0" r="5"><title>plain JS: 0.88 µs</title></circle><text class="lbl" x="142" y="145.0" text-anchor="end">Mahjong</text><line class="span" x1="276.0" y1="141.0" x2="581.3" y2="141.0"/><circle class="mi" cx="581.3" cy="141.0" r="5"><title>the interpreter: 15.2 ms</title></circle><circle class="mc" cx="313.8" cy="141.0" r="5"><title>hazel-jit, 2026-11-19: 18.4 µs</title></circle><circle class="mj" cx="289.6" cy="141.0" r="5"><title>hazel-jit now: 9.99 µs</title></circle><circle class="mp" cx="276.0" cy="141.0" r="5"><title>plain JS: 7.10 µs</title></circle><text class="lbl" x="142" y="167.0" text-anchor="end">Solitaire</text><line class="span" x1="203.4" y1="163.0" x2="637.4" y2="163.0"/><circle class="mi" cx="637.4" cy="163.0" r="5"><title>the interpreter: 62.3 ms</title></circle><circle class="mc" cx="303.3" cy="163.0" r="5"><title>hazel-jit, 2026-11-19: 14.1 µs</title></circle><circle class="mj" cx="268.8" cy="163.0" r="5"><title>hazel-jit now: 5.93 µs</title></circle><circle class="mp" cx="203.4" cy="163.0" r="5"><title>plain JS: 1.15 µs</title></circle><text class="lbl" x="142" y="189.0" text-anchor="end">Mahjong solitaire</text><line class="span" x1="249.9" y1="185.0" x2="634.3" y2="185.0"/><circle class="mi" cx="634.3" cy="185.0" r="5"><title>the interpreter: 57.7 ms</title></circle><circle class="mc" cx="352.8" cy="185.0" r="5"><title>hazel-jit, 2026-11-19: 48.9 µs</title></circle><circle class="mj" cx="286.5" cy="185.0" r="5"><title>hazel-jit now: 9.25 µs</title></circle><circle class="mp" cx="249.9" cy="185.0" r="5"><title>plain JS: 3.69 µs</title></circle><text class="lbl" x="142" y="211.0" text-anchor="end">Pinball</text><line class="span" x1="255.3" y1="207.0" x2="647.4" y2="207.0"/><circle class="mi" cx="647.4" cy="207.0" r="5"><title>the interpreter: 80.0 ms</title></circle><circle class="mc" cx="328.9" cy="207.0" r="5"><title>hazel-jit, 2026-11-19: 26.8 µs</title></circle><circle class="mj" cx="268.0" cy="207.0" r="5"><title>hazel-jit now: 5.82 µs</title></circle><circle class="mp" cx="255.3" cy="207.0" r="5"><title>plain JS: 4.23 µs</title></circle><text class="lbl" x="142" y="233.0" text-anchor="end">Downhill</text><line class="span" x1="199.6" y1="229.0" x2="571.8" y2="229.0"/><circle class="mi" cx="571.8" cy="229.0" r="5"><title>the interpreter: 12.0 ms</title></circle><circle class="mc" cx="293.4" cy="229.0" r="5"><title>hazel-jit, 2026-11-19: 11.0 µs</title></circle><circle class="mj" cx="244.6" cy="229.0" r="5"><title>hazel-jit now: 3.23 µs</title></circle><circle class="mp" cx="199.6" cy="229.0" r="5"><title>plain JS: 1.04 µs</title></circle><text class="lbl" x="142" y="255.0" text-anchor="end">Bricks</text><line class="span" x1="155.4" y1="251.0" x2="567.4" y2="251.0"/><circle class="mi" cx="567.4" cy="251.0" r="5"><title>the interpreter: 10.7 ms</title></circle><circle class="mc" cx="261.6" cy="251.0" r="5"><title>hazel-jit, 2026-11-19: 4.95 µs</title></circle><circle class="mj" cx="224.5" cy="251.0" r="5"><title>hazel-jit now: 1.95 µs</title></circle><circle class="mp" cx="155.4" cy="251.0" r="5"><title>plain JS: 0.34 µs</title></circle><text class="lbl" x="142" y="277.0" text-anchor="end">Snake</text><line class="span" x1="173.9" y1="273.0" x2="488.5" y2="273.0"/><circle class="mi" cx="488.5" cy="273.0" r="5"><title>the interpreter: 1.5 ms</title></circle><circle class="mc" cx="236.7" cy="273.0" r="5"><title>hazel-jit, 2026-11-19: 2.65 µs</title></circle><circle class="mj" cx="236.8" cy="273.0" r="5"><title>hazel-jit now: 2.66 µs</title></circle><circle class="mp" cx="173.9" cy="273.0" r="5"><title>plain JS: 0.55 µs</title></circle><text class="lbl" x="142" y="299.0" text-anchor="end">Light trails</text><line class="span" x1="186.3" y1="295.0" x2="565.2" y2="295.0"/><circle class="mi" cx="565.2" cy="295.0" r="5"><title>the interpreter: 10.2 ms</title></circle><circle class="mc" cx="276.7" cy="295.0" r="5"><title>hazel-jit, 2026-11-19: 7.23 µs</title></circle><circle class="mj" cx="275.8" cy="295.0" r="5"><title>hazel-jit now: 7.08 µs</title></circle><circle class="mp" cx="186.3" cy="295.0" r="5"><title>plain JS: 0.75 µs</title></circle><text class="lbl" x="142" y="321.0" text-anchor="end">Star wave</text><line class="span" x1="191.7" y1="317.0" x2="616.2" y2="317.0"/><circle class="mi" cx="616.2" cy="317.0" r="5"><title>the interpreter: 36.5 ms</title></circle><circle class="mc" cx="318.5" cy="317.0" r="5"><title>hazel-jit, 2026-11-19: 20.7 µs</title></circle><circle class="mj" cx="281.7" cy="317.0" r="5"><title>hazel-jit now: 8.21 µs</title></circle><circle class="mp" cx="191.7" cy="317.0" r="5"><title>plain JS: 0.86 µs</title></circle><text class="lbl" x="142" y="343.0" text-anchor="end">Butterfly garden</text><line class="span" x1="186.1" y1="339.0" x2="539.9" y2="339.0"/><circle class="mi" cx="539.9" cy="339.0" r="5"><title>the interpreter: 5.4 ms</title></circle><circle class="mc" cx="316.9" cy="339.0" r="5"><title>hazel-jit, 2026-11-19: 19.8 µs</title></circle><circle class="mj" cx="223.1" cy="339.0" r="5"><title>hazel-jit now: 1.88 µs</title></circle><circle class="mp" cx="186.1" cy="339.0" r="5"><title>plain JS: 0.74 µs</title></circle><text class="lbl" x="142" y="365.0" text-anchor="end">Gnome dig</text><line class="span" x1="293.5" y1="361.0" x2="652.7" y2="361.0"/><circle class="mi" cx="652.7" cy="361.0" r="5"><title>the interpreter: 91.5 ms</title></circle><circle class="mc" cx="343.0" cy="361.0" r="5"><title>hazel-jit, 2026-11-19: 38.3 µs</title></circle><circle class="mj" cx="293.5" cy="361.0" r="5"><title>hazel-jit now: 11.0 µs</title></circle></svg>
-<figcaption>Each game’s time a call, on a log scale, on its own run of states as its page plays it (4,590 calls in all). The dashed line is 16.7 ms, a frame at 60 frames a second: a call to its left fits in a frame, were the call all the frame’s work. Only interpreted calls are to its right, 8 of the 14 games’; interpreted, the other 6 take Snake 1.5 ms, Butterfly garden 5.4 ms, Light trails 10.2 ms, Bricks 10.7 ms, Downhill 12.0 ms, Mahjong 15.2 ms. Hazel-jit’s slowest, now, is 19.4 µs (Checkers). The interpreter: <code>Hazel.runProgram</code>. hazel-jit, 2026-11-19: the game’s own <code>compiled.js</code>, compiled ahead of time with the converters a person wrote. hazel-jit now: <code>Hazel.jitProgram</code>, with all of today’s changes (<code>hazeljs</code> at 2c4a61560f). Plain JS: the game written by hand, for Checkers, Go, Minesweeper, Mahjong, Solitaire, Mahjong solitaire, Pinball, Downhill, Bricks, Snake, Light trails, Star wave, Butterfly garden. One GitHub runner a game, all four one after another (bench/4way, run 45665568030).</figcaption>
+<svg viewBox="0 0 720 412" role="img" aria-labelledby="fwt"><title id="fwt">Each game's time a call, four ways, on a log scale, and a 60 fps frame</title><circle class="mp" cx="156" cy="16" r="5"/><text class="mut" x="166" y="20">plain JS</text><circle class="mj" cx="301" cy="16" r="5"/><text class="mut" x="311" y="20">hazel-jit now</text><circle class="mc" cx="446" cy="16" r="5"/><text class="mut" x="456" y="20">hazel-jit, 2026-11-19</text><circle class="mi" cx="591" cy="16" r="5"/><text class="mut" x="601" y="20">the interpreter</text><line class="grid" x1="197.9" y1="56" x2="197.9" y2="372"/><text class="mut" x="197.9" y="388" text-anchor="middle">1 µs</text><line class="grid" x1="289.6" y1="56" x2="289.6" y2="372"/><text class="mut" x="289.6" y="388" text-anchor="middle">10 µs</text><line class="grid" x1="381.3" y1="56" x2="381.3" y2="372"/><text class="mut" x="381.3" y="388" text-anchor="middle">100 µs</text><line class="grid" x1="472.9" y1="56" x2="472.9" y2="372"/><text class="mut" x="472.9" y="388" text-anchor="middle">1 ms</text><line class="grid" x1="564.6" y1="56" x2="564.6" y2="372"/><text class="mut" x="564.6" y="388" text-anchor="middle">10 ms</text><line class="grid" x1="656.3" y1="56" x2="656.3" y2="372"/><text class="mut" x="656.3" y="388" text-anchor="middle">100 ms</text><line class="frame" x1="584.9" y1="34" x2="584.9" y2="372"/><text class="framel" x="578.9" y="46" text-anchor="end">16.7 ms: a frame at 60 fps, were a call all of its work</text><text class="lbl" x="142" y="79.0" text-anchor="end">Checkers</text><line class="span" x1="226.8" y1="75.0" x2="584.3" y2="75.0"/><circle class="mi" cx="584.3" cy="75.0" r="5"><title>the interpreter: 16.4 ms</title></circle><circle class="mc" cx="300.0" cy="75.0" r="5"><title>hazel-jit, 2026-11-19: 13.0 µs</title></circle><circle class="mj" cx="298.2" cy="75.0" r="5"><title>hazel-jit now: 12.4 µs</title></circle><circle class="mp" cx="226.8" cy="75.0" r="5"><title>plain JS: 2.06 µs</title></circle><text class="lbl" x="142" y="101.0" text-anchor="end">Go</text><line class="span" x1="255.6" y1="97.0" x2="643.0" y2="97.0"/><circle class="mi" cx="643.0" cy="97.0" r="5"><title>the interpreter: 71.7 ms</title></circle><circle class="mc" cx="325.4" cy="97.0" r="5"><title>hazel-jit, 2026-11-19: 24.6 µs</title></circle><circle class="mj" cx="299.9" cy="97.0" r="5"><title>hazel-jit now: 13.0 µs</title></circle><circle class="mp" cx="255.6" cy="97.0" r="5"><title>plain JS: 4.26 µs</title></circle><text class="lbl" x="142" y="123.0" text-anchor="end">Minesweeper</text><line class="span" x1="207.9" y1="119.0" x2="660.3" y2="119.0"/><circle class="mi" cx="660.3" cy="119.0" r="5"><title>the interpreter: 110.5 ms</title></circle><circle class="mc" cx="390.8" cy="119.0" r="5"><title>hazel-jit, 2026-11-19: 127.1 µs</title></circle><circle class="mj" cx="297.6" cy="119.0" r="5"><title>hazel-jit now: 12.2 µs</title></circle><circle class="mp" cx="207.9" cy="119.0" r="5"><title>plain JS: 1.28 µs</title></circle><text class="lbl" x="142" y="145.0" text-anchor="end">Mahjong</text><line class="span" x1="281.2" y1="141.0" x2="596.1" y2="141.0"/><circle class="mi" cx="596.1" cy="141.0" r="5"><title>the interpreter: 22.0 ms</title></circle><circle class="mc" cx="320.0" cy="141.0" r="5"><title>hazel-jit, 2026-11-19: 21.4 µs</title></circle><circle class="mj" cx="299.8" cy="141.0" r="5"><title>hazel-jit now: 12.9 µs</title></circle><circle class="mp" cx="281.2" cy="141.0" r="5"><title>plain JS: 8.11 µs</title></circle><text class="lbl" x="142" y="167.0" text-anchor="end">Solitaire</text><line class="span" x1="196.8" y1="163.0" x2="630.0" y2="163.0"/><circle class="mi" cx="630.0" cy="163.0" r="5"><title>the interpreter: 51.7 ms</title></circle><circle class="mc" cx="292.2" cy="163.0" r="5"><title>hazel-jit, 2026-11-19: 10.7 µs</title></circle><circle class="mj" cx="252.5" cy="163.0" r="5"><title>hazel-jit now: 3.94 µs</title></circle><circle class="mp" cx="196.8" cy="163.0" r="5"><title>plain JS: 0.97 µs</title></circle><text class="lbl" x="142" y="189.0" text-anchor="end">Mahjong solitaire</text><line class="span" x1="242.4" y1="185.0" x2="632.0" y2="185.0"/><circle class="mi" cx="632.0" cy="185.0" r="5"><title>the interpreter: 54.4 ms</title></circle><circle class="mc" cx="343.0" cy="185.0" r="5"><title>hazel-jit, 2026-11-19: 38.3 µs</title></circle><circle class="mj" cx="281.2" cy="185.0" r="5"><title>hazel-jit now: 8.10 µs</title></circle><circle class="mp" cx="242.4" cy="185.0" r="5"><title>plain JS: 3.06 µs</title></circle><text class="lbl" x="142" y="211.0" text-anchor="end">Pinball</text><line class="span" x1="278.0" y1="207.0" x2="667.0" y2="207.0"/><circle class="mi" cx="667.0" cy="207.0" r="5"><title>the interpreter: 130.9 ms</title></circle><circle class="mc" cx="351.2" cy="207.0" r="5"><title>hazel-jit, 2026-11-19: 47.0 µs</title></circle><circle class="mj" cx="291.4" cy="207.0" r="5"><title>hazel-jit now: 10.5 µs</title></circle><circle class="mp" cx="278.0" cy="207.0" r="5"><title>plain JS: 7.47 µs</title></circle><text class="lbl" x="142" y="233.0" text-anchor="end">Downhill</text><line class="span" x1="177.1" y1="229.0" x2="563.7" y2="229.0"/><circle class="mi" cx="563.7" cy="229.0" r="5"><title>the interpreter: 9.8 ms</title></circle><circle class="mc" cx="290.9" cy="229.0" r="5"><title>hazel-jit, 2026-11-19: 10.3 µs</title></circle><circle class="mj" cx="239.1" cy="229.0" r="5"><title>hazel-jit now: 2.81 µs</title></circle><circle class="mp" cx="177.1" cy="229.0" r="5"><title>plain JS: 0.59 µs</title></circle><text class="lbl" x="142" y="255.0" text-anchor="end">Bricks</text><line class="span" x1="142.8" y1="251.0" x2="557.2" y2="251.0"/><circle class="mi" cx="557.2" cy="251.0" r="5"><title>the interpreter: 8.3 ms</title></circle><circle class="mc" cx="255.4" cy="251.0" r="5"><title>hazel-jit, 2026-11-19: 4.23 µs</title></circle><circle class="mj" cx="211.3" cy="251.0" r="5"><title>hazel-jit now: 1.40 µs</title></circle><circle class="mp" cx="142.8" cy="251.0" r="5"><title>plain JS: 0.25 µs</title></circle><text class="lbl" x="142" y="277.0" text-anchor="end">Snake</text><line class="span" x1="200.0" y1="273.0" x2="492.8" y2="273.0"/><circle class="mi" cx="492.8" cy="273.0" r="5"><title>the interpreter: 1.6 ms</title></circle><circle class="mc" cx="256.6" cy="273.0" r="5"><title>hazel-jit, 2026-11-19: 4.37 µs</title></circle><circle class="mj" cx="240.2" cy="273.0" r="5"><title>hazel-jit now: 2.89 µs</title></circle><circle class="mp" cx="200.0" cy="273.0" r="5"><title>plain JS: 1.05 µs</title></circle><text class="lbl" x="142" y="299.0" text-anchor="end">Light trails</text><line class="span" x1="182.2" y1="295.0" x2="554.3" y2="295.0"/><circle class="mi" cx="554.3" cy="295.0" r="5"><title>the interpreter: 7.7 ms</title></circle><circle class="mc" cx="276.7" cy="295.0" r="5"><title>hazel-jit, 2026-11-19: 7.24 µs</title></circle><circle class="mj" cx="252.2" cy="295.0" r="5"><title>hazel-jit now: 3.91 µs</title></circle><circle class="mp" cx="182.2" cy="295.0" r="5"><title>plain JS: 0.67 µs</title></circle><text class="lbl" x="142" y="321.0" text-anchor="end">Star wave</text><line class="span" x1="178.9" y1="317.0" x2="604.6" y2="317.0"/><circle class="mi" cx="604.6" cy="317.0" r="5"><title>the interpreter: 27.3 ms</title></circle><circle class="mc" cx="306.8" cy="317.0" r="5"><title>hazel-jit, 2026-11-19: 15.4 µs</title></circle><circle class="mj" cx="272.4" cy="317.0" r="5"><title>hazel-jit now: 6.49 µs</title></circle><circle class="mp" cx="178.9" cy="317.0" r="5"><title>plain JS: 0.62 µs</title></circle><text class="lbl" x="142" y="343.0" text-anchor="end">Butterfly garden</text><line class="span" x1="182.6" y1="339.0" x2="544.6" y2="339.0"/><circle class="mi" cx="544.6" cy="339.0" r="5"><title>the interpreter: 6.1 ms</title></circle><circle class="mc" cx="318.3" cy="339.0" r="5"><title>hazel-jit, 2026-11-19: 20.6 µs</title></circle><circle class="mj" cx="222.5" cy="339.0" r="5"><title>hazel-jit now: 1.85 µs</title></circle><circle class="mp" cx="182.6" cy="339.0" r="5"><title>plain JS: 0.68 µs</title></circle><text class="lbl" x="142" y="365.0" text-anchor="end">Gnome dig</text><line class="span" x1="250.7" y1="361.0" x2="666.4" y2="361.0"/><circle class="mi" cx="666.4" cy="361.0" r="5"><title>the interpreter: 129.1 ms</title></circle><circle class="mc" cx="357.8" cy="361.0" r="5"><title>hazel-jit, 2026-11-19: 55.4 µs</title></circle><circle class="mj" cx="295.1" cy="361.0" r="5"><title>hazel-jit now: 11.5 µs</title></circle><circle class="mp" cx="250.7" cy="361.0" r="5"><title>plain JS: 3.76 µs</title></circle></svg>
+<figcaption>Each game’s time a call, on a log scale, on its own run of states as its page plays it (4,590 calls in all). The dashed line is 16.7 ms, a frame at 60 frames a second: a call to its left fits in a frame, were the call all the frame’s work. Only interpreted calls are to its right, 8 of the 14 games’; interpreted, the other 6 take Snake 1.6 ms, Butterfly garden 6.1 ms, Light trails 7.7 ms, Bricks 8.3 ms, Downhill 9.8 ms, Checkers 16.4 ms. Hazel-jit’s slowest, now, is 13.0 µs (Go). The interpreter: <code>Hazel.runProgram</code>. hazel-jit, 2026-11-19: the game’s own <code>compiled.js</code>, compiled ahead of time with the converters a person wrote. hazel-jit now: <code>Hazel.jitProgram</code>, with all of today’s changes (<code>hazeljs</code> at 2c4a61560f). Plain JS: the game written by hand, for Checkers, Go, Minesweeper, Mahjong, Solitaire, Mahjong solitaire, Pinball, Downhill, Bricks, Snake, Light trails, Star wave, Butterfly garden, Gnome dig. One GitHub runner a game, all four one after another (bench/4way, run 45666570615).</figcaption>
 </figure>
 <ul>
 <li><b>Hazel-jit as of last Thursday</b> is each game’s own <code>compiled.js</code>: compiled ahead of time between 11-20 and 11-23, by hazel-jit on <code>trial/794-games-aot</code>, whose compiler last changed on 11-17 (and its value boundary on 11-18), so it is hazel-jit as it was on Thursday; and it is what each game’s page ran then. Since then: records as objects, the converters by declared type and their memory, the loops and JS arguments, and today’s three smaller changes.</li>
-<li><b>Hazel-jit now</b> goes through <code>Hazel.jit</code>, converting each call’s values from the page’s shapes and back, where the ahead-of-time files had converters written by hand; so it is faster with the conversion included. Most changed since Thursday: Minesweeper 13.5×, Butterfly garden 10.5×, Mahjong solitaire 5.3×; least: Checkers 0.9×, Snake 1.0×, Light trails 1.0×.</li>
-<li><b>The common set</b>, the 13 games with all four ways (Checkers, Go, Minesweeper, Mahjong, Solitaire, Mahjong solitaire, Pinball, Downhill, Bricks, Snake, Light trails, Star wave, Butterfly garden; plain JS for all but Gnome dig): a call takes 22.2 ms interpreted, 17.4 µs by hazel-jit of 11-19, 6.16 µs by hazel-jit now, and 1.40 µs in plain JS (geometric means). The interpreter takes 15,851 times plain JS’s time there.</li>
+<li><b>Hazel-jit now</b> goes through <code>Hazel.jit</code>, converting each call’s values from the page’s shapes and back, where the ahead-of-time files had converters written by hand; so it is faster with the conversion included. Most changed since Thursday: Butterfly garden 11.1×, Minesweeper 10.4×, Gnome dig 4.8×; least: Checkers 1.0×, Snake 1.5×, Mahjong 1.7×.</li>
+<li><b>The common set</b>, the 14 games with all four ways (Checkers, Go, Minesweeper, Mahjong, Solitaire, Mahjong solitaire, Pinball, Downhill, Bricks, Snake, Light trails, Star wave, Butterfly garden, Gnome dig): a call takes 24.2 ms interpreted, 18.1 µs by hazel-jit of 11-19, 5.83 µs by hazel-jit now, and 1.52 µs in plain JS (geometric means). The interpreter takes 15,948 times plain JS’s time there.</li>
 <li><b>What is still between hazel-jit and plain JS</b> is in this report’s other sections: the step count (about 21% of a call) and exact Ints (about 12%), the conversion where a whole state crosses (<a href="#crossing">Conversion at the edges</a>), constructors and options in hazel-jit’s own shapes, and the calls a person would not write (a game written by hand also chooses its own data structures).</li>
 </ul>
-<p>The plain JS column (Matthew, 2026-11-25: “Why don’t we have plain JS data for the later part of the table? Can we get it?”): eight of the games had none, as no one had written them in JavaScript. Light trails, Snake, Bricks, Downhill, Star wave, Butterfly garden, Mahjong solitaire and Pinball now have one, each written as a JavaScript programmer would (arrays, loops, the Floats in the rules’ order) and checked against its <code>compiled.js</code> at every step of many games, from 6,961 answers (Mahjong solitaire) to 600,020 (Butterfly garden), none different. Gnome dig’s is still to come. Snake here is the game as it is now (its levels and its newer robot), compiled by the same hazel-jit of 11-19.</p>
-<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>calls in its run</th><th>the interpreter</th><th>hazel-jit, 2026-11-19</th><th>hazel-jit now</th><th>plain JS</th><th>now against the interpreter</th><th>now against 11-19</th></tr></thead><tbody><tr><td class="l">Checkers</td><td>46</td><td>26.3 ms</td><td>17.2 µs</td><td>19.4 µs</td><td>1.63 µs</td><td>1,357×</td><td>0.9×</td></tr><tr><td class="l">Go</td><td>89</td><td>83.3 ms</td><td>34.3 µs</td><td>14.2 µs</td><td>4.66 µs</td><td>5,871×</td><td>2.4×</td></tr><tr><td class="l">Minesweeper</td><td>319</td><td>86.4 ms</td><td>154.2 µs</td><td>11.4 µs</td><td>0.88 µs</td><td>7,584×</td><td>13.5×</td></tr><tr><td class="l">Mahjong</td><td>137</td><td>15.2 ms</td><td>18.4 µs</td><td>9.99 µs</td><td>7.10 µs</td><td>1,523×</td><td>1.8×</td></tr><tr><td class="l">Solitaire</td><td>200</td><td>62.3 ms</td><td>14.1 µs</td><td>5.93 µs</td><td>1.15 µs</td><td>10,499×</td><td>2.4×</td></tr><tr><td class="l">Mahjong solitaire</td><td>72</td><td>57.7 ms</td><td>48.9 µs</td><td>9.25 µs</td><td>3.69 µs</td><td>6,235×</td><td>5.3×</td></tr><tr><td class="l">Pinball</td><td>600</td><td>80.0 ms</td><td>26.8 µs</td><td>5.82 µs</td><td>4.23 µs</td><td>13,754×</td><td>4.6×</td></tr><tr><td class="l">Downhill</td><td>600</td><td>12.0 ms</td><td>11.0 µs</td><td>3.23 µs</td><td>1.04 µs</td><td>3,712×</td><td>3.4×</td></tr><tr><td class="l">Bricks</td><td>600</td><td>10.7 ms</td><td>4.95 µs</td><td>1.95 µs</td><td>0.34 µs</td><td>5,504×</td><td>2.5×</td></tr><tr><td class="l">Snake</td><td>105</td><td>1.5 ms</td><td>2.65 µs</td><td>2.66 µs</td><td>0.55 µs</td><td>557×</td><td>1.0×</td></tr><tr><td class="l">Light trails</td><td>22</td><td>10.2 ms</td><td>7.23 µs</td><td>7.08 µs</td><td>0.75 µs</td><td>1,436×</td><td>1.0×</td></tr><tr><td class="l">Star wave</td><td>600</td><td>36.5 ms</td><td>20.7 µs</td><td>8.21 µs</td><td>0.86 µs</td><td>4,447×</td><td>2.5×</td></tr><tr><td class="l">Butterfly garden</td><td>600</td><td>5.4 ms</td><td>19.8 µs</td><td>1.88 µs</td><td>0.74 µs</td><td>2,853×</td><td>10.5×</td></tr><tr><td class="l">Gnome dig</td><td>600</td><td>91.5 ms</td><td>38.3 µs</td><td>11.0 µs</td><td>–</td><td>8,299×</td><td>3.5×</td></tr></tbody></table></div>
+<p>The plain JS column (Matthew, 2026-11-25: “Why don’t we have plain JS data for the later part of the table? Can we get it?”): nine of the games had none, as no one had written them in JavaScript. Light trails, Snake, Bricks, Downhill, Star wave, Butterfly garden, Mahjong solitaire, Pinball and Gnome dig now have one, each written as a JavaScript programmer would (arrays, loops, the Floats in the rules’ order) and checked against its <code>compiled.js</code> at every step of many games, from 6,961 answers (Mahjong solitaire) to 600,020 (Butterfly garden), none different. Snake here is the game as it is now (its levels and its newer robot), compiled by the same hazel-jit of 11-19.</p>
+<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>calls in its run</th><th>the interpreter</th><th>hazel-jit, 2026-11-19</th><th>hazel-jit now</th><th>plain JS</th><th>now against the interpreter</th><th>now against 11-19</th></tr></thead><tbody><tr><td class="l">Checkers</td><td>46</td><td>16.4 ms</td><td>13.0 µs</td><td>12.4 µs</td><td>2.06 µs</td><td>1,320×</td><td>1.0×</td></tr><tr><td class="l">Go</td><td>89</td><td>71.7 ms</td><td>24.6 µs</td><td>13.0 µs</td><td>4.26 µs</td><td>5,533×</td><td>1.9×</td></tr><tr><td class="l">Minesweeper</td><td>319</td><td>110.5 ms</td><td>127.1 µs</td><td>12.2 µs</td><td>1.28 µs</td><td>9,049×</td><td>10.4×</td></tr><tr><td class="l">Mahjong</td><td>137</td><td>22.0 ms</td><td>21.4 µs</td><td>12.9 µs</td><td>8.11 µs</td><td>1,705×</td><td>1.7×</td></tr><tr><td class="l">Solitaire</td><td>200</td><td>51.7 ms</td><td>10.7 µs</td><td>3.94 µs</td><td>0.97 µs</td><td>13,112×</td><td>2.7×</td></tr><tr><td class="l">Mahjong solitaire</td><td>72</td><td>54.4 ms</td><td>38.3 µs</td><td>8.10 µs</td><td>3.06 µs</td><td>6,719×</td><td>4.7×</td></tr><tr><td class="l">Pinball</td><td>600</td><td>130.9 ms</td><td>47.0 µs</td><td>10.5 µs</td><td>7.47 µs</td><td>12,520×</td><td>4.5×</td></tr><tr><td class="l">Downhill</td><td>600</td><td>9.8 ms</td><td>10.3 µs</td><td>2.81 µs</td><td>0.59 µs</td><td>3,479×</td><td>3.7×</td></tr><tr><td class="l">Bricks</td><td>600</td><td>8.3 ms</td><td>4.23 µs</td><td>1.40 µs</td><td>0.25 µs</td><td>5,933×</td><td>3.0×</td></tr><tr><td class="l">Snake</td><td>105</td><td>1.6 ms</td><td>4.37 µs</td><td>2.89 µs</td><td>1.05 µs</td><td>570×</td><td>1.5×</td></tr><tr><td class="l">Light trails</td><td>22</td><td>7.7 ms</td><td>7.24 µs</td><td>3.91 µs</td><td>0.67 µs</td><td>1,976×</td><td>1.9×</td></tr><tr><td class="l">Star wave</td><td>600</td><td>27.3 ms</td><td>15.4 µs</td><td>6.49 µs</td><td>0.62 µs</td><td>4,208×</td><td>2.4×</td></tr><tr><td class="l">Butterfly garden</td><td>600</td><td>6.1 ms</td><td>20.6 µs</td><td>1.85 µs</td><td>0.68 µs</td><td>3,271×</td><td>11.1×</td></tr><tr><td class="l">Gnome dig</td><td>600</td><td>129.1 ms</td><td>55.4 µs</td><td>11.5 µs</td><td>3.76 µs</td><td>11,233×</td><td>4.8×</td></tr></tbody></table></div>
 
 <h2 id="speed">Speed beside them<a class="anchor" href="#speed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="speed" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
 <p><b>Only one small rule has been measured with all of them: measured again today, ReScript’s and Melange’s code runs it about four times as fast as hazel-jit’s with the trial’s changes, and the hand-written JavaScript about 2.4 times (<a href="#today-petri">today’s numbers</a>).</b> On 2026-11-07 it was about three times and twice; hazel-jit’s Ints have become exact since, and its functions count steps. <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s numbers, in Node 22 on the same laptop:</p>
 <div class="tw"><table class="nums"><thead><tr><th class="l">Compiler</th><th>µs a call, median</th><th>the fastest call</th></tr></thead><tbody><tr><td class="l">Melange 5.0.0</td><td>0.46</td><td>0.35</td></tr><tr><td class="l">ReScript 12.3.1</td><td>0.55</td><td>0.38</td></tr><tr><td class="l">js_of_ocaml 5.9.1 (the rule inlined into the loop)</td><td>0.71</td><td>0.40</td></tr><tr><td class="l">JS written by hand</td><td>0.90</td><td>0.71</td></tr><tr><td class="l">hazel-jit, 2026-11-07</td><td>1.59</td><td>0.66</td></tr><tr><td class="l">Hazel&#x27;s interpreter</td><td>358</td><td></td></tr></tbody></table></div>
 <p>That hazel-jit had records as arrays, field reads through a call, and an equality too big to inline; and its Ints were plain JS numbers, with no step counted.</p>
-<p><b>The games and activities of hazeljs-examples have hazel-jit’s numbers but none for the other compilers.</b> <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> timed every game four ways (on the interpreter, through the jit, compiled ahead of time, and, for five games, in JavaScript written by hand), and <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> timed each game’s own run of states as its page plays it. Neither has ReScript, Melange or js_of_ocaml: for them each game’s rules must be written again, in OCaml (for Melange and js_of_ocaml) or in ReScript. Since 2026-11-25 13 of the 14 games have a version in plain JavaScript, written by hand: Checkers, Go, Minesweeper, Mahjong and Solitaire from before, and eight more at Matthew’s ask (“Why don’t we have plain JS data for the later part of the table? Can we get it?”), each checked to give the same answers as its <code>compiled.js</code> at every step of many games. They come first (<a href="#next">What next</a>), so that each has all six: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, each playing the game’s own run of states in its own layout.</p>
+<p><b>The games and activities of hazeljs-examples have hazel-jit’s numbers but none for the other compilers.</b> <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> timed every game four ways (on the interpreter, through the jit, compiled ahead of time, and, for five games, in JavaScript written by hand), and <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> timed each game’s own run of states as its page plays it. Neither has ReScript, Melange or js_of_ocaml: for them each game’s rules must be written again, in OCaml (for Melange and js_of_ocaml) or in ReScript. Since 2026-11-25 every one of the 14 games has a version in plain JavaScript, written by hand: Checkers, Go, Minesweeper, Mahjong and Solitaire from before, and nine more at Matthew’s ask (“Why don’t we have plain JS data for the later part of the table? Can we get it?”), each checked to give the same answers as its <code>compiled.js</code> at every step of many games. They come first (<a href="#next">What next</a>), so that each has all six: the interpreter, hazel-jit, ReScript, Melange, js_of_ocaml and the hand-written JavaScript, each playing the game’s own run of states in its own layout.</p>
 
 
 <h2 id="crossing">Conversion at the edges, over time<a class="anchor" href="#crossing" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="crossing" title="copy this section's address">copy link</button></h2>
@@ -999,7 +999,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
 {
  "report": 65,
  "title": "hazel-jit’s PR, Described",
- "blurb": "A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 3,823 times as fast as the interpreter and 2.9 times as fast as on 2026-11-19, and takes 4.4 times the time of the same game written by hand in JavaScript, where it took 12.4 times. With the day's changes merged: tail calls as loops, a named function's tuple parts as JS arguments, constructors without arguments made once, a module's members by name; and where conversion at the edges still costs, and how to bring it down.",
+ "blurb": "A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 4,148 times as fast as the interpreter and 3.1 times as fast as on 2026-11-19, and takes 3.8 times the time of the same game written by hand in JavaScript, where it took 11.9 times. With the day's changes merged: tail calls as loops, a named function's tuple parts as JS arguments, constructors without arguments made once, a module's members by name; and where conversion at the edges still costs, and how to bring it down.",
  "source": "065/pr-2859.md: the description for hazelgrove/hazel#2859, in GitHub's Markdown; the page renders it and carries it to copy",
  "builds": {
   "hazel-jit": "hazelgrove/hazel hazel-jit at 9ec865976d (#2859), on dev at 21da4ae66b",
@@ -1017,7 +1017,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
  "ticket_853_more": "matthewhammer/hazeljs-examples bench/853-more, GitHub run 45645748545: six builds one after another on one runner a game: the base (hazelgrove/hazel trial/853-pkg 6d041e9769, loops and JS arguments, as merged), c1 (trial/853-pkg-c1 a14e698ec8: constructors without arguments made once), c2 (trial/853-pkg-c2 bc9d98db6b: a module's members by name), c3 (trial/853-pkg-c3 f111bb00ac: == against a literal as ===), noint (b471f761fb: c3 with Ints as plain JS numbers, a bench build only) and nostep (ae9611d03f: c3 with no step counted, a bench build only); and the Petri rule on the laptop the same six ways, five rounds (data/petri-more-runs.jsonl)",
  "crossing": "#crossing: data/crossing-timeline.json (the jit against the games' own compiled.js, build by build, from reports 063 and 054 and today's runs); data/petri-crossing-runs.jsonl (the Petri rule direct into compiled code, petri-bench.mjs hazel, and through Hazel.jitProgram as a page calls it, petri-bench.mjs jit; hazeljs 0.0.13 and trial/853-pkg-c3; five rounds on the laptop)",
  "options_bench": "data/petri-opt-runs.jsonl: the Petri rule on the laptop, seven rounds, trial/853-pkg-c3 (f111bb00ac) against trial/853-pkg-opt (bee76969b5, a bench build only: options unboxed in compiled code)",
- "fourway": "matthewhammer/hazeljs-examples bench/4way, GitHub run 45665568030: each game's own run of states (node/package-bench.mjs --runs --aot-as-is, the interpreter included), one runner a game, with the library of hazelgrove/hazel hazeljs at 2c4a61560f: interpreted (Hazel.runProgram), jit (Hazel.jitProgram: hazel-jit now), compiled (each game's own compiled.js, compiled ahead of time by hazel-jit on trial/794-games-aot between 11-20 and 11-23, whose compiler, HazelJit.re, last changed on 11-17 and its value boundary on 11-18: hazel-jit as of Thursday 11-19), and plain JS (<game>/plain.js, thirteen games: all but Gnome dig); every answer the same",
+ "fourway": "matthewhammer/hazeljs-examples bench/4way, GitHub run 45666570615: each game's own run of states (node/package-bench.mjs --runs --aot-as-is, the interpreter included), one runner a game, with the library of hazelgrove/hazel hazeljs at 2c4a61560f: interpreted (Hazel.runProgram), jit (Hazel.jitProgram: hazel-jit now), compiled (each game's own compiled.js, compiled ahead of time by hazel-jit on trial/794-games-aot between 11-20 and 11-23, whose compiler, HazelJit.re, last changed on 11-17 and its value boundary on 11-18: hazel-jit as of Thursday 11-19), and plain JS (<game>/plain.js, all fourteen games); every answer the same",
  "files": [
   "data/crossing-timeline.json",
   "data/games-4way",
@@ -1575,142 +1575,142 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
     [
      "Checkers",
      "46",
-     "26.3 ms",
-     "17.2 µs",
-     "19.4 µs",
-     "1.63 µs",
-     "1,357×",
-     "0.9×"
+     "16.4 ms",
+     "13.0 µs",
+     "12.4 µs",
+     "2.06 µs",
+     "1,320×",
+     "1.0×"
     ],
     [
      "Go",
      "89",
-     "83.3 ms",
-     "34.3 µs",
-     "14.2 µs",
-     "4.66 µs",
-     "5,871×",
-     "2.4×"
+     "71.7 ms",
+     "24.6 µs",
+     "13.0 µs",
+     "4.26 µs",
+     "5,533×",
+     "1.9×"
     ],
     [
      "Minesweeper",
      "319",
-     "86.4 ms",
-     "154.2 µs",
-     "11.4 µs",
-     "0.88 µs",
-     "7,584×",
-     "13.5×"
+     "110.5 ms",
+     "127.1 µs",
+     "12.2 µs",
+     "1.28 µs",
+     "9,049×",
+     "10.4×"
     ],
     [
      "Mahjong",
      "137",
-     "15.2 ms",
-     "18.4 µs",
-     "9.99 µs",
-     "7.10 µs",
-     "1,523×",
-     "1.8×"
+     "22.0 ms",
+     "21.4 µs",
+     "12.9 µs",
+     "8.11 µs",
+     "1,705×",
+     "1.7×"
     ],
     [
      "Solitaire",
      "200",
-     "62.3 ms",
-     "14.1 µs",
-     "5.93 µs",
-     "1.15 µs",
-     "10,499×",
-     "2.4×"
+     "51.7 ms",
+     "10.7 µs",
+     "3.94 µs",
+     "0.97 µs",
+     "13,112×",
+     "2.7×"
     ],
     [
      "Mahjong solitaire",
      "72",
-     "57.7 ms",
-     "48.9 µs",
-     "9.25 µs",
-     "3.69 µs",
-     "6,235×",
-     "5.3×"
+     "54.4 ms",
+     "38.3 µs",
+     "8.10 µs",
+     "3.06 µs",
+     "6,719×",
+     "4.7×"
     ],
     [
      "Pinball",
      "600",
-     "80.0 ms",
-     "26.8 µs",
-     "5.82 µs",
-     "4.23 µs",
-     "13,754×",
-     "4.6×"
+     "130.9 ms",
+     "47.0 µs",
+     "10.5 µs",
+     "7.47 µs",
+     "12,520×",
+     "4.5×"
     ],
     [
      "Downhill",
      "600",
-     "12.0 ms",
-     "11.0 µs",
-     "3.23 µs",
-     "1.04 µs",
-     "3,712×",
-     "3.4×"
+     "9.8 ms",
+     "10.3 µs",
+     "2.81 µs",
+     "0.59 µs",
+     "3,479×",
+     "3.7×"
     ],
     [
      "Bricks",
      "600",
-     "10.7 ms",
-     "4.95 µs",
-     "1.95 µs",
-     "0.34 µs",
-     "5,504×",
-     "2.5×"
+     "8.3 ms",
+     "4.23 µs",
+     "1.40 µs",
+     "0.25 µs",
+     "5,933×",
+     "3.0×"
     ],
     [
      "Snake",
      "105",
-     "1.5 ms",
-     "2.65 µs",
-     "2.66 µs",
-     "0.55 µs",
-     "557×",
-     "1.0×"
+     "1.6 ms",
+     "4.37 µs",
+     "2.89 µs",
+     "1.05 µs",
+     "570×",
+     "1.5×"
     ],
     [
      "Light trails",
      "22",
-     "10.2 ms",
-     "7.23 µs",
-     "7.08 µs",
-     "0.75 µs",
-     "1,436×",
-     "1.0×"
+     "7.7 ms",
+     "7.24 µs",
+     "3.91 µs",
+     "0.67 µs",
+     "1,976×",
+     "1.9×"
     ],
     [
      "Star wave",
      "600",
-     "36.5 ms",
-     "20.7 µs",
-     "8.21 µs",
-     "0.86 µs",
-     "4,447×",
-     "2.5×"
+     "27.3 ms",
+     "15.4 µs",
+     "6.49 µs",
+     "0.62 µs",
+     "4,208×",
+     "2.4×"
     ],
     [
      "Butterfly garden",
      "600",
-     "5.4 ms",
-     "19.8 µs",
-     "1.88 µs",
-     "0.74 µs",
-     "2,853×",
-     "10.5×"
+     "6.1 ms",
+     "20.6 µs",
+     "1.85 µs",
+     "0.68 µs",
+     "3,271×",
+     "11.1×"
     ],
     [
      "Gnome dig",
      "600",
-     "91.5 ms",
-     "38.3 µs",
-     "11.0 µs",
-     "–",
-     "8,299×",
-     "3.5×"
+     "129.1 ms",
+     "55.4 µs",
+     "11.5 µs",
+     "3.76 µs",
+     "11,233×",
+     "4.8×"
     ]
    ]
   },
