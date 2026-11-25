@@ -275,6 +275,73 @@ FIGS.update({"fw_svg": fw_svg(), "fw_table": fw_table(),
              "fw_nunder": str(sum(FW[g]["interpreted"] <= 16667 for g in GAMES)), "fw_n": str(len(GAMES)), "fw_steps": f'{sum(FWSTEPS.values()):,}',
              "fw_best": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: -FW[g]["compiled"] / FW[g]["jit"])[:3]),
              "fw_least": ", ".join(f'{GNAME[g]} {FW[g]["compiled"] / FW[g]["jit"]:.1f}×' for g in sorted(GAMES, key=lambda g: FW[g]["compiled"] / FW[g]["jit"])[:3])})
+# (#speedrun) Gnome world's speed run, three ways (^ticket(873); Matthew, 2026-11-25: "please time a speedrun for a 3 way
+# comparison: interpreter (to some limit; no more than 5 minutes total), hazel jit, as of today, plain JS"; "The older hazel jit
+# versions are not important to include"): hazeljs-examples node/world-speedrun.mjs on one GitHub runner (data/speedrun/)
+SR_RUN = "45689859451"
+SR_BUILD = "hazeljs-examples main at bbfde10: Gnome world 0.0.132, with its gem finder and caverns (336 gems in seed 7), the speed run's things in a planned order and its dash (0.0.130), and the water stepped only where it moves (0.0.131)"
+SR = json.load(open(os.path.join(DATA, "speedrun", "result.json")))
+SRW = SR["ways"]; SRJ, SRP, SRI = SRW["jit"], SRW["plain"], SRW["interpreted"]
+SR_MACHINE = [l.strip() for l in open(os.path.join(DATA, "speedrun", "machine.txt"))]
+def sr_prefix(w, n):
+    t = 0.0
+    for steps, ms in w["chunks"]:
+        if steps > n: break
+        t += ms
+    return t
+SR_N = SRI["steps"]
+SR_PRE = {k: sr_prefix(SRW[k], SR_N) for k in ("jit", "plain", "interpreted")}
+SR_EST = SRI["ms"] / SR_PRE["jit"] * SRJ["ms"]   # (the interpreter's whole run, estimated: its own steps' time, scaled as hazel-jit's whole run is to hazel-jit's same first steps)
+sr_rules = lambda w: sum(w["rules"]["ms"].values())
+SR_WAYS = [("plain", "plain JS", "mp"), ("jit", "hazel-jit now", "mj"), ("interpreted", "the interpreter", "mi")]
+def sr_svg():
+    W, L, top, rh = 720, 150, 40, 46
+    hi = SR_EST / 1000 * 1.05
+    x = lambda sec: L + sec / hi * (W - L - 150)
+    h = top + len(SR_WAYS) * rh + 36
+    ticks = "".join(f'<line class="grid" x1="{x(t):.1f}" y1="{top - 8}" x2="{x(t):.1f}" y2="{top + len(SR_WAYS) * rh}"/><text class="mut" x="{x(t):.1f}" y="{top + len(SR_WAYS) * rh + 16}" text-anchor="middle">{t // 60}:{t % 60:02d}</text>'
+                    for t in range(0, int(hi) + 1, 60))
+    rows = ""
+    for i, (k, n, c) in enumerate(SR_WAYS):
+        w, y = SRW[k], top + i * rh + 8
+        sec, rul = w["ms"] / 1000, sr_rules(w) / 1000
+        rows += f'<text class="lbl" x="{L - 8}" y="{y + 17}" text-anchor="end">{esc(n)}</text>'
+        rows += f'<rect class="{c}" x="{L}" y="{y}" width="{x(sec) - L:.1f}" height="24" opacity="0.45"><title>{esc(n)}: {sec:.1f} s of steps</title></rect>'
+        rows += f'<rect class="{c}" x="{L}" y="{y}" width="{max(1.5, x(rul) - L):.1f}" height="24"><title>{esc(n)}: {rul:.2f} s in the rules</title></rect>'
+        if k == "interpreted":
+            rows += f'<rect class="est" x="{x(sec):.1f}" y="{y}" width="{x(SR_EST / 1000) - x(sec):.1f}" height="24"><title>the rest of the run, estimated</title></rect>'
+            rows += f'<text class="val" x="{x(SR_EST / 1000) + 6:.1f}" y="{y + 17}">≈ {SR_EST / 60000:.1f} min (estimated)</text>'
+        else:
+            rows += f'<text class="val" x="{x(sec) + 6:.1f}" y="{y + 17}">{sec:.1f} s</text>'
+    legend = (f'<rect class="mj" x="{L}" y="6" width="12" height="12"/><text class="mut" x="{L + 18}" y="16">in the rules</text>'
+              f'<rect class="mj" x="{L + 110}" y="6" width="12" height="12" opacity="0.45"/><text class="mut" x="{L + 128}" y="16">the page’s own work each step</text>'
+              f'<rect class="est" x="{L + 330}" y="6" width="12" height="12"/><text class="mut" x="{L + 348}" y="16">the interpreter’s rest, estimated</text>')
+    return f'<svg viewBox="0 0 {W} {h}" role="img" aria-labelledby="srt"><title id="srt">Gnome world’s speed run, its steps’ time three ways, and the part in the rules</title>{legend}{ticks}{rows}</svg>'
+def sr_table():
+    head = "<th class=\"l\">Way</th><th>steps run</th><th>the steps’ time</th><th>a step</th><th>in the rules</th><th>the rules’ share</th><th>World.step alone</th><th>answers the same</th>"
+    rows = ""
+    for k, n, _ in SR_WAYS:
+        w, rp = SRW[k], SR["replay"][k]
+        rows += (f'<tr><td class="l">{esc(n)}</td><td>{w["steps"]:,}{"" if w["done"] else " (of " + format(SRJ["steps"], ",") + ")"}</td><td>{w["ms"] / 1000:,.1f} s</td><td>{w["ms"] / w["steps"]:.2f} ms</td>'
+                 f'<td>{sr_rules(w) / 1000:,.2f} s</td><td>{sr_rules(w) / w["ms"] * 100:.1f}%</td><td>{fmt_us(rp["us"])}</td><td>{rp["same"]:,} of {rp["checked"]:,}</td></tr>')
+    return f'<div class="tw"><table class="nums"><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table></div>'
+CJ, CI = SR["compared"]["plain"], SR["compared"]["interpreted"]
+FIGS.update({"sr_svg": sr_svg(), "sr_table": sr_table(), "sr_run": SR_RUN, "sr_build": SR_BUILD, "sr_steps": f'{SRJ["steps"]:,}',
+             "sr_jit_s": f'{SRJ["ms"] / 1000:.1f}', "sr_plain_s": f'{SRP["ms"] / 1000:.1f}', "sr_interp_s": f'{SRI["ms"] / 1000:.0f}', "sr_interp_n": f'{SR_N:,}',
+             "sr_est_min": f'{SR_EST / 60000:.1f}', "sr_est_s": f'{SR_EST / 1000:.0f}',
+             "sr_pre_jit": f'{SR_PRE["jit"] / 1000:.1f}', "sr_pre_plain": f'{SR_PRE["plain"] / 1000:.1f}', "sr_pre_ratio": f'{SRI["ms"] / SR_PRE["jit"]:.1f}',
+             "sr_rules_jit": f'{sr_rules(SRJ) / 1000:.2f}', "sr_rules_plain": f'{sr_rules(SRP) / 1000:.2f}', "sr_rules_interp": f'{sr_rules(SRI) / 1000:.0f}',
+             "sr_share_jit": f'{sr_rules(SRJ) / SRJ["ms"] * 100:.1f}%', "sr_share_plain": f'{sr_rules(SRP) / SRP["ms"] * 100:.1f}%', "sr_share_interp": f'{sr_rules(SRI) / SRI["ms"] * 100:.0f}%',
+             "sr_step_j": f'{SRJ["ms"] / SRJ["steps"]:.2f}', "sr_step_p": f'{SRP["ms"] / SRP["steps"]:.2f}', "sr_step_i": f'{SRI["ms"] / SRI["steps"]:.1f}',
+             "sr_sps_j": f'{SRJ["steps"] / SRJ["ms"] * 1000:,.0f}', "sr_sps_i": f'{SRI["steps"] / SRI["ms"] * 1000:,.0f}',
+             "sr_spf_j": f'{12 / (SRJ["ms"] / SRJ["steps"]):.0f}', "sr_spf_i": f'{max(1, 12 / (SRI["ms"] / SRI["steps"])):.0f}',
+             "sr_us_j": fmt_us(SR["replay"]["jit"]["us"]), "sr_us_p": fmt_us(SR["replay"]["plain"]["us"]), "sr_us_i": fmt_us(SR["replay"]["interpreted"]["us"]),
+             "sr_jp": f'{SR["replay"]["jit"]["us"] / SR["replay"]["plain"]["us"]:.1f}', "sr_ij": f'{SR["replay"]["interpreted"]["us"] / SR["replay"]["jit"]["us"]:,.0f}',
+             "sr_samples": f'{SR["samples"]:,}', "sr_fp_p": f'{CJ["same"]} of {CJ["of"]}', "sr_fp_i": f'{CI["same"]} of {CI["of"]}',
+             "sr_fp_all": ("plain JS the same world as hazel-jit at every one" if CJ["same"] == CJ["of"] else "plain JS not the same throughout") + ("; the interpreter too" if CI["same"] == CI["of"] else "; the interpreter’s world parts from the first, by design: interpreted, the page grows the trees’ roots its own way (Hazel’s roots only with compiled rules), and the roots guide the water"),
+             "sr_calls": f'{SRJ["rules"]["calls"]["step"]:,}', "sr_beavers": f'{SRJ["rules"]["calls"]["beaver"]:,}',
+             "sr_machine": f'{SR_MACHINE[0]} cores, {SR_MACHINE[1].split(":", 1)[-1].strip()}, {SR_MACHINE[3]}',
+             "sr_greet": f'{SRJ["rules"]["calls"].get("greet", 0)}', "sr_roots": f'{SRJ["rules"]["calls"].get("roots", 0) + SRJ["rules"]["calls"].get("threads", 0)}'})
 PS = [json.loads(l) for l in open(os.path.join(DATA, "petri-split-runs.jsonl"))]
 pmed = lambda w: sorted(r["r"]["hazel"]["median_us"] for r in PS if r["way"] == w)[2]
 FIGS.update({"split_table": split_table(), "sp_loops": f'{gm([r["loops"] / r["base"] for r in SPL]):.2f}', "sp_both": f'{gm([r["both"] / r["base"] for r in SPL]):.2f}',
@@ -297,7 +364,7 @@ EXTRA = """
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
-  svg .mi { fill: #6b737d; } svg .mc { fill: #2a78d6; } svg .mj { fill: #eb6834; } svg .mp { fill: #2e9e5b; } svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
+  svg .mi { fill: #6b737d; } svg .mc { fill: #2a78d6; } svg .mj { fill: #eb6834; } svg .mp { fill: #2e9e5b; } svg .est { fill: rgba(107,115,125,0.16); stroke: #6b737d; stroke-width: 1.2; stroke-dasharray: 4 3; } svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
   svg .code { fill: #2a78d6; } svg .cross { fill: #eb6834; }
   svg .frame { stroke: #c0392b; stroke-width: 1.5; stroke-dasharray: 5 4; } svg .framel { fill: #c0392b; font: 12px system-ui, sans-serif; }
   table.nums tr.gm td { font-weight: 700; border-top: 2px solid var(--line); }
@@ -323,6 +390,7 @@ DESC = ("A working draft of the description for hazelgrove/hazel#2859, hazel-jit
         f"Every evaluator test also runs compiled where it compiles: {SWEEP['compiled']} of {SWEEP['checks']} do, and none differs from the interpreter. "
         "Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. "
         f"Four ways on the games of hazeljs-examples: hazel-jit now runs their rules {FIGS['fw_ij']} times as fast as the interpreter and {FIGS['fw_cj']} times as fast as on 2026-11-19, and takes {FIGS['fw_jp']} times the time of the same game written by hand in JavaScript, where it took {FIGS['fw_cp']} times. "
+        f"Gnome world's speed run, timed three ways: {FIGS['sr_steps']} steps in {FIGS['sr_jit_s']} s with hazel-jit now, {FIGS['sr_plain_s']} s in plain JS, about {FIGS['sr_est_min']} minutes interpreted; the rules are {FIGS['sr_share_jit']} of it with hazel-jit, the water most of the rest. "
         "With the day's changes merged: tail calls as loops, a named function's tuple parts as JS arguments, constructors without arguments made once, a module's members by name; and where conversion at the edges still costs, and how to bring it down.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
@@ -361,6 +429,7 @@ meta = {"title": TITLE, "blurb": DESC,
         "crossing": "#crossing: data/crossing-timeline.json (the jit against the games' own compiled.js, build by build, from reports 063 and 054 and today's runs); data/petri-crossing-runs.jsonl (the Petri rule direct into compiled code, petri-bench.mjs hazel, and through Hazel.jitProgram as a page calls it, petri-bench.mjs jit; hazeljs 0.0.13 and trial/853-pkg-c3; five rounds on the laptop)",
         "options_bench": "data/petri-opt-runs.jsonl: the Petri rule on the laptop, seven rounds, trial/853-pkg-c3 (f111bb00ac) against trial/853-pkg-opt (bee76969b5, a bench build only: options unboxed in compiled code)",
         "fourway": "matthewhammer/hazeljs-examples bench/4way, GitHub run 45666570615: each game's own run of states (node/package-bench.mjs --runs --aot-as-is, the interpreter included), one runner a game, with the library of hazelgrove/hazel hazeljs at 2c4a61560f: interpreted (Hazel.runProgram), jit (Hazel.jitProgram: hazel-jit now), compiled (each game's own compiled.js, compiled ahead of time by hazel-jit on trial/794-games-aot between 11-20 and 11-23, whose compiler, HazelJit.re, last changed on 11-17 and its value boundary on 11-18: hazel-jit as of Thursday 11-19), and plain JS (<game>/plain.js, all fourteen games); every answer the same",
-        "files": ["pr-2859.md", "data/games-4way/", "img/gnome-world.jpg", "data/petri-opt-runs.jsonl", "data/crossing-timeline.json", "data/petri-crossing-runs.jsonl", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
+        "speedrun": f"matthewhammer/hazeljs-examples node/world-speedrun.mjs (.github/workflows/world-speedrun.yml), GitHub run {SR_RUN}: Gnome world's speed run from a fresh world (seed 7, Dad) to its last gem in headless Chrome on one runner, the steps alone timed (no drawing), three ways: hazel-jit as the page loads it (build.hazel.org's hazel-lib.js, hazel-jit as of 2026-11-25), world/plain.js put in place of World.step, World.beaver and World.water_row, and the interpreter (?interpreted, the same library's Hazel.runProgram) for 220 s; then World.step replayed on every 10th of the run's own calls, each way",
+        "files": ["pr-2859.md", "data/speedrun/", "data/games-4way/", "img/gnome-world.jpg", "data/petri-opt-runs.jsonl", "data/crossing-timeline.json", "data/petri-crossing-runs.jsonl", "data/games-853-more/", "data/petri-more-runs.jsonl", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/petri-split-runs.jsonl", "data/games-853/", "data/games-853-split/", "drivers/petri/"]}
 json.dump(meta, open(os.path.join(DATA, "meta.json"), "w"), indent=1, ensure_ascii=False)
 print("wrote 065/index.html;", updated)

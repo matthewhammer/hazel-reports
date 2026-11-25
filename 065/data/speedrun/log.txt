@@ -1,0 +1,20 @@
+jit: seed 7, dad, the view 25.000 by 14.063 tiles, 800×450 px; the rules compiled by hazel-jit; built in 2301 ms
+  20000 steps, 10.9 s: trees, things 12/12, tree parts 46/64, gems 0/0
+  40000 steps, 21.9 s: gems, things 12/12, tree parts 64/64, gems 268/336
+  44933 steps, 25.5 s: dig, things 12/12, tree parts 64/64, gems 336/336
+jit: the speed run done in 44933 steps; the steps 25.46 s (566.6 µs a step); in the rules 0.34 s: beaver 37440 calls, 0.07 s; water_row 95 calls, 0.00 s; step 44933 calls, 0.23 s; roots 35 calls, 0.02 s; threads 30 calls, 0.01 s; greet 15 calls, 0.00 s
+  World.step's calls sampled: 4493 (every 10th)
+plain: seed 7, dad, the view 25.000 by 14.063 tiles, 800×450 px; the rules compiled by hazel-jit, then step, beaver, water_row put in plain JavaScript; built in 2206 ms
+  20000 steps, 10.5 s: trees, things 12/12, tree parts 46/64, gems 0/0
+  40000 steps, 21.2 s: gems, things 12/12, tree parts 64/64, gems 268/336
+  44933 steps, 24.7 s: dig, things 12/12, tree parts 64/64, gems 336/336
+plain: the speed run done in 44933 steps; the steps 24.72 s (550.2 µs a step); in the rules 0.09 s: beaver 37440 calls, 0.01 s; water_row 95 calls, 0.00 s; step 44933 calls, 0.05 s; roots 35 calls, 0.02 s; threads 30 calls, 0.00 s; greet 15 calls, 0.00 s
+interpreted: seed 7, dad, the view 25.000 by 14.063 tiles, 800×450 px; the rules interpreted; built in 2192 ms
+  20000 steps, 109.7 s: trees, things 12/12, tree parts 46/64, gems 0/0
+  40000 steps, 216.4 s: gems, things 12/12, tree parts 64/64, gems 268/336
+  stopped at 220 s (its limit), 42000 steps in
+interpreted: not done in 42000 steps; the steps 227.61 s (5419.2 µs a step); in the rules 201.58 s: beaver 35000 calls, 10.82 s; water_row 90 calls, 0.00 s; step 42000 calls, 190.74 s; greet 13 calls, 0.02 s
+compared, a fingerprint each 2000 steps: plain JS the same as hazel-jit at 23 of 23; the interpreter the same at 0 of 21 (parted by step 2000)
+World.step alone, jit: 2.58 µs a call (1161639 calls); answers the same as hazel-jit's at 4493 of 4493 samples
+World.step alone, plain: 0.51 µs a call (5838051 calls); answers the same as hazel-jit's at 4493 of 4493 samples
+World.step alone, interpreted: 4562.14 µs a call (3288 calls); answers the same as hazel-jit's at 3280 of 3280 samples

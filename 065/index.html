@@ -6,7 +6,7 @@
 <!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>hazel-jit’s PR, Described</title>
-<meta name="description" content="A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 4,148 times as fast as the interpreter and 3.1 times as fast as on 2026-11-19, and takes 3.8 times the time of the same game written by hand in JavaScript, where it took 11.9 times. With the day&#x27;s changes merged: tail calls as loops, a named function&#x27;s tuple parts as JS arguments, constructors without arguments made once, a module&#x27;s members by name; and where conversion at the edges still costs, and how to bring it down.">
+<meta name="description" content="A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 4,148 times as fast as the interpreter and 3.1 times as fast as on 2026-11-19, and takes 3.8 times the time of the same game written by hand in JavaScript, where it took 11.9 times. Gnome world&#x27;s speed run, timed three ways: 44,933 steps in 25.5 s with hazel-jit now, 24.7 s in plain JS, about 4.2 minutes interpreted; the rules are 1.3% of it with hazel-jit, the water most of the rest. With the day&#x27;s changes merged: tail calls as loops, a named function&#x27;s tuple parts as JS arguments, constructors without arguments made once, a module&#x27;s members by name; and where conversion at the edges still costs, and how to bring it down.">
 <style>  :root {
     --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
     --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
@@ -137,7 +137,7 @@ h3.grp { margin-top: 1.2em; }
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
-  svg .mi { fill: #6b737d; } svg .mc { fill: #2a78d6; } svg .mj { fill: #eb6834; } svg .mp { fill: #2e9e5b; } svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
+  svg .mi { fill: #6b737d; } svg .mc { fill: #2a78d6; } svg .mj { fill: #eb6834; } svg .mp { fill: #2e9e5b; } svg .est { fill: rgba(107,115,125,0.16); stroke: #6b737d; stroke-width: 1.2; stroke-dasharray: 4 3; } svg .grid { stroke: var(--line); } svg .span { stroke: var(--line); stroke-width: 2; }
   svg .code { fill: #2a78d6; } svg .cross { fill: #eb6834; }
   svg .frame { stroke: #c0392b; stroke-width: 1.5; stroke-dasharray: 5 4; } svg .framel { fill: #c0392b; font: 12px system-ui, sans-serif; }
   table.nums tr.gm td { font-weight: 700; border-top: 2px solid var(--line); }
@@ -165,7 +165,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 10:38 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 13:02 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -263,6 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#compare">Representations, then and now</a>: three of <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s five suggestions for hazel-jit’s output are done and the other two in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take 0.70 of the jit’s time, <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule 0.67, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#fourway">Four ways, on the games</a>: hazel-jit now is 4,148 times as fast as the interpreter, 3.1 times as fast as on 2026-11-19, and 3.8 times plain JS’s time.</li>
+<li><a href="#speedrun">Gnome world’s speed run, three ways</a>: its 44,933 steps take 25.5 s with hazel-jit now, 24.7 s in plain JS, and about 4.2 minutes interpreted; with hazel-jit, the rules are 1.3% of the run.</li>
 <li><a href="#speed">Speed beside them</a>: on <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule, ReScript and Melange are still about four times as fast; the games still need versions in OCaml and ReScript.</li>
 <li><a href="#crossing">Conversion at the edges, over time</a>: from most of a call to a fraction of one in two days; now the larger part again where a whole state crosses (on the Petri rule 71% of a call), and five ways to bring it down.</li>
 <li><a href="#left">What is still left</a>: five steps in Matthew’s order, each a ticket: constructors made once, modules by name and <code>===</code> (made, being timed), the cost of exact Ints and steps (measured), and options unboxed last.</li>
@@ -412,6 +413,22 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 </ul>
 <p>The plain JS column (Matthew, 2026-11-25: “Why don’t we have plain JS data for the later part of the table? Can we get it?”): nine of the games had none, as no one had written them in JavaScript. Light trails, Snake, Bricks, Downhill, Star wave, Butterfly garden, Mahjong solitaire, Pinball and Gnome dig now have one, each written as a JavaScript programmer would (arrays, loops, the Floats in the rules’ order) and checked against its <code>compiled.js</code> at every step of many games, from 6,961 answers (Mahjong solitaire) to 600,020 (Butterfly garden), none different. Snake here is the game as it is now (its levels and its newer robot), compiled by the same hazel-jit of 11-19.</p>
 <div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>calls in its run</th><th>the interpreter</th><th>hazel-jit, 2026-11-19</th><th>hazel-jit now</th><th>plain JS</th><th>now against the interpreter</th><th>now against 11-19</th></tr></thead><tbody><tr><td class="l">Checkers</td><td>46</td><td>16.4 ms</td><td>13.0 µs</td><td>12.4 µs</td><td>2.06 µs</td><td>1,320×</td><td>1.0×</td></tr><tr><td class="l">Go</td><td>89</td><td>71.7 ms</td><td>24.6 µs</td><td>13.0 µs</td><td>4.26 µs</td><td>5,533×</td><td>1.9×</td></tr><tr><td class="l">Minesweeper</td><td>319</td><td>110.5 ms</td><td>127.1 µs</td><td>12.2 µs</td><td>1.28 µs</td><td>9,049×</td><td>10.4×</td></tr><tr><td class="l">Mahjong</td><td>137</td><td>22.0 ms</td><td>21.4 µs</td><td>12.9 µs</td><td>8.11 µs</td><td>1,705×</td><td>1.7×</td></tr><tr><td class="l">Solitaire</td><td>200</td><td>51.7 ms</td><td>10.7 µs</td><td>3.94 µs</td><td>0.97 µs</td><td>13,112×</td><td>2.7×</td></tr><tr><td class="l">Mahjong solitaire</td><td>72</td><td>54.4 ms</td><td>38.3 µs</td><td>8.10 µs</td><td>3.06 µs</td><td>6,719×</td><td>4.7×</td></tr><tr><td class="l">Pinball</td><td>600</td><td>130.9 ms</td><td>47.0 µs</td><td>10.5 µs</td><td>7.47 µs</td><td>12,520×</td><td>4.5×</td></tr><tr><td class="l">Downhill</td><td>600</td><td>9.8 ms</td><td>10.3 µs</td><td>2.81 µs</td><td>0.59 µs</td><td>3,479×</td><td>3.7×</td></tr><tr><td class="l">Bricks</td><td>600</td><td>8.3 ms</td><td>4.23 µs</td><td>1.40 µs</td><td>0.25 µs</td><td>5,933×</td><td>3.0×</td></tr><tr><td class="l">Snake</td><td>105</td><td>1.6 ms</td><td>4.37 µs</td><td>2.89 µs</td><td>1.05 µs</td><td>570×</td><td>1.5×</td></tr><tr><td class="l">Light trails</td><td>22</td><td>7.7 ms</td><td>7.24 µs</td><td>3.91 µs</td><td>0.67 µs</td><td>1,976×</td><td>1.9×</td></tr><tr><td class="l">Star wave</td><td>600</td><td>27.3 ms</td><td>15.4 µs</td><td>6.49 µs</td><td>0.62 µs</td><td>4,208×</td><td>2.4×</td></tr><tr><td class="l">Butterfly garden</td><td>600</td><td>6.1 ms</td><td>20.6 µs</td><td>1.85 µs</td><td>0.68 µs</td><td>3,271×</td><td>11.1×</td></tr><tr><td class="l">Gnome dig</td><td>600</td><td>129.1 ms</td><td>55.4 µs</td><td>11.5 µs</td><td>3.76 µs</td><td>11,233×</td><td>4.8×</td></tr></tbody></table></div>
+
+<h2 id="speedrun">Gnome world’s speed run, three ways<a class="anchor" href="#speedrun" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="speedrun" title="copy this section's address">copy link</button></h2>
+<p class="tag own">This report’s</p>
+<p><b>Gnome world’s 🏃 speed run, from a fresh world to its last gem, 44,933 steps, takes 25.5 s of steps with the rules compiled by hazel-jit as the page loads, 24.7 s with the same rules written by hand in plain JavaScript, and about 4.2 minutes interpreted, estimated from the 42,000 steps it ran in its 228 s.</b> With hazel-jit the rules are a small part of the run: 0.34 s of its 25.5 s (1.3%; plain JS 0.09 s, 0.4%). The rest is the page’s own work at each step, the same in all three ways: the water seeping and flowing, the speed run’s search for its way, the beavers’ trees, the creatures. Interpreted, the rules are 89% of the steps’ time.</p>
+<figure class="chart">
+<svg viewBox="0 0 720 214" role="img" aria-labelledby="srt"><title id="srt">Gnome world’s speed run, its steps’ time three ways, and the part in the rules</title><rect class="mj" x="150" y="6" width="12" height="12"/><text class="mut" x="168" y="16">in the rules</text><rect class="mj" x="260" y="6" width="12" height="12" opacity="0.45"/><text class="mut" x="278" y="16">the page’s own work each step</text><rect class="est" x="480" y="6" width="12" height="12"/><text class="mut" x="498" y="16">the interpreter’s rest, estimated</text><line class="grid" x1="150.0" y1="32" x2="150.0" y2="178"/><text class="mut" x="150.0" y="194" text-anchor="middle">0:00</text><line class="grid" x1="246.1" y1="32" x2="246.1" y2="178"/><text class="mut" x="246.1" y="194" text-anchor="middle">1:00</text><line class="grid" x1="342.3" y1="32" x2="342.3" y2="178"/><text class="mut" x="342.3" y="194" text-anchor="middle">2:00</text><line class="grid" x1="438.4" y1="32" x2="438.4" y2="178"/><text class="mut" x="438.4" y="194" text-anchor="middle">3:00</text><line class="grid" x1="534.5" y1="32" x2="534.5" y2="178"/><text class="mut" x="534.5" y="194" text-anchor="middle">4:00</text><text class="lbl" x="142" y="65" text-anchor="end">plain JS</text><rect class="mp" x="150" y="48" width="39.6" height="24" opacity="0.45"><title>plain JS: 24.7 s of steps</title></rect><rect class="mp" x="150" y="48" width="1.5" height="24"><title>plain JS: 0.09 s in the rules</title></rect><text class="val" x="195.6" y="65">24.7 s</text><text class="lbl" x="142" y="111" text-anchor="end">hazel-jit now</text><rect class="mj" x="150" y="94" width="40.8" height="24" opacity="0.45"><title>hazel-jit now: 25.5 s of steps</title></rect><rect class="mj" x="150" y="94" width="1.5" height="24"><title>hazel-jit now: 0.34 s in the rules</title></rect><text class="val" x="196.8" y="111">25.5 s</text><text class="lbl" x="142" y="157" text-anchor="end">the interpreter</text><rect class="mi" x="150" y="140" width="364.7" height="24" opacity="0.45"><title>the interpreter: 227.6 s of steps</title></rect><rect class="mi" x="150" y="140" width="323.0" height="24"><title>the interpreter: 201.58 s in the rules</title></rect><rect class="est" x="514.7" y="140" width="35.3" height="24"><title>the rest of the run, estimated</title></rect><text class="val" x="556.0" y="157">≈ 4.2 min (estimated)</text></svg>
+<figcaption>Gnome world’s speed run, its steps’ time in all, three ways, on one GitHub runner (4 cores, AMD EPYC 9V74 80-Core Processor, Google Chrome 157.0.8103.78; run 45689859451), on hazeljs-examples main at bbfde10: Gnome world 0.0.132, with its gem finder and caverns (336 gems in seed 7), the speed run's things in a planned order and its dash (0.0.130), and the water stepped only where it moves (0.0.131). The solid part of each bar is the time in the rules (World.step, the beavers’ World.beaver, and the rest Hazel holds); the faded part, the page’s own work. The interpreter ran for its limit, 42,000 steps; the rest of its bar, dashed, is estimated: its time over those steps (228 s), scaled as hazel-jit’s whole run is to hazel-jit’s same first 42,000 steps (23.2 s, so 9.8 times as long).</figcaption>
+</figure>
+<ul>
+<li><b>The run</b>: <code>node/world-speedrun.mjs</code> in headless Chrome, three pages one after another: each a fresh world (seed 7, Dad), the speed run started, its steps run by the page’s own <code>tick</code> in chunks of 2,000 with no drawing (the drawing is the same in all three ways), timed, until the speed run ends at its last gem (the dig after it not run). Hazel-jit: the hazeljs branch’s library from build.hazel.org, as the page loads it, hazel-jit as of today. Plain JS: <code>world/plain.js</code> put in place of World.step, World.beaver and World.water_row (what else the run calls stays Hazel’s: 15 villagers’ greetings, and 65 trees’ and mushrooms’ roots grown as it came near them; with no drawing, none grow by the view). The interpreter: the same library’s <code>Hazel.runProgram</code>, for 220 s, so that its run, its replay and its two builds keep within five minutes.</li>
+<li><b>A step</b> takes 0.57 ms with hazel-jit (about 1,765 steps a second), 0.55 ms in plain JS, and 5.4 ms interpreted (about 185 a second). The page runs the speed run as fast as it can, about 12 ms of steps a frame: with hazel-jit, about 21 steps a frame at 60 frames a second, on this runner; interpreted, about 2. A slower computer takes fewer a frame, down to one, and the speed run goes no faster than play (Gnome world’s ⏱ measures it there, both ways).</li>
+<li><b>The rules alone</b>: World.step replayed on every tenth of the run’s own 44,933 calls (4,493 of them): hazel-jit takes 2.58 µs a call, plain JS 0.51 µs, the interpreter 4.6 ms. Hazel-jit takes 5.0 times plain JS’s time, and the interpreter 1,767 times hazel-jit’s. Every answer is the same as hazel-jit’s.</li>
+<li><b>The same world, step for step</b>: a fingerprint of the world every 2,000 steps (the frame, the gnome, the beavers, the things and the gems found): plain JS against hazel-jit, 23 of 23; the interpreter against hazel-jit, 0 of 21: plain JS the same world as hazel-jit at every one; the interpreter’s world parts from the first, by design: interpreted, the page grows the trees’ roots its own way (Hazel’s roots only with compiled rules), and the roots guide the water. (Getting there: each run’s page now begins from the same world, step for step: the same frame count, weather and clocks, the view the same size, and Gnome world 0.0.132 sets the water’s direction as a world is made; before, the runs parted by step 14,000 though every answer was the same.)</li>
+<li><b>The page’s own work at each step is the water</b>, nearly all of it: under ⚙️ Advanced, Gnome world’s ⏱ (0.0.130) times a step’s parts on any device; on the laptop, the water was 96% of a step, the gnome’s own step 1%. Gnome world 0.0.131 steps the water only where it moves, and the speed run plans its order and dashes (0.0.130): this run’s step is half the time of the same run on 0.0.127, and its run 44,933 steps where it was 55,537.</li>
+</ul>
+<div class="tw"><table class="nums"><thead><tr><th class="l">Way</th><th>steps run</th><th>the steps’ time</th><th>a step</th><th>in the rules</th><th>the rules’ share</th><th>World.step alone</th><th>answers the same</th></tr></thead><tbody><tr><td class="l">plain JS</td><td>44,933</td><td>24.7 s</td><td>0.55 ms</td><td>0.09 s</td><td>0.4%</td><td>0.51 µs</td><td>4,493 of 4,493</td></tr><tr><td class="l">hazel-jit now</td><td>44,933</td><td>25.5 s</td><td>0.57 ms</td><td>0.34 s</td><td>1.3%</td><td>2.58 µs</td><td>4,493 of 4,493</td></tr><tr><td class="l">the interpreter</td><td>42,000 (of 44,933)</td><td>227.6 s</td><td>5.42 ms</td><td>201.58 s</td><td>88.6%</td><td>4.6 ms</td><td>3,280 of 3,280</td></tr></tbody></table></div>
 
 <h2 id="speed">Speed beside them<a class="anchor" href="#speed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="speed" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
@@ -999,7 +1016,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
 {
  "report": 65,
  "title": "hazel-jit’s PR, Described",
- "blurb": "A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 4,148 times as fast as the interpreter and 3.1 times as fast as on 2026-11-19, and takes 3.8 times the time of the same game written by hand in JavaScript, where it took 11.9 times. With the day's changes merged: tail calls as loops, a named function's tuple parts as JS arguments, constructors without arguments made once, a module's members by name; and where conversion at the edges still costs, and how to bring it down.",
+ "blurb": "A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. Four ways on the games of hazeljs-examples: hazel-jit now runs their rules 4,148 times as fast as the interpreter and 3.1 times as fast as on 2026-11-19, and takes 3.8 times the time of the same game written by hand in JavaScript, where it took 11.9 times. Gnome world's speed run, timed three ways: 44,933 steps in 25.5 s with hazel-jit now, 24.7 s in plain JS, about 4.2 minutes interpreted; the rules are 1.3% of it with hazel-jit, the water most of the rest. With the day's changes merged: tail calls as loops, a named function's tuple parts as JS arguments, constructors without arguments made once, a module's members by name; and where conversion at the edges still costs, and how to bring it down.",
  "source": "065/pr-2859.md: the description for hazelgrove/hazel#2859, in GitHub's Markdown; the page renders it and carries it to copy",
  "builds": {
   "hazel-jit": "hazelgrove/hazel hazel-jit at 9ec865976d (#2859), on dev at 21da4ae66b",
@@ -1018,6 +1035,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
  "crossing": "#crossing: data/crossing-timeline.json (the jit against the games' own compiled.js, build by build, from reports 063 and 054 and today's runs); data/petri-crossing-runs.jsonl (the Petri rule direct into compiled code, petri-bench.mjs hazel, and through Hazel.jitProgram as a page calls it, petri-bench.mjs jit; hazeljs 0.0.13 and trial/853-pkg-c3; five rounds on the laptop)",
  "options_bench": "data/petri-opt-runs.jsonl: the Petri rule on the laptop, seven rounds, trial/853-pkg-c3 (f111bb00ac) against trial/853-pkg-opt (bee76969b5, a bench build only: options unboxed in compiled code)",
  "fourway": "matthewhammer/hazeljs-examples bench/4way, GitHub run 45666570615: each game's own run of states (node/package-bench.mjs --runs --aot-as-is, the interpreter included), one runner a game, with the library of hazelgrove/hazel hazeljs at 2c4a61560f: interpreted (Hazel.runProgram), jit (Hazel.jitProgram: hazel-jit now), compiled (each game's own compiled.js, compiled ahead of time by hazel-jit on trial/794-games-aot between 11-20 and 11-23, whose compiler, HazelJit.re, last changed on 11-17 and its value boundary on 11-18: hazel-jit as of Thursday 11-19), and plain JS (<game>/plain.js, all fourteen games); every answer the same",
+ "speedrun": "matthewhammer/hazeljs-examples node/world-speedrun.mjs (.github/workflows/world-speedrun.yml), GitHub run 45689859451: Gnome world's speed run from a fresh world (seed 7, Dad) to its last gem in headless Chrome on one runner, the steps alone timed (no drawing), three ways: hazel-jit as the page loads it (build.hazel.org's hazel-lib.js, hazel-jit as of 2026-11-25), world/plain.js put in place of World.step, World.beaver and World.water_row, and the interpreter (?interpreted, the same library's Hazel.runProgram) for 220 s; then World.step replayed on every 10th of the run's own calls, each way",
  "files": [
   "data/crossing-timeline.json",
   "data/games-4way",
@@ -1033,6 +1051,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
   "data/petri-runs.jsonl",
   "data/petri-split-runs.jsonl",
   "data/representations.json",
+  "data/speedrun",
   "data/sweep.json",
   "data/tables.json"
  ],
@@ -1711,6 +1730,52 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "3.76 µs",
      "11,233×",
      "4.8×"
+    ]
+   ]
+  },
+  {
+   "section": "Gnome world’s speed run, three ways",
+   "section_id": "speedrun",
+   "columns": [
+    "Way",
+    "steps run",
+    "the steps’ time",
+    "a step",
+    "in the rules",
+    "the rules’ share",
+    "World.step alone",
+    "answers the same"
+   ],
+   "rows": [
+    [
+     "plain JS",
+     "44,933",
+     "24.7 s",
+     "0.55 ms",
+     "0.09 s",
+     "0.4%",
+     "0.51 µs",
+     "4,493 of 4,493"
+    ],
+    [
+     "hazel-jit now",
+     "44,933",
+     "25.5 s",
+     "0.57 ms",
+     "0.34 s",
+     "1.3%",
+     "2.58 µs",
+     "4,493 of 4,493"
+    ],
+    [
+     "the interpreter",
+     "42,000 (of 44,933)",
+     "227.6 s",
+     "5.42 ms",
+     "201.58 s",
+     "88.6%",
+     "4.6 ms",
+     "3,280 of 3,280"
     ]
    ]
   },
