@@ -1,9 +1,8 @@
 {
- "what": "how each compiler lays out values in JavaScript: hazel-jit on 2026-11-07 and report 046's three others, from report 046's table; hazel-jit now from HazelJit.re at 9ec865976d; ticket 853's trial from trial/853-jit-loops-args at 43828037c9",
+ "what": "how each compiler lays out values in JavaScript: hazel-jit on 2026-11-07 and report 046's three others, from report 046's table; hazel-jit now from HazelJit.re on hazel-jit (#2859) at 43828037c9, with the loops and JS arguments merged on 2026-11-25",
  "columns": [
   "hazel-jit 2026-11-07",
   "hazel-jit now",
-  "hazel-jit, ticket 853's trial",
   "ReScript 12",
   "Melange 5",
   "js_of_ocaml 5.9"
@@ -15,8 +14,7 @@
    "hazel-jit now": "{$h, $t}; null",
    "ReScript 12": "{hd, tl}; 0",
    "Melange 5": "{hd, tl}; 0",
-   "js_of_ocaml 5.9": "[0, hd, tl]; 0",
-   "hazel-jit, ticket 853's trial": "{$h, $t}; null"
+   "js_of_ocaml 5.9": "[0, hd, tl]; 0"
   },
   {
    "value": "a record, or labeled tuple",
@@ -24,8 +22,7 @@
    "hazel-jit now": "an object by label",
    "ReScript 12": "an object by field",
    "Melange 5": "an object by field",
-   "js_of_ocaml 5.9": "[0, f1, f2, …]",
-   "hazel-jit, ticket 853's trial": "an object by label"
+   "js_of_ocaml 5.9": "[0, f1, f2, …]"
   },
   {
    "value": "an unlabeled tuple (a, b)",
@@ -33,8 +30,7 @@
    "hazel-jit now": "[a, b]",
    "ReScript 12": "[a, b]",
    "Melange 5": "[a, b]",
-   "js_of_ocaml 5.9": "[0, a, b]",
-   "hazel-jit, ticket 853's trial": "[a, b]"
+   "js_of_ocaml 5.9": "[0, a, b]"
   },
   {
    "value": "Take(a, b, k)",
@@ -42,8 +38,7 @@
    "hazel-jit now": "{$c: \"Take\", $v: [a, b, k]}",
    "ReScript 12": "{TAG: \"Take\", _0, _1, _2}",
    "Melange 5": "{TAG: 0, _0, _1, _2}",
-   "js_of_ocaml 5.9": "[0, a, b, k]",
-   "hazel-jit, ticket 853's trial": "{$c: \"Take\", $v: [a, b, k]}"
+   "js_of_ocaml 5.9": "[0, a, b, k]"
   },
   {
    "value": "Done (no argument)",
@@ -51,8 +46,7 @@
    "hazel-jit now": "{$c: \"Done\"}",
    "ReScript 12": "\"Done\"",
    "Melange 5": "0",
-   "js_of_ocaml 5.9": "0",
-   "hazel-jit, ticket 853's trial": "{$c: \"Done\"}"
+   "js_of_ocaml 5.9": "0"
   },
   {
    "value": "Some(t); None",
@@ -60,17 +54,15 @@
    "hazel-jit now": "{$c: \"Some\", $v: t}; {$c: \"None\"}",
    "ReScript 12": "t; undefined",
    "Melange 5": "t; undefined",
-   "js_of_ocaml 5.9": "[0, t]; 0",
-   "hazel-jit, ticket 853's trial": "{$c: \"Some\", $v: t}; {$c: \"None\"}"
+   "js_of_ocaml 5.9": "[0, t]; 0"
   },
   {
    "value": "a function of two",
    "hazel-jit 2026-11-07": "one argument, an array [a, b]",
-   "hazel-jit now": "one argument, an array [a, b]",
+   "hazel-jit now": "a named one: f.$d(a, b), its parts as JS arguments; else one argument, an array",
    "ReScript 12": "f(a, b)",
    "Melange 5": "f(a, b)",
-   "js_of_ocaml 5.9": "f(a, b)",
-   "hazel-jit, ticket 853's trial": "a named one: f.$d(a, b), its parts as JS arguments; else one argument, an array"
+   "js_of_ocaml 5.9": "f(a, b)"
   },
   {
    "value": "a field read r.x",
@@ -78,8 +70,7 @@
    "hazel-jit now": "r[\"x\"] behind a check",
    "ReScript 12": "r.x",
    "Melange 5": "r.x",
-   "js_of_ocaml 5.9": "r[1]",
-   "hazel-jit, ticket 853's trial": "r[\"x\"] behind a check"
+   "js_of_ocaml 5.9": "r[1]"
   },
   {
    "value": "i == 0 on Ints",
@@ -87,25 +78,23 @@
    "hazel-jit now": "$R.eq(i, 0), small enough to inline",
    "ReScript 12": "i === 0",
    "Melange 5": "i === 0",
-   "js_of_ocaml 5.9": "0 === i",
-   "hazel-jit, ticket 853's trial": "$R.eq(i, 0), small enough to inline"
+   "js_of_ocaml 5.9": "0 === i"
   },
   {
    "value": "a tail call",
    "hazel-jit 2026-11-07": "a call",
-   "hazel-jit now": "a call",
+   "hazel-jit now": "a call of itself: a turn of a for (;;) loop; else a call",
    "ReScript 12": "a while loop",
    "Melange 5": "a while loop",
-   "js_of_ocaml 5.9": "a for loop",
-   "hazel-jit, ticket 853's trial": "a call of itself: a turn of a for (;;) loop; else a call"
+   "js_of_ocaml 5.9": "a for loop"
   }
  ],
  "suggestions": [
   {
    "what": "Pass a function's arguments as JS arguments.",
    "status": "done",
-   "status_text": "on the trial",
-   "now": "A function bound to a name, whose parameter is a tuple pattern, has a direct form with the parts as its JS parameters; a call with the tuple written out goes to it with no array (trial/853-jit-loops-args 43828037c9). A function made where it is passed keeps one argument."
+   "status_text": "done",
+   "now": "A function bound to a name, whose parameter is a tuple pattern, has a direct form with the parts as its JS parameters; a call with the tuple written out goes to it with no array (43828037c9). A function made where it is passed keeps one argument."
   },
   {
    "what": "Compare Ints with ===.",
@@ -116,7 +105,7 @@
   {
    "what": "Turn tail calls into loops.",
    "status": "done",
-   "status_text": "on the trial",
+   "status_text": "done",
    "now": "A recursive function's calls of itself in tail position are a for (;;) loop, its variables declared per pass (50b70d5a40). Calls of another function in tail position, and mutual recursion, are still calls, as in ReScript and Melange."
   },
   {

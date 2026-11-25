@@ -87,7 +87,7 @@ REP = json.load(open(os.path.join(DATA, "representations.json")))
 def rep_table():
     cols = REP["columns"]
     head = "".join(f"<th>{esc(c)}</th>" for c in ["Value"] + cols)
-    prev = {"hazel-jit now": "hazel-jit 2026-11-07", "hazel-jit, ticket 853's trial": "hazel-jit now"}
+    prev = {"hazel-jit now": "hazel-jit 2026-11-07"}
     rows = "".join("<tr><td>" + esc(r["value"]) + "</td>" + "".join(f'<td class="{"chg" if c in prev and r[c] != r[prev[c]] else ""}"><code>{esc(r[c])}</code></td>' for c in cols) + "</tr>" for r in REP["rows"])
     return f'<div class="tw"><table class="rep"><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table></div>'
 def sugg_list():
@@ -177,6 +177,7 @@ EXTRA = """
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
+  .tw table.rep { min-width: 820px; } table.rep code { word-break: normal; overflow-wrap: break-word; }
   table.rep td.chg { background: color-mix(in srgb, var(--good, #2e9e5b) 14%, transparent); }
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
   ol.sugg li { margin-bottom: 0.5em; } .st { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 0.8em; font-weight: 600; color: #fff; }

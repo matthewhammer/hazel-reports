@@ -9,7 +9,7 @@
 <li><a href="#exec">Executive summary</a>: what hazel-jit is, why, what it changes in <code>dev</code>, how it is checked, who uses it, and what to review.</li>
 <li><a href="#eng">Engineering summary</a>: what goes in and comes out, how the code is written, its values, what it leaves to the interpreter, mixed mode, and its speed on the tests.</li>
 <li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
-<li><a href="#compare">Representations, then and now</a>: three of report 046’s five suggestions for hazel-jit’s output are done (two of them on today’s trial) and one in part; records now look as ReScript’s and Melange’s do.</li>
+<li><a href="#compare">Representations, then and now</a>: three of report 046’s five suggestions for hazel-jit’s output are done and one in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take {{g853_gm}} of the jit’s time, report 046’s rule {{p853_ratio}}, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#speed">Speed beside them</a>: on report 046’s rule, ReScript and Melange are still about four times as fast; the games still need versions in OCaml and ReScript.</li>
 <li><a href="#left">What is still left</a>: five steps in Matthew’s order, each a ticket: constructors made once, modules by name and <code>===</code> (made, being timed), the cost of exact Ints and steps (measured), and options unboxed last.</li>
@@ -41,7 +41,7 @@
 
 <h2 id="compare">Representations, then and now</h2>
 <p class="tag own">This report’s</p>
-<p><b>Since report 046 (2026-11-07), hazel-jit lays out records as ReScript and Melange do, as plain objects read by their labels; its lists, constructors, options, calls and tail calls are still its own.</b> Report 046 compiled one small rule (a Petri net’s step, report 043’s) with ReScript, Melange, js_of_ocaml and hazel-jit, and put the four layouts side by side. The table below is that table with a column for hazel-jit as it is on #2859 now (9ec865976d); the cells that changed are shaded.</p>
+<p><b>Since report 046 (2026-11-07), hazel-jit lays out records as ReScript and Melange do, as plain objects read by their labels, and does as they do with a named function’s arguments and a function’s calls of itself in tail position; its lists, constructors and options are still its own.</b> Report 046 compiled one small rule (a Petri net’s step, report 043’s) with ReScript, Melange, js_of_ocaml and hazel-jit, and put the four layouts side by side. The table below is that table with hazel-jit as it is on #2859 now (43828037c9, with today’s loops and JS arguments merged); the cells that changed since 2026-11-07 are shaded.</p>
 {{rep_table}}
 <p>ReScript and Melange come from one family, BuckleScript’s: OCaml’s (or ReScript’s) front end and type checker, then a back end that writes the JavaScript a careful person would write, module by module. js_of_ocaml, which builds Hazel itself, compiles OCaml’s bytecode, a whole program at once, and keeps OCaml’s memory layout: every block an array with its tag first. hazel-jit is a third kind: it compiles Hazel’s elaborated terms in the page, while the program runs, with a runtime of its own.</p>
 <p>Report 046 ended with five changes to hazel-jit’s output, each something these compilers already do, in the order they would likely help that rule (<a href="../046/#suggests">its section</a>). Where each stands:</p>
@@ -152,6 +152,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <h2 id="revisions">Revisions</h2>
 <p class="tag own">This report’s</p>
 <ul>
+<li><b>2026-11-25, now is now.</b> Representations, then and now: the table’s “now” is hazel-jit as merged today (43828037c9), and the intermediate columns are gone (Matthew: “replace the "now" column to reflect the current "now" --- no need to keep all intermediate steps”).</li>
 <li><b>2026-11-25, the plan as tickets.</b> What is still left is now the day’s plan in Matthew’s order, each step a ticket (^ticket(853) to ^ticket(859)).</li>
 <li><b>2026-11-25, later still.</b> The loops and JS arguments merged into <code>hazel-jit</code> and <code>hazeljs</code>; the description’s draft says so (its engineering summary, its tables of values and of the other compilers, what came since it opened).</li>
 <li><b>2026-11-25, later.</b> Today’s two changes, made and timed (<a href="#today">Loops and JS arguments</a>), and report 046’s rule timed again; the representations and the suggestions updated; what is still left. The description itself waits for the trial to be merged into <code>hazel-jit</code>.</li>

@@ -137,6 +137,7 @@ h3.grp { margin-top: 1.2em; }
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   p.tag.own { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
   .tw { overflow-x: auto; margin: 0.6em 0 1em; }
+  .tw table.rep { min-width: 820px; } table.rep code { word-break: normal; overflow-wrap: break-word; }
   table.rep td.chg { background: color-mix(in srgb, var(--good, #2e9e5b) 14%, transparent); }
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
   ol.sugg li { margin-bottom: 0.5em; } .st { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 0.8em; font-weight: 600; color: #fff; }
@@ -160,7 +161,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 08:34 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-25 08:37 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -255,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#exec">Executive summary</a>: what hazel-jit is, why, what it changes in <code>dev</code>, how it is checked, who uses it, and what to review.</li>
 <li><a href="#eng">Engineering summary</a>: what goes in and comes out, how the code is written, its values, what it leaves to the interpreter, mixed mode, and its speed on the tests.</li>
 <li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
-<li><a href="#compare">Representations, then and now</a>: three of <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s five suggestions for hazel-jit’s output are done (two of them on today’s trial) and one in part; records now look as ReScript’s and Melange’s do.</li>
+<li><a href="#compare">Representations, then and now</a>: three of <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s five suggestions for hazel-jit’s output are done and one in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take 0.70 of the jit’s time, <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule 0.67, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#speed">Speed beside them</a>: on <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule, ReScript and Melange are still about four times as fast; the games still need versions in OCaml and ReScript.</li>
 <li><a href="#left">What is still left</a>: five steps in Matthew’s order, each a ticket: constructors made once, modules by name and <code>===</code> (made, being timed), the cost of exact Ints and steps (measured), and options unboxed last.</li>
@@ -320,11 +321,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <h2 id="compare">Representations, then and now<a class="anchor" href="#compare" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="compare" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
-<p><b>Since <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> (2026-11-07), hazel-jit lays out records as ReScript and Melange do, as plain objects read by their labels; its lists, constructors, options, calls and tail calls are still its own.</b> <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> compiled one small rule (a Petri net’s step, <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>’s) with ReScript, Melange, js_of_ocaml and hazel-jit, and put the four layouts side by side. The table below is that table with a column for hazel-jit as it is on <a href="https://github.com/hazelgrove/hazel/pull/2859">#2859</a> now (9ec865976d); the cells that changed are shaded.</p>
-<div class="tw"><table class="rep"><thead><tr><th>Value</th><th>hazel-jit 2026-11-07</th><th>hazel-jit now</th><th>hazel-jit, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-853"><code class="ref"><b>^ticket(</b>853<b>)</b></code></a>&#x27;s trial</th><th>ReScript 12</th><th>Melange 5</th><th>js_of_ocaml 5.9</th></tr></thead><tbody><tr><td>a list cell; the empty list</td><td class=""><code>{h, t}; null</code></td><td class="chg"><code>{$h, $t}; null</code></td><td class=""><code>{$h, $t}; null</code></td><td class=""><code>{hd, tl}; 0</code></td><td class=""><code>{hd, tl}; 0</code></td><td class=""><code>[0, hd, tl]; 0</code></td></tr><tr><td>a record, or labeled tuple</td><td class=""><code>an array, each label also a property</code></td><td class="chg"><code>an object by label</code></td><td class=""><code>an object by label</code></td><td class=""><code>an object by field</code></td><td class=""><code>an object by field</code></td><td class=""><code>[0, f1, f2, …]</code></td></tr><tr><td>an unlabeled tuple (a, b)</td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[0, a, b]</code></td></tr><tr><td>Take(a, b, k)</td><td class=""><code>{c: &quot;Take&quot;, v: [a, b, k]}</code></td><td class="chg"><code>{$c: &quot;Take&quot;, $v: [a, b, k]}</code></td><td class=""><code>{$c: &quot;Take&quot;, $v: [a, b, k]}</code></td><td class=""><code>{TAG: &quot;Take&quot;, _0, _1, _2}</code></td><td class=""><code>{TAG: 0, _0, _1, _2}</code></td><td class=""><code>[0, a, b, k]</code></td></tr><tr><td>Done (no argument)</td><td class=""><code>{c: &quot;Done&quot;}</code></td><td class="chg"><code>{$c: &quot;Done&quot;}</code></td><td class=""><code>{$c: &quot;Done&quot;}</code></td><td class=""><code>&quot;Done&quot;</code></td><td class=""><code>0</code></td><td class=""><code>0</code></td></tr><tr><td>Some(t); None</td><td class=""><code>{c: &quot;Some&quot;, v: t}; {c: &quot;None&quot;}</code></td><td class="chg"><code>{$c: &quot;Some&quot;, $v: t}; {$c: &quot;None&quot;}</code></td><td class=""><code>{$c: &quot;Some&quot;, $v: t}; {$c: &quot;None&quot;}</code></td><td class=""><code>t; undefined</code></td><td class=""><code>t; undefined</code></td><td class=""><code>[0, t]; 0</code></td></tr><tr><td>a function of two</td><td class=""><code>one argument, an array [a, b]</code></td><td class=""><code>one argument, an array [a, b]</code></td><td class="chg"><code>a named one: f.$d(a, b), its parts as JS arguments; else one argument, an array</code></td><td class=""><code>f(a, b)</code></td><td class=""><code>f(a, b)</code></td><td class=""><code>f(a, b)</code></td></tr><tr><td>a field read r.x</td><td class=""><code>$R.dot(r, &quot;x&quot;)</code></td><td class="chg"><code>r[&quot;x&quot;] behind a check</code></td><td class=""><code>r[&quot;x&quot;] behind a check</code></td><td class=""><code>r.x</code></td><td class=""><code>r.x</code></td><td class=""><code>r[1]</code></td></tr><tr><td>i == 0 on Ints</td><td class=""><code>$R.eq(i, 0)</code></td><td class="chg"><code>$R.eq(i, 0), small enough to inline</code></td><td class=""><code>$R.eq(i, 0), small enough to inline</code></td><td class=""><code>i === 0</code></td><td class=""><code>i === 0</code></td><td class=""><code>0 === i</code></td></tr><tr><td>a tail call</td><td class=""><code>a call</code></td><td class=""><code>a call</code></td><td class="chg"><code>a call of itself: a turn of a for (;;) loop; else a call</code></td><td class=""><code>a while loop</code></td><td class=""><code>a while loop</code></td><td class=""><code>a for loop</code></td></tr></tbody></table></div>
+<p><b>Since <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> (2026-11-07), hazel-jit lays out records as ReScript and Melange do, as plain objects read by their labels, and does as they do with a named function’s arguments and a function’s calls of itself in tail position; its lists, constructors and options are still its own.</b> <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> compiled one small rule (a Petri net’s step, <a href="../043/"><code class="ref"><b>^report(</b>43<b>)</b></code></a>’s) with ReScript, Melange, js_of_ocaml and hazel-jit, and put the four layouts side by side. The table below is that table with hazel-jit as it is on <a href="https://github.com/hazelgrove/hazel/pull/2859">#2859</a> now (43828037c9, with today’s loops and JS arguments merged); the cells that changed since 2026-11-07 are shaded.</p>
+<div class="tw"><table class="rep"><thead><tr><th>Value</th><th>hazel-jit 2026-11-07</th><th>hazel-jit now</th><th>ReScript 12</th><th>Melange 5</th><th>js_of_ocaml 5.9</th></tr></thead><tbody><tr><td>a list cell; the empty list</td><td class=""><code>{h, t}; null</code></td><td class="chg"><code>{$h, $t}; null</code></td><td class=""><code>{hd, tl}; 0</code></td><td class=""><code>{hd, tl}; 0</code></td><td class=""><code>[0, hd, tl]; 0</code></td></tr><tr><td>a record, or labeled tuple</td><td class=""><code>an array, each label also a property</code></td><td class="chg"><code>an object by label</code></td><td class=""><code>an object by field</code></td><td class=""><code>an object by field</code></td><td class=""><code>[0, f1, f2, …]</code></td></tr><tr><td>an unlabeled tuple (a, b)</td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[a, b]</code></td><td class=""><code>[0, a, b]</code></td></tr><tr><td>Take(a, b, k)</td><td class=""><code>{c: &quot;Take&quot;, v: [a, b, k]}</code></td><td class="chg"><code>{$c: &quot;Take&quot;, $v: [a, b, k]}</code></td><td class=""><code>{TAG: &quot;Take&quot;, _0, _1, _2}</code></td><td class=""><code>{TAG: 0, _0, _1, _2}</code></td><td class=""><code>[0, a, b, k]</code></td></tr><tr><td>Done (no argument)</td><td class=""><code>{c: &quot;Done&quot;}</code></td><td class="chg"><code>{$c: &quot;Done&quot;}</code></td><td class=""><code>&quot;Done&quot;</code></td><td class=""><code>0</code></td><td class=""><code>0</code></td></tr><tr><td>Some(t); None</td><td class=""><code>{c: &quot;Some&quot;, v: t}; {c: &quot;None&quot;}</code></td><td class="chg"><code>{$c: &quot;Some&quot;, $v: t}; {$c: &quot;None&quot;}</code></td><td class=""><code>t; undefined</code></td><td class=""><code>t; undefined</code></td><td class=""><code>[0, t]; 0</code></td></tr><tr><td>a function of two</td><td class=""><code>one argument, an array [a, b]</code></td><td class="chg"><code>a named one: f.$d(a, b), its parts as JS arguments; else one argument, an array</code></td><td class=""><code>f(a, b)</code></td><td class=""><code>f(a, b)</code></td><td class=""><code>f(a, b)</code></td></tr><tr><td>a field read r.x</td><td class=""><code>$R.dot(r, &quot;x&quot;)</code></td><td class="chg"><code>r[&quot;x&quot;] behind a check</code></td><td class=""><code>r.x</code></td><td class=""><code>r.x</code></td><td class=""><code>r[1]</code></td></tr><tr><td>i == 0 on Ints</td><td class=""><code>$R.eq(i, 0)</code></td><td class="chg"><code>$R.eq(i, 0), small enough to inline</code></td><td class=""><code>i === 0</code></td><td class=""><code>i === 0</code></td><td class=""><code>0 === i</code></td></tr><tr><td>a tail call</td><td class=""><code>a call</code></td><td class="chg"><code>a call of itself: a turn of a for (;;) loop; else a call</code></td><td class=""><code>a while loop</code></td><td class=""><code>a while loop</code></td><td class=""><code>a for loop</code></td></tr></tbody></table></div>
 <p>ReScript and Melange come from one family, BuckleScript’s: OCaml’s (or ReScript’s) front end and type checker, then a back end that writes the JavaScript a careful person would write, module by module. js_of_ocaml, which builds Hazel itself, compiles OCaml’s bytecode, a whole program at once, and keeps OCaml’s memory layout: every block an array with its tag first. hazel-jit is a third kind: it compiles Hazel’s elaborated terms in the page, while the program runs, with a runtime of its own.</p>
 <p><a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> ended with five changes to hazel-jit’s output, each something these compilers already do, in the order they would likely help that rule (<a href="../046/#suggests">its section</a>). Where each stands:</p>
-<ol class="sugg"><li><span class="st done">on the trial</span> <b>Pass a function&#x27;s arguments as JS arguments.</b> A function bound to a name, whose parameter is a tuple pattern, has a direct form with the parts as its JS parameters; a call with the tuple written out goes to it with no array (trial/853-jit-loops-args 43828037c9). A function made where it is passed keeps one argument.</li><li><span class="st part">in part</span> <b>Compare Ints with ===.</b> == is still $R.eq, but $R.eq is now three lines whose first compares with ===, small enough for the engine to inline (0e055e04c9: Go had been slower with records as objects until then).</li><li><span class="st done">on the trial</span> <b>Turn tail calls into loops.</b> A recursive function&#x27;s calls of itself in tail position are a for (;;) loop, its variables declared per pass (50b70d5a40). Calls of another function in tail position, and mutual recursion, are still calls, as in ReScript and Melange.</li><li><span class="st open">not yet</span> <b>Unbox options, and make constructors flat.</b> Some(t) is still {$c: &quot;Some&quot;, $v: t}, and Take(a, b, k) still holds its arguments in an inner array.</li><li><span class="st done">done</span> <b>Lay out labeled tuples as objects only.</b> A tuple whose every entry is labeled is a plain object (9ec865976d), and a field read is the property behind a check: 0.63 of the time on the games.</li></ol>
+<ol class="sugg"><li><span class="st done">done</span> <b>Pass a function&#x27;s arguments as JS arguments.</b> A function bound to a name, whose parameter is a tuple pattern, has a direct form with the parts as its JS parameters; a call with the tuple written out goes to it with no array (43828037c9). A function made where it is passed keeps one argument.</li><li><span class="st part">in part</span> <b>Compare Ints with ===.</b> == is still $R.eq, but $R.eq is now three lines whose first compares with ===, small enough for the engine to inline (0e055e04c9: Go had been slower with records as objects until then).</li><li><span class="st done">done</span> <b>Turn tail calls into loops.</b> A recursive function&#x27;s calls of itself in tail position are a for (;;) loop, its variables declared per pass (50b70d5a40). Calls of another function in tail position, and mutual recursion, are still calls, as in ReScript and Melange.</li><li><span class="st open">not yet</span> <b>Unbox options, and make constructors flat.</b> Some(t) is still {$c: &quot;Some&quot;, $v: t}, and Take(a, b, k) still holds its arguments in an inner array.</li><li><span class="st done">done</span> <b>Lay out labeled tuples as objects only.</b> A tuple whose every entry is labeled is a plain object (9ec865976d), and a field read is the property behind a check: 0.63 of the time on the games.</li></ol>
 <p>Two changes came from elsewhere, not from that list: field reads compiled in place (where they had gone through a call that read every label of every program), and the <code>$</code> on the keys of cells and constructors, so that a record is never taken for either. Each change to the layout is a change on both sides of the boundary too: what <code>HazelJitValue</code> reads and writes, and what the npm package’s converters do (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>).</p>
 
 
@@ -611,6 +612,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
 <h2 id="revisions">Revisions<a class="anchor" href="#revisions" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="revisions" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
 <ul>
+<li><b>2026-11-25, now is now.</b> Representations, then and now: the table’s “now” is hazel-jit as merged today (43828037c9), and the intermediate columns are gone (Matthew: “replace the "now" column to reflect the current "now" --- no need to keep all intermediate steps”).</li>
 <li><b>2026-11-25, the plan as tickets.</b> What is still left is now the day’s plan in Matthew’s order, each step a ticket (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-853"><code class="ref"><b>^ticket(</b>853<b>)</b></code></a> to <a href="https://matthewhammer.org/hazel/dashboard/#ticket-859"><code class="ref"><b>^ticket(</b>859<b>)</b></code></a>).</li>
 <li><b>2026-11-25, later still.</b> The loops and JS arguments merged into <code>hazel-jit</code> and <code>hazeljs</code>; the description’s draft says so (its engineering summary, its tables of values and of the other compilers, what came since it opened).</li>
 <li><b>2026-11-25, later.</b> Today’s two changes, made and timed (<a href="#today">Loops and JS arguments</a>), and <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule timed again; the representations and the suggestions updated; what is still left. The description itself waits for the trial to be merged into <code>hazel-jit</code>.</li>
@@ -1082,7 +1084,6 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
     "Value",
     "hazel-jit 2026-11-07",
     "hazel-jit now",
-    "hazel-jit, ^ticket(853)'s trial",
     "ReScript 12",
     "Melange 5",
     "js_of_ocaml 5.9"
@@ -1092,7 +1093,6 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "a list cell; the empty list",
      "{h, t}; null",
      "{$h, $t}; null",
-     "{$h, $t}; null",
      "{hd, tl}; 0",
      "{hd, tl}; 0",
      "[0, hd, tl]; 0"
@@ -1100,7 +1100,6 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
     [
      "a record, or labeled tuple",
      "an array, each label also a property",
-     "an object by label",
      "an object by label",
      "an object by field",
      "an object by field",
@@ -1112,13 +1111,11 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "[a, b]",
      "[a, b]",
      "[a, b]",
-     "[a, b]",
      "[0, a, b]"
     ],
     [
      "Take(a, b, k)",
      "{c: \"Take\", v: [a, b, k]}",
-     "{$c: \"Take\", $v: [a, b, k]}",
      "{$c: \"Take\", $v: [a, b, k]}",
      "{TAG: \"Take\", _0, _1, _2}",
      "{TAG: 0, _0, _1, _2}",
@@ -1128,7 +1125,6 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "Done (no argument)",
      "{c: \"Done\"}",
      "{$c: \"Done\"}",
-     "{$c: \"Done\"}",
      "\"Done\"",
      "0",
      "0"
@@ -1137,14 +1133,12 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "Some(t); None",
      "{c: \"Some\", v: t}; {c: \"None\"}",
      "{$c: \"Some\", $v: t}; {$c: \"None\"}",
-     "{$c: \"Some\", $v: t}; {$c: \"None\"}",
      "t; undefined",
      "t; undefined",
      "[0, t]; 0"
     ],
     [
      "a function of two",
-     "one argument, an array [a, b]",
      "one argument, an array [a, b]",
      "a named one: f.$d(a, b), its parts as JS arguments; else one argument, an array",
      "f(a, b)",
@@ -1155,7 +1149,6 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "a field read r.x",
      "$R.dot(r, \"x\")",
      "r[\"x\"] behind a check",
-     "r[\"x\"] behind a check",
      "r.x",
      "r.x",
      "r[1]"
@@ -1164,14 +1157,12 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
      "i == 0 on Ints",
      "$R.eq(i, 0)",
      "$R.eq(i, 0), small enough to inline",
-     "$R.eq(i, 0), small enough to inline",
      "i === 0",
      "i === 0",
      "0 === i"
     ],
     [
      "a tail call",
-     "a call",
      "a call",
      "a call of itself: a turn of a for (;;) loop; else a call",
      "a while loop",
