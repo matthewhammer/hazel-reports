@@ -1,0 +1,77 @@
+{
+ "game": "solitaire",
+ "when": "2026-11-25T15:01:26.095Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 7763 64-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "6d041e97691be6836972d0acd2235dee34cd83ae"
+ },
+ "examples": "f81cb327402b72eae26bbddc0bf6001af2acaf65",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 1142.333522,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 522.0051369999999,
+  "compiledJsBytes": 62252,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 89609,
+  "pageCompiledFrom": "5405a2e87d",
+  "compiledLoadMs": 2.2588539999999284,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "a deal, 200 moves (each: the moves, whether it is won, then one made)",
+   "steps": 200,
+   "ways": {
+    "jit": {
+     "ms": 3.6118375000030483,
+     "usPerCall": 6.019729166671747,
+     "calls": 600,
+     "reps": 50,
+     "min": 2.87620699999934,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 37.33748899999955,
+     "usPerCall": 62.22914833333258,
+     "calls": 600,
+     "reps": 5,
+     "min": 31.867562000008093,
+     "same": true
+    },
+    "compiled": {
+     "ms": 8.824933499999133,
+     "usPerCall": 14.708222499998556,
+     "calls": 600,
+     "reps": 30,
+     "min": 7.583139999991545,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 0.8186104999995223,
+     "usPerCall": 1.3643508333325371,
+     "calls": 600,
+     "reps": 50,
+     "min": 0.5804520000046978,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 73.48901999999953
+}

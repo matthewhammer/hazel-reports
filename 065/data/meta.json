@@ -1,6 +1,6 @@
 {
  "title": "hazel-jit’s PR, Described",
- "blurb": "A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects; its constructors, options, calls and tail calls not yet. Their speed on the games of hazeljs-examples is still to measure.",
+ "blurb": "A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. Every evaluator test also runs compiled where it compiles: 234 of 289 do, and none differs from the interpreter. Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. On a trial made the same day, its tail calls are loops and its named functions take their tuple's parts as JS arguments: the games take 0.70 of the jit's time, every answer the same. Options and constructors are still its own, and the other compilers' speed on the games is still to measure.",
  "source": "065/pr-2859.md: the description for hazelgrove/hazel#2859, in GitHub's Markdown; the page renders it and carries it to copy",
  "builds": {
   "hazel-jit": "hazelgrove/hazel hazel-jit at 9ec865976d (#2859), on dev at 21da4ae66b",
@@ -9,10 +9,19 @@
   "games": "report 063 (GitHub run 45247119864, hazeljs 0.0.11) and report 054 (GitHub run 45532448010, trial/847-records-objects f311f4e408)",
   "others": "report 046 (2026-11-07): ReScript 12.3.1, Melange 5.0.0, js_of_ocaml 5.9.1, hazel-jit of that day, Node 22.23.2, one laptop"
  },
+ "ticket_853": {
+  "what": "2026-11-25: hazel-jit with self tail calls as loops and named functions' tuple parts as JS arguments (trial/853-jit-loops-args 50b70d5a40 and 43828037c9), against the base (hazel-jit as on #2859, 9ec865976d, in hazeljs 0.0.13)",
+  "games": "matthewhammer/hazeljs-examples bench/853, GitHub run 45640411958: each game's own run of states (node/package-bench.mjs --runs --aot-as-is --no-interp), one runner a game, the base, the trial (hazelgrove/hazel trial/853-pkg 6d041e9769, hazeljs with the trial merged), the base again; usPerCall: microseconds a call, the run's calls summed over their number; every answer the same as the games' own compiled.js",
+  "petri": "065/drivers/petri/petri-bench.mjs on this laptop, one way per process, five rounds (data/petri-runs.jsonl)"
+ },
  "files": [
   "pr-2859.md",
   "data/sweep.json",
   "data/representations.json",
-  "data/petri-046.json"
+  "data/petri-046.json",
+  "data/petri-853.json",
+  "data/petri-runs.jsonl",
+  "data/games-853/",
+  "drivers/petri/"
  ]
 }

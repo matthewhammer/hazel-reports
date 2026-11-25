@@ -1,0 +1,77 @@
+{
+ "game": "mahjong",
+ "when": "2026-11-25T15:01:31.028Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "AMD EPYC 7763 64-Core Processor",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "6d041e97691be6836972d0acd2235dee34cd83ae"
+ },
+ "examples": "f81cb327402b72eae26bbddc0bf6001af2acaf65",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 2698.622908,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 1607.3596659999994,
+  "compiledJsBytes": 104935,
+  "runtimeBytes": 23572,
+  "wrappedBytes": 132338,
+  "pageCompiledFrom": "70d0178872",
+  "compiledLoadMs": 2.8360759999995935,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "a hand of 137 steps (each: your options, then a step)",
+   "steps": 137,
+   "ways": {
+    "jit": {
+     "ms": 3.976531000009345,
+     "usPerCall": 14.512886861347974,
+     "calls": 274,
+     "reps": 50,
+     "min": 1.9346179999884043,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 7.502866500005894,
+     "usPerCall": 27.382724452576255,
+     "calls": 274,
+     "reps": 16,
+     "min": 5.49011899999914,
+     "same": true
+    },
+    "compiled": {
+     "ms": 6.165059999998903,
+     "usPerCall": 22.500218978098186,
+     "calls": 274,
+     "reps": 46,
+     "min": 4.172450999996727,
+     "same": true
+    },
+    "plain JS": {
+     "ms": 2.4262824999959776,
+     "usPerCall": 8.855045620423276,
+     "calls": 274,
+     "reps": 50,
+     "min": 1.4672179999924992,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 75.06420000000617
+}

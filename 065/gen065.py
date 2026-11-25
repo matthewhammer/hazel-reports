@@ -87,7 +87,8 @@ REP = json.load(open(os.path.join(DATA, "representations.json")))
 def rep_table():
     cols = REP["columns"]
     head = "".join(f"<th>{esc(c)}</th>" for c in ["Value"] + cols)
-    rows = "".join("<tr><td>" + esc(r["value"]) + "</td>" + "".join(f'<td class="{"chg" if c == "hazel-jit now" and r["hazel-jit now"] != r["hazel-jit 2026-11-07"] else ""}"><code>{esc(r[c])}</code></td>' for c in cols) + "</tr>" for r in REP["rows"])
+    prev = {"hazel-jit now": "hazel-jit 2026-11-07", "hazel-jit, ticket 853's trial": "hazel-jit now"}
+    rows = "".join("<tr><td>" + esc(r["value"]) + "</td>" + "".join(f'<td class="{"chg" if c in prev and r[c] != r[prev[c]] else ""}"><code>{esc(r[c])}</code></td>' for c in cols) + "</tr>" for r in REP["rows"])
     return f'<div class="tw"><table class="rep"><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table></div>'
 def sugg_list():
     return "<ol class=\"sugg\">" + "".join(f'<li><span class="st {s["status"]}">{esc(s["status_text"])}</span> <b>{esc(s["what"])}</b> {esc(s["now"])}</li>' for s in REP["suggestions"]) + "</ol>"
@@ -99,6 +100,59 @@ def petri_table():
     return f'<div class="tw"><table class="nums"><thead><tr><th class="l">Compiler</th><th>µs a call, median</th><th>the fastest call</th></tr></thead><tbody>{rows}</tbody></table></div>'
 FIGS["petri_table"] = petri_table()
 
+# (ticket 853) today's two changes, timed: report 046's Petri rule on this laptop, and each game's own run on GitHub
+import math
+gm = lambda xs: math.exp(sum(map(math.log, xs)) / len(xs))
+P853 = json.load(open(os.path.join(DATA, "petri-853.json")))
+def petri853_table():
+    num = lambda v: f"{v:.2f}"
+    rows = "".join(f'<tr><td class="l">{esc(r["who"])}</td><td>{num(r["median_us"])}</td><td>{num(r["fastest_us"])}</td></tr>' for r in P853["rows"])
+    return f'<div class="tw"><table class="nums"><thead><tr><th class="l">Code</th><th>µs a call, median</th><th>the fastest call</th></tr></thead><tbody>{rows}</tbody></table></div>'
+pv = {(r["way"], r["key"]): r["median_us"] for r in P853["rows"]}
+GAMES = ["checkers", "go", "minesweeper", "mahjong", "solitaire", "mahjong-solitaire", "pinball", "downhill", "bricks", "snake", "trails", "starwave", "bugs", "dig"]
+GNAME = {"checkers": "Checkers", "go": "Go", "minesweeper": "Minesweeper", "mahjong": "Mahjong", "solitaire": "Solitaire", "mahjong-solitaire": "Mahjong solitaire",
+         "pinball": "Pinball", "downhill": "Downhill", "bricks": "Bricks", "snake": "Snake", "trails": "Light trails", "starwave": "Star wave", "bugs": "Butterfly garden", "dig": "Gnome dig"}
+def run_of(g, k):
+    d = json.load(open(os.path.join(DATA, "games-853", f"b853-{g}", f"{g}-{k}.json")))
+    r = d["runs"][0]
+    assert all(v is None or v.get("same") for v in r["ways"].values()), (g, k)
+    return r["name"], r["steps"], {w: v["usPerCall"] for w, v in r["ways"].items() if v}
+G853 = []
+for g in GAMES:
+    nm, steps, b = run_of(g, "base"); _, _, t = run_of(g, "trial"); _, _, b2 = run_of(g, "base2")
+    base = (b["jit"] + b2["jit"]) / 2
+    G853.append({"game": g, "run": nm, "steps": steps, "base": base, "base1": b["jit"], "base2": b2["jit"], "trial": t["jit"], "ratio": t["jit"] / base,
+                 "aot_ratio": t["compiled"] / ((b["compiled"] + b2["compiled"]) / 2), "noise": b2["jit"] / b["jit"]})
+def t_us(us):
+    return f"{us:.1f} µs" if us >= 10 else f"{us:.2f} µs"
+def games853_svg():
+    rows = sorted(G853, key=lambda r: r["ratio"])
+    W, L, top, bh, gap = 720, 150, 30, 18, 6
+    x = lambda v: L + v * (W - L - 70)
+    h = top + len(rows) * (bh + gap) + 34
+    bars = "".join(f'<text class="lbl" x="{L - 8}" y="{top + i * (bh + gap) + 13}" text-anchor="end">{esc(GNAME[r["game"]])}</text>'
+                   f'<rect class="bar" x="{L}" y="{top + i * (bh + gap)}" width="{x(r["ratio"]) - L:.1f}" height="{bh}" rx="2"/>'
+                   f'<text class="val" x="{x(r["ratio"]) + 6:.1f}" y="{top + i * (bh + gap) + 13}">{r["ratio"]:.2f}</text>' for i, r in enumerate(rows))
+    one = x(1.0)
+    return (f'<svg viewBox="0 0 {W} {h}" role="img" aria-labelledby="g853t"><title id="g853t">Each game\'s time a call through the jit with loops and JS arguments, as a share of the base\'s</title>'
+            f'<text class="mut" x="{L}" y="16">share of the base’s time a call (shorter is faster); the line is the base</text>{bars}'
+            f'<line class="one" x1="{one:.1f}" y1="{top - 6}" x2="{one:.1f}" y2="{h - 28}"/><text class="mut" x="{one:.1f}" y="{h - 12}" text-anchor="middle">1.0</text></svg>')
+def games853_table():
+    rows = "".join(f'<tr><td class="l">{esc(GNAME[r["game"]])}</td><td>{r["steps"]:,}</td><td>{t_us(r["base1"])}</td><td>{t_us(r["base2"])}</td><td>{t_us(r["trial"])}</td><td>{r["ratio"]:.2f}</td><td>{r["aot_ratio"]:.2f}</td></tr>' for r in G853)
+    return ('<div class="tw"><table class="nums"><thead><tr><th class="l">Game</th><th>calls in its run</th><th>base</th><th>base, again</th><th>loops and JS arguments</th>'
+            f'<th>share of the base’s mean</th><th>its own compiled.js, same file</th></tr></thead><tbody>{rows}</tbody></table></div>')
+rs = sorted(G853, key=lambda r: r["ratio"])
+FIGS.update({"petri853_table": petri853_table(), "games853_svg": games853_svg(), "games853_table": games853_table(),
+             "g853_gm": f'{gm([r["ratio"] for r in G853]):.2f}', "g853_n": str(len(G853)),
+             "g853_best": ", ".join(f'{GNAME[r["game"]]} {r["ratio"]:.2f}' for r in rs[:4]),
+             "g853_least": ", ".join(f'{GNAME[r["game"]]} {r["ratio"]:.2f}' for r in rs[-3:][::-1]),
+             "g853_noise": f'{gm([r["noise"] for r in G853]):.2f}', "g853_noise_lo": f'{min(r["noise"] for r in G853):.2f}', "g853_noise_hi": f'{max(r["noise"] for r in G853):.2f}',
+             "g853_aot": f'{gm([r["aot_ratio"] for r in G853]):.2f}',
+             "p853_res": f'{pv[("others", "rescript")]:.2f}', "p853_mel": f'{pv[("others", "melange")]:.2f}', "p853_js": f'{pv[("others", "js")]:.2f}',
+             "p853_base": f'{pv[("base", "hazel")]:.2f}', "p853_trial": f'{pv[("trial", "hazel")]:.2f}',
+             "p853_ratio": f'{pv[("trial", "hazel")] / pv[("base", "hazel")]:.2f}', "p853_vs_res": f'{pv[("trial", "hazel")] / pv[("others", "rescript")]:.1f}',
+             "p853_base_vs_res": f'{pv[("base", "hazel")] / pv[("others", "rescript")]:.1f}'})
+
 EXTRA = """
   section.inpr { border-left: 3px solid var(--accent, #2a78d6); padding-left: 14px; margin-left: -17px; }
   section.inpr p.tag { color: var(--muted); font-size: 0.82em; margin: -0.4em 0 0.6em; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -108,6 +162,10 @@ EXTRA = """
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
   ol.sugg li { margin-bottom: 0.5em; } .st { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 0.8em; font-weight: 600; color: #fff; }
   .st.done { background: #2e9e5b; } .st.part { background: #b07d10; } .st.open { background: #6b737d; }
+  figure.chart svg { width: 100%; height: auto; display: block; }
+  svg .lbl { fill: var(--ink); font: 13px system-ui, sans-serif; } svg .mut { fill: var(--muted); font: 12px system-ui, sans-serif; }
+  svg .val { fill: var(--ink); font: 600 12px system-ui, sans-serif; } svg .bar { fill: #eb6834; } svg .one { stroke: var(--muted); stroke-dasharray: 3 3; }
+  pre.code { font-size: 0.8em; overflow-x: auto; }
   pre.md { white-space: pre-wrap; font-size: 0.85em; max-height: 32em; overflow: auto; }
   button.copy-md { font: inherit; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
 """
@@ -119,8 +177,9 @@ TITLE = "hazel-jit’s PR, Described"
 DESC = ("A working draft of the description for hazelgrove/hazel#2859, hazel-jit for dev, to iterate on before it goes on GitHub: "
         "an executive summary for whoever decides, an engineering summary for whoever reviews, then the details. "
         f"Every evaluator test also runs compiled where it compiles: {SWEEP['compiled']} of {SWEEP['checks']} do, and none differs from the interpreter. "
-        "Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects; its constructors, options, calls and tail calls not yet. "
-        "Their speed on the games of hazeljs-examples is still to measure.")
+        "Beside ReScript, Melange and js_of_ocaml, hazel-jit now lays out records as they do, as plain objects. "
+        f"On a trial made the same day, its tail calls are loops and its named functions take their tuple's parts as JS arguments: the games take {FIGS['g853_gm']} of the jit's time, every answer the same. "
+        "Options and constructors are still its own, and the other compilers' speed on the games is still to measure.")
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n<meta name=\"description\" content=\"{esc(DESC)}\">\n<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w", encoding="utf-8").write(head + body)
@@ -150,6 +209,9 @@ meta = {"title": TITLE, "blurb": DESC,
                    "package": "hazeljs 0.0.13 (hazelgrove/hazeljs editor-in-package 3a4a1cd, built from hazelgrove/hazel 20febee548), Node 22, one laptop: Gnome dig's step",
                    "games": "report 063 (GitHub run 45247119864, hazeljs 0.0.11) and report 054 (GitHub run 45532448010, trial/847-records-objects f311f4e408)",
                    "others": "report 046 (2026-11-07): ReScript 12.3.1, Melange 5.0.0, js_of_ocaml 5.9.1, hazel-jit of that day, Node 22.23.2, one laptop"},
-        "files": ["pr-2859.md", "data/sweep.json", "data/representations.json", "data/petri-046.json"]}
+        "ticket_853": {"what": "2026-11-25: hazel-jit with self tail calls as loops and named functions' tuple parts as JS arguments (trial/853-jit-loops-args 50b70d5a40 and 43828037c9), against the base (hazel-jit as on #2859, 9ec865976d, in hazeljs 0.0.13)",
+                       "games": "matthewhammer/hazeljs-examples bench/853, GitHub run 45640411958: each game's own run of states (node/package-bench.mjs --runs --aot-as-is --no-interp), one runner a game, the base, the trial (hazelgrove/hazel trial/853-pkg 6d041e9769, hazeljs with the trial merged), the base again; usPerCall: microseconds a call, the run's calls summed over their number; every answer the same as the games' own compiled.js",
+                       "petri": "065/drivers/petri/petri-bench.mjs on this laptop, one way per process, five rounds (data/petri-runs.jsonl)"},
+        "files": ["pr-2859.md", "data/sweep.json", "data/representations.json", "data/petri-046.json", "data/petri-853.json", "data/petri-runs.jsonl", "data/games-853/", "drivers/petri/"]}
 json.dump(meta, open(os.path.join(DATA, "meta.json"), "w"), indent=1, ensure_ascii=False)
 print("wrote 065/index.html;", updated)

@@ -129,6 +129,7 @@
    "Value",
    "hazel-jit 2026-11-07",
    "hazel-jit now",
+   "hazel-jit, ^ticket(853)'s trial",
    "ReScript 12",
    "Melange 5",
    "js_of_ocaml 5.9"
@@ -138,6 +139,7 @@
     "a list cell; the empty list",
     "{h, t}; null",
     "{$h, $t}; null",
+    "{$h, $t}; null",
     "{hd, tl}; 0",
     "{hd, tl}; 0",
     "[0, hd, tl]; 0"
@@ -145,6 +147,7 @@
    [
     "a record, or labeled tuple",
     "an array, each label also a property",
+    "an object by label",
     "an object by label",
     "an object by field",
     "an object by field",
@@ -156,11 +159,13 @@
     "[a, b]",
     "[a, b]",
     "[a, b]",
+    "[a, b]",
     "[0, a, b]"
    ],
    [
     "Take(a, b, k)",
     "{c: \"Take\", v: [a, b, k]}",
+    "{$c: \"Take\", $v: [a, b, k]}",
     "{$c: \"Take\", $v: [a, b, k]}",
     "{TAG: \"Take\", _0, _1, _2}",
     "{TAG: 0, _0, _1, _2}",
@@ -170,6 +175,7 @@
     "Done (no argument)",
     "{c: \"Done\"}",
     "{$c: \"Done\"}",
+    "{$c: \"Done\"}",
     "\"Done\"",
     "0",
     "0"
@@ -177,6 +183,7 @@
    [
     "Some(t); None",
     "{c: \"Some\", v: t}; {c: \"None\"}",
+    "{$c: \"Some\", $v: t}; {$c: \"None\"}",
     "{$c: \"Some\", $v: t}; {$c: \"None\"}",
     "t; undefined",
     "t; undefined",
@@ -186,6 +193,7 @@
     "a function of two",
     "one argument, an array [a, b]",
     "one argument, an array [a, b]",
+    "a named one: f.$d(a, b), its parts as JS arguments; else one argument, an array",
     "f(a, b)",
     "f(a, b)",
     "f(a, b)"
@@ -193,6 +201,7 @@
    [
     "a field read r.x",
     "$R.dot(r, \"x\")",
+    "r[\"x\"] behind a check",
     "r[\"x\"] behind a check",
     "r.x",
     "r.x",
@@ -202,6 +211,7 @@
     "i == 0 on Ints",
     "$R.eq(i, 0)",
     "$R.eq(i, 0), small enough to inline",
+    "$R.eq(i, 0), small enough to inline",
     "i === 0",
     "i === 0",
     "0 === i"
@@ -210,9 +220,187 @@
     "a tail call",
     "a call",
     "a call",
+    "a call of itself: a turn of a for (;;) loop; else a call",
     "a while loop",
     "a while loop",
     "a for loop"
+   ]
+  ]
+ },
+ {
+  "section": "Loops and JS arguments, made on 2026-11-25",
+  "section_id": "today",
+  "columns": [
+   "Game",
+   "calls in its run",
+   "base",
+   "base, again",
+   "loops and JS arguments",
+   "share of the base’s mean",
+   "its own compiled.js, same file"
+  ],
+  "rows": [
+   [
+    "Checkers",
+    "46",
+    "19.5 µs",
+    "23.8 µs",
+    "18.7 µs",
+    "0.86",
+    "0.95"
+   ],
+   [
+    "Go",
+    "89",
+    "23.1 µs",
+    "23.8 µs",
+    "14.8 µs",
+    "0.63",
+    "1.00"
+   ],
+   [
+    "Minesweeper",
+    "319",
+    "8.08 µs",
+    "7.82 µs",
+    "6.60 µs",
+    "0.83",
+    "1.03"
+   ],
+   [
+    "Mahjong",
+    "137",
+    "19.9 µs",
+    "17.5 µs",
+    "14.5 µs",
+    "0.77",
+    "0.85"
+   ],
+   [
+    "Solitaire",
+    "200",
+    "6.78 µs",
+    "7.24 µs",
+    "6.02 µs",
+    "0.86",
+    "1.01"
+   ],
+   [
+    "Mahjong solitaire",
+    "72",
+    "18.9 µs",
+    "18.2 µs",
+    "13.8 µs",
+    "0.74",
+    "1.01"
+   ],
+   [
+    "Pinball",
+    "600",
+    "9.82 µs",
+    "9.34 µs",
+    "6.18 µs",
+    "0.65",
+    "1.13"
+   ],
+   [
+    "Downhill",
+    "600",
+    "4.35 µs",
+    "4.52 µs",
+    "3.48 µs",
+    "0.78",
+    "1.00"
+   ],
+   [
+    "Bricks",
+    "600",
+    "2.79 µs",
+    "2.46 µs",
+    "1.44 µs",
+    "0.55",
+    "0.95"
+   ],
+   [
+    "Snake",
+    "116",
+    "3.74 µs",
+    "3.50 µs",
+    "3.24 µs",
+    "0.90",
+    "0.98"
+   ],
+   [
+    "Light trails",
+    "22",
+    "7.67 µs",
+    "5.92 µs",
+    "4.12 µs",
+    "0.61",
+    "1.27"
+   ],
+   [
+    "Star wave",
+    "600",
+    "15.9 µs",
+    "15.4 µs",
+    "9.18 µs",
+    "0.59",
+    "0.98"
+   ],
+   [
+    "Butterfly garden",
+    "600",
+    "2.65 µs",
+    "2.01 µs",
+    "1.49 µs",
+    "0.64",
+    "1.08"
+   ],
+   [
+    "Gnome dig",
+    "600",
+    "29.6 µs",
+    "26.4 µs",
+    "13.9 µs",
+    "0.50",
+    "0.97"
+   ]
+  ]
+ },
+ {
+  "section": "^report(46)’s rule, again",
+  "section_id": "today-petri",
+  "columns": [
+   "Code",
+   "µs a call, median",
+   "the fastest call"
+  ],
+  "rows": [
+   [
+    "Melange 5.0.0 (046’s output)",
+    "0.57",
+    "0.38"
+   ],
+   [
+    "ReScript 12.3.1 (046’s output)",
+    "0.51",
+    "0.36"
+   ],
+   [
+    "JS written by hand",
+    "0.83",
+    "0.71"
+   ],
+   [
+    "hazel-jit, base (hazeljs 0.0.13, 20febee548)",
+    "2.97",
+    "1.07"
+   ],
+   [
+    "hazel-jit, loops and JS arguments (trial/853-pkg, 6d041e9769)",
+    "2.00",
+    "1.44"
    ]
   ]
  },

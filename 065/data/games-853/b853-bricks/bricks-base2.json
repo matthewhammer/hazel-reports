@@ -1,0 +1,69 @@
+{
+ "game": "bricks",
+ "when": "2026-11-25T15:01:24.036Z",
+ "quick": false,
+ "machine": {
+  "cpus": 4,
+  "model": "Intel(R) Xeon(R) 6973P-C",
+  "node": "v22.23.5",
+  "platform": "linux 7.0.0-1020-azure"
+ },
+ "package": {
+  "name": "hazeljs",
+  "version": "0.0.13",
+  "hazel": {
+   "commit": "20febee54854294d799bb92ec74e23360d02f2c1",
+   "branch": "hazeljs",
+   "pr": "https://github.com/hazelgrove/hazel/pull/2857"
+  },
+  "build": "20febee54854294d799bb92ec74e23360d02f2c1"
+ },
+ "examples": "f81cb327402b72eae26bbddc0bf6001af2acaf65",
+ "once": {
+  "interpretedBuildMs": null,
+  "jitBuildMs": 605.905814,
+  "jitCompiled": true,
+  "jitReason": null,
+  "compileMs": 220.868521,
+  "compiledJsBytes": 27763,
+  "runtimeBytes": 22687,
+  "wrappedBytes": 52751,
+  "pageCompiledFrom": "6c5a032106",
+  "compiledLoadMs": 1.1032979999999952,
+  "aotAsIs": true
+ },
+ "ops": [],
+ "runs": [
+  {
+   "name": "600 frames (the robot's paddle, sent elsewhere now and then)",
+   "steps": 600,
+   "ways": {
+    "jit": {
+     "ms": 1.4734959999971124,
+     "usPerCall": 2.4558266666618542,
+     "calls": 600,
+     "reps": 50,
+     "min": 1.1648939999986396,
+     "same": true
+    },
+    "jit, fresh copies": {
+     "ms": 2.1561939999994593,
+     "usPerCall": 3.5936566666657654,
+     "calls": 600,
+     "reps": 47,
+     "min": 1.9886360000020886,
+     "same": true
+    },
+    "compiled": {
+     "ms": 3.222973999998203,
+     "usPerCall": 5.371623333330338,
+     "calls": 600,
+     "reps": 50,
+     "min": 2.868658000000096,
+     "same": true
+    }
+   }
+  }
+ ],
+ "clockNs": 57.18243999999913
+}
