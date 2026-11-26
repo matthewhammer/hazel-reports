@@ -21,12 +21,12 @@
    [
     "Mixed mode",
     "src/language/dynamics/HazelJitMixed.re, 5 lines in Builtins.re, 8 in Transition.re",
-    "The interpreter calls a program's complete functions compiled, as builtins made at run time. Nothing in the app turns it on yet."
+    "The interpreter calls a program's fully typed functions compiled, as builtins made at run time, holes and all. Nothing in the app turns it on yet."
    ],
    [
     "Tests",
     "test/Test_HazelJit.re, test/Test_HazelJit_Agree.re, a hook in test/evaluator/Test_Evaluator_Prelude.re",
-    "Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter's answer shape by shape; agreement on the language's forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, records whose labels look like the runtime's own keys, loops and JS arguments; values carried back; diffs; what is not compiled and why; mixed mode."
+    "Every evaluator test also run compiled (and mixed) where it compiles, compared with the interpreter's answer shape by shape; agreement on the language's forms, big Ints, invalid operations, strings, partial and mutual functions, the step limit, undefined, labels, Unicode, field reads, records whose labels look like the runtime's own keys, loops and JS arguments; values carried back; diffs; what is not compiled and why; mixed mode, holes in it carried and fallen back."
    ]
   ]
  },
@@ -536,142 +536,188 @@
    [
     "Checkers",
     "46",
-    "18.4 ms",
-    "11.5 µs",
-    "11.2 µs",
-    "1.44 µs",
-    "1,648×",
+    "16.4 ms",
+    "13.0 µs",
+    "12.4 µs",
+    "2.06 µs",
+    "1,320×",
     "1.0×"
    ],
    [
     "Go",
     "89",
-    "74.3 ms",
-    "25.8 µs",
-    "13.2 µs",
-    "4.22 µs",
-    "5,647×",
-    "2.0×"
+    "71.7 ms",
+    "24.6 µs",
+    "13.0 µs",
+    "4.26 µs",
+    "5,533×",
+    "1.9×"
    ],
    [
     "Minesweeper",
     "319",
-    "71.0 ms",
-    "64.9 µs",
-    "8.57 µs",
-    "0.69 µs",
-    "8,275×",
-    "7.6×"
+    "110.5 ms",
+    "127.1 µs",
+    "12.2 µs",
+    "1.28 µs",
+    "9,049×",
+    "10.4×"
    ],
    [
     "Mahjong",
     "137",
-    "22.8 ms",
+    "22.0 ms",
     "21.4 µs",
-    "12.4 µs",
-    "8.55 µs",
-    "1,830×",
+    "12.9 µs",
+    "8.11 µs",
+    "1,705×",
     "1.7×"
    ],
    [
     "Solitaire",
     "200",
-    "40.7 ms",
-    "10.0 µs",
-    "4.10 µs",
-    "1.14 µs",
-    "9,926×",
-    "2.4×"
+    "51.7 ms",
+    "10.7 µs",
+    "3.94 µs",
+    "0.97 µs",
+    "13,112×",
+    "2.7×"
    ],
    [
     "Mahjong solitaire",
     "72",
-    "73.2 ms",
-    "53.7 µs",
-    "10.6 µs",
-    "–",
-    "6,896×",
-    "5.1×"
+    "54.4 ms",
+    "38.3 µs",
+    "8.10 µs",
+    "3.06 µs",
+    "6,719×",
+    "4.7×"
    ],
    [
     "Pinball",
     "600",
-    "90.3 ms",
-    "33.3 µs",
-    "6.56 µs",
-    "–",
-    "13,780×",
-    "5.1×"
+    "130.9 ms",
+    "47.0 µs",
+    "10.5 µs",
+    "7.47 µs",
+    "12,520×",
+    "4.5×"
    ],
    [
     "Downhill",
     "600",
-    "12.4 ms",
-    "11.5 µs",
-    "3.63 µs",
-    "–",
-    "3,406×",
-    "3.2×"
+    "9.8 ms",
+    "10.3 µs",
+    "2.81 µs",
+    "0.59 µs",
+    "3,479×",
+    "3.7×"
    ],
    [
     "Bricks",
     "600",
-    "14.3 ms",
-    "7.32 µs",
-    "2.19 µs",
-    "–",
-    "6,533×",
-    "3.3×"
+    "8.3 ms",
+    "4.23 µs",
+    "1.40 µs",
+    "0.25 µs",
+    "5,933×",
+    "3.0×"
    ],
    [
     "Snake",
-    "116",
-    "2.7 ms",
-    "4.79 µs",
-    "4.63 µs",
-    "–",
-    "587×",
-    "1.0×"
+    "105",
+    "1.6 ms",
+    "4.37 µs",
+    "2.89 µs",
+    "1.05 µs",
+    "570×",
+    "1.5×"
    ],
    [
     "Light trails",
     "22",
-    "10.6 ms",
-    "8.46 µs",
-    "4.05 µs",
-    "–",
-    "2,614×",
-    "2.1×"
+    "7.7 ms",
+    "7.24 µs",
+    "3.91 µs",
+    "0.67 µs",
+    "1,976×",
+    "1.9×"
    ],
    [
     "Star wave",
     "600",
-    "36.6 ms",
-    "16.4 µs",
-    "6.56 µs",
-    "–",
-    "5,586×",
-    "2.5×"
+    "27.3 ms",
+    "15.4 µs",
+    "6.49 µs",
+    "0.62 µs",
+    "4,208×",
+    "2.4×"
    ],
    [
     "Butterfly garden",
     "600",
-    "3.6 ms",
-    "13.6 µs",
-    "1.33 µs",
-    "–",
-    "2,730×",
-    "10.2×"
+    "6.1 ms",
+    "20.6 µs",
+    "1.85 µs",
+    "0.68 µs",
+    "3,271×",
+    "11.1×"
    ],
    [
     "Gnome dig",
     "600",
-    "76.1 ms",
-    "34.2 µs",
-    "9.55 µs",
-    "–",
-    "7,963×",
-    "3.6×"
+    "129.1 ms",
+    "55.4 µs",
+    "11.5 µs",
+    "3.76 µs",
+    "11,233×",
+    "4.8×"
+   ]
+  ]
+ },
+ {
+  "section": "Gnome world’s speed run, three ways",
+  "section_id": "speedrun",
+  "columns": [
+   "Way",
+   "steps run",
+   "the steps’ time",
+   "a step",
+   "in the rules",
+   "the rules’ share",
+   "World.step alone",
+   "answers the same"
+  ],
+  "rows": [
+   [
+    "plain JS",
+    "44,933",
+    "24.7 s",
+    "0.55 ms",
+    "0.09 s",
+    "0.4%",
+    "0.51 µs",
+    "4,493 of 4,493"
+   ],
+   [
+    "hazel-jit now",
+    "44,933",
+    "25.5 s",
+    "0.57 ms",
+    "0.34 s",
+    "1.3%",
+    "2.58 µs",
+    "4,493 of 4,493"
+   ],
+   [
+    "the interpreter",
+    "42,000 (of 44,933)",
+    "227.6 s",
+    "5.42 ms",
+    "201.58 s",
+    "88.6%",
+    "4.6 ms",
+    "3,280 of 3,280"
    ]
   ]
  },

@@ -74,7 +74,7 @@ head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<met
         "<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
 os.makedirs(os.path.join(HERE, "data"), exist_ok=True)
-json.dump({"title": TITLE, "date": "2026-11-17", "kind": "hazel-jit: a design brief (2026-11-17), then done (2026-11-25): holes in mixed mode, checked in CI and timed",
+json.dump({"title": TITLE, "date": "2026-11-17", "kind": "hazel-jit: a design brief (2026-11-17), then done (2026-11-25): holes in mixed mode, checked in CI and timed; merged into hazel-jit 2026-11-26",
            "status": "work in progress",
            "question": "In mixed mode, can a value with a hole in it cross into compiled code and out again unopened, instead of sending the whole call back to the interpreter, and what do the checks that keep it unopened cost? From John, on the Hazel team, 2026-11-17, offering to look into holes and hazel-jit; Matthew Hammer: \"Yes, write the brief\".",
            "measurements": "Timings, one run each on GitHub's machines (the tests' mixed measured lines): hazel-jit as it was (trial/769-baseline, CI run 45722346547) against trial/769-jit-holes-2 (25c106f545, CI run 45722309881); mixed mode's time against the interpreter's in the same run.",
