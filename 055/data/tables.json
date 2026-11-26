@@ -73,6 +73,58 @@
   ]
  },
  {
+  "section": "The Witch, with a hole, 2026-11-26",
+  "section_id": "witch",
+  "columns": [
+   "Build",
+   "What it is",
+   "Check"
+  ],
+  "rows": [
+   [
+    "1, before",
+    "trial/885-witch-holes-before, d0456b286f: build 50's branch (569d0f186c) with the three slides added",
+    "run 45855978300"
+   ],
+   [
+    "2, after",
+    "trial/885-witch-holes, 5782738954: build 1 with holes in the prototype's jit (HazelJit.re) and in the slide's run (HazelJitRun.re)",
+    "run 45856238834"
+   ]
+  ]
+ },
+ {
+  "section": "The Witch, with a hole, 2026-11-26",
+  "section_id": "witch",
+  "columns": [
+   "Slide",
+   "Build 1, before",
+   "Build 2, after"
+  ],
+  "rows": [
+   [
+    "The Witch, no hole",
+    "edits 24 to 66 ms; drag 6.5 ms a frame (about 154 fps)",
+    "edits 25 to 66 ms; drag 4.6 ms a frame (about 217 fps)"
+   ],
+   [
+    "A hole never reached",
+    "edits 19 to 50 ms; drag 5.1 ms a frame (about 196 fps)",
+    "edits 26 to 99 ms; drag 5.9 ms a frame (about 169 fps)"
+   ],
+   [
+    "A hole reached",
+    "the run refused at every step (\"not compiled, and reached: a hole\"); no edit moved the picture within 240 s; drag 15.2 ms a frame (about 66 fps), the interpreter's path",
+    "compiled checked, all 8 of the run's answers used; edits 26 to 62 ms; drag 5.7 ms a frame (about 175 fps)"
+   ],
+   [
+    "A hole opened",
+    "refused, as above; no edit moved the picture within 240 s (3 edits ran before the step's 90-minute limit)",
+    "refused when the run opens the hole (\"indeterminate: a hole, opened\"); no edit moved the picture within 240 s; no drag in either build, for the limit"
+   ]
+  ]
+ },
+ {
   "section": "What compiles",
   "section_id": "status-numbers",
   "columns": [

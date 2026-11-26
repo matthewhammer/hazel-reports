@@ -6,7 +6,7 @@
 <!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Holes Across the Boundary</title>
-<meta name="description" content="Holes in hazel-jit: in mixed mode a hole crosses into compiled code unopened and code with a hole compiles, with the interpreter's answers, casts and all.">
+<meta name="description" content="Holes in hazel-jit: in mixed mode a hole crosses into compiled code unopened and code with a hole compiles, with the interpreter's answers, casts and all; on the Witch, a hole the slide's run reaches no longer sends each edit to the interpreter.">
 <style>  :root {
     --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
     --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
@@ -156,7 +156,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-26 07:51 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-26 10:44 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -243,11 +243,12 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- listen: end -->
 <h1>Holes Across the Boundary</h1>
-<p class="sub">Holes in hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript. Until 2026-11-25 an argument with a hole anywhere in it sent the whole call back to the interpreter, and code with a hole was not compiled. Now, in hazel-jit (merged 2026-11-26), a hole crosses into compiled code unopened, code with a hole compiles, and the answers are the interpreter's own, casts and all. Written first, on 2026-11-17, as a brief for John, on the Hazel team, who offered that day to take on holes; done on 2026-11-25, when John's focus had moved to probes. The brief stays below, each part marked with what became of it.</p>
+<p class="sub">Holes in hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript. Until 2026-11-25 an argument with a hole anywhere in it sent the whole call back to the interpreter, and code with a hole was not compiled. Now, in hazel-jit (merged 2026-11-26), a hole crosses into compiled code unopened, code with a hole compiles, and the answers are the interpreter's own, casts and all. Written first, on 2026-11-17, as a brief for John, on the Hazel team, who offered that day to take on holes; done on 2026-11-25, when John's focus had moved to probes. The brief stays below, each part marked with what became of it. On 2026-11-26, the same design carried by hand into the prototype's Witch slide: a hole its run reaches no longer sends each edit to the interpreter.</p>
 
 <h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
 <ol class="outline">
 <li><a href="#done">Done, 2026-11-25</a>: in mixed mode a hole crosses into compiled code unopened and code with a hole compiles, with the interpreter's answers, casts and all; a list of 2,000 with a hole in it now runs about 17 times as fast as the interpreter, where before it ran slower; calls with no hole as before.</li>
+<li><a href="#witch">The Witch, with a hole, 2026-11-26</a>: on the prototype, a hole the slide's run reaches no longer sends every edit to the interpreter; the picture moves in 26 to 62 ms, as on the Witch with no hole, where before it did not move within the check's 240 s; compiling checked costs nothing measurable on the slide; a hole the run opens is still the interpreter's.</li>
 <li><a href="#status">Where hazel-jit stands</a>, for anyone starting on it: how to try it, what compiles and what does not, the open PRs and branches, and working with CI. As of 2026-11-17.</li>
 <li><a href="#today">Where holes stood, 2026-11-17</a>: no code with a hole was compiled, by rule, and a value with a hole sent its whole call back to the interpreter.</li>
 <li><a href="#idea">The idea</a>: a hole as an opaque value, which compiled code may carry but never opens.</li>
@@ -289,7 +290,35 @@ document.addEventListener("DOMContentLoaded", () => {
 <tr><td>No hole: the Petri net rule, 100 events</td><td>0.10 [0.051]</td><td>0.064 [0.064]</td></tr>
 </table>
 <p>Where a hole only rides along through code that does real work, compiling pays, as it pays without holes. Carried into a function as small as <code>swap</code>, it does not: crossing twice and casting as the interpreter does cost about what the interpreter's own <code>swap</code> costs, so 500 such calls come out even. Calls with no hole cost what they did, within the runs' spread.</p>
-<p><b>Not yet:</b> multiholes and error holes stay the interpreter's; holes beyond mixed mode (a whole program, a livelit's view, the package's <code>Hazel.jit</code>) are still refused; and the cost on a slide being edited, the Witch's frame time, is not measured.</p>
+<p><b>Not yet:</b> multiholes and error holes stay the interpreter's; holes beyond mixed mode (a whole program, a livelit's view, the package's <code>Hazel.jit</code>) are still refused. The cost on a slide being edited, the Witch's frame time, is measured <a href="#witch">below</a>, on the prototype.</p>
+
+<h2 id="witch">The Witch, with a hole, 2026-11-26<a class="anchor" href="#witch" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="witch" title="copy this section's address">copy link</button></h2>
+<p><b>On the Witch, a hole that the slide's run reaches no longer sends every edit to the interpreter: with holes compiled, an edit moves the picture in 26 to 62 ms, as on the Witch with no hole, where before the picture did not move within the check's 240 s. Compiling checked costs nothing measurable on the slide. A hole the run opens is still the interpreter's.</b> Matthew Hammer, 2026-11-26: <i>"let's do the witches slide frame time next"</i>.</p>
+<p>The Witch lives only on the prototype branch (<code>trial/694-view-jit</code>, <a href="https://github.com/hazelgrove/hazel/pull/2817">hazelgrove/hazel#2817</a>), whose jit is older than hazel-jit's and compiles a slide's whole run, each livelit's model a parameter. Holes there were half done already: a form that does not compile becomes a stub that throws only if the run reaches it, so a hole never reached was compiled before this work. A hole reached threw at every step, and every edit went to the worker's interpreter. For the after build, the design <a href="#idea">above</a> was carried into the prototype by hand: a hole compiles to an opaque value, a run with one compiles checked, and an answer that still holds a hole is not drawn. Three copies of the slide test it, each the Witch with one change, all on the same slider (<code>neck</code>):</p>
+<ul>
+<li><b>A hole never reached:</b> <code>TankTop =&gt; ?</code>, a case the Witch's shirt never takes.</li>
+<li><b>A hole reached:</b> <code>let neck_draft = ? in</code>, after the neck's slider: a hole the run steps past at every frame, unopened.</li>
+<li><b>A hole opened:</b> <code>let neck_draft = float_of_int(neck_length) *. ? in</code>: the run multiplies by the hole.</li>
+</ul>
+<p>The builds, each checked in Firefox on GitHub's machines (<code>scripts/jit_slides.py</code>, the four Witch slides):</p>
+<table class="vals">
+<tr><th>Build</th><th>What it is</th><th>Check</th></tr>
+<tr><td>1, before</td><td><code>trial/885-witch-holes-before</code>, <code>d0456b286f</code>: build 50's branch (<code>569d0f186c</code>) with the three slides added</td><td>run 45855978300</td></tr>
+<tr><td>2, after</td><td><code>trial/885-witch-holes</code>, <code>5782738954</code>: build 1 with holes in the prototype's jit (<code>HazelJit.re</code>) and in the slide's run (<code>HazelJitRun.re</code>)</td><td>run 45856238834</td></tr>
+</table>
+<p>Per slide, with the slide's run compiled: the four edits (the neck ±2, the arms ±10), each timed from the slider's step to the picture's change; and a 3-second drag of the neck, as the page's view time a frame. One run each.</p>
+<table class="vals">
+<tr><th>Slide</th><th>Build 1, before</th><th>Build 2, after</th></tr>
+<tr><td>The Witch, no hole</td><td>edits 24 to 66 ms; drag 6.5 ms a frame (about 154 fps)</td><td>edits 25 to 66 ms; drag 4.6 ms a frame (about 217 fps)</td></tr>
+<tr><td>A hole never reached</td><td>edits 19 to 50 ms; drag 5.1 ms a frame (about 196 fps)</td><td>edits 26 to 99 ms; drag 5.9 ms a frame (about 169 fps)</td></tr>
+<tr><td>A hole reached</td><td>the run refused at every step (<i>"not compiled, and reached: a hole"</i>); no edit moved the picture within 240 s; drag 15.2 ms a frame (about 66 fps), the interpreter's path</td><td>compiled checked, all 8 of the run's answers used; edits 26 to 62 ms; drag 5.7 ms a frame (about 175 fps)</td></tr>
+<tr><td>A hole opened</td><td>refused, as above; no edit moved the picture within 240 s (3 edits ran before the step's 90-minute limit)</td><td>refused when the run opens the hole (<i>"indeterminate: a hole, opened"</i>); no edit moved the picture within 240 s; no drag in either build, for the limit</td></tr>
+</table>
+<ul>
+<li><b>The checks cost nothing measurable.</b> The Witch itself holds a hole that its run never reaches, so in build 2 every Witch slide compiles checked: the compiled run is 15% larger (257,813 characters against 224,293), and compiling it took 274 to 460 ms against 199 to 346 (two compiles a slide, one run). The edits and drags on the first two slides are within the runs' spread of build 1's.</li>
+<li><b>With compiling off,</b> no edit moved the picture within 240 s, on any slide in either build, as in the 2026-11-19 check (run 44623902074): on GitHub's Firefox the interpreter's path does not finish the Witch's picture in that time.</li>
+<li><b>Not explained yet:</b> build 2's drags with compiling off came out as fast as with it on (4.5 to 5.6 ms a frame, against build 1's 13.0 to 15.8), each livelit drawn in 0.7 to 0.8 ms instead of 4.1 to 4.8. The two builds differ only in the two jit files. It does not touch the edits' result, which turns on whether the slide's run was used, and the counts say it was.</li>
+</ul>
 
 <h2 id="status">Where hazel-jit stands<a class="anchor" href="#status" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status" title="copy this section's address">copy link</button></h2>
 <p><b>As of 2026-11-18, hazel-jit lives on one prototype branch, build 50 (build 49 and the slides' builtins). It compiles 260 of the evaluator's 313 test programs and gives the interpreter's answer on every one it can compare. It is not on dev, and three small PRs to dev are waiting for review.</b> This section is for anyone starting on it. <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> has the story and the numbers; <a href="../051/"><code class="ref"><b>^report(</b>51<b>)</b></code></a> explains how compiled livelit views work.</p>
@@ -471,12 +500,14 @@ document.addEventListener("DOMContentLoaded", () => {
 <ol class="outline">
 <li>Multiholes and error holes, their environment carried as the interpreter keeps it.</li>
 <li>Holes beyond mixed mode: a whole program (the sweep's programs not compiled for a hole), a livelit's view, and the package's <code>Hazel.jit</code>.</li>
-<li>Measure where it matters: a slide being edited, its functions called with half-filled models; the Witch's frame time, before and after.</li>
+<li><s>Measure where it matters: a slide being edited, its functions called with half-filled models; the Witch's frame time, before and after.</s> <b>Done</b> on the prototype, 2026-11-26: <a href="#witch">the Witch, with a hole</a>.</li>
+<li>A hole the slide's run opens: let the run draw what it can, as the interpreter does (an indeterminate value where the hole reaches), rather than give the whole picture to the worker.</li>
+<li>Why build 2's drags with compiling off came out as fast as with it on (<a href="#witch">above</a>).</li>
 <li>The warm-up PR, <a href="https://github.com/hazelgrove/hazel/issues/2831">hazelgrove/hazel#2831</a>, still open for anyone.</li>
 </ol>
 
 <h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
-<p><b>2026-11-25:</b> the work done on <code>trial/769-jit-holes</code> (step 1) and <code>trial/769-jit-holes-2</code> (step 2, the casts and the timings) from hazel-jit at <code>be44756900</code>, checked only in CI, since builds and test runs do not run on the laptop: CI runs 45709697552 (step 1 did not build: a minus before a hole), 45709997915 and 45710016850 (six and nine answers parted in casts), 45714537252 (three fallbacks still parted), 45718086755 (green), 45722309881 (green, with the timings) and 45722346547 (the baseline). <b>2026-11-26:</b> hazel-jit fast-forwarded to <code>25c106f545</code> (CI run 45837959125, green, the full tests included) and merged into the package's branch as <code>b1b4e19286</code>, with no conflicts (CI run 45838052535, green); the package's own code calls <code>compile_full(~env, e)</code> and names the <code>compiled</code> type, both unchanged for it. The answers in <a href="#done">Done</a> are the tests' own; the timings are one run each, as printed by the tests' <code>mixed measured</code> lines.</p>
+<p><b>2026-11-25:</b> the work done on <code>trial/769-jit-holes</code> (step 1) and <code>trial/769-jit-holes-2</code> (step 2, the casts and the timings) from hazel-jit at <code>be44756900</code>, checked only in CI, since builds and test runs do not run on the laptop: CI runs 45709697552 (step 1 did not build: a minus before a hole), 45709997915 and 45710016850 (six and nine answers parted in casts), 45714537252 (three fallbacks still parted), 45718086755 (green), 45722309881 (green, with the timings) and 45722346547 (the baseline). <b>2026-11-26:</b> hazel-jit fast-forwarded to <code>25c106f545</code> (CI run 45837959125, green, the full tests included) and merged into the package's branch as <code>b1b4e19286</code>, with no conflicts (CI run 45838052535, green); the package's own code calls <code>compile_full(~env, e)</code> and names the <code>compiled</code> type, both unchanged for it. The answers in <a href="#done">Done</a> are the tests' own; the timings are one run each, as printed by the tests' <code>mixed measured</code> lines. <b>2026-11-26, the Witch:</b> the three slides and the port on <code>trial/885-witch-holes-before</code> and <code>trial/885-witch-holes</code>; both Firefox checks dispatched with <code>only=Witch</code>, and both reached the step's 90-minute limit on the fourth slide, since every edit that does not move the picture waits 240 s; the figures are read from the two jobs' logs. The after branch's CI (run 45856238812) passed its static checks (the port builds) and fast tests; its full tests were still running at writing.</p>
 <p>Written from the code of build 49 (<code>0e56bdbd0a</code>, 2026-11-17 10:30 MST) and <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, on 2026-11-17, after John's offer. Nothing here is measured yet; the examples' answers today are mixed mode's documented behaviour (a call whose argument does not convert falls back), and the "with this project" column is what the design intends. The file references and the examples are in the data below and in <a href="https://github.com/matthewhammer/hazel-reports/tree/main/055/data">055/data</a>.</p>
 
 <!-- data-line: begin -->
@@ -636,7 +667,7 @@ document.addEventListener("DOMContentLoaded", () => {
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2818": {"author": "matthewhammer", "comments": 2, "created": "2026-11-09T03:19:26Z", "kind": "pull", "state": "draft", "title": "A frame-rate HUD, off by default, turned on from the Flags configuration slide", "updated": "2026-11-19T21:17:51Z", "base": "dev"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-26T14:20:40Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-26T14:20:09Z", "base": "dev"}}, BUILT = "2026-11-26";
+  const CACHED = {"hazelgrove/hazel#2635": {"author": "matthewhammer", "comments": 4, "created": "2026-10-01T22:50:14Z", "kind": "pull", "state": "draft", "title": "Livelits × modular editors: merge #2469 into the livelits branch", "updated": "2026-11-05T14:58:36Z", "base": "integration/livelits-splicerefs-full"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-19T23:10:19Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2818": {"author": "matthewhammer", "comments": 2, "created": "2026-11-09T03:19:26Z", "kind": "pull", "state": "draft", "title": "A frame-rate HUD, off by default, turned on from the Flags configuration slide", "updated": "2026-11-19T21:17:51Z", "base": "dev"}, "hazelgrove/hazel#2819": {"author": "matthewhammer", "comments": 0, "created": "2026-11-09T12:37:34Z", "kind": "pull", "state": "draft", "title": "livelits x jit", "updated": "2026-11-09T17:14:39Z", "base": "dev"}, "hazelgrove/hazel#2825": {"author": "matthewhammer", "comments": 2, "created": "2026-11-15T22:38:10Z", "kind": "pull", "state": "closed", "title": "Modulo by zero shows Divide by Zero instead of crashing the interpreter", "updated": "2026-11-19T18:34:09Z", "base": "dev"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2831": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:28:34Z", "kind": "issues", "state": "open", "title": "A float literal with more than six decimal places makes FastParse give up, and the slow parse it falls back to runs out of memory", "updated": "2026-11-17T19:46:48Z"}, "hazelgrove/hazel#2832": {"author": "matthewhammer", "comments": 0, "created": "2026-11-17T18:41:00Z", "kind": "issues", "state": "open", "title": "A program whose answer is a function reaching several modules grows to gigabytes: Evaluator.finish substitutes the environment into it", "updated": "2026-11-17T19:10:23Z"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-26T14:52:14Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-26T14:20:09Z", "base": "dev"}}, BUILT = "2026-11-26";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -771,10 +802,10 @@ document.addEventListener("DOMContentLoaded", () => {
  "report": 55,
  "title": "Holes Across the Boundary",
  "date": "2026-11-17",
- "kind": "hazel-jit: a design brief (2026-11-17), then done (2026-11-25): holes in mixed mode, checked in CI and timed; merged into hazel-jit 2026-11-26",
+ "kind": "hazel-jit: a design brief (2026-11-17), then done (2026-11-25): holes in mixed mode, checked in CI and timed; merged into hazel-jit 2026-11-26; the Witch with a hole, before and after, on the prototype (2026-11-26)",
  "status": "work in progress",
  "question": "In mixed mode, can a value with a hole in it cross into compiled code and out again unopened, instead of sending the whole call back to the interpreter, and what do the checks that keep it unopened cost? From John, on the Hazel team, 2026-11-17, offering to look into holes and hazel-jit; Matthew Hammer: \"Yes, write the brief\".",
- "measurements": "Timings, one run each on GitHub's machines (the tests' mixed measured lines): hazel-jit as it was (trial/769-baseline, CI run 45722346547) against trial/769-jit-holes-2 (25c106f545, CI run 45722309881); mixed mode's time against the interpreter's in the same run.",
+ "measurements": "Timings, one run each on GitHub's machines (the tests' mixed measured lines): hazel-jit as it was (trial/769-baseline, CI run 45722346547) against trial/769-jit-holes-2 (25c106f545, CI run 45722309881); mixed mode's time against the interpreter's in the same run. The Witch (2026-11-26): Firefox on GitHub's machines, scripts/jit_slides.py, one run each: trial/885-witch-holes-before (d0456b286f, run 45855978300) against trial/885-witch-holes (5782738954, run 45856238834).",
  "builds": [
   {
    "build": "49",
@@ -796,6 +827,20 @@ document.addEventListener("DOMContentLoaded", () => {
    "pr": "off hazelgrove/hazel#2859",
    "commit": "be700192ff",
    "date": "2026-11-25"
+  },
+  {
+   "build": "Witch 1, before",
+   "branch": "trial/885-witch-holes-before",
+   "pr": "off hazelgrove/hazel#2817",
+   "commit": "d0456b286f",
+   "date": "2026-11-26"
+  },
+  {
+   "build": "Witch 2, after",
+   "branch": "trial/885-witch-holes",
+   "pr": "off hazelgrove/hazel#2817",
+   "commit": "5782738954",
+   "date": "2026-11-26"
   }
  ],
  "files": [
@@ -875,6 +920,58 @@ document.addEventListener("DOMContentLoaded", () => {
      "No hole: the Petri net rule, 100 events",
      "0.10 [0.051]",
      "0.064 [0.064]"
+    ]
+   ]
+  },
+  {
+   "section": "The Witch, with a hole, 2026-11-26",
+   "section_id": "witch",
+   "columns": [
+    "Build",
+    "What it is",
+    "Check"
+   ],
+   "rows": [
+    [
+     "1, before",
+     "trial/885-witch-holes-before, d0456b286f: build 50's branch (569d0f186c) with the three slides added",
+     "run 45855978300"
+    ],
+    [
+     "2, after",
+     "trial/885-witch-holes, 5782738954: build 1 with holes in the prototype's jit (HazelJit.re) and in the slide's run (HazelJitRun.re)",
+     "run 45856238834"
+    ]
+   ]
+  },
+  {
+   "section": "The Witch, with a hole, 2026-11-26",
+   "section_id": "witch",
+   "columns": [
+    "Slide",
+    "Build 1, before",
+    "Build 2, after"
+   ],
+   "rows": [
+    [
+     "The Witch, no hole",
+     "edits 24 to 66 ms; drag 6.5 ms a frame (about 154 fps)",
+     "edits 25 to 66 ms; drag 4.6 ms a frame (about 217 fps)"
+    ],
+    [
+     "A hole never reached",
+     "edits 19 to 50 ms; drag 5.1 ms a frame (about 196 fps)",
+     "edits 26 to 99 ms; drag 5.9 ms a frame (about 169 fps)"
+    ],
+    [
+     "A hole reached",
+     "the run refused at every step (\"not compiled, and reached: a hole\"); no edit moved the picture within 240 s; drag 15.2 ms a frame (about 66 fps), the interpreter's path",
+     "compiled checked, all 8 of the run's answers used; edits 26 to 62 ms; drag 5.7 ms a frame (about 175 fps)"
+    ],
+    [
+     "A hole opened",
+     "refused, as above; no edit moved the picture within 240 s (3 edits ran before the step's 90-minute limit)",
+     "refused when the run opens the hole (\"indeterminate: a hole, opened\"); no edit moved the picture within 240 s; no drag in either build, for the limit"
     ]
    ]
   },
