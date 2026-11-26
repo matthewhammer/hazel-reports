@@ -1,21 +1,53 @@
 <body><main>
 <p class="series"><a href="../">Hazel reports</a> · report 055 · hazel-jit · 2026-11-17, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 054</p>
 <h1>Holes Across the Boundary</h1>
-<p class="sub">A starter project for hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript; when an argument holds a hole anywhere, the whole call goes back to the interpreter. Can such a value cross into compiled code and out again, unopened, and what do the checks that keep it unopened cost? Written for John, on the Hazel team, who offered on 2026-11-17 to take on the question of holes raised at the team's meeting that day, and for anyone else starting on hazel-jit, with notes on where it stands.</p>
+<p class="sub">Holes in hazel-jit. In mixed mode, Hazel's interpreter runs a program and calls its fully typed functions compiled to JavaScript. Until 2026-11-25 an argument with a hole anywhere in it sent the whole call back to the interpreter, and code with a hole was not compiled. Now, on a branch off hazel-jit, a hole crosses into compiled code unopened, code with a hole compiles, and the answers are the interpreter's own, casts and all. Written first, on 2026-11-17, as a brief for John, on the Hazel team, who offered that day to take on holes; done on 2026-11-25, when John's focus had moved to probes. The brief stays below, each part marked with what became of it.</p>
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
+<li><a href="#done">Done, 2026-11-25</a>: in mixed mode a hole crosses into compiled code unopened and code with a hole compiles, with the interpreter's answers, casts and all; a list of 2,000 with a hole in it now runs about 17 times as fast as the interpreter, where before it ran slower; calls with no hole as before.</li>
 <li><a href="#status">Where hazel-jit stands</a>, for anyone starting on it: how to try it, what compiles and what does not, the open PRs and branches, and working with CI. As of 2026-11-17.</li>
-<li><a href="#today">Where holes stand</a>: no code with a hole is compiled, by rule, and a value with a hole sends its whole call back to the interpreter.</li>
+<li><a href="#today">Where holes stood, 2026-11-17</a>: no code with a hole was compiled, by rule, and a value with a hole sent its whole call back to the interpreter.</li>
 <li><a href="#idea">The idea</a>: a hole as an opaque value, which compiled code may carry but never opens.</li>
 <li><a href="#looks">Where compiled code looks inside a value</a>, and why JavaScript will not stop it there by itself.</li>
 <li><a href="#designs">Three places for the checks</a>, and what each costs.</li>
-<li><a href="#first">A first step</a>, and how to know it works.</li>
+<li><a href="#first">The first step, as planned</a>: done as planned, with one addition, the casts.</li>
 <li><a href="#reading">Where to start reading</a>: the files, by line, and the reports.</li>
-<li><a href="#settle">Questions to settle first</a>, with Cyrus and Matthew.</li>
+<li><a href="#settle">The questions, settled</a>: each as leaned, and a fifth, code with holes, settled by Matthew.</li>
 <li><a href="#warmup">A warm-up on dev</a>: float literals that read back, hazelgrove/hazel#2831.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
+
+<h2 id="done">Done, 2026-11-25</h2>
+<p><b>In mixed mode a hole now crosses into compiled code unopened, and code with a hole in it compiles; where compiled code would look inside a hole, that call alone is the interpreter's; and every answer is the interpreter's own, casts and all.</b> On a branch off hazel-jit, <code>trial/769-jit-holes-2</code> (<code>25c106f545</code>), green in CI: the quick tests (4,683) and the full tests (5,148), CI run 45722309881. Matthew Hammer, 2026-11-25: <i>"John is now focused on probes, not holes. Let's work on that support next --- arguments with holes. JIT code with holes."</i></p>
+<ul>
+<li><b>Arguments with holes</b>, the design <a href="#idea">below</a>, done as planned. In a mixed call, what compiled code cannot hold (a hole, an indeterminate term, a function of the interpreter's) crosses as <code>{$opaque: k}</code>, its term kept by <code>HazelJitValue</code>, and <code>of_js</code> gives back that very term. A call whose argument held one runs the function's checked version, compiled the first time one arrives, which asks the runtime before it looks inside a value: <code>$R.op</code> before an operand or a condition, <code>$R.no</code> before a pattern's test, <code>$R.deep</code> before an equality or a builtin's arguments, and <code>appendc</code> for <code>@</code>. Meeting an opaque value there, the run stops as indeterminate and the call falls back. Calls with no hole run today's unchecked code.</li>
+<li><b>Code with holes</b>, Matthew's <i>"JIT code with holes"</i>, which lifts the rule of 2026-11-13 for mixed mode. An empty hole, or invalid text, with any cast around it, compiles to a constant opaque value, <code>$R.hole(-k)</code>, whose term the compiler keeps: the interpreter's value of such a hole is the hole itself, since its evaluation keeps no environment for one (<code>Transition.re</code>: "uncomment for hole closures"). A multihole and an error hole do keep their environment, so they stay the interpreter's. A unit with a hole is compiled checked, since its own code may meet its holes. Only mixed mode asks for this (<code>compile_full ~holes</code>); a livelit's view, a whole program and the package still refuse a hole.</li>
+<li><b>Casts, as the interpreter makes them.</b> Three CI rounds found what the design had not said. The tests compare answers term for term, casts included, and six of the first answers parted from the interpreter's only there: <code>?</code> where the interpreter has <code>(? : Int)</code>, <code>1</code> where a stuck answer has <code>(1 : Int)</code>. The interpreter's <code>let</code> casts a function to its declared type, its pattern and its body each cast (<code>Ascriptions</code>, a <code>Fun</code> at an <code>Arrow</code>): so the argument is bound with a hole's cast kept, and the answer is cast to the result type, which, pushed one step into a stuck <code>if</code>, shows in its branches. Mixed mode now makes these casts with the interpreter's own cast step: a call that carried a hole converts its argument resolved as the interpreter binds it, and casts its answer to the declared result type; a fallback applies the interpreter's closure cast to the very declared type, ids and all. That corrects fallbacks with no hole too, whose stuck answers had lacked these casts.</li>
+</ul>
+<p>The tests, beside mixed mode's others in <code>test/Test_HazelJit.re</code>, each compare mixed mode's answer with the interpreter's alone:</p>
+<table class="vals">
+<tr><th>Program</th><th>In mixed mode now</th></tr>
+<tr><td><code>let swap : (Int, Int) -&gt; (Int, Int) = fun (a, b) -&gt; (b, a) in swap(1, ?)</code></td><td>compiled: <code>((? : Int), 1)</code>, the same hole</td></tr>
+<tr><td><code>... len([1, ?, 3])</code>, a list's length</td><td>compiled: <code>3</code>, never looking at an element</td></tr>
+<tr><td><code>... unbox(B(?))</code>, out of a constructor's argument</td><td>compiled: the hole, cast</td></tr>
+<tr><td><code>... twice(?)</code>, a hole twice into a list</td><td>compiled</td></tr>
+<tr><td><code>... gety((x = ?, y = 2))</code>, a record's other field</td><td>compiled: <code>2</code></td></tr>
+<tr><td><code>let later : Int -&gt; Int = fun x -&gt; ? in later(1)</code>, a hole in the code</td><td>compiled: <code>(? : Int)</code></td></tr>
+<tr><td><code>... half_done(5)</code>, <code>(x, ?)</code>; <code>maybe(false)</code>, <code>if b then 1 else ?</code></td><td>compiled</td></tr>
+<tr><td><code>round(?)</code> (a constructor matched), <code>getx</code> (<code>r.x + 1</code>), <code>pick(?, 1, 2)</code> (a condition), <code>same([1, ?], [1, 2])</code> (lists compared), <code>add_hole(1)</code> (<code>x + ?</code>)</td><td>each that call the interpreter's, its answer the interpreter's</td></tr>
+</table>
+<p>The consistency checks agree: the whole-program sweep, 290 checks, 235 compiled, 212 agreed, 0 differ, as before; the mixed sweep, 6 evaluator programs with a function compiled, all 6 agreed, 7 of their calls now meeting a hole in compiled code and falling back where it is opened.</p>
+<p><b>What it buys, and what it costs:</b> one run each, on GitHub's machines, hazel-jit as it was (<code>trial/769-baseline</code>, the same timings on <code>be44756900</code>, CI run 45722346547) against the branch (CI run 45722309881); the quick tests' job, its full tests' job in brackets; mixed mode's time against the interpreter's in the same run, since the runners differ more than that:</p>
+<table class="vals">
+<tr><th>Program</th><th>Before</th><th>Now</th></tr>
+<tr><td>A list of 2,000 built with a hole in it by a function with a hole in its code, then its length</td><td>mixed 293.6 ms, the interpreter 199.3 (1.47; [1.07]): the build not compiled (a hole), the length's call fell back</td><td>mixed 17.7 ms, the interpreter 299.2 (0.059; [0.045]): both compiled, none fell back; about 17 times as fast as the interpreter</td></tr>
+<tr><td>500 calls from an interpreted loop, each carrying a hole into <code>swap</code></td><td>600.6 ms against 411.4 (1.46; [0.77]): all 500 fell back</td><td>774.5 ms against 688.1 (1.13; [1.11]): all 500 compiled</td></tr>
+<tr><td>No hole: 500 calls of <code>sq</code> from an interpreted loop</td><td>0.78 [0.92]</td><td>0.79 [0.82]</td></tr>
+<tr><td>No hole: the Petri net rule, 100 events</td><td>0.10 [0.051]</td><td>0.064 [0.064]</td></tr>
+</table>
+<p>Where a hole only rides along through code that does real work, compiling pays, as it pays without holes. Carried into a function as small as <code>swap</code>, it does not: crossing twice and casting as the interpreter does cost about what the interpreter's own <code>swap</code> costs, so 500 such calls come out even. Calls with no hole cost what they did, within the runs' spread.</p>
+<p><b>Not yet:</b> the branch is not merged into hazel-jit (hazelgrove/hazel#2859); multiholes and error holes stay the interpreter's; holes beyond mixed mode (a whole program, a livelit's view, the package's <code>Hazel.jit</code>) are still refused; and the cost on a slide being edited, the Witch's frame time, is not measured.</p>
 
 <h2 id="status">Where hazel-jit stands</h2>
 <p><b>As of 2026-11-18, hazel-jit lives on one prototype branch, build 50 (build 49 and the slides' builtins). It compiles 260 of the evaluator's 313 test programs and gives the interpreter's answer on every one it can compare. It is not on dev, and three small PRs to dev are waiting for review.</b> This section is for anyone starting on it. Report 054 has the story and the numbers; report 051 explains how compiled livelit views work.</p>
@@ -83,17 +115,17 @@
 <li><b>The Firefox check.</b> <code>.github/workflows/jit.yml</code> loads the slides compiled and not, compares every livelit's drawing, and times the Witch slide's slider; <code>gh workflow run jit.yml --ref BRANCH -f only=Witch</code> runs it by hand.</li>
 </ul>
 
-<h2 id="today">Where holes stand</h2>
+<h2 id="today">Where holes stood, 2026-11-17</h2>
 <p><b>No code with a hole is compiled, by rule, and today a value with a hole cannot cross into compiled code at all: the call goes back to the interpreter whole.</b></p>
-<p>hazel-jit compiles Hazel to JavaScript (reports 050 to 054). What it leaves to the interpreter by rule, not as a gap to close, was settled at Matthew Hammer and Cyrus Omar's meeting of 2026-11-13: <i>"for the output of hazel-jit, we should continue to avoid translating code with holes"</i>. The interpreter evaluates around holes, and its indeterminate results are the point of them (report 054, <a href="../054/#rules">What stays with the interpreter</a>). That rule stands here.</p>
+<p>hazel-jit compiles Hazel to JavaScript (reports 050 to 054). What it leaves to the interpreter by rule, not as a gap to close, was settled at Matthew Hammer and Cyrus Omar's meeting of 2026-11-13: <i>"for the output of hazel-jit, we should continue to avoid translating code with holes"</i>. The interpreter evaluates around holes, and its indeterminate results are the point of them (report 054, <a href="../054/#rules">What stays with the interpreter</a>). That rule stood here; on 2026-11-25 Matthew lifted it for mixed mode (<a href="#done">Done</a>, above).</p>
 <p>Mixed mode (report 054, <a href="../054/#mixed">Mixed mode</a>; on the prototype branch only) is where values meet compiled code. The interpreter runs the program as always. Each function bound at the program's top, or in a module there, whose whole type is declared (<code>let f : A -&gt; B = fun ...</code>) is compiled, and the interpreter calls it as it calls a builtin: the argument is converted to a JavaScript value (<code>HazelJitValue.to_js</code>), the compiled function runs, and its answer is converted back by the declared result type (<code>of_js</code>). On any stop, that call falls back: the interpreter applies its own closure to the same argument, and its answer is the answer.</p>
 <p>The conversion knows numbers, booleans, strings, lists, tuples, labeled tuples and constructors. On anything else, a hole among them, it raises, and the call falls back, even when the function would never have looked at the hole:</p>
 <table class="vals">
-<tr><th>Program</th><th>Mixed mode today</th><th>With this project</th></tr>
-<tr><td><code>let swap : (Int, Int) -&gt; (Int, Int) = fun (a, b) -&gt; (b, a) in swap(1, ?)</code></td><td>falls back; the interpreter answers <code>(?, 1)</code></td><td>compiled; the same <code>(?, 1)</code>, the same hole</td></tr>
+<tr><th>Program</th><th>Mixed mode then (build 49)</th><th>Now (<code>25c106f545</code>)</th></tr>
+<tr><td><code>let swap : (Int, Int) -&gt; (Int, Int) = fun (a, b) -&gt; (b, a) in swap(1, ?)</code></td><td>falls back; the interpreter answers <code>(?, 1)</code></td><td>compiled; <code>((? : Int), 1)</code>, the same hole, with the cast the interpreter's answer shows</td></tr>
 <tr><td><code>let len : [Int] -&gt; Int = fun xs -&gt; case xs | [] =&gt; 0 | _ :: rest =&gt; 1 + len(rest) end in len([1, ?, 3])</code></td><td>falls back</td><td>compiled; <code>3</code>, never looking at an element</td></tr>
-<tr><td><code>let inc : Int -&gt; Int = fun x -&gt; x + 1 in inc(?)</code></td><td>falls back; <code>? + 1</code></td><td>still falls back: <code>+</code> looks inside</td></tr>
-<tr><td><code>type Shape = + Circle(Float) + Square(Float) in let round : Shape -&gt; Bool = fun s -&gt; case s | Circle(_) =&gt; true | _ =&gt; false end in round(?)</code></td><td>falls back; the interpreter's match is stuck</td><td>still falls back, which takes a check: see <a href="#looks">below</a></td></tr>
+<tr><td><code>let inc : Int -&gt; Int = fun x -&gt; x + 1 in inc(?)</code></td><td>falls back; <code>? + 1</code></td><td>still falls back: <code>+</code> looks inside; <code>(? : Int) + 1</code></td></tr>
+<tr><td><code>type Shape = + Circle(Float) + Square(Float) in let round : Shape -&gt; Bool = fun s -&gt; case s | Circle(_) =&gt; true | _ =&gt; false end in round(?)</code></td><td>falls back; the interpreter's match is stuck</td><td>still falls back: the checked version's pattern test stops it (<a href="#looks">below</a>)</td></tr>
 </table>
 <p>It matters because a program being edited usually has a hole somewhere, and data with holes in it (a livelit's model with a field not yet filled, a list being typed) reaches functions that only move it around.</p>
 
@@ -106,7 +138,7 @@
 <li><b>Never opened:</b> an operation that would look inside it stops the run as an indeterminate result, as reaching <code>undefined</code> does since ticket 761 (<code>Runtime.indet</code>), and the call falls back, so its answer is the interpreter's.</li>
 <li><b>Out:</b> <code>of_js</code>, meeting <code>{$opaque: k}</code>, gives back the term from the table, exactly, so a probe or fill-and-resume sees what it would have seen.</li>
 </ul>
-<p>Compiled code still contains no hole; only the data does, and compiled code never inspects it. So the rule of 2026-11-13 holds.</p>
+<p>Compiled code still contains no hole; only the data does, and compiled code never inspects it. So the rule of 2026-11-13 holds. (So it was for the first step. The second, on Matthew's word, compiles code with holes too: <a href="#done">Done</a>, above.)</p>
 
 <h2 id="looks">Where compiled code looks inside a value</h2>
 <p><b>JavaScript will not stop by itself: an opaque object in the wrong place gives a wrong answer silently, so the checks have to be written.</b> Where an operation throws, the run stops and the call falls back, which is safe. Where it returns, it is wrong:</p>
@@ -128,10 +160,10 @@
 <li><b>Only where a wrong answer comes out silently</b> (the rows marked wrong above), leaving the rest to JavaScript's own errors. Fewer tests; still paid by every call.</li>
 <li><b>Two compiled versions</b> of each function. <code>to_js</code> already walks the whole argument, so it knows whether a hole was in it: with none, today's unchecked code runs; with one, a checked version, with the second design's tests, compiled the first time such an argument arrives. Calls without holes cost what they cost today, and the price is compile time and code size, once per function that ever meets a hole.</li>
 </ol>
-<p>Our lean, for discussion: the third, its checked version carrying the second's tests. Whether any of this pays is a measurement, not a guess (<a href="#first">below</a>).</p>
+<p>Our lean, for discussion: the third, its checked version carrying the second's tests. <b>Done so, 2026-11-25</b> (<a href="#done">Done</a>). Whether any of this pays is a measurement, not a guess (<a href="#first">below</a>).</p>
 
-<h2 id="first">A first step</h2>
-<p><b>Start with values that only pass through, checked by tests that already exist and measured by timings that already run in CI.</b></p>
+<h2 id="first">The first step, as planned</h2>
+<p><b>Done as planned on 2026-11-25 (<a href="#done">Done</a>), with one addition the plan did not foresee: the casts. The plan, as written on 2026-11-17: start with values that only pass through, checked by tests that already exist and measured by timings that already run in CI.</b></p>
 <ol>
 <li><b>The boundary.</b> <code>to_js</code> and <code>of_js</code> carry opaque values and keep their table (<code>HazelJitValue.re</code>).</li>
 <li><b>The checked version.</b> The second design's tests generated under a flag in <code>HazelJit.re</code>'s code generation, and mixed mode choosing the checked version when <code>to_js</code> met a hole (<code>HazelJitMixed.re</code>).</li>
@@ -154,29 +186,30 @@
 </table>
 <p>The reports: 054 (its sections What hazel-jit is, What stays with the interpreter, Mixed mode, and Questions for the team), 053 (why the prototype is to be redone by hand in small PRs), and 050 to 052 (how compiled livelit views came about). CI runs the tests on every push to a branch of hazelgrove/hazel; the quick tests take 10 to 15 minutes there.</p>
 
-<h2 id="settle">Questions to settle first</h2>
-<p><b>Four, with Cyrus and Matthew, before code: where the work lives, which values are opaque, whether a hole keeps its identity, and when the checked version is compiled.</b> Each has our lean.</p>
+<h2 id="settle">The questions, settled</h2>
+<p><b>Settled on 2026-11-25, each as leaned, and a fifth: code with holes compiles, in mixed mode, on Matthew's word.</b> As written on 2026-11-17, four questions, with Cyrus and Matthew, before code: where the work lives, which values are opaque, whether a hole keeps its identity, and when the checked version is compiled. Each with our lean, and what was done:</p>
 <ol>
-<li><b>Does it live on the prototype branch?</b> Report 053 proposes redoing hazel-jit by hand, in small PRs to dev, and mixed mode is so far only on the prototype. <span class="muted">Lean:</span> design and measure there; it lands on dev with mixed mode.</li>
-<li><b>Which values are opaque: empty holes only, or every indeterminate term</b> (a stuck application, a failed cast)? <span class="muted">Lean:</span> every value <code>to_js</code> cannot represent, since the interpreter's answer holds the term itself either way.</li>
-<li><b>Must a hole keep its identity through compiled code</b>, its id and its closure's environment, so that fill-and-resume and probes still work? <span class="muted">Lean:</span> yes; the table gives back the very term that went in.</li>
-<li><b>The checked version: compiled up front, or the first time a hole arrives?</b> <span class="muted">Lean:</span> the first time; most functions never meet one.</li>
+<li><b>Does it live on the prototype branch?</b> Report 053 proposes redoing hazel-jit by hand, in small PRs to dev, and mixed mode is so far only on the prototype. <span class="muted">Lean:</span> design and measure there; it lands on dev with mixed mode. <b>Done:</b> on a branch off hazel-jit (hazelgrove/hazel#2859, the jit's own PR since 2026-11-23, not the prototype), to merge into it on Matthew's word.</li>
+<li><b>Which values are opaque: empty holes only, or every indeterminate term</b> (a stuck application, a failed cast)? <span class="muted">Lean:</span> every value <code>to_js</code> cannot represent, since the interpreter's answer holds the term itself either way. <b>Done so.</b></li>
+<li><b>Must a hole keep its identity through compiled code</b>, its id and its closure's environment, so that fill-and-resume and probes still work? <span class="muted">Lean:</span> yes; the table gives back the very term that went in. <b>Done so</b>, its cast with it; an empty hole has no closure in the interpreter to keep.</li>
+<li><b>The checked version: compiled up front, or the first time a hole arrives?</b> <span class="muted">Lean:</span> the first time; most functions never meet one. <b>Done so</b>; a function with a hole in its own code has only the checked version.</li>
+<li><b>Is code with a hole compiled?</b> Not by the rule of 2026-11-13. Matthew, 2026-11-25: <i>"JIT code with holes."</i> <b>Done</b>, in mixed mode.</li>
 </ol>
 
 <h2 id="warmup">A warm-up on dev</h2>
 <p><b>A smaller first PR, independent of the prototype: make float literals print so that they read back as the same number (hazelgrove/hazel#2831).</b> <code>Atom.to_literal</code> prints a float with <code>%f</code>, six decimal places (<code>src/language/term/Atom.re</code>, line 208 on dev), so a literal such as <code>280.4606184</code> does not survive the fast parser's round trip, and its module falls to the slow parser, whose cost grows much faster than the module. The fix is the shortest form that reads back. Atom's derived equality compares floats by the same six decimals (lines 30 to 32); evaluation does not, it compares by value. It is a tour of the parser and of review on dev.</p>
 
 <h2 id="next">What next</h2>
-<p><b>Settle the questions, then the boundary, the checks, and the measurements.</b></p>
+<p><b>Merge into hazel-jit, then holes beyond mixed mode.</b></p>
 <ol class="outline">
-<li>Settle the four questions with Cyrus and Matthew.</li>
-<li>If wanted first, the warm-up PR for hazelgrove/hazel#2831.</li>
-<li>Opaque values at the boundary, passing through only: <code>to_js</code>, <code>of_js</code>, and the pass-through tests.</li>
-<li>The checked version, mixed mode's choice of it, and tests for each silent case.</li>
-<li>Measure: the quick tests' timings and the Witch slide's frame time, before and after.</li>
-<li>Write it up, with the numbers, here or in a report of its own.</li>
+<li>Merge <code>trial/769-jit-holes-2</code> into hazel-jit (hazelgrove/hazel#2859), and so into the package's branch (#2857), on Matthew's word.</li>
+<li>Multiholes and error holes, their environment carried as the interpreter keeps it.</li>
+<li>Holes beyond mixed mode: a whole program (the sweep's programs not compiled for a hole), a livelit's view, and the package's <code>Hazel.jit</code>.</li>
+<li>Measure where it matters: a slide being edited, its functions called with half-filled models; the Witch's frame time, before and after.</li>
+<li>The warm-up PR, hazelgrove/hazel#2831, still open for anyone.</li>
 </ol>
 
 <h2 id="method">How this was put together</h2>
+<p><b>2026-11-25:</b> the work done on <code>trial/769-jit-holes</code> (step 1) and <code>trial/769-jit-holes-2</code> (step 2, the casts and the timings) from hazel-jit at <code>be44756900</code>, checked only in CI, since builds and test runs do not run on the laptop: CI runs 45709697552 (step 1 did not build: a minus before a hole), 45709997915 and 45710016850 (six and nine answers parted in casts), 45714537252 (three fallbacks still parted), 45718086755 (green), 45722309881 (green, with the timings) and 45722346547 (the baseline). The answers in <a href="#done">Done</a> are the tests' own; the timings are one run each, as printed by the tests' <code>mixed measured</code> lines.</p>
 <p>Written from the code of build 49 (<code>0e56bdbd0a</code>, 2026-11-17 10:30 MST) and report 054, on 2026-11-17, after John's offer. Nothing here is measured yet; the examples' answers today are mixed mode's documented behaviour (a call whose argument does not convert falls back), and the "with this project" column is what the design intends. The file references and the examples are in the data below and in <a href="https://github.com/matthewhammer/hazel-reports/tree/main/055/data">055/data</a>.</p>
 </main></body>

@@ -70,15 +70,15 @@ assert "{{" not in body
 TITLE = "Holes Across the Boundary"
 head = ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{TITLE}</title>\n"
-        "<meta name=\"description\" content=\"A starter project for hazel-jit: let a value with a hole cross into compiled code and out again unopened, instead of sending the whole call back to the interpreter.\">\n"
+        "<meta name=\"description\" content=\"Holes in hazel-jit: in mixed mode a hole crosses into compiled code unopened and code with a hole compiles, with the interpreter's answers, casts and all.\">\n"
         "<style>" + CSS + EXTRA + "</style>\n</head>\n")
 open(os.path.join(HERE, "index.html"), "w").write(head + body)
 os.makedirs(os.path.join(HERE, "data"), exist_ok=True)
-json.dump({"title": TITLE, "date": "2026-11-17", "kind": "hazel-jit: a starter project, written for a new contributor; a design brief, nothing measured yet",
+json.dump({"title": TITLE, "date": "2026-11-17", "kind": "hazel-jit: a design brief (2026-11-17), then done (2026-11-25): holes in mixed mode, checked in CI and timed",
            "status": "work in progress",
            "question": "In mixed mode, can a value with a hole in it cross into compiled code and out again unopened, instead of sending the whole call back to the interpreter, and what do the checks that keep it unopened cost? From John, on the Hazel team, 2026-11-17, offering to look into holes and hazel-jit; Matthew Hammer: \"Yes, write the brief\".",
-           "measurements": "None yet. The examples' 'today' column is mixed mode's documented behaviour on build 49 (a call whose argument does not convert falls back); the 'proposed' column is what the design intends.",
-           "builds": [{"build": "49", "branch": "trial/694-view-jit", "pr": "hazelgrove/hazel#2817", "commit": "0e56bdbd0a", "date": "2026-11-17 10:30 MST"}],
+           "measurements": "Timings, one run each on GitHub's machines (the tests' mixed measured lines): hazel-jit as it was (trial/769-baseline, CI run 45722346547) against trial/769-jit-holes-2 (25c106f545, CI run 45722309881); mixed mode's time against the interpreter's in the same run.",
+           "builds": [{"build": "49", "branch": "trial/694-view-jit", "pr": "hazelgrove/hazel#2817", "commit": "0e56bdbd0a", "date": "2026-11-17 10:30 MST"}, {"build": "holes", "branch": "trial/769-jit-holes-2", "pr": "off hazelgrove/hazel#2859", "commit": "25c106f545", "date": "2026-11-25"}, {"build": "before", "branch": "trial/769-baseline", "pr": "off hazelgrove/hazel#2859", "commit": "be700192ff", "date": "2026-11-25"}],
            "files": ["brief.json"]}, open(os.path.join(HERE, "data", "meta.json"), "w"), indent=1)
 json.dump({"examples": EXAMPLES, "files_to_read": FILES,
            "rule_2026_11_13": "for the output of hazel-jit, we should continue to avoid translating code with holes (Matthew Hammer and Cyrus Omar's meeting)"},
