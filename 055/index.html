@@ -156,7 +156,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-26 10:44 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>55<b>)</b></code> · hazel-jit · 2026-11-17, revised 2026-11-26 12:25 MST · <span class="wip">work in progress</span> · after <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -317,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <ul>
 <li><b>The checks cost nothing measurable.</b> The Witch itself holds a hole that its run never reaches, so in build 2 every Witch slide compiles checked: the compiled run is 15% larger (257,813 characters against 224,293), and compiling it took 274 to 460 ms against 199 to 346 (two compiles a slide, one run). The edits and drags on the first two slides are within the runs' spread of build 1's.</li>
 <li><b>With compiling off,</b> no edit moved the picture within 240 s, on any slide in either build, as in the 2026-11-19 check (run 44623902074): on GitHub's Firefox the interpreter's path does not finish the Witch's picture in that time.</li>
-<li><b>Not explained yet:</b> build 2's drags with compiling off came out as fast as with it on (4.5 to 5.6 ms a frame, against build 1's 13.0 to 15.8), each livelit drawn in 0.7 to 0.8 ms instead of 4.1 to 4.8. The two builds differ only in the two jit files. It does not touch the edits' result, which turns on whether the slide's run was used, and the counts say it was.</li>
+<li><b>Explained, 2026-11-26 (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-887"><code class="ref"><b>^ticket(</b>887<b>)</b></code></a>, Matthew: <i>"Yes, dig in"</i>): not the port, and not the machine.</b> The same commit has drawn the drag with compiling off both ways: <code>421e30a04b</code> at 4.5 and at 16.0 ms a frame; about 6 of 27 checks since 11-10 were fast. Counted in the page, per frame, on <code>trial/887-off-drag</code>: the time is the Witch's picture, drawn again each frame (the slider's own draw is 0.5 ms); its view is never evaluated again in either mode, since LivelitProj's view memo hits every frame. What differs is how it hits. The picture's model comes to the memo as the same sampled value every frame, but in the slow mode the memo holds an older object, equal to it and not the same (the worker had sent the same picture again as new objects), and a hit never replaced it: so every frame compared the whole picture by structure, 9 to 13 ms. In the fast mode the held object was the current one, a pointer compare, 1.2 to 1.8 ms. Which one the memo held followed the worker's timing, so the machine's speed tipped it. <b>The fix, one line:</b> a hit on equal objects keeps the new ones. With it, four checks on four machines (two kinds always slow before): every drag with compiling off fast, the picture 1.7 to 2.6 ms, the view 5.8 to 8.2 ms a frame against 13.0 to 18.5 before. It is on the experiment branch only; the prototype (<code>trial/694-view-jit</code>) does not have it yet. Build 1's and build 2's figures with compiling off above are each one draw of that coin, and say nothing of holes.</li>
 </ul>
 
 <h2 id="status">Where hazel-jit stands<a class="anchor" href="#status" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="status" title="copy this section's address">copy link</button></h2>
@@ -502,7 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li>Holes beyond mixed mode: a whole program (the sweep's programs not compiled for a hole), a livelit's view, and the package's <code>Hazel.jit</code>.</li>
 <li><s>Measure where it matters: a slide being edited, its functions called with half-filled models; the Witch's frame time, before and after.</s> <b>Done</b> on the prototype, 2026-11-26: <a href="#witch">the Witch, with a hole</a>.</li>
 <li>A hole the slide's run opens: let the run draw what it can, as the interpreter does (an indeterminate value where the hole reaches), rather than give the whole picture to the worker.</li>
-<li>Why build 2's drags with compiling off came out as fast as with it on (<a href="#witch">above</a>).</li>
+<li><s>Why build 2's drags with compiling off came out as fast as with it on.</s> <b>Explained</b> (<a href="#witch">above</a>): the livelit view memo kept older equal objects; the one-line fix to put on the prototype.</li>
 <li>The warm-up PR, <a href="https://github.com/hazelgrove/hazel/issues/2831">hazelgrove/hazel#2831</a>, still open for anyone.</li>
 </ol>
 
