@@ -9,6 +9,7 @@
 <li><a href="#exec">Executive summary</a>: what hazel-jit is, why, what it changes in <code>dev</code>, how it is checked, who uses it, and what to review.</li>
 <li><a href="#eng">Engineering summary</a>: what goes in and comes out, how the code is written, its values, what it leaves to the interpreter, mixed mode, and its speed on the tests.</li>
 <li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
+<li><a href="#mixed">Mixed mode, at its boundary</a> and <a href="#types">types: errors, type holes and unknowns</a> (2026-11-27, from Matthew and Cyrus’s meeting): what a call into compiled code converts, costs and falls back on; that compiled code never calls interpreted code; holes, functions and polymorphic functions across; and where a cast through an unknown type nobody wrote lets compiled code part from the interpreter (^ticket(898)).</li>
 <li><a href="#compare">Representations, then and now</a>: three of report 046’s five suggestions for hazel-jit’s output are done and the other two in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take {{g853_gm}} of the jit’s time, report 046’s rule {{p853_ratio}}, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#fourway">Four ways, on the games</a>: hazel-jit now is {{fw_ij}} times as fast as the interpreter, {{fw_cj}} times as fast as on 2026-11-19, and {{fw_jp}} times plain JS’s time.</li>
@@ -37,6 +38,10 @@
 {{pr_beside}}
 
 {{pr_origin}}
+
+{{pr_mixed}}
+
+{{pr_types}}
 
 {{pr_differs}}
 
@@ -226,6 +231,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 <h2 id="revisions">Revisions</h2>
 <p class="tag own">This report’s</p>
 <ul>
+<li><b>2026-11-27, from Matthew and Cyrus’s meeting.</b> Two new sections in the description, answering what they asked: <i>Mixed mode, at its boundary</i> (what a call converts and costs, compiled code never calling interpreted code, holes carried unopened, functions as arguments, polymorphic functions) and <i>Types: errors, type holes and unknowns</i>. Checking the second found a parting: a cast out of an unknown type nobody wrote is erased, so <code>let f = fun x -> x + 1 in f(true)</code> stops at the failed cast in the interpreter and answers 2 compiled (^ticket(898)); and the package compiles programs with static errors, marking them <code>ok: false</code>. Polymorphic functions in mixed mode are ^ticket(897).</li>
 <li><b>2026-11-25, four ways.</b> The interpreter, hazel-jit as of 2026-11-19, hazel-jit now and plain JS, on each game’s own run (<a href="#fourway">Four ways, on the games</a>), at Matthew’s ask.</li>
 <li><b>2026-11-25, steps 1 to 3 merged.</b> Constructors made once, a module’s members by name and <code>===</code> against a literal, merged into <code>hazel-jit</code> (be44756900) and <code>hazeljs</code> (2c4a61560f); Representations, then and now, and the description’s draft say so.</li>
 <li><b>2026-11-25, conversion at the edges.</b> A new section, at Matthew’s ask: conversion’s cost build by build, what a call still converts (the Petri rule direct and through the jit), and five ways to bring it down, the interpreter keeping compiled values as they are first.</li>

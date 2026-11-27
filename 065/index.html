@@ -165,7 +165,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-27 08:49 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-27 10:03 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -260,6 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#exec">Executive summary</a>: what hazel-jit is, why, what it changes in <code>dev</code>, how it is checked, who uses it, and what to review.</li>
 <li><a href="#eng">Engineering summary</a>: what goes in and comes out, how the code is written, its values, what it leaves to the interpreter, mixed mode, and its speed on the tests.</li>
 <li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
+<li><a href="#mixed">Mixed mode, at its boundary</a> and <a href="#types">types: errors, type holes and unknowns</a> (2026-11-27, from Matthew and Cyrus’s meeting): what a call into compiled code converts, costs and falls back on; that compiled code never calls interpreted code; holes, functions and polymorphic functions across; and where a cast through an unknown type nobody wrote lets compiled code part from the interpreter (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-898"><code class="ref"><b>^ticket(</b>898<b>)</b></code></a>).</li>
 <li><a href="#compare">Representations, then and now</a>: three of <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s five suggestions for hazel-jit’s output are done and the other two in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take 0.70 of the jit’s time, <a href="../046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a>’s rule 0.67, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#fourway">Four ways, on the games</a>: hazel-jit now is 4,148 times as fast as the interpreter, 3.1 times as fast as on 2026-11-19, and 3.8 times plain JS’s time.</li>
@@ -315,14 +316,26 @@ document.addEventListener("DOMContentLoaded", () => {
 <ul><li><b>Records as objects</b> (9ec865976d), above.</li><li><b>A recursive function&#x27;s own capture</b>, undefined when the function was made, is bound again by its <code>FixF</code> on the way back (5ec4ff4307).</li><li><b>A pattern by position that meets a labeled entry</b> leaves the run to the interpreter (e0a5925f3b).</li><li><b>A recursive function&#x27;s calls of itself in tail position are a loop</b> (50b70d5a40), its variables declared in each pass, so a closure keeps its pass&#x27;s values.</li><li><b>A named function of a tuple pattern takes the parts as JS arguments</b> (43828037c9).</li><li><b>A constructor without an argument is one constant</b> (ae29353ff0), <b>a module&#x27;s member is read as its own variable</b> (9dd8fce210), and **<code>==</code> against a literal is <code>===</code>** (0ce95a2e8f): together 0.95 of the jit&#x27;s time on the games. With both, the games take 0.70 of the jit&#x27;s time as their pages play them (the geometric mean over 14 games), every answer the same; nearly all of it is the arguments.</li></ul>
 </section>
 
+<section class="inpr"><h2 id="mixed">Mixed mode, at its boundary<a class="anchor" href="#mixed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="mixed" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<p>Mixed mode keeps the interpreter in charge, so holes, probes and the stepper work as they do, and calls a program&#x27;s complete, fully typed functions compiled.</p>
+<ul><li><b>What is compiled.</b> A <code>let</code> at the top of the program that binds a function whose whole type is declared (<code>let f : A -&gt; B = fun ...</code>), with no unknown in it. Each is compiled with the accepted functions before it, so it may call them. A function that names anything else is not compiled, and the reason is kept. A module&#x27;s members run on the interpreter for now (below).</li><li><b>How it hooks in.</b> The program is rewritten before it runs: the interpreter still evaluates each such definition to its own closure, then hands it to a builtin made at run time, which gives back a second builtin, the compiled function. The interpreter&#x27;s one change is to look builtins up in a table filled at run time, after its fixed one.</li><li><b>A call.</b> The argument is converted into compiled code&#x27;s shapes. The compiled function runs under a budget (50 million calls or 1 s). The answer is read back by the declared result type, which is why the type must be declared: a JavaScript number does not say whether it was an Int or a Float. An answer that may hold a hole is cast to that type by the interpreter&#x27;s own <code>Ascriptions</code>, so mixed mode&#x27;s answer is the interpreter&#x27;s, casts included.</li><li><b>Falling back, one call at a time.</b> If the argument will not convert, an operation is invalid (a division by zero), the budget runs out, or the answer will not convert back, the interpreter applies its own closure to the same argument. Evaluation has no effects, so running a call again is safe.</li><li><b>What the boundary costs.</b> Compiled functions call one another directly, so the crossing is paid only where interpreted code calls compiled code, in proportion to what crosses. On build 49: <code>fib(16)</code>, all compiled, 72.6 ms interpreted against 0.1 ms mixed; the Petri net rule 120.8 against 16.8 ms; but a one-line function called 500 times from an interpreted loop 22.4 against 27.9 ms, each crossing costing more than its work.</li><li><b>Compiled code never calls interpreted code.</b> A function that calls one the interpreter keeps is itself left to the interpreter, so the boundary is crossed one way only. One function that cannot compile keeps every function that calls it interpreted.</li><li><b>Holes cross unopened.</b> A hole in an argument crosses as an opaque value, its term kept aside. Compiled code may move it (return it, store it in a pair or a record, count a list holding it), and it converts back as the very term that went in, with its cast. Code that would look inside it (match a constructor, branch on it, <code>x + ?</code>) stops the call, which falls back, so the interpreter gives the indeterminate answer.</li><li><b>Functions as arguments.</b> A compiled function that passes compiled functions, or lambdas of its own, calls them directly in JavaScript. An interpreter&#x27;s closure passed in from interpreted code crosses as an opaque value, as a hole does: carried, but calling it stops the call, which falls back. A function in an answer comes back as a Hazel closure when compiled code made it; a recursive one, or one it did not make, makes that call fall back. No test has a function-typed parameter yet.</li><li><b>Polymorphic functions.</b> Compiled code erases types: <code>typfun a -&gt; e</code> compiles as <code>e</code>, a type application <code>f@&lt;T&gt;</code> as <code>f</code>, and one compiled function serves every type it is used at, as compiled code never looks at a type at run time. Mixed mode does not compile one, since a candidate&#x27;s declared type must be an arrow at the top, and a <code>forall</code> is not. Reading an answer back at a type variable has no type to go by: across a page&#x27;s boundary, a whole JavaScript number comes back an Int and any other a Float, so a polymorphic function used at Float could give back <code>2.0</code> as the Int <code>2</code>. No test covers a polymorphic function across that boundary.</li></ul>
+</section>
+
+<section class="inpr"><h2 id="types">Types: errors, type holes and unknowns<a class="anchor" href="#types" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="types" title="copy this section's address">copy link</button></h2>
+<p class="tag">In the PR’s description</p>
+<p>Hazel is gradually typed: the interpreter runs code with type errors and unknown types, inserting casts and stopping at one that fails. Compiled code erases casts, so what it leaves to the interpreter is decided by where a cast could fail.</p>
+<ul><li><b>Static type errors.</b> The interpreter runs ill-typed code and stops at the failed cast. The editor compiles no program with a static error (the evaluator sweep&#x27;s 30 ill-typed programs). The package&#x27;s <code>Hazel.jit</code> and <code>Hazel.jitProgram</code> compile one anyway and return it with <code>ok: false</code> and the errors, leaving the choice to the page: Gnome world&#x27;s page uses no rules with errors.</li><li>**A type hole written, <code>?</code>, is a hole.** A program with one is not compiled (&quot;a type hole&quot;): a cast through it can fail at run time with no static error, as <code>f(([1.5, 2.5] : ?))</code> for <code>f</code> taking <code>[Int]</code> does, and compiled code, its types erased, cannot tell an Int from a Float.</li><li><b>An unknown type nobody wrote is compiled, and there compiled code can part from the interpreter.</b> <code>let f = fun x -&gt; x + 1 in f(true)</code> has no static error, as <code>x</code>&#x27;s type is unknown. The interpreter stops at the failed cast (<code>true</code> is not an Int); compiled code answers <code>2</code>. The same happens inside a fully typed function, <code>let f : Bool -&gt; Int = fun b -&gt; let g = fun x -&gt; x + 1 in g(b)</code>, so mixed mode&#x27;s candidates can meet it too. The evaluator sweep has no such program. A fix to decide: compile a check where a value is cast out of an unknown type into a ground type (a Bool, a String, a list, a constructor: a <code>typeof</code> or a key test), stopping the run so that the interpreter answers. An Int and a Float through an unknown type stay alike, as both are JavaScript numbers, unless Floats are tagged.</li></ul>
+</section>
+
 <section class="inpr"><h2 id="differs">Where it differs from the interpreter on <code>dev</code><a class="anchor" href="#differs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="differs" title="copy this section's address">copy link</button></h2>
 <p class="tag">In the PR’s description</p>
-<ul><li><b>SInt overflow.</b> hazel-jit stops a 32-bit SInt that overflows at <code>IntegerOverflow</code>; <code>dev</code>&#x27;s interpreter wraps it (2147483647 + 1 is -2147483648). SInt is to have 64 bits everywhere, with overflow an error (<a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>). The jit&#x27;s 64-bit SInt is on <code>trial/758-sint64-jit</code> and comes here with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>. The evaluator tests have no such program, so the sweep does not meet it.</li><li><b>A tuple with a label given twice</b> is not compiled, since keying it by its labels would lose one entry. The interpreter runs it, keeping both entries as <code>dev</code> has since <a href="https://github.com/hazelgrove/hazel/pull/2472">#2472</a>.</li></ul>
+<ul><li><b>SInt overflow.</b> hazel-jit stops a 32-bit SInt that overflows at <code>IntegerOverflow</code>; <code>dev</code>&#x27;s interpreter wraps it (2147483647 + 1 is -2147483648). SInt is to have 64 bits everywhere, with overflow an error (<a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>). The jit&#x27;s 64-bit SInt is on <code>trial/758-sint64-jit</code> and comes here with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>. The evaluator tests have no such program, so the sweep does not meet it.</li><li><b>A cast out of an unknown type nobody wrote</b> is erased, so where the interpreter stops at the failed cast, compiled code runs on (<code>let f = fun x -&gt; x + 1 in f(true)</code>: the interpreter&#x27;s failed cast, compiled code&#x27;s <code>2</code>). See *Types: errors, type holes and unknowns*.</li><li><b>A tuple with a label given twice</b> is not compiled, since keying it by its labels would lose one entry. The interpreter runs it, keeping both entries as <code>dev</code> has since <a href="https://github.com/hazelgrove/hazel/pull/2472">#2472</a>.</li></ul>
 </section>
 
 <section class="inpr"><h2 id="pr-next">Next, on this branch<a class="anchor" href="#pr-next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="pr-next" title="copy this section's address">copy link</button></h2>
 <p class="tag">In the PR’s description</p>
-<ul><li>Mixed mode&#x27;s types from the statics, not from annotations: <code>dev</code> lowers a module to lets whose patterns lose their annotations, so a module&#x27;s members run on the interpreter in mixed mode for now.</li><li>Holes beyond mixed mode: a whole program, a livelit&#x27;s view and the package&#x27;s <code>Hazel.jit</code> still refuse them. Multiholes and error holes, with their environment, stay the interpreter&#x27;s.</li><li>Values across without converting: in mixed mode, the interpreter keeps a compiled call&#x27;s answer as compiled code holds it, converting only what it looks inside, so a value passed from one compiled function to another through interpreted code is never converted.</li><li>The games&#x27; rules as test programs (hazeljs-examples, compiled whole).</li><li>64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.</li></ul>
+<ul><li>Mixed mode&#x27;s types from the statics, not from annotations: <code>dev</code> lowers a module to lets whose patterns lose their annotations, so a module&#x27;s members run on the interpreter in mixed mode for now.</li><li>Holes beyond mixed mode: a whole program, a livelit&#x27;s view and the package&#x27;s <code>Hazel.jit</code> still refuse them. Multiholes and error holes, with their environment, stay the interpreter&#x27;s.</li><li>Values across without converting: in mixed mode, the interpreter keeps a compiled call&#x27;s answer as compiled code holds it, converting only what it looks inside, so a value passed from one compiled function to another through interpreted code is never converted.</li><li>The games&#x27; rules as test programs (hazeljs-examples, compiled whole).</li><li>A check at each cast out of an unknown type into a ground type, so compiled code stops where the interpreter&#x27;s cast fails.</li><li>Polymorphic functions in mixed mode: the type at each use, from the type application or the statics, to read the answer back by; and a test of one across a page&#x27;s boundary.</li><li>Tests of a function-typed parameter in mixed mode, from compiled callers and from interpreted ones.</li><li>64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.</li></ul>
 <p>Tried and not kept: lists as cells plus array segments (<code>hazel-jit-lists</code>). On hazeljs-examples&#x27; seventeen games it cost about 8% ahead of time and 4% through the jit, all answers the same, so cells stay.</p>
 <p>The design and the measurements are in Hazel reports: <a href="https://matthewhammer.org/hazel/reports/054/#records-decide"><code class="ref"><b>^report(</b>54<b>)</b></code></a> (records, lists and holes), <a href="https://matthewhammer.org/hazel/reports/055/"><code class="ref"><b>^report(</b>55<b>)</b></code></a> (holes in mixed mode), <a href="https://matthewhammer.org/hazel/reports/063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> (every game, four ways) and <a href="https://matthewhammer.org/hazel/reports/046/"><code class="ref"><b>^report(</b>46<b>)</b></code></a> (beside ReScript, Melange and js_of_ocaml).</p>
 </section>
@@ -501,7 +514,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 
 <h2 id="github">The text for GitHub<a class="anchor" href="#github" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="github" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
-<p><b>The whole description as GitHub will show it, 2,358 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
+<p><b>The whole description as GitHub will show it, 3,505 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
 <p><button class="copy-md" type="button" onclick="(async b=>{try{await navigator.clipboard.writeText(document.getElementById('pr-md').textContent);b.textContent='Copied'}catch(e){b.textContent='Select the text below instead'}})(this)">Copy the description’s Markdown</button></p>
 <details><summary>The Markdown</summary>
 <pre class="md">🤖 hazel-jit, for `dev`: a compiler from Hazel to JavaScript, with the tests that hold it to the interpreter&#x27;s answers. This is the one PR that tracks the jit. The npm package&#x27;s branch, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> (`hazeljs`), merges it rather than keeping a copy of its own.
@@ -581,9 +594,32 @@ Since it opened:
 - **A named function of a tuple pattern takes the parts as JS arguments** (43828037c9).
 - **A constructor without an argument is one constant** (ae29353ff0), **a module&#x27;s member is read as its own variable** (9dd8fce210), and **`==` against a literal is `===`** (0ce95a2e8f): together 0.95 of the jit&#x27;s time on the games. With both, the games take 0.70 of the jit&#x27;s time as their pages play them (the geometric mean over 14 games), every answer the same; nearly all of it is the arguments.
 
+## Mixed mode, at its boundary
+
+Mixed mode keeps the interpreter in charge, so holes, probes and the stepper work as they do, and calls a program&#x27;s complete, fully typed functions compiled.
+
+- **What is compiled.** A `let` at the top of the program that binds a function whose whole type is declared (`let f : A -&gt; B = fun ...`), with no unknown in it. Each is compiled with the accepted functions before it, so it may call them. A function that names anything else is not compiled, and the reason is kept. A module&#x27;s members run on the interpreter for now (below).
+- **How it hooks in.** The program is rewritten before it runs: the interpreter still evaluates each such definition to its own closure, then hands it to a builtin made at run time, which gives back a second builtin, the compiled function. The interpreter&#x27;s one change is to look builtins up in a table filled at run time, after its fixed one.
+- **A call.** The argument is converted into compiled code&#x27;s shapes. The compiled function runs under a budget (50 million calls or 1 s). The answer is read back by the declared result type, which is why the type must be declared: a JavaScript number does not say whether it was an Int or a Float. An answer that may hold a hole is cast to that type by the interpreter&#x27;s own `Ascriptions`, so mixed mode&#x27;s answer is the interpreter&#x27;s, casts included.
+- **Falling back, one call at a time.** If the argument will not convert, an operation is invalid (a division by zero), the budget runs out, or the answer will not convert back, the interpreter applies its own closure to the same argument. Evaluation has no effects, so running a call again is safe.
+- **What the boundary costs.** Compiled functions call one another directly, so the crossing is paid only where interpreted code calls compiled code, in proportion to what crosses. On build 49: `fib(16)`, all compiled, 72.6 ms interpreted against 0.1 ms mixed; the Petri net rule 120.8 against 16.8 ms; but a one-line function called 500 times from an interpreted loop 22.4 against 27.9 ms, each crossing costing more than its work.
+- **Compiled code never calls interpreted code.** A function that calls one the interpreter keeps is itself left to the interpreter, so the boundary is crossed one way only. One function that cannot compile keeps every function that calls it interpreted.
+- **Holes cross unopened.** A hole in an argument crosses as an opaque value, its term kept aside. Compiled code may move it (return it, store it in a pair or a record, count a list holding it), and it converts back as the very term that went in, with its cast. Code that would look inside it (match a constructor, branch on it, `x + ?`) stops the call, which falls back, so the interpreter gives the indeterminate answer.
+- **Functions as arguments.** A compiled function that passes compiled functions, or lambdas of its own, calls them directly in JavaScript. An interpreter&#x27;s closure passed in from interpreted code crosses as an opaque value, as a hole does: carried, but calling it stops the call, which falls back. A function in an answer comes back as a Hazel closure when compiled code made it; a recursive one, or one it did not make, makes that call fall back. No test has a function-typed parameter yet.
+- **Polymorphic functions.** Compiled code erases types: `typfun a -&gt; e` compiles as `e`, a type application `f@&lt;T&gt;` as `f`, and one compiled function serves every type it is used at, as compiled code never looks at a type at run time. Mixed mode does not compile one, since a candidate&#x27;s declared type must be an arrow at the top, and a `forall` is not. Reading an answer back at a type variable has no type to go by: across a page&#x27;s boundary, a whole JavaScript number comes back an Int and any other a Float, so a polymorphic function used at Float could give back `2.0` as the Int `2`. No test covers a polymorphic function across that boundary.
+
+## Types: errors, type holes and unknowns
+
+Hazel is gradually typed: the interpreter runs code with type errors and unknown types, inserting casts and stopping at one that fails. Compiled code erases casts, so what it leaves to the interpreter is decided by where a cast could fail.
+
+- **Static type errors.** The interpreter runs ill-typed code and stops at the failed cast. The editor compiles no program with a static error (the evaluator sweep&#x27;s 30 ill-typed programs). The package&#x27;s `Hazel.jit` and `Hazel.jitProgram` compile one anyway and return it with `ok: false` and the errors, leaving the choice to the page: Gnome world&#x27;s page uses no rules with errors.
+- **A type hole written, `?`, is a hole.** A program with one is not compiled (&quot;a type hole&quot;): a cast through it can fail at run time with no static error, as `f(([1.5, 2.5] : ?))` for `f` taking `[Int]` does, and compiled code, its types erased, cannot tell an Int from a Float.
+- **An unknown type nobody wrote is compiled, and there compiled code can part from the interpreter.** `let f = fun x -&gt; x + 1 in f(true)` has no static error, as `x`&#x27;s type is unknown. The interpreter stops at the failed cast (`true` is not an Int); compiled code answers `2`. The same happens inside a fully typed function, `let f : Bool -&gt; Int = fun b -&gt; let g = fun x -&gt; x + 1 in g(b)`, so mixed mode&#x27;s candidates can meet it too. The evaluator sweep has no such program. A fix to decide: compile a check where a value is cast out of an unknown type into a ground type (a Bool, a String, a list, a constructor: a `typeof` or a key test), stopping the run so that the interpreter answers. An Int and a Float through an unknown type stay alike, as both are JavaScript numbers, unless Floats are tagged.
+
 ## Where it differs from the interpreter on `dev`
 
 - **SInt overflow.** hazel-jit stops a 32-bit SInt that overflows at `IntegerOverflow`; `dev`&#x27;s interpreter wraps it (2147483647 + 1 is -2147483648). SInt is to have 64 bits everywhere, with overflow an error (<a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>). The jit&#x27;s 64-bit SInt is on `trial/758-sint64-jit` and comes here with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>. The evaluator tests have no such program, so the sweep does not meet it.
+- **A cast out of an unknown type nobody wrote** is erased, so where the interpreter stops at the failed cast, compiled code runs on (`let f = fun x -&gt; x + 1 in f(true)`: the interpreter&#x27;s failed cast, compiled code&#x27;s `2`). See *Types: errors, type holes and unknowns*.
 - **A tuple with a label given twice** is not compiled, since keying it by its labels would lose one entry. The interpreter runs it, keeping both entries as `dev` has since <a href="https://github.com/hazelgrove/hazel/pull/2472">#2472</a>.
 
 ## Next, on this branch
@@ -592,6 +628,9 @@ Since it opened:
 - Holes beyond mixed mode: a whole program, a livelit&#x27;s view and the package&#x27;s `Hazel.jit` still refuse them. Multiholes and error holes, with their environment, stay the interpreter&#x27;s.
 - Values across without converting: in mixed mode, the interpreter keeps a compiled call&#x27;s answer as compiled code holds it, converting only what it looks inside, so a value passed from one compiled function to another through interpreted code is never converted.
 - The games&#x27; rules as test programs (hazeljs-examples, compiled whole).
+- A check at each cast out of an unknown type into a ground type, so compiled code stops where the interpreter&#x27;s cast fails.
+- Polymorphic functions in mixed mode: the type at each use, from the type application or the statics, to read the answer back by; and a test of one across a page&#x27;s boundary.
+- Tests of a function-typed parameter in mixed mode, from compiled callers and from interpreted ones.
 - 64-bit SInt, with <a href="https://github.com/hazelgrove/hazel/pull/2828">#2828</a>.
 
 Tried and not kept: lists as cells plus array segments (`hazel-jit-lists`). On hazeljs-examples&#x27; seventeen games it cost about 8% ahead of time and 4% through the jit, all answers the same, so cells stay.
@@ -678,9 +717,32 @@ Since it opened:
 - **A named function of a tuple pattern takes the parts as JS arguments** (43828037c9).
 - **A constructor without an argument is one constant** (ae29353ff0), **a module's member is read as its own variable** (9dd8fce210), and **`==` against a literal is `===`** (0ce95a2e8f): together 0.95 of the jit's time on the games. With both, the games take 0.70 of the jit's time as their pages play them (the geometric mean over 14 games), every answer the same; nearly all of it is the arguments.
 
+## Mixed mode, at its boundary
+
+Mixed mode keeps the interpreter in charge, so holes, probes and the stepper work as they do, and calls a program's complete, fully typed functions compiled.
+
+- **What is compiled.** A `let` at the top of the program that binds a function whose whole type is declared (`let f : A -> B = fun ...`), with no unknown in it. Each is compiled with the accepted functions before it, so it may call them. A function that names anything else is not compiled, and the reason is kept. A module's members run on the interpreter for now (below).
+- **How it hooks in.** The program is rewritten before it runs: the interpreter still evaluates each such definition to its own closure, then hands it to a builtin made at run time, which gives back a second builtin, the compiled function. The interpreter's one change is to look builtins up in a table filled at run time, after its fixed one.
+- **A call.** The argument is converted into compiled code's shapes. The compiled function runs under a budget (50 million calls or 1 s). The answer is read back by the declared result type, which is why the type must be declared: a JavaScript number does not say whether it was an Int or a Float. An answer that may hold a hole is cast to that type by the interpreter's own `Ascriptions`, so mixed mode's answer is the interpreter's, casts included.
+- **Falling back, one call at a time.** If the argument will not convert, an operation is invalid (a division by zero), the budget runs out, or the answer will not convert back, the interpreter applies its own closure to the same argument. Evaluation has no effects, so running a call again is safe.
+- **What the boundary costs.** Compiled functions call one another directly, so the crossing is paid only where interpreted code calls compiled code, in proportion to what crosses. On build 49: `fib(16)`, all compiled, 72.6 ms interpreted against 0.1 ms mixed; the Petri net rule 120.8 against 16.8 ms; but a one-line function called 500 times from an interpreted loop 22.4 against 27.9 ms, each crossing costing more than its work.
+- **Compiled code never calls interpreted code.** A function that calls one the interpreter keeps is itself left to the interpreter, so the boundary is crossed one way only. One function that cannot compile keeps every function that calls it interpreted.
+- **Holes cross unopened.** A hole in an argument crosses as an opaque value, its term kept aside. Compiled code may move it (return it, store it in a pair or a record, count a list holding it), and it converts back as the very term that went in, with its cast. Code that would look inside it (match a constructor, branch on it, `x + ?`) stops the call, which falls back, so the interpreter gives the indeterminate answer.
+- **Functions as arguments.** A compiled function that passes compiled functions, or lambdas of its own, calls them directly in JavaScript. An interpreter's closure passed in from interpreted code crosses as an opaque value, as a hole does: carried, but calling it stops the call, which falls back. A function in an answer comes back as a Hazel closure when compiled code made it; a recursive one, or one it did not make, makes that call fall back. No test has a function-typed parameter yet.
+- **Polymorphic functions.** Compiled code erases types: `typfun a -> e` compiles as `e`, a type application `f@<T>` as `f`, and one compiled function serves every type it is used at, as compiled code never looks at a type at run time. Mixed mode does not compile one, since a candidate's declared type must be an arrow at the top, and a `forall` is not. Reading an answer back at a type variable has no type to go by: across a page's boundary, a whole JavaScript number comes back an Int and any other a Float, so a polymorphic function used at Float could give back `2.0` as the Int `2`. No test covers a polymorphic function across that boundary.
+
+## Types: errors, type holes and unknowns
+
+Hazel is gradually typed: the interpreter runs code with type errors and unknown types, inserting casts and stopping at one that fails. Compiled code erases casts, so what it leaves to the interpreter is decided by where a cast could fail.
+
+- **Static type errors.** The interpreter runs ill-typed code and stops at the failed cast. The editor compiles no program with a static error (the evaluator sweep's 30 ill-typed programs). The package's `Hazel.jit` and `Hazel.jitProgram` compile one anyway and return it with `ok: false` and the errors, leaving the choice to the page: Gnome world's page uses no rules with errors.
+- **A type hole written, `?`, is a hole.** A program with one is not compiled ("a type hole"): a cast through it can fail at run time with no static error, as `f(([1.5, 2.5] : ?))` for `f` taking `[Int]` does, and compiled code, its types erased, cannot tell an Int from a Float.
+- **An unknown type nobody wrote is compiled, and there compiled code can part from the interpreter.** `let f = fun x -> x + 1 in f(true)` has no static error, as `x`'s type is unknown. The interpreter stops at the failed cast (`true` is not an Int); compiled code answers `2`. The same happens inside a fully typed function, `let f : Bool -> Int = fun b -> let g = fun x -> x + 1 in g(b)`, so mixed mode's candidates can meet it too. The evaluator sweep has no such program. A fix to decide: compile a check where a value is cast out of an unknown type into a ground type (a Bool, a String, a list, a constructor: a `typeof` or a key test), stopping the run so that the interpreter answers. An Int and a Float through an unknown type stay alike, as both are JavaScript numbers, unless Floats are tagged.
+
 ## Where it differs from the interpreter on `dev`
 
 - **SInt overflow.** hazel-jit stops a 32-bit SInt that overflows at `IntegerOverflow`; `dev`'s interpreter wraps it (2147483647 + 1 is -2147483648). SInt is to have 64 bits everywhere, with overflow an error (#2828). The jit's 64-bit SInt is on `trial/758-sint64-jit` and comes here with #2828. The evaluator tests have no such program, so the sweep does not meet it.
+- **A cast out of an unknown type nobody wrote** is erased, so where the interpreter stops at the failed cast, compiled code runs on (`let f = fun x -> x + 1 in f(true)`: the interpreter's failed cast, compiled code's `2`). See *Types: errors, type holes and unknowns*.
 - **A tuple with a label given twice** is not compiled, since keying it by its labels would lose one entry. The interpreter runs it, keeping both entries as `dev` has since #2472.
 
 ## Next, on this branch
@@ -689,6 +751,9 @@ Since it opened:
 - Holes beyond mixed mode: a whole program, a livelit's view and the package's `Hazel.jit` still refuse them. Multiholes and error holes, with their environment, stay the interpreter's.
 - Values across without converting: in mixed mode, the interpreter keeps a compiled call's answer as compiled code holds it, converting only what it looks inside, so a value passed from one compiled function to another through interpreted code is never converted.
 - The games' rules as test programs (hazeljs-examples, compiled whole).
+- A check at each cast out of an unknown type into a ground type, so compiled code stops where the interpreter's cast fails.
+- Polymorphic functions in mixed mode: the type at each use, from the type application or the statics, to read the answer back by; and a test of one across a page's boundary.
+- Tests of a function-typed parameter in mixed mode, from compiled callers and from interpreted ones.
 - 64-bit SInt, with #2828.
 
 Tried and not kept: lists as cells plus array segments (`hazel-jit-lists`). On hazeljs-examples' seventeen games it cost about 8% ahead of time and 4% through the jit, all answers the same, so cells stay.
@@ -701,6 +766,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
 <h2 id="revisions">Revisions<a class="anchor" href="#revisions" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="revisions" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
 <ul>
+<li><b>2026-11-27, from Matthew and Cyrus’s meeting.</b> Two new sections in the description, answering what they asked: <i>Mixed mode, at its boundary</i> (what a call converts and costs, compiled code never calling interpreted code, holes carried unopened, functions as arguments, polymorphic functions) and <i>Types: errors, type holes and unknowns</i>. Checking the second found a parting: a cast out of an unknown type nobody wrote is erased, so <code>let f = fun x -> x + 1 in f(true)</code> stops at the failed cast in the interpreter and answers 2 compiled (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-898"><code class="ref"><b>^ticket(</b>898<b>)</b></code></a>); and the package compiles programs with static errors, marking them <code>ok: false</code>. Polymorphic functions in mixed mode are <a href="https://matthewhammer.org/hazel/dashboard/#ticket-897"><code class="ref"><b>^ticket(</b>897<b>)</b></code></a>.</li>
 <li><b>2026-11-25, four ways.</b> The interpreter, hazel-jit as of 2026-11-19, hazel-jit now and plain JS, on each game’s own run (<a href="#fourway">Four ways, on the games</a>), at Matthew’s ask.</li>
 <li><b>2026-11-25, steps 1 to 3 merged.</b> Constructors made once, a module’s members by name and <code>===</code> against a literal, merged into <code>hazel-jit</code> (be44756900) and <code>hazeljs</code> (2c4a61560f); Representations, then and now, and the description’s draft say so.</li>
 <li><b>2026-11-25, conversion at the edges.</b> A new section, at Matthew’s ask: conversion’s cost build by build, what a call still converts (the Petri rule direct and through the jit), and five ways to bring it down, the interpreter keeping compiled values as they are first.</li>
@@ -2046,5 +2112,128 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
   }));
 })();
 </script>
+<!-- highlights: begin -->
+<style>
+  .hl-s { border-radius: 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-color .15s, color .15s; }
+  @media (hover: hover) { .hl-s:not([data-hl]):hover { background: color-mix(in srgb, #facc15 22%, transparent); cursor: pointer; } .hl-s[data-hl]:hover { cursor: pointer; } }
+  .hl-s[data-hl="1"], .hl-chip[data-hl="1"] { background: #fde047; color: #111827; }
+  .hl-s[data-hl="2"], .hl-chip[data-hl="2"] { background: #475569; color: #f1f5f9; }
+  .hl-s[data-hl] code { background: transparent; color: inherit; }
+  .hl-s.hl-flash { outline: 3px solid var(--accent, #6d28d9); outline-offset: 2px; }
+  #highlights h2 { margin-top: 56px; }
+  #highlights .hl-help { color: var(--muted, GrayText); }
+  #highlights ol { padding-left: 1.6em; }
+  #highlights li { margin: .5em 0; cursor: pointer; }
+  #highlights li:hover .hl-text { text-decoration: underline; text-decoration-color: var(--line, #ccc); }
+  .hl-chip { display: inline-block; font: 600 0.78em system-ui, sans-serif; padding: 1px 8px; border-radius: 999px; margin-right: 6px; white-space: nowrap; vertical-align: 1px; }
+  .hl-gone { color: var(--muted, GrayText); font-style: italic; }
+  .hl-tools button { font: inherit; font-size: 0.9em; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; margin-right: 6px; }
+  .hl-badge { position: fixed; right: 14px; bottom: 14px; z-index: 40; padding: 6px 12px; border-radius: 999px; font: 600 13px system-ui, sans-serif;
+    text-decoration: none; background: var(--paper, Canvas); color: var(--ink, CanvasText); border: 1px solid var(--line, #ccc); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+  .hl-badge[hidden] { display: none; }
+  @media print { .hl-badge, .hl-tools { display: none; } .hl-s:not([data-hl]) { background: none; } }
+</style>
+<script>
+/* Sentence highlights (tools/add_highlights.py): a click on a sentence cycles it through not highlighted, pre discussion and
+   post discussion; kept in this browser for this report; one list of them at the end, in the order they appear. */
+(() => {
+  "use strict";
+  const KEY = "hazel-reports/highlights:" + location.pathname.replace(/index\.html$/, "");
+  const main = document.querySelector("main") || document.body;
+  const SKIP = "script,style,pre,svg,math,button,input,textarea,select,nav,h1,h2,h3,h4,h5,h6,.series,.hl-skip,#highlights,.hl-badge,.theme-toggle";
+  const BLOCKS = "p,li,figcaption,td,th,dd,dt,blockquote";
+  const NAMES = { 1: "pre discussion", 2: "post discussion" };
+  const load = () => { try { const m = JSON.parse(localStorage.getItem(KEY)); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch (e) { /* this visit only */ } };
+  const hash = t => { let x = 0x811c9dc5; for (let i = 0; i < t.length; i++) { x ^= t.charCodeAt(i); x = Math.imul(x, 0x01000193); } return (x >>> 0).toString(36); };
+  const norm = t => t.replace(/\s+/g, " ").trim();
+  // 1. the text, block by block: each paragraph, item, caption or cell's own text nodes, in order
+  const groups = new Map(), walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+  for (let n; (n = walker.nextNode()); ) {
+    const el = n.parentElement; if (!el || !n.data.trim() || el.closest(SKIP)) continue;
+    const b = el.closest(BLOCKS); if (!b || !main.contains(b)) continue;
+    if (!groups.has(b)) groups.set(b, []); groups.get(b).push(n);
+  }
+  // 2. each block's sentences: a cut after . ! ? or …, and closing quotes or brackets, where the next word starts with a capital,
+  // a digit, a quote or an opening bracket; each sentence known by its words, a second of the same words numbered
+  const END = /[.!?…]+["”’)\]]*(?=\s+["“‘(\[]*[\p{Lu}\d^¹²³\p{Extended_Pictographic}])/gu;
+  const TEXT = new Map(), ORDER = [], seen = new Map();
+  for (const [b, nodes] of groups) {
+    const full = nodes.map(n => n.data).join(""), cuts = [0];
+    END.lastIndex = 0; for (let m; (m = END.exec(full)); ) cuts.push(m.index + m[0].length);
+    cuts.push(full.length);
+    const sents = [];
+    for (let i = 0; i + 1 < cuts.length; i++) {
+      let a = cuts[i], z = cuts[i + 1]; while (a < z && /\s/.test(full[a])) a++; while (z > a && /\s/.test(full[z - 1])) z--;
+      const t = norm(full.slice(a, z)); if (!/[\p{L}\d]/u.test(t)) continue;
+      const h = hash(t), k = seen.get(h) || 0; seen.set(h, k + 1);
+      const id = h + (k ? "-" + k : ""); sents.push({ a, z, id }); TEXT.set(id, t); ORDER.push(id);
+    }
+    // 3. each text node's parts that lie in a sentence, wrapped: a sentence through a link or a chip is several spans, one id
+    let off = 0;
+    for (const n of nodes) {
+      const s0 = off, s1 = off + n.data.length; off = s1;
+      const parts = sents.filter(S => S.a < s1 && S.z > s0); if (!parts.length) continue;
+      const frag = document.createDocumentFragment(); let p = s0;
+      for (const S of parts) {
+        const a = Math.max(S.a, s0), z = Math.min(S.z, s1);
+        if (a > p) frag.append(n.data.slice(p - s0, a - s0));
+        const sp = document.createElement("span"); sp.className = "hl-s"; sp.dataset.s = S.id; sp.textContent = n.data.slice(a - s0, z - s0);
+        frag.append(sp); p = z;
+      }
+      if (p < s1) frag.append(n.data.slice(p - s0));
+      n.replaceWith(frag);
+    }
+  }
+  const rank = new Map(ORDER.map((id, i) => [id, i]));
+  let marks = load();
+  // 4. the list at the end, and a badge that goes to it
+  const sec = document.createElement("section"); sec.id = "highlights";
+  sec.innerHTML = '<h2>Highlighted sentences</h2><p class="hl-help">Click any sentence above to mark it <span class="hl-chip" data-hl="1">pre discussion</span>; ' +
+    'again, <span class="hl-chip" data-hl="2">post discussion</span>; again, not highlighted. Kept in this browser, for this report.</p>' +
+    '<div class="hl-list"></div><p class="hl-tools"><button type="button" class="hl-copy">📋 Copy the list</button><button type="button" class="hl-clear">Clear all</button></p>';
+  const dataEl = main.querySelector('script[type="application/json"]');
+  if (dataEl && dataEl.parentElement === main) main.insertBefore(sec, dataEl); else main.append(sec);
+  const badge = document.createElement("a"); badge.className = "hl-badge"; badge.href = "#highlights"; badge.hidden = true; document.body.append(badge);
+  const esc = t => t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const listed = () => Object.keys(marks).filter(id => marks[id] && (marks[id].s === 1 || marks[id].s === 2))
+    .sort((a, b) => (rank.has(a) ? rank.get(a) : 1e9) - (rank.has(b) ? rank.get(b) : 1e9) || String(marks[a].at).localeCompare(String(marks[b].at)));
+  function paint() {
+    for (const el of main.querySelectorAll(".hl-s")) { const m = marks[el.dataset.s]; if (m && m.s) el.dataset.hl = m.s; else delete el.dataset.hl; }
+    const ids = listed(), box = sec.querySelector(".hl-list");
+    box.innerHTML = ids.length ? "<ol>" + ids.map(id => { const m = marks[id], gone = !rank.has(id);
+      return `<li data-id="${esc(id)}"><span class="hl-chip" data-hl="${m.s}">${NAMES[m.s]}</span><span class="hl-text">${esc(TEXT.get(id) || m.t || "")}</span>${gone ? ' <span class="hl-gone">(no longer in this report)</span>' : ""}</li>`; }).join("") + "</ol>"
+      : '<p class="hl-gone">None yet.</p>';
+    const pre = ids.filter(id => marks[id].s === 1).length, post = ids.length - pre;
+    badge.hidden = !ids.length; badge.textContent = `🖍 ${pre} pre · ${post} post discussion`;
+  }
+  // 5. a click on a sentence cycles it; a link, a button or a selection of text is left alone
+  main.addEventListener("click", e => {
+    if (e.target.closest("a,button,input,select,textarea,summary,label,svg,#highlights")) return;
+    const sel = window.getSelection ? String(window.getSelection()) : ""; if (sel.trim()) return;
+    const sp = e.target.closest(".hl-s"); if (!sp) return;
+    const id = sp.dataset.s, cur = (marks[id] && marks[id].s) | 0, nx = (cur + 1) % 3;
+    if (nx) marks[id] = { s: nx, t: TEXT.get(id) || sp.textContent, at: (marks[id] && marks[id].at) || new Date().toISOString() }; else delete marks[id];
+    save(); paint();
+  });
+  sec.addEventListener("click", e => {
+    if (e.target.closest(".hl-copy")) {
+      const lines = listed().map(id => `- [${NAMES[marks[id].s]}] ${TEXT.get(id) || marks[id].t}`), text = (document.title + "\n" + location.href.split("#")[0] + "\n\n" + lines.join("\n")).trim();
+      const b = e.target.closest(".hl-copy"), done = () => { b.textContent = "📋 Copied"; setTimeout(() => { b.textContent = "📋 Copy the list"; }, 1500); };
+      try { navigator.clipboard.writeText(text).then(done, () => {}); } catch (err) { /* no clipboard here */ }
+      return;
+    }
+    if (e.target.closest(".hl-clear")) { const n = listed().length; if (n && confirm(`Clear all ${n} highlighted sentences in this report?`)) { marks = {}; save(); paint(); } return; }
+    const li = e.target.closest("li[data-id]"); if (!li) return;
+    const first = main.querySelector(`.hl-s[data-s="${CSS.escape(li.dataset.id)}"]`); if (!first) return;
+    first.scrollIntoView({ behavior: "smooth", block: "center" });
+    const all = main.querySelectorAll(`.hl-s[data-s="${CSS.escape(li.dataset.id)}"]`); all.forEach(el => el.classList.add("hl-flash"));
+    setTimeout(() => all.forEach(el => el.classList.remove("hl-flash")), 1400);
+  });
+  addEventListener("storage", e => { if (e.key === KEY) { marks = load(); paint(); } });   // (another tab of this report)
+  paint();
+})();
+</script>
+<!-- highlights: end -->
 </body>
 </html>
