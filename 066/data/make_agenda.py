@@ -6,7 +6,7 @@ import json, os
 R = lambda n: f'<code class="ref"><b>^report(</b>{n}<b>)</b></code>'
 RL = lambda n: f'<a href="../{n:03d}/">{R(n)}</a>'
 T = lambda n: f'<code class="ref"><b>^ticket(</b>{n}<b>)</b></code>'
-UPDATED = "2026-11-27 08:58 MST"
+UPDATED = "2026-11-27 10:45 MST"
 AS_OF = "2026-11-27 07:05 MST (git, gh, npm and the dashboard read then)"
 
 jit = {
@@ -27,6 +27,7 @@ jit = {
         f"<li><b>The livelits line:</b> #2817 has a one-line fix to LivelitProj's view memo (1a8afab5ae, CI green, {T(887)}): the Witch's neck drag with compiling off now draws its view in 6.4 ms a frame (about 156 fps), compiled 5.0 ms (about 200 fps), one run in Firefox.</li>"
         f"</ul>"
     ),
+    "decided": "Looks good; maybe a couple of weeks from merging to <code>dev</code>.",
     "meeting": "Merge trial/891-idiv into <code>hazel-jit</code> (#2859), and so into hazeljs (#2857)? What does #2859 need before it leaves draft for dev: which reviewer, and is the agreement sweep (211 agree, none differs) the right gate? SInt is 64 bits (settled 11-19), but dev still wraps a 32-bit SInt, so #2859 holds its SInt tests back until #2828 lands (item 3).",
 }
 
@@ -53,6 +54,7 @@ npm = {
         f"<li id=\"statics-experiment\"><b>An experiment this morning, for numbers only, not to merge</b> ({T(894)}): every let analyzes its definition twice on the hazeljs branch (a probe for recursion, then the real pass), and three times when it might be recursive, so lets nested in definitions multiply, 2 to the depth; and a module binding analyzes its whole definition twice more. Two open PRs address this: #2603 (a let analyzed once unless it refers to itself; meet asked once per node, not three times) and #2717 (a module binding analyzes its definition once). Their three commits were ported to Core by hand onto the night's trials, as <code>trial/1127-statics</code> (ba32db7481; #2603's context index left out, as it conflicts). Gnome world's rules built in Node, all three libraries on one GitHub runner, three rounds (build timing run 46023240545): <b>warm, 0.33 to 0.34 s</b> against 2.87 to 3.19 s for the night's trials and 3.14 to 3.32 s for hazeljs, <b>about 9 times as fast</b>; the first build of a process 1.39 to 1.58 s against 3.94 to 4.44 and 4.34 to 5.09. Every piece of Gnome world gives the same answers as its JavaScript twin with the trial library, as with the night's (fresh timing run 46023247014: the gnome, the carpet, the cat tail, Clover, the boulders, picking up, the wind, the bunnies, frogs and birds). Hazel's own test suite on the trial was still running when this was written.</li>"
         f"</ul>"
     ),
+    "decided": "Looks good too; maybe a couple of weeks from merging to <code>dev</code>, as hazel-jit.",
     "meeting": "Take the four trials into hazeljs (#2857) and publish 0.0.15? <code>jitProgramSaved</code> is an addition to the package's API. Should 791 go to dev as a small PR of its own, since LabeledTuple is shared code? And who on the team reviews the package's API and packaging, as Cyrus asked on 11-19? Since a build is nearly all the statics: is a build-only mode of the statics (no per-term information for the editor) worth doing, given they are shared code? And #2603 and #2717, which make Gnome world's build about 9 times as fast: who reviews them, and do they go to dev before the package?",
 }
 
@@ -122,6 +124,7 @@ A = {
         f"<b>A work in progress:</b> each item says where it stands, as of when, and what it needs from the meeting."
     ),
     "short": [
+        "<b>After the meeting:</b> hazel-jit and the npm package look good, maybe a couple of weeks from <code>dev</code>; next week, a jit subcommand for Hazel's CLI and a tree of <i>Livelit applications</i> slides (Notes from the meeting).",
         "<b>The two PRs:</b> hazel-jit (#2859) and the package (#2857) both build on dev now; the games run at 3.8× plain JS, from 11.9×; five green trials wait.",
         "<b>The back burner:</b> 46 open PRs, 24 drafts; three merged at the merge-a-thon; SInt's 64 bits (#2828), the README (#2812) and the font and icons wait.",
         "<b>If there is time:</b> Cyrus's advice on an email from Max Carroll, which Matthew brings; and a demo of Gnome dig and Gnome world 0.0.146, with N's flying jellyfish.",
@@ -147,7 +150,12 @@ A = {
         "Every number names its source: a ticket on the work dashboard, a report in this series, a GitHub run, a commit, or <code>npm view</code>. PRs are hazelgrove/hazel's unless named otherwise.",
         "<b>Each item has a <i>copy item</i> chip:</b> it copies the item's number, its id (which stays when items are reordered), its title and its link.",
     ],
-    "decided": [],
+    "decided": [
+        "<b>hazel-jit looks good:</b> maybe a couple of weeks from merging to <code>dev</code> (#2859).",
+        "<b>Ditto for the npm package work</b> (hazeljs, #2857): maybe a couple of weeks from <code>dev</code>.",
+        f"<b>Next week: a jit subcommand for Hazel's CLI</b>, to prepare hybrid Hazel and JavaScript applications, like hazeljs-examples' ({T(899)}).",
+        f"<b>Next week: a livelits PR, extending the livelits PR</b> ({T(900)}): for each hazeljs example, a node in a new tree of slides, <i>Livelit applications</i>, organized as the <a href=\"https://matthewhammer.org/hazel/#activities\">Hazel activities</a> page is (ancient oracles, one-player games, Hazel AI opponents, physics simulation, automata).",
+    ],
 }
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agenda.json")
 json.dump(A, open(out, "w"), ensure_ascii=False, indent=1)

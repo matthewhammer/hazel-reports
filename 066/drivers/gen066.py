@@ -57,7 +57,7 @@ def figrow(it):
 
 def decided(it):
     # what the meeting settled, from Matthew's notes after it (agenda.json "decided")
-    return (f'<p class="decided"><b>Decided at the meeting ({esc(A["meeting"][:10])}):</b> {it["decided"]}</p>\n'
+    return (f'<p class="decided"><b>At the meeting ({esc(A["meeting"][:10])}):</b> {it["decided"]}</p>\n'
             if it.get("decided") else "")
 
 
@@ -116,7 +116,7 @@ for sec in A["sections"]:
 items = "\n\n".join(p for p in parts if p)
 # what the meeting decided, from Matthew's notes after it (agenda.json "decided", 2026-11-05)
 decided_html = ("" if not A.get("decided") else
-    '<h2 id="decided">Decided at the meeting</h2>\n<div class="next"><p><b>From Matthew\'s notes after the meeting, ' + esc(A["meeting"][:10]) + '.</b></p><ol>\n'
+    '<h2 id="notes">Notes from the meeting</h2>\n<div class="next"><p><b>From Matthew\'s notes after meeting Cyrus, ' + esc(A["meeting"][:10]) + '.</b></p><ol>\n'
     + "".join(f"  <li>{chips(s)}</li>\n" for s in A["decided"]) + "</ol></div>\n\n")
 outline_html = outline_section(A.get("outline"))
 # (2026-11-27) this agenda's "if there is time" items are cards in their own section; the plain list shows only if it has entries
