@@ -6,7 +6,7 @@ import json, os
 R = lambda n: f'<code class="ref"><b>^report(</b>{n}<b>)</b></code>'
 RL = lambda n: f'<a href="../{n:03d}/">{R(n)}</a>'
 T = lambda n: f'<code class="ref"><b>^ticket(</b>{n}<b>)</b></code>'
-UPDATED = "2026-11-27 08:29 MST"
+UPDATED = "2026-11-27 08:58 MST"
 AS_OF = "2026-11-27 07:05 MST (git, gh, npm and the dashboard read then)"
 
 jit = {
@@ -143,7 +143,7 @@ A = {
     ],
     "if_time": [],
     "method": [
-        f"Started 2026-11-27 from Matthew's list for the meeting, in his order. Built locally; not published until Matthew has read it.",
+        f"Started 2026-11-27 from Matthew's list for the meeting, in his order. Public from its first draft, as agendas are, and republished as items move. <b>Sentence highlights</b> (Matthew, 11-27): click any sentence to mark it pre discussion; again, post discussion; again, not highlighted; kept in your browser, and listed at the end in order.",
         "Every number names its source: a ticket on the work dashboard, a report in this series, a GitHub run, a commit, or <code>npm view</code>. PRs are hazelgrove/hazel's unless named otherwise.",
         "<b>Each item has a <i>copy item</i> chip:</b> it copies the item's number, its id (which stays when items are reordered), its title and its link.",
     ],
