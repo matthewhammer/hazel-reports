@@ -190,13 +190,99 @@ def fig_fly():
         out.append(f'<rect x="{L}" y="{y + bh + 4}" width="{x(hz) - L:.1f}" height="{bh}" fill="{HZ}"/><text class="s" x="{x(hz) + 6:.1f}" y="{y + bh + 19}">Hazel, Fly.step {hz:.2f} µs</text>')
     out.append('</svg>'); return "".join(out)
 F7 = fig_fly()
+
+# ---- (2026-11-27; Matthew: "At the least, we should contrast the original chart of components (js vs hazel) in a new summary, and
+# with new numbers that reflect a greater share of stuff in Hazel. Let's compare and contrast the performance, after porting into
+# Hazel.") Then (0.0.103) and now (0.0.148): the step's parts by owner, the code by size, each piece's time a call, the whole game
+NOW = json.load(open(os.path.join(HERE, "data/now.json")))
+SZ = json.load(open(os.path.join(HERE, "data/sizes-now.json")))
+HZ_NOW = sum(SZ["hz"].values()); JS_NOW = SZ["js_total"]; TWINS = sum(SZ["twins"].values())
+STEP_THEN = [("keys → Pad", "js"), ("World.step", "hz"), ("events", "js"), ("boulders", "js"), ("water", "js"), ("beavers", "hz"), ("wind, squirrels", "js"),
+             ("villagers", "js"), ("wildlife", "js"), ("bunnies · Clover", "js"), ("music", "js"), ("draw", "js")]
+STEP_NOW = [("keys → Pad", "js"), ("the gnome ¹", "hz"), ("events", "js"), ("boulders", "hz"), ("picking up", "hz"), ("water", "js"), ("beavers", "hz"), ("wind", "hz"),
+            ("squirrels, leaves", "js"), ("villagers", "js"), ("birds, frogs", "hz"), ("hawks, bugs", "js"), ("bunnies", "hz"), ("rainbows, coins", "js"), ("music", "js"), ("draw", "js")]
+def fig_then_now_step():
+    W, L = 960, 118; rows = [("0.0.103", "11-24", STEP_THEN), ("0.0.148", "11-27", STEP_NOW)]
+    out = [f'<svg viewBox="0 0 {W} 250" role="img" aria-label="The parts of one step, in order, then and now: at 0.0.103 two of twelve are Hazel\'s; at 0.0.148 seven of sixteen">',
+           '<style>.t{font:600 10.5px system-ui,sans-serif;fill:var(--ink)}.v{font:600 13px system-ui,sans-serif;fill:var(--ink)}.n{font:11px system-ui,sans-serif;fill:var(--muted)}</style>']
+    for r, (ver, day, parts) in enumerate(rows):
+        y = 16 + r * 112; n = len(parts); bw = (W - L - 10) / n; nh = sum(1 for _, w in parts if w == "hz")
+        out.append(f'<text class="v" x="8" y="{y + 26}">{ver}</text><text class="n" x="8" y="{y + 42}">{day}: Hazel {nh} of {n}</text>')
+        for i, (name, who) in enumerate(parts):
+            x = L + i * bw; col = HZ if who == "hz" else JS
+            out.append(f'<rect x="{x + 2:.1f}" y="{y}" width="{bw - 4:.1f}" height="64" rx="7" fill="{col}" fill-opacity="{0.55 if who == "hz" else 0.16}" stroke="{col}" stroke-width="1.5"/>')
+            words = name.split(" "); lines = [name] if len(name) <= 9 else [" ".join(words[:(len(words) + 1) // 2]), " ".join(words[(len(words) + 1) // 2:])]
+            for k, ln in enumerate(lines): out.append(f'<text class="t" x="{x + bw / 2:.1f}" y="{y + 30 + k * 13 - (len(lines) - 1) * 6}" text-anchor="middle">{E(ln)}</text>')
+        out.append(f'<rect x="{L}" y="{y + 72}" width="{(W - L - 10) * nh / n:.1f}" height="8" rx="3" fill="{HZ}"/><rect x="{L + (W - L - 10) * nh / n:.1f}" y="{y + 72}" width="{(W - L - 10) * (n - nh) / n:.1f}" height="8" rx="3" fill="{JS}" opacity="0.45"/>')
+    out.append('</svg>'); return "".join(out)
+HZ_MODS = ["World", "Bird", "Frog", "Bunny", "Pickup", "Jelly", "Ride", "Fly", "Tail", "Boulder", "Wind"]
+def fig_code_then_now():
+    W, L, R = 960, 118, 250; mx = JS_NOW; sc = (W - L - R) / mx
+    out = [f'<svg viewBox="0 0 {W} 300" role="img" aria-label="The code by size, then and now: Hazel 40,213 characters, then 74,118; JavaScript 443,696, then 680,500">',
+           '<style>.v{font:600 13px system-ui,sans-serif;fill:var(--ink)}.l{font:600 12px system-ui,sans-serif;fill:var(--ink)}.n{font:11px system-ui,sans-serif;fill:var(--muted)}</style>']
+    def bar(y, label, segs, note):
+        out.append(f'<text class="l" x="{L - 10}" y="{y + 15}" text-anchor="end">{E(label)}</text>'); x = L
+        for name, n, col, op in segs:
+            w = n * sc; out.append(f'<rect x="{x:.1f}" y="{y}" width="{max(w, 0.8):.1f}" height="22" fill="{col}" opacity="{op}"><title>{E(name)}: {fmt(n)} characters</title></rect>'); x += w
+        out.append(f'<text class="n" x="{x + 8:.1f}" y="{y + 15}">{note}</text>')
+    shades = [1, 0.88, 0.78, 0.7, 0.62, 0.55, 0.5, 0.45, 0.4, 0.36, 0.32]
+    out.append('<text class="v" x="8" y="34">0.0.103</text><text class="n" x="8" y="50">11-24</text>')
+    bar(18, "Hazel", [("World.hz", HZ_TOT, HZ, 1)], f"{fmt(HZ_TOT)}: World.hz, one module · 8.3% of the code")
+    bar(48, "JavaScript", [("app.js", JS_TOT, JS, 0.75)], f"{fmt(JS_TOT)}: app.js")
+    out.append('<text class="v" x="8" y="134">0.0.148</text><text class="n" x="8" y="150">11-27</text>')
+    bar(118, "Hazel", [(m + ".hz", SZ["hz"][m], HZ, shades[i]) for i, m in enumerate(HZ_MODS)], f"{fmt(HZ_NOW)}: eleven modules · {100 * HZ_NOW / (HZ_NOW + JS_NOW):.1f}% of the code")
+    bar(148, "JavaScript", [("app.js but the twins", JS_NOW - TWINS, JS, 0.75), ("the JavaScript twins of the Hazel pieces, for ⚡ and the checks", TWINS, JS, 0.35)], f"{fmt(JS_NOW)}: app.js, {fmt(TWINS)} of it the twins")
+    # Hazel's eleven modules, now, each to the same scale as each other (a larger scale than the bars)
+    out.append(f'<text class="n" x="{L}" y="204">Hazel at 0.0.148 by module, to a larger scale (characters, comments left out):</text>')
+    x = L; sc2 = (W - L - 20) / HZ_NOW
+    for i, m in enumerate(HZ_MODS):
+        w = SZ["hz"][m] * sc2; out.append(f'<rect x="{x:.1f}" y="214" width="{w:.1f}" height="26" fill="{HZ}" opacity="{shades[i]}" stroke="var(--paper)" stroke-width="1"><title>{m}.hz: {fmt(SZ["hz"][m])}</title></rect>')
+        if w > 44: out.append(f'<text x="{x + 4:.1f}" y="231" style="font:600 10.5px system-ui,sans-serif;fill:#fff">{m}</text>')
+        x += w
+    out.append(f'<text class="n" x="{L}" y="262">World {fmt(SZ["hz"]["World"])} · Bird {fmt(SZ["hz"]["Bird"])} · Frog {fmt(SZ["hz"]["Frog"])} · Bunny {fmt(SZ["hz"]["Bunny"])} · Pickup {fmt(SZ["hz"]["Pickup"])} · Jelly {fmt(SZ["hz"]["Jelly"])} · Ride {fmt(SZ["hz"]["Ride"])}</text>')
+    out.append(f'<text class="n" x="{L}" y="278">Fly {fmt(SZ["hz"]["Fly"])} · Tail {fmt(SZ["hz"]["Tail"])} · Boulder {fmt(SZ["hz"]["Boulder"])} · Wind {fmt(SZ["hz"]["Wind"])}</text>')
+    out.append('</svg>'); return "".join(out)
+import math
+def fig_perf():
+    rows = [(r[0], r[3], r[4]) for r in NOW["pieces"]["rows"]]
+    if NOW.get("worldstep"): rows.insert(0, ("the gnome's step (World.step)", NOW["worldstep"]["js"], NOW["worldstep"]["hazel"]))
+    W, L, R, T, rh = 960, 220, 110, 44, 24; H = T + rh * len(rows) + 36; lo, hi = 0.04, 6.0
+    X = lambda v: L + (math.log(v) - math.log(lo)) / (math.log(hi) - math.log(lo)) * (W - L - R)
+    out = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="Each piece\'s time a call, its JavaScript twin against Hazel compiled by hazel-jit, microseconds, a log scale">',
+           '<style>.l{font:12px system-ui,sans-serif;fill:var(--ink)}.n{font:11px system-ui,sans-serif;fill:var(--muted)}</style>',
+           f'<text class="n" x="8" y="16">Each piece’s time a call, µs, a log scale</text>',
+           f'<circle cx="{L}" cy="32" r="5" fill="{JS}"/><text class="n" x="{L + 9}" y="36">its JavaScript twin</text><circle cx="{L + 150}" cy="32" r="5" fill="{HZ}"/><text class="n" x="{L + 159}" y="36">Hazel, compiled by hazel-jit</text>']
+    for v in (0.05, 0.1, 0.2, 0.5, 1, 2, 5):
+        out.append(f'<line x1="{X(v):.1f}" x2="{X(v):.1f}" y1="{T}" y2="{H - 30}" stroke="var(--line)"/><text class="n" x="{X(v):.1f}" y="{H - 14}" text-anchor="middle">{v:g}</text>')
+    for i, (name, js, hz) in enumerate(rows):
+        y = T + 12 + i * rh
+        out.append(f'<text class="l" x="{L - 10}" y="{y + 4}" text-anchor="end">{E(name)}</text><line x1="{X(js):.1f}" x2="{X(hz):.1f}" y1="{y}" y2="{y}" stroke="var(--line)" stroke-width="3"/>')
+        out.append(f'<circle cx="{X(js):.1f}" cy="{y}" r="5" fill="{JS}"><title>{E(name)}, JavaScript: {js:.3f} µs</title></circle><circle cx="{X(hz):.1f}" cy="{y}" r="5" fill="{HZ}"><title>{E(name)}, Hazel: {hz:.3f} µs</title></circle>')
+        out.append(f'<text class="n" x="{X(hz) + 9:.1f}" y="{y + 4}">{hz / js:.1f}×, {hz:.2f} µs</text>')
+    out.append('</svg>'); return "".join(out)
+def fig_speedrun():
+    SR = NOW.get("speedrun")
+    if not SR: return ""
+    rows = SR["rows"]; W, L, R = 960, 250, 210; mx = max(r[2] for r in rows); sc = (W - L - R) / mx
+    out = [f'<svg viewBox="0 0 {W} {30 + 34 * len(rows)}" role="img" aria-label="Gnome world\'s speed run, the whole game, seconds: plain JavaScript against Hazel\'s rules, then and now">',
+           '<style>.l{font:12px system-ui,sans-serif;fill:var(--ink)}.n{font:11px system-ui,sans-serif;fill:var(--muted)}</style>']
+    for i, (label, way, sec, note) in enumerate(rows):
+        y = 12 + i * 34; col = HZ if way == "hz" else JS
+        out.append(f'<text class="l" x="{L - 10}" y="{y + 15}" text-anchor="end">{E(label)}</text><rect x="{L}" y="{y}" width="{sec * sc:.1f}" height="22" fill="{col}" opacity="{0.85 if way == "hz" else 0.6}"/>')
+        out.append(f'<text class="n" x="{L + sec * sc + 8:.1f}" y="{y + 15}">{sec:.1f} s{E(note)}</text>')
+    out.append('</svg>'); return "".join(out)
+F8, F9, F10, F11 = fig_then_now_step(), fig_code_then_now(), fig_perf(), fig_speedrun()
+_SR = NOW.get("speedrun")
+SPEED_HTML = (f'<p><b>{_SR["lead"]}</b> {_SR["body"]}</p>' + f'<figure class="fig" id="fig-speedrun"><div class="figscroll">{F11}</div><figcaption>{_SR["cap"]}</figcaption></figure>') if _SR else \
+  '<p><b>The whole game, three ways, is being timed again on 0.0.148</b> (the speed run on GitHub: plain JavaScript, Hazel’s rules compiled, the interpreter); its numbers go here when it ends.</p>'
+DATA["now"] = {"pieces": NOW["pieces"], "sizes": SZ, "worldstep": NOW.get("worldstep"), "speedrun": NOW.get("speedrun"), "step": {"then": STEP_THEN, "now": STEP_NOW}}
 data_json = json.dumps(DATA, indent=1).replace("</", "<\\/")
-BLURB = ("Which parts of Gnome world are Hazel and which JavaScript, asked of event handling, physics, the world's state and the "
-  "drawing. Hazel decides what the world is and how the gnome moves: the plan from a seed, the gnome's step 60 times a second "
-  "(0.016 ms a call, compiled by hazel-jit), the beavers' minds, the villagers' words, the roots. JavaScript holds all the state "
-  "(nine arrays of 186,368 tiles), takes the input, runs everything else that moves (the water is 2.2 ms of a 2.4 ms step) and "
-  "draws it all: 92% of the code, 70% of it drawing. Clover the rabbit is Hazel's gnome step with JavaScript around it. "
-  "Since 0.0.107 the magic carpet's flight is Hazel's too, the cat tail's flight was written in Hazel from the start (0.0.116), since 0.0.134 Clover's ride, since 0.0.135 the boulders and since 0.0.136 picking things up, since 0.0.137 the wind, since 0.0.141 to 0.0.143 the minds of the wild bunnies, the frogs and the birds are Hazel's: pieces of a plan to move the logic over piece by piece, each checked against the JavaScript it replaces and timed (in Hazel each takes 3 to 8 times the JavaScript's time in Node, under 2.5 µs a step).")
+BLURB = ("Which parts of Gnome world are Hazel and which JavaScript, then (0.0.103, 11-24) and now (0.0.148, 11-27). Then Hazel decided "
+  "2 of the 12 parts of a step, the gnome's step and the beavers'; now 7 of 16: every way the gnome moves, the boulders, picking things up, "
+  "the wind, and the bunnies', frogs' and birds' minds, each moved in its own module and checked against the JavaScript it replaced at "
+  "every step. Hazel's code nearly doubled (40,213 characters to 74,118), but the JavaScript grew too, mostly drawing, so its share of "
+  "the code went only from 8% to 10%. In Hazel, compiled by hazel-jit, each piece takes 1.9 to 6.6 times its JavaScript's time a call, "
+  "at most about 4 µs; and since 0.0.147 the rules are compiled ahead of time, ready in 0.2 s instead of 4 to 16.")
 page = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -210,16 +296,17 @@ page = f'''<!doctype html>
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>64<b>)</b></code> · Gnome world · 2026-11-24, revised 2026-11-25 · <span class="wip">work in progress</span> · after <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>64<b>)</b></code> · Gnome world · 2026-11-24, revised 2026-11-27 · <span class="wip">work in progress</span> · after <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a></p>
 <h1>Gnome World: Which Parts Are Hazel</h1>
-<p class="sub">Matthew asked, on 2026-11-24: “what parts of gnome world logic are expressed in JS vs Hazel? event handling? physics? global game world state? procedural rendering of trees, and other elements?” This report answers for <a href="https://matthewhammer.org/hazeljs-examples/world/">Gnome world</a> 0.0.103 (matthewhammer/hazeljs-examples <code>02b73ab</code>), its rules compiled in the page by hazel-jit from the hazeljs branch’s build (#2857).</p>
+<p class="sub">Matthew asked, on 2026-11-24: “what parts of gnome world logic are expressed in JS vs Hazel? event handling? physics? global game world state? procedural rendering of trees, and other elements?” It first answered for <a href="https://matthewhammer.org/hazeljs-examples/world/">Gnome world</a> 0.0.103 (matthewhammer/hazeljs-examples <code>02b73ab</code>, 11-24), when Hazel decided little more than the world’s plan and the gnome’s step. Since then, at Matthew’s ask (“More and more of gnome world’s game logic into hazel, from JS”), ten pieces have moved into Hazel; <a href="#now">Then and now</a> sets 0.0.103 beside 0.0.148 (<code>5e43910</code>, 11-27): whose each part of a step is, the code by size, and each piece’s performance before and after its move. The sections after it each open with how things stand now.</p>
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
-<li><a href="#split">The split</a>: Hazel decides what the world is and how the gnome moves; JavaScript keeps the state, takes the input, moves everything else and draws.</li>
-<li><a href="#step">One step of the world</a>: Hazel is called once for the gnome and, every sixth step, once a beaver; its share of the step’s time is under 1%.</li>
+<li><a href="#now">Then and now</a>: at 0.0.103 Hazel decided 2 of the 12 parts of a step; at 0.0.148, 7 of 16, every way the gnome moves and the animals’ minds among them. Its code nearly doubled (40,213 characters to 74,118); the JavaScript grew too, so Hazel’s share of the code went only from 8% to 10%. In Hazel each piece takes 1.9 to 6.6 times its JavaScript twin’s time a call, at most about 4 µs.</li>
+<li><a href="#split">The split</a>: Hazel decides what the world is, how the gnome moves in every way it can, and what the boulders and the animals do; JavaScript keeps the state, takes the input, moves the water and the rest, and draws.</li>
+<li><a href="#step">One step of the world</a>: Hazel is called for the gnome, the boulders, picking things up, the wind and each animal in view, and every sixth step for each beaver; JavaScript does the rest of the step.</li>
 <li><a href="#events">Event handling</a>: every input is JavaScript’s; Hazel sees one record a step and answers with one.</li>
-<li><a href="#physics">Physics</a>: the gnome’s movement is Hazel; the water, the boulders, the animals and the rabbit’s rules around it are JavaScript.</li>
+<li><a href="#physics">Physics</a>: the gnome’s movement, on foot or riding or flying, and the boulders’ are Hazel’s; the water, the hawks, the squirrels and the leaves are JavaScript’s.</li>
 <li><a href="#state">The world’s state</a>: all of it in JavaScript; Hazel keeps nothing between calls.</li>
 <li><a href="#drawing">Procedural drawing</a>: Hazel plans where things are and grows the roots; JavaScript draws everything.</li>
 <li><a href="#why">Why the line falls there</a>: what Hazel in a page can and cannot do well today.</li>
@@ -234,17 +321,25 @@ page = f'''<!doctype html>
 <li><a href="#birds">Piece 6, third part: the birds</a>: done in 0.0.143; the songbirds on the ground, perched and flying between, and the ducks and swans, the hawks left to the page; the same at all 600,000 made-up steps of each and in the game’s own loop; 1.71 µs a songbird’s step in Hazel against 0.58, 0.39 a duck’s against 0.13. And a finding: with every animal drawing a fixed count of random numbers, the page’s randomness no longer follows its clock while the view stays put.</li>
 <li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
 </ol>
-<p class="update"><b>Update, 2026-11-25.</b> Since this report first looked (at 0.0.103), seven pieces of Gnome world’s logic have become Hazel’s, the seventh but for the hawks: the magic carpet’s flight (0.0.107), the cat tail’s flight (written in Hazel from the start, 0.0.116), Clover’s ride (0.0.134), the boulders (0.0.135), picking things up (0.0.136), the wind (0.0.137), the wild bunnies’ minds (0.0.141), the frogs’ (0.0.142) and the birds’ (0.0.143), in a migration Matthew asked for, “More and more of gnome world’s game logic into hazel, from JS”, and went on with: “porting the gnome world JS into Hazel, module by module ... let’s profile the difference as we go”. This report is revised as the work goes (<a href="#migrate">the plan</a>, <a href="#fly">piece 1</a>, <a href="#ride">piece 2</a>, <a href="#boulders">piece 3</a>, <a href="#pickup">piece 4</a>, <a href="#wind">piece 5</a>, <a href="#bunnies">piece 6’s first part</a>, <a href="#frogs">its second</a>, <a href="#birds">its third</a>, <a href="#sofar">each piece so far</a>). The sections before them describe 0.0.103, as they did; since then the water has gone from 2.2 ms a step to about 0.6 (0.0.131, stepped only where it moves).</p>
+<h2 id="now">Then and now</h2>
+<p><b>When this report first looked (0.0.103, 11-24), Hazel decided 2 of the 12 parts of a step, the gnome’s step and the beavers’ jobs. At 0.0.148 (11-27) it decides 7 of 16: every way the gnome moves (on foot, on Clover, on the magic carpet, with the cat tail, as the flying jellyfish), the boulders, picking things up, the wind, and the minds of the wild bunnies, the frogs, the songbirds, the ducks and swans and the beavers.</b> JavaScript still keeps all the state, takes the input, moves the water, the hawks, the squirrels, the leaves and the villagers, places the rainbow clouds and the coins, and draws every frame. Each piece moved in its own module, calling nothing in World, and each is checked against the JavaScript it replaced at every step (the pieces’ sections below).</p>
+{fig("fig-then-now-step", F8, "One step of the world in the order <code>tick</code> runs it, then and now; Hazel’s parts filled. 0.0.103 is <a href=\"#fig-step\">the step’s figure</a> below, as it was; 0.0.148 (<code>5e43910</code>) read from its <code>tick</code>. ¹ The gnome: World.step, with Ride.pre and Ride.post round it on Clover; or Fly.step on the carpet, Tail.step before it with the cat tail, Jelly.step as the jellyfish. The bar under each row is its parts, Hazel’s and JavaScript’s, counted.")}
+<p><b>By size, Hazel’s code nearly doubled, from 40,213 characters (World.hz) to {fmt(HZ_NOW)} in eleven modules; the JavaScript grew too, from 443,696 to {fmt(JS_NOW)}, so Hazel’s share of the code moved only from 8.3% to {100 * HZ_NOW / (HZ_NOW + JS_NOW):.1f}%.</b> Most of the JavaScript’s growth is drawing and new things to play (two levels, the coins and the rainbow clouds, the carpet’s, the tail’s and the jellyfish’s looks, saves, rules kept and compiled ahead of time, a game controller), none of it logic that moved; {fmt(TWINS)} characters of it are the JavaScript twins of the Hazel pieces, kept for ⚡ (plain JavaScript, chosen in ⚙️ Advanced) and for the checks. Counted by what decides the game rather than by size, the share moved much further: the figure above.</p>
+{fig("fig-then-now-code", F9, "Not a build of the app: the code of 0.0.103 (<code>02b73ab</code>) and of 0.0.148 (<code>5e43910</code>) by size, in characters, measured the same way both times: the Hazel rules with their comments left out (the preamble aside), and all of app.js. Below, the eleven Hazel modules of 0.0.148 to a larger scale. Hover a part for its size.")}
+<p><b>Performance after porting: in Hazel, compiled by hazel-jit, each piece takes 1.9 to 6.6 times its JavaScript twin’s time a call, and none more than about 4 µs, the gnome’s own step; what the pieces cost a frame stays well under a millisecond.</b> The animals’ minds cost the least against their JavaScript (1.9 to 3.2 times), picking things up the most (6.6 times, 3.0 µs), as its call carries the world’s things and hearts across as lists. The gnome’s step takes 4.3 µs against plain JavaScript’s 0.80 with the hazeljs branch’s library, and 2.4 µs with the night’s trials (^ticket(891)’s division and folding), which the page’s rules compiled ahead of time now use. These times call each function on the same inputs again; on fresh inputs, as the game gives them, the list-taking pieces cost 7 to 9 times their JavaScript (<a href=\"#fresh\">Timed again on fresh inputs</a>).</p>
+{fig("fig-then-now-perf", F10, "Each piece’s time a call, its JavaScript twin against Hazel compiled by hazel-jit, the same inputs again, on GitHub’s machines with the hazeljs branch’s library: the pieces from <code>node/fly-check.mjs</code> in 0.0.148’s world save check (run 46025057262, each the median of seven batches, each the same answer as its twin at every step checked); the gnome’s step from <code>node/step-time.mjs</code> (run 46025727949, three rounds, against world/plain.js, the same at 20,000 of 20,000 steps). Hover a dot for its time.")}
+{SPEED_HTML}
+<p><b>And the build.</b> Until 0.0.147 every load of the page built the rules before the game could start: 4 to 16 seconds, nearly all of it Hazel’s type checker, not the jit. Since 0.0.147 the rules are compiled ahead of time on GitHub and the page makes them from that text in about 0.2 s (188 ms on the live page, 11-27), building only after an edit. Two open statics PRs, #2603 and #2717, make the build itself about nine times as fast (^ticket(894)).</p>
 
 <h2 id="split">The split</h2>
-<p><b>Hazel decides what the world is and how the gnome moves; JavaScript does everything that touches the tiles, the screen or the clock.</b> By size, the Hazel is 40,213 characters of code in 32 functions (World.hz, comments left out), and the JavaScript 443,696 in 160 functions (app.js): 92% of the code, 70% of it drawing.</p>
+<p><b>Hazel decides what the world is, how the gnome moves in every way it can, and what the boulders and the animals do; JavaScript does everything that touches the tiles, the screen or the clock.</b> At 0.0.103, the figure below, Hazel decided the world and the gnome’s step alone: 40,213 characters of code in 32 functions (World.hz, comments left out), against 443,696 of JavaScript in 160 functions (app.js), 92% of the code, 70% of it drawing. At 0.0.148 the Hazel is 74,118 characters in eleven modules (<a href="#now">Then and now</a>).</p>
 {fig("fig-split", F1, "Not a build of the app: the code of 0.0.103 (02b73ab) by size, in characters. Hazel by what each function decides; JavaScript by what each function does, grouped by name (the grouping is in How this was put together). Hover a part for its size.")}
 <p>The Hazel is a set of pure functions the page calls. Each takes small records and returns one:</p>
 {tbl}
 <p>The times are each function compiled by hazel-jit, called in the page 2,000 times (the plan 5, the roots 20) and averaged, once, on the laptop.</p>
 
 <h2 id="step">One step of the world</h2>
-<p><b>In a step (a sixtieth of a second), the page calls Hazel once, for the gnome, and every sixth step once for each of the five beavers; everything else in the step is JavaScript.</b> World.step takes 0.016 ms of a step of about 2.4 ms before drawing; the water alone takes 2.2 ms. Then the frame is drawn, all of it in JavaScript.</p>
+<p><b>In a step (a sixtieth of a second), the page now calls Hazel for the gnome (with its ride, its carpet, its tail or as the jellyfish), for each boulder, for picking things up, for the wind, for each animal it steps, and every sixth step for each of the beavers; the water, the hawks, the squirrels, the villagers and the drawing are JavaScript.</b> At 0.0.103, the figure below, it called Hazel only for the gnome and the beavers: World.step took 0.016 ms of a step of about 2.4 ms before drawing, and the water alone 2.2 ms (since 0.0.131 about 0.6, stepped only where it moves). Then the frame is drawn, all of it in JavaScript, then as now.</p>
 {fig("fig-step", F2, "Gnome world 0.0.103, one step in the order <code>tick</code> runs it (the yellow bar sweeps across it), then the drawing; Hazel’s parts on the top lane. Below, the step to scale: the water, the rest of the JavaScript, and World.step, a line too thin to see. The step’s times were measured during 0.0.102’s development, after its fixes, with temporary timing; the Hazel call’s, at 0.0.103.")}
 
 <h2 id="events">Event handling</h2>
@@ -253,10 +348,10 @@ page = f'''<!doctype html>
 <p>Building (<code>B</code>), riding (<code>R</code>), the map, saving, loading and restarting never pass through Hazel. Nor does the speed run’s planning: it finds its way over the tiles in JavaScript and then presses the keys, so the gnome it drives still moves by World.step.</p>
 
 <h2 id="physics">Physics</h2>
-<p><b>The gnome’s movement is Hazel; every other thing that moves is JavaScript.</b> World.step moves a box 0.66 tiles wide and 0.88 tall in thousandths of a tile: running at 92 a step, eased; falling 11 faster a step, to 267 at most; a jump of −208 cut short when up is let go; climbing at 70; floating, swimming and diving; walking on the diagonals of sloped banks and sliding down them; digging the tile pushed into. It sees the world only as the 3 by 5 tiles round the gnome, packed into five whole numbers.</p>
+<p><b>The gnome’s movement is Hazel’s, on foot, on Clover, on the carpet, with the tail or as the jellyfish, and so are the boulders’ and the animals’ minds; the water, the hawks, the squirrels, the leaves and the villagers’ walking are JavaScript’s.</b> At 0.0.103 only the gnome’s own step was Hazel’s. World.step moves a box 0.66 tiles wide and 0.88 tall in thousandths of a tile: running at 92 a step, eased; falling 11 faster a step, to 267 at most; a jump of −208 cut short when up is let go; climbing at 70; floating, swimming and diving; walking on the diagonals of sloped banks and sliding down them; digging the tile pushed into. It sees the world only as the 3 by 5 tiles round the gnome, packed into five whole numbers.</p>
 {fig("fig-near", F4, "Gnome world 0.0.103: the window World.step sees (Near), each row of three tiles one number, 512 apart. Right, the same window as the page gives it when Clover carries the gnome without the climbing pack or the diving gear; the pulsing tiles are the ones it changed: the ladder’s +32 gone, the water ahead a wall.")}
-<p>JavaScript moves the rest, each step: the water seeping through the ground (every wet tile, down and then across), the boulders falling, the pebbles, the wind and its gusts, the leaves, the birds’ flights, the squirrels along the branches, the frogs’ jumps, the bunnies’ hops, the villagers walking and a felled tree falling. The beavers are both: World.beaver decides each one’s job, and JavaScript eases its body toward where Hazel put it.</p>
-<p><b>Clover the rabbit is Hazel’s gnome step with JavaScript rules around it.</b> The page changes what the step sees (the window above), what it is asked (twice as fast: <code>dx</code> 2) and what comes back: a hop’s or a leap’s speed set after the jump, the digging’s progress tripled, a landing in the water undone. It went in JavaScript because World.hz is full: one more top-level definition overflowed the browser’s stack building the module on 2026-11-23.</p>
+<p>At 0.0.103 JavaScript moved the rest, each step: the water seeping through the ground (every wet tile, down and then across), the boulders falling, the pebbles, the wind and its gusts, the leaves, the birds’ flights, the squirrels along the branches, the frogs’ jumps, the bunnies’ hops, the villagers walking and a felled tree falling. The beavers are both: World.beaver decides each one’s job, and JavaScript eases its body toward where Hazel put it.</p>
+<p><b>Clover the rabbit was, at 0.0.103, Hazel’s gnome step with JavaScript rules around it; since 0.0.134 those rules are Hazel’s too</b> (Ride.pre and Ride.post, <a href="#ride">piece 2</a>). The page changes what the step sees (the window above), what it is asked (twice as fast: <code>dx</code> 2) and what comes back: a hop’s or a leap’s speed set after the jump, the digging’s progress tripled, a landing in the water undone. It went in JavaScript because World.hz is full: one more top-level definition overflowed the browser’s stack building the module on 2026-11-23.</p>
 
 <h2 id="state">The world’s state</h2>
 <p><b>All of it lives in JavaScript; Hazel keeps nothing between calls.</b> One object, <code>S</code>, holds the gnome, the rivers and dams, the trees, the beavers, the villagers, the animals, Clover, the weather, the camera and the speed run; nine arrays hold the 186,368 tiles (896 by 208): what is there, its water, what is behind and on it, gems, stones, slopes and roots, and the top of each column, about 2.05 MB.</p>
@@ -439,7 +534,7 @@ page = f'''<!doctype html>
 <li><b>Each animal its own random numbers.</b> Piece 6 left the page’s randomness following its clock only through which animals are in view (<a href="#birds">the finding</a>). Drawing each animal’s numbers from the seed, its own name and the step, rather than from the one shared stream, would make nothing depend on which are stepped: two runs from one world would agree with the clock free, in the page as in the checks, and the hawks would follow suit.</li>
 <li><b>The water in Hazel, once Hazel has arrays.</b> With ^ticket(846)’s sequences, a row at a time, timed against the JavaScript’s 2.2 ms.</li>
 <li><b>Tree shapes as Hazel geometry, like the roots.</b> World.limbs already plans a great tree’s limbs; the drawn limbs could come back from Hazel as lines.</li>
-<li><b>Keep the built rules between loads</b> (^ticket(890)). The page builds the same rules on every load (15 s the first time in the pane), though they change only with a new version or an edit; and nearly all of a build is the statics. Measured: the world’s rules, kept as hazel-jit’s text (<code>compileProgram</code>’s JavaScript and runtime, 296 KB and 24 KB), run again in a fresh Node process with no Hazel library at all in 7 ms, and the gnome’s step answers, against 6.4 s to build them cold. What a page also needs is the converters <code>jitProgram</code> wraps round each function, whose source the library makes per function, self-contained. Tried: <code>Hazel.jitProgramSaved(spec)</code> (trial/890-saved-program), <code>jitProgram</code>’s answer with the program as text beside it, and Gnome world 0.0.144 keeping it in the browser (with the rules’ one field of data, <code>World.styles</code>, which the trial does not carry) and making its rules from it on the next load, building only if a call must go the old way. In the browser pane with the trial library: a reload had the rules ready 0.7 s after the page began loading, 13 to 19 ms of it making them from the kept text, where a cold build of the same rules in the same page took 14.4 s; and the kept rules and freshly built ones gave the same world at all 500 steps from one fresh world. With the shipped library nothing changes (<code>?libat=trial/890-saved-program</code> tries it). An addition to the library’s API (#2857), so Matthew’s call.</li>
+<li><b>The rules ready at once on every load: done, ahead of time</b> (0.0.147, ^ticket(895)). A GitHub job compiles the rules with a library that saves the compiled program as text (^ticket(890)’s trial) and commits it; the page makes its rules from it in about 0.2 s and builds only after an edit. What is left is the library’s side: <code>Hazel.jitProgramSaved</code> into the package (#2857), and the type checker’s own cost (#2603 and #2717, about nine times as fast in ^ticket(894)’s experiment).</li>
 <li><b>The crossing for data that crosses once.</b> Timed (<a href=\"#fresh\">above</a>): the gnome’s own step crosses its three plain records in 0.08 µs of its 3.5; a piece that takes lists pays about 2 µs a call to convert them when they are new, as they are each step. A way in that does not convert (or remember) data the page makes fresh each step is the library’s to choose (#2857).</li>
 </ol>
 
