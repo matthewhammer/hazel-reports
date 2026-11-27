@@ -1,0 +1,199 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 067 · the hazeljs package, then and now · 2026-11-27, revised {{updated}} MST · <span class="wip">work in progress</span> · after reports 063, 064 and 065</p>
+<h1>Hazel as an npm Package, Then and Now</h1>
+<p class="sub">On 2026-11-23, ^report(63) asked what the hazeljs npm package is, which PRs it comes from, how its branch differs from <code>dev</code>, how fast each way of running a program is on the games of hazeljs-examples, and what to decide before it goes to <code>dev</code>. This report asks the same questions four days later, of hazeljs 0.0.14 and the jit it carries, and redraws each of 063’s charts with today’s data beside 063’s own. It is for Matthew and Cyrus, after their meeting of 2026-11-27, which found hazel-jit looking good, maybe a couple of weeks from <code>dev</code>, and the package with it.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#package">What the package is</a>: hazeljs 0.0.14, on npm since 2026-11-25, the first version there with hazel-jit; the same three ways to run Hazel, and the editor.</li>
+<li><a href="#prs">The PRs</a>: two PRs now carry it, #2859 (hazel-jit, from <code>dev</code>) and #2857 (the package, which merges it); none is merged.</li>
+<li><a href="#diff">How the branch differs from dev</a>: {{added63}} lines added then, {{added}} now; what grew is hazel-jit, its mixed mode and its tests.</li>
+<li><a href="#speed">Every game, four ways</a>: the three-way job times five games, with an older interpreter and the games’ compiled.js of 11-20, so it shows plain JavaScript’s lead, not today’s jit.</li>
+<li><a href="#crossing">Where the jit’s time goes</a>: converting values, most of a call on 11-23, now costs nothing for a value handed back unchanged and about half of a call for a fresh list.</li>
+<li><a href="#converters">The converters, then and now</a>: the jit’s time over the ahead-of-time code’s, {{ct_first}} on 11-23, {{ct_last}} on 11-25.</li>
+<li><a href="#runs">A game’s own run of states</a>: 0.0.14’s jit takes {{rn_jan}} the time of each game’s compiled.js, runs {{rn_ij}} as fast as the interpreter, and takes {{rn_jp}} plain JavaScript’s time.</li>
+<li><a href="#build">Building the rules</a>: as slow as on 11-23, and nearly all of it Hazel’s type checker; the open statics PRs make Gnome world’s warm build {{wb_gain}} as fast, and its rules now ship compiled ahead of time.</li>
+<li><a href="#plain">Against plain JavaScript</a>: Gnome world’s whole speed run takes {{sr_pct}} longer with every piece Hazel’s; World.step alone {{ws_hx}} plain JavaScript’s time, {{ws_nx}} with the night’s trials.</li>
+<li><a href="#decide">What to decide before dev</a>: 063’s ten questions with today’s answers, and four new ones.</li>
+<li><a href="#next">What next for speed</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<div class="summary">
+<p><b>In short.</b> The jit is no longer the slow part. On each game’s own run, it went from {{ct_first}} the time of code compiled ahead of time (11-23) to {{rn_jan}} (11-25, the library 0.0.14 ships), and Gnome world’s whole speed run is {{sr_pct}} slower with its rules in Hazel than in JavaScript. What is slow is building the rules, seconds of type checking on each load, which the statics PRs and compiling ahead of time both answer. On 11-27, three places where the package’s two ways part were found (^ticket(898), ^ticket(897), ^ticket(896)), and five trials from the night of 11-26 wait on Matthew’s word.</p>
+</div>
+
+<h2 id="package">What the package is</h2>
+<p><b>hazeljs 0.0.14, on npm since 2026-11-25, gives a page the same three ways to run a Hazel program as 0.0.11 did, and Hazel’s own editor; it is the first version on npm with hazel-jit.</b> The jit came into the package in 0.0.10 and moved to Jane Street Core in 0.0.11, and neither was published: npm has 0.0.1 to 0.0.8, then 0.0.14. Its <code>hazel-lib.js</code> (2.9 MB) is built from hazelgrove/hazel 2c4a61560f on the <code>hazeljs</code> branch (#2857), as its <code>package.json</code> records; the package is 78 files and 14.0 MB unpacked, 11 MB of it the editor.</p>
+<figure class="chart now">
+{{paths}}
+<figcaption>How a page uses hazeljs 0.0.14 (hazelgrove/hazeljs f56faf9, its <code>hazel-lib.js</code> from hazelgrove/hazel 2c4a61560f). Report 063’s figure showed 0.0.11 (98c482395d, not on npm) with the same four boxes; what changed is inside the second, and who uses the third.</figcaption>
+</figure>
+<p>What changed under the jit since 0.0.11, in the order it was made:</p>
+<ul>
+<li><b>Converters by declared type</b> (a97b6f7465, 11-23): a page’s values go straight into compiled code’s shapes and back, with no Hazel values in between; <b>remembered by links on the objects</b> (ca851b422d, 11-24), not in WeakMaps.</li>
+<li><b>Records as plain objects</b> in compiled code, a field read in place (0.0.13, 20febee548, 11-24).</li>
+<li><b>Loops for a recursive function’s calls of itself in tail position; JS arguments for a named function’s tuple parameters; constructors without arguments made once; a module’s members read by name;</b> and <code>==</code> against a literal as <code>===</code> (0.0.14, 2c4a61560f, 11-25; ^report(65)).</li>
+<li><b>Holes in mixed mode</b> (^ticket(769)): a hole in an argument crosses into compiled code unopened, and code with holes compiles. On the branch since 11-26 (b1b4e19286), after 0.0.14, so in no published package.</li>
+<li><b>Not yet:</b> SInt with 64 bits, which waits on #2828; the branch still checks SInt at 32 bits.</li>
+</ul>
+<p>The third way has a new user. Since Gnome world 0.0.147, its rules are compiled on GitHub (<code>node/world-aot.mjs</code>, with the night’s trials’ library) and the page makes them from that text in 188 ms, instead of building them on every load (<a href="#build">building the rules</a>).</p>
+
+<h2 id="prs">The PRs</h2>
+<p><b>Two PRs now carry the jit and the package: #2859 is hazel-jit alone, from <code>dev</code>, and #2857, the package’s branch, merges it. Both are drafts, and none of the PRs below is merged.</b> On 11-23 hazel-jit’s compiler was added to #2857 directly; now it arrives by merging #2859, the last time on 11-26 (b1b4e19286, holes in mixed mode). #2859 is {{pr2859_add}} lines in 9 files: the compiler (<code>HazelJit.re</code>), the values across (<code>HazelJitValue.re</code>), mixed mode (<code>HazelJitMixed.re</code>), the tests, and 13 lines in two of <code>dev</code>’s own files. #2857 grew from {{pr2857_add63}} to {{pr2857_add}} lines added. The parts’ own PRs have the lines they had.</p>
+{{pr_table}}
+<p>The night’s trials (^ticket(890), ^ticket(891), ^ticket(681), ^ticket(791), ^ticket(792)) are branches, not PRs: each is off <code>hazeljs</code> or <code>hazel-jit</code> with its CI green, and all five are merged together on <code>trial/1126-night</code> (abf653a21d), waiting on Matthew’s word. So is the fix for ^ticket(896) (<code>trial/896-interp-param</code>).</p>
+
+<h2 id="diff">How the branch differs from dev</h2>
+<p><b>The branch is {{ahead}} commits ahead of <code>dev</code> and {{behind}} behind (on 11-23, {{ahead63}} and 0). It changes {{files}} files ({{files63}} then), adding {{added}} lines ({{added63}} then) and removing {{deleted}}. What grew is hazel-jit, {{jit63}} lines then and {{jit_lines}} now; the tests, {{test63}} then and {{test_lines}} now, most of them hazel-jit’s; and the library, {{lib63}} then and {{lib_lines}} now, with the converters by declared type.</b> The new files are mixed mode (<code>HazelJitMixed.re</code>) and the agreement tests (<code>Test_HazelJit.re</code>, <code>Test_HazelJit_Agree.re</code>); added lines touching <code>dev</code>’s own code went from {{own63}} to {{own_lines}}, among them mixed mode’s hooks in <code>Builtins.re</code> and <code>Transition.re</code>. The merge base is still 21da4ae66b; <code>dev</code> has two commits since (2bfdfd6aa6).</p>
+<figure class="chart">
+{{diff}}
+<figcaption>Lines the <code>hazeljs</code> branch adds over <code>dev</code>, by part: then 98c482395d (report 063’s <code>data/diff.json</code>), now b1b4e19286 (<code>git diff --numstat origin/dev...origin/hazeljs</code> on 2026-11-27), both over the merge base 21da4ae66b. The fonts are binary files and are not counted.</figcaption>
+</figure>
+{{diff_table}}
+<p><b>What changes for <code>dev</code>’s own app</b> is what report 063 listed (the interface font, the icons offline, error messages with term ids, module bodies, a labeled tuple’s fields put in its type’s order), and one thing more: mixed mode’s two hooks into the interpreter, which nothing in the app turns on yet (#2859’s description).</p>
+
+<h2 id="speed">Every game, four ways</h2>
+<p><b>The job that times the games when their rules change, hazeljs-examples’ three-way timing, covers five games, not every game, and neither of its Hazel ways is today’s package: it interprets with hazeljs 0.0.4 and runs each game’s <code>compiled.js</code>, compiled by hazel-jit on 11-20. On its latest run, compiled.js ran the five games {{tw_ih}} as fast as the interpreter (the geometric mean over {{tw_ih_n}} operations) and took {{tw_hp}} plain JavaScript’s time; whole games played by Hazel, {{tw_whp}}.</b> So it measures plain JavaScript’s lead over hazel-jit’s code of 11-20, and what that code pays for. Today’s jit, the package’s own, is measured on 14 games in <a href="#runs">a game’s own run of states</a>.</p>
+<p>Then: report 063’s run timed {{ops63}} operations of {{games63}} games four ways through hazeljs 0.0.11 itself: the jit {{ij63}} as fast as the interpreter, code compiled ahead of time {{ic63}}, and plain JavaScript {{cp63}} as fast again as code compiled ahead of time ({{cp63_n}} operations of the five games that had it).</p>
+<figure class="chart now">
+{{ways_now}}
+<figcaption>Run 46013126145 (hazeljs-examples’ three-way timing, commit 2026142, 2026-11-27; one runner, {{tw_machine}}, Node 22.23.5). Five games’ operations and, in italics, whole games played by Hazel, timed by <code>node/three-way.mjs</code>: hazeljs 0.0.4 interpreting the rules (grey), each game’s compiled.js (blue; the hazel-jit commit, on <code>trial/794-games-aot</code>, in each heading), the same compiled.js with no step budget and plain number arithmetic (ring), and plain.js (green). A log scale. Hover a mark for its time.</figcaption>
+</figure>
+<figure class="chart then">
+{{ways_then}}
+<figcaption>Report 063’s builds 1 to 4: hazeljs 0.0.11 (hazelgrove/hazel 98c482395d) interpreting, its jit, its compiler ahead of time, and plain JavaScript; package bench run 45247119864, 2026-11-23, one runner per game.</figcaption>
+</figure>
+<ul>
+<li><b>What the three-way job adds:</b> two variants of compiled.js that say what hazel-jit’s code pays for. Without its step budget, a call takes {{tw_bh}} of the time (the geometric mean over the operations); without the budget and with plain numbers instead of exact Ints, {{tw_np}}. So the budget and exact arithmetic are about a sixth of compiled.js’s time here, and most of the gap to plain JavaScript is elsewhere (<a href="#plain">against plain JavaScript</a>).</li>
+<li><b>Expert Minesweeper, then and now:</b> opening one cell took {{ms30_i}} interpreted, {{ms30_j}} through 0.0.11’s jit, {{ms30_c}} ahead of time and {{ms30_p}} in plain JavaScript on 11-23; on the three-way job, {{tw_ms30_i}} interpreted, {{tw_ms30_j}} in compiled.js and {{tw_ms30_p}} in plain JavaScript. The positions are each driver’s own, so compare ratios within a run, not times across.</li>
+<li><b>Whole games, interpreted:</b> {{tw_wih}} the time of compiled.js. A game of Go on 9 by 9, Hazel against Hazel, took 53.1 s interpreted and 13.1 ms compiled; Solitaire’s 300 random moves, 49.1 s and 7.6 ms. The longest whole games were not played interpreted.</li>
+</ul>
+<details><summary>Every operation of the three-way job</summary>
+{{ops_table}}
+</details>
+
+<h2 id="crossing">Where the jit’s time goes</h2>
+<p><b>Then, converting the values in and out took more of the jit’s time than the compiled code did, on {{light63}} of {{ops63}} operations. Now a value the page hands back unchanged crosses for nothing, and what still costs is a fresh one: on Gnome world’s pieces that take lists, the crossing alone is about half of a call on fresh inputs, and a call takes 7 to 9 times its JavaScript twin’s time.</b> Since 11-24 the converters go by declared type and remember what they made of each object, so a page that gives back what Hazel answered pays only for the parts that changed. Gnome world makes its animals’ surroundings new every step, so those lists cross again each time; ^report(64) timed that.</p>
+<figure class="chart now">
+{{cross_now}}
+<figcaption>^report(64)’s fresh inputs: Gnome world’s four pieces that take lists, µs a call, the middle of two runs (the ranges in the labels), in Node on the laptop, with the package’s library at hazelgrove/hazel 2c4a61560f, 0.0.14’s. The crossing alone is a Hazel function of the same type answering 0. Laptop numbers: read within a row.</figcaption>
+</figure>
+<figure class="chart then">
+{{cross_then}}
+<figcaption>Report 063’s builds 2 and 3 (hazeljs 0.0.11; run 45247119864): each operation’s jit time split into the compiled code’s own work (its time ahead of time) and the crossing, sorted by the crossing’s share.</figcaption>
+</figure>
+<p>A fresh list crosses cell by cell, and a constructor node by node, from the page’s <code>{tag, value}</code> to compiled code’s <code>{$c, $v}</code> (^report(65), conversion at the edges). ^ticket(681)’s trial remembers only lists of 16 elements or more, so a small list handed back again is converted again rather than looked up, and a large fresh one costs less: on fresh copies of each game’s run, Solitaire went from 30 to 8.6 ms and Mahjong solitaire from 33 to 12 (package bench run 45936503544, as ^ticket(681) records; not rechecked here).</p>
+
+<h2 id="converters">The converters, then and now</h2>
+<p><b>The jit’s time a call over the ahead-of-time code’s went from {{ct_first}} on 11-23 to {{ct_last}} on 11-25, as ^report(65) counted it over the 14 games’ runs: the converters by declared type brought the jit to about even, and changes to the compiled code itself (records as objects, loops, JS arguments, constructors once, modules by name) took it well below.</b> The yardstick is each game’s own compiled.js, compiled by the hazel-jit of 11-20 with converters a person wrote; under 1×, today’s jit, converting as it goes, beats that older code with its hand-written converters. On ^report(65)’s four-way run of the same day and library, used in the next section, it is {{rn_jan}}.</p>
+<figure class="chart">
+{{conv_now}}
+<figcaption>^report(65)’s table, build by build: the geometric mean over 14 games of the jit’s time a call over the game’s own compiled.js. The first row is on report 063’s repeated operations (build 2, run 45247119864), the rest on each game’s own run: builds 5 and 6 (a97b6f7465 and ca851b422d; runs 45452623490 and 45459402709), records as objects (f311f4e408, ^report(54)), hazeljs 0.0.13 (20febee548), loops and JS arguments (6d041e9769), and all of 11-25’s changes (2c4a61560f, 0.0.14’s library).</figcaption>
+</figure>
+<figure class="chart then">
+{{conv_then}}
+<figcaption>Report 063’s builds 2 and 5, each against build 3 (runs 45247119864 and 45424324608): each operation’s time through the jit over its time ahead of time, on a log scale, the day before (orange) and with the converters (green).</figcaption>
+</figure>
+
+<h2 id="runs">A game’s own run of states</h2>
+<p><b>On each game’s own run of states, 0.0.14’s jit takes {{rn_jan}} the time of the game’s compiled.js (the geometric mean over {{rn_n}} games), where build 5 took {{rn_ja5}} and build 6 {{rn_ja6}} on 11-24. It runs {{rn_ij}} as fast as the interpreter ({{rn5_ij}} then), and takes {{rn_jp}} plain JavaScript’s time, every one of the 14 games now having a plain.js.</b> A call through the jit was {{rn_jit_gain}} as fast as on 11-24 (the geometric mean, across runners): Gnome dig {{rn_dig}} a call, Mahjong solitaire {{rn_ms}}. Every answer was the same every way.</p>
+<figure class="chart">
+{{runs}}
+<figcaption>Now: ^report(65)’s four ways (hazeljs-examples <code>bench/4way</code>, run 45666570615, 2026-11-25, one runner a game, Node 22): interpreted (<code>Hazel.runProgram</code>), the jit (<code>Hazel.jitProgram</code>, library 2c4a61560f, the one 0.0.14 ships), the game’s own compiled.js, plain JS; {{rn_calls}} calls in all. The ring is the jit then: report 063’s build 5 (a97b6f7465, run 45452623490, 2026-11-24). The time a call, on a log scale.</figcaption>
+</figure>
+<ul>
+<li><b>Against compiled.js:</b> the jit did best in {{rn_best}}, and least well in {{rn_worst}}; it was the faster in every game.</li>
+<li><b>Fresh copies:</b> given a fresh copy of every argument, so that the converters remember nothing, the jit took {{rn_fresh}} its own time ({{rn5_fresh}} on 11-24).</li>
+<li><b>Interpreted:</b> in {{rn_frame_ok}} of the 14 games an interpreted call fits in a frame of 16.7 ms (60 fps); through the jit, the slowest game is {{rn_slowest}}.</li>
+<li><b>Plain JavaScript:</b> on the five games that had plain.js on 11-24, the jit’s time over plain JavaScript’s went from {{rn5_jp}} to {{rn_jp5}}.</li>
+</ul>
+<figure class="chart">
+{{runs_cmp}}
+<figcaption>Report 063’s builds 5 and 6 (runs 45452623490 and 45459402709) and 0.0.14’s library (run 45666570615): each game’s jit time a call over its compiled.js’s on the same runner, on a log scale; left of the dark line, the jit was the faster.</figcaption>
+</figure>
+
+<h2 id="build">Building the rules</h2>
+<p><b>Building a game’s rules takes as long as it did on 11-23: with the jit {{b_j_min}} to {{b_j_max}} on the 14 games, interpreted {{b_i_min}} to {{b_i_max}} (now over then, {{b_ratio}} and {{b_i_ratio}}, within the runners’ spread). It is nearly all Hazel’s type checker, not the jit: for Gnome world, the two open statics PRs (#2603, #2717) take a warm build from {{wb_h_warm}} s to {{wb_s_warm}} s, and its rules now ship compiled ahead of time, made from text in 188 ms.</b> Gnome dig: {{dig_bi63}} → {{dig_bin}} interpreted, {{dig_b63}} → {{dig_bn}} with the jit. The games’ rules are the same in both runs but Snake’s (hazeljs-examples a4a0a88 and 05894e1).</p>
+<figure class="chart">
+{{once}}
+<figcaption>Now (bars): run 45666570615 (2026-11-25, library 2c4a61560f). Then (ticks): report 063’s builds 1 and 2 (run 45247119864, 2026-11-23, hazeljs 0.0.11). One build of each game’s rules, each game on its own runner: <code>runProgram</code> interpreted (grey) and <code>jitProgram</code>, reading, checking, compiling and running the compiled modules (orange).</figcaption>
+</figure>
+<p>A CPU profile of Gnome world’s build (^report(64); hazeljs-examples’ build profile run 45935259272, the library of b1b4e19286 built unminified) puts 70% of it in Hazel’s statics, 28% in garbage collection, and 0.5% in hazel-jit’s compiler; the parser does not show. Labeled tuples weigh: <code>Typ.re</code> 31%, <code>LabeledTuple.re</code> 16%. On 11-27 Matthew asked why the rules take seconds when the jit is fast, and for an experiment, not to merge, with the open PRs that address it (^ticket(894)): on the branch every <code>let</code> analyzes its definition twice, a function-shaped one three times, so nested lets multiply; #2603 analyzes a <code>let</code> once unless it refers to itself, and #2717 a module binding once.</p>
+<figure class="chart now">
+{{world_build}}
+<figcaption>hazeljs-examples’ build timing run 46023240545 (2026-11-27, commit 2026142; one runner, three rounds, each a fresh process): <code>node/build-time.mjs</code>, <code>jitProgram</code> on Gnome world’s rules, the first build and the median of five more. hazeljs: hazelgrove/hazel b1b4e19286. The night’s trials: <code>trial/1126-night</code> abf653a21d. The statics PRs: <code>trial/1127-statics</code> ba32db7481, #2603’s 4eec302a50 and 0cd1cf0307 and #2717’s e3013b0360 on the night’s trials, ported to Core by hand. The bar runs to the smallest of the three rounds, the paler part to the largest. Ahead of time: measured in the browser pane on the laptop (^ticket(895)), not on the runner.</figcaption>
+</figure>
+<ul>
+<li><b>The first build</b> took {{wb_h_first}} s with the package’s branch, {{wb_n_first}} s with the night’s trials and {{wb_s_first}} s with the statics PRs on them; warm, {{wb_h_warm}}, {{wb_n_warm}} and {{wb_s_warm}} s. The statics trial gave the same answers on every Gnome world piece (fresh timing run 46023247014).</li>
+<li><b>Ahead of time:</b> Gnome world 0.0.147’s rules are compiled on GitHub (8.3 s there, 24 functions, 510 KB) into <code>world/rules-aot.json</code>; the page makes them from that text in 188 ms and is ready 1.7 s after opening, where its own first build at load took about 15 s cold (^report(64)). ^ticket(890)’s <code>Hazel.jitProgramSaved</code> would do the same for any page, keeping a build in the browser’s storage: ready 0.70 s after a reload, 13 to 19 ms to make the rules (in the pane, as ^ticket(890) records).</li>
+</ul>
+<details><summary>The one-time costs, game by game, then and now, and each runner’s processor</summary>
+{{once_table}}
+</details>
+
+<h2 id="plain">Against plain JavaScript</h2>
+<p><b>The whole game is now within a few percent: Gnome world’s speed run, {{sr_steps}} steps, took {{sr_h}} with every piece Hazel’s, compiled ahead of time, against {{sr_p}} with every piece in JavaScript, {{sr_pct}} longer, the two runs the same at 24 of 24 fingerprints. Piece by piece, Hazel takes {{pc_min}} to {{pc_max}} its JavaScript twin’s time; World.step {{ws_hx}} with the package’s library and {{ws_nx}} with the night’s trials.</b> On 11-23, report 063 had plain JavaScript about {{cp63}} as fast as hazel-jit’s code on the five board and card games, by operation; on the games’ runs, today’s jit takes {{rn_jp}} plain JavaScript’s time.</p>
+<p>A step of the speed run took {{sr_fps_h}} with Hazel’s pieces and {{sr_fps_p}} with JavaScript’s; the rules’ own calls were {{sr_rules}} of the {{sr_h}} ({{sr_rules_pct}}). The rest of each step is the page’s own JavaScript either way.</p>
+<figure class="chart now">
+{{step}}
+<figcaption>World.step through <code>jitProgram</code> against <code>world/plain.js</code>, µs a call: hazeljs-examples’ build timing run 46025727949 (2026-11-27, commit 5e43910; one runner, three rounds, the same answers at 20,000 of 20,000 steps each time). hazeljs: b1b4e19286. The night’s trials: abf653a21d. The bar runs to the smallest round, the paler part to the largest.</figcaption>
+</figure>
+<figure class="chart now">
+{{pieces}}
+<figcaption>^report(64)’s Then and now (<code>064/data/now.json</code>): Gnome world 0.0.148’s {{pc_n}} pieces, each through the package’s branch library (b1b4e19286) against its JavaScript twin, µs a call on the same inputs again, the median of seven batches (world save check run 46025057262 on 5e43910, one runner, as ^report(64) records it; not rechecked here).</figcaption>
+</figure>
+<ul>
+<li><b>The night’s trials</b> take World.step from {{ws_h}} µs to {{ws_n}} µs on the same inputs again ({{ws_gain}} less time; plain JavaScript {{ws_hp}} and {{ws_np}} µs in the same runs), and from {{ws_hf}} to {{ws_nf}} µs on fresh inputs ({{ws_gainf}} less; plain {{ws_hfp}} and {{ws_nfp}} µs). Most of it is ^ticket(891): an Int division as <code>Math.trunc(a / b) + 0</code>, exact and never −0, and arithmetic on numbers written out folded when compiling, so that <code>0 - 1</code> is no runtime call (division and folding alone: about 42% less time on one runner, run 45942901416, as ^ticket(891) records; not rechecked here).</li>
+<li><b>What hazel-jit’s code still pays for,</b> on the three-way job’s five games: the step budget and exact Ints together about a sixth of a call ({{tw_np}} of the time without both). Report 060 listed the others: lists as chains of cells, and tuples as arrays carrying their labels; since then records became plain objects and calls of named functions plain JavaScript calls (^report(65)).</li>
+<li><b>Fresh inputs:</b> World.step takes {{ws_hfx}} plain JavaScript’s time on fresh inputs with the package’s library and {{ws_nfx}} with the night’s trials, less than on the same inputs again, since fresh inputs cost plain JavaScript about as much more as they cost Hazel.</li>
+</ul>
+
+<h2 id="decide">What to decide before dev</h2>
+<p><b>On 2026-11-27 Matthew and Cyrus found hazel-jit looking good, maybe a couple of weeks from merging to <code>dev</code>, and the package ditto; for next week, a jit subcommand for Hazel’s command line (^ticket(899)) and a livelits PR with a tree of slides, “Livelit applications” (^ticket(900)).</b> Report 063’s ten questions, each with where it stands now, then four new ones.</p>
+<ol class="decide">
+<li><b>One PR, or its parts?</b> <i>Now:</i> two, by design: #2859 for hazel-jit and #2857 for the package, which merges it. The parts (#2711, #2719, #2814, #2837, #2842) are still open and still written for OCaml’s standard library; the options are as before (close them for #2857, land the font and icons first, or split #2857).</li>
+<li><b>Does hazel-jit belong on <code>dev</code>, and where?</b> <i>Now:</i> #2859 proposes it in <code>src/language/dynamics</code>, {{pr2859_add}} lines, 13 of them in <code>dev</code>’s own files, with nothing in the app turning it on. The meeting found it looking good. Open: whether the livelits line’s hazel-jit (#2817) is then rebased on it.</li>
+<li><b>How is agreement kept?</b> <i>Now:</i> in Hazel’s CI. #2859’s agreement tests run every evaluator test compiled where it compiles: of 289 checks, 234 compile, 211 give the interpreter’s answer and none differs; the other 23 end where the interpreter’s result is not a value (#2859’s description). The games’ own agreement stays in hazeljs-examples.</li>
+<li><b>Finished programs, or the editor too?</b> <i>Now:</i> both, in part. Mixed mode on #2859 compiles a program’s fully typed top-level functions and the interpreter runs the rest, holes included; holes cross into compiled code unopened (^ticket(769)). Polymorphic functions are not compiled in mixed mode (^ticket(897)).</li>
+<li><b>The values a page sees are an API: which shapes?</b> <i>Now:</i> plain values, converted by declared type and remembered by object; records are plain objects. ^ticket(890)’s <code>Hazel.jitProgramSaved</code> would add a saved program; handles are not started. Open: take <code>jitProgramSaved</code> into #2857, an API addition.</li>
+<li><b>Numbers.</b> <i>Now:</i> SInt is to have 64 bits everywhere; #2828 is still a draft, and the branch checks SInt at 32. On the night’s trials, ^ticket(792) reads an Int from JavaScript whole (it arrived as 32 bits) and a BigInt past 2<sup>53</sup>, and ^ticket(891) makes Int division exact and twice as fast.</li>
+<li><b>What <code>dev</code>’s users would see.</b> <i>Now:</i> as before: the interface font on every page, the icons offline; mixed mode’s hooks change nothing visible.</li>
+<li><b>Licenses.</b> <i>Now:</i> no license file changed since 11-23 (the diff); the Noun Project icons’ question is open.</li>
+<li><b>Who may embed Hazel?</b> <i>Now:</i> not revisited here.</li>
+<li><b>Publishing.</b> <i>Now:</i> 0.0.14 is on npm, from the <code>hazeljs</code> branch’s build at 2c4a61560f; 0.0.9 to 0.0.13 never were. Open: whether a version must come from a commit on <code>dev</code> once the branch is merged.</li>
+<li><b>New: a cast out of an unknown type nobody wrote.</b> Compiled code erases it, so <code>let f = fun x -> x + 1 in f(true)</code> answers 2 compiled where the interpreter stops at the failed cast; and the package compiles a program with static errors, where the editor compiles none (^ticket(898)). Options: a check at each such cast that stops the run, so the interpreter answers; and <code>compiled: false</code> for a program with static errors.</li>
+<li><b>New: polymorphic functions in mixed mode</b> (^ticket(897)): compile them, reading each call’s answer back by the type at its use, or leave them to the interpreter.</li>
+<li><b>New: the interpreter path’s Floats</b> (^ticket(896)): a function typed on its <code>let</code> took whole numbers as Ints where its type says Float, which stopped Gnome world’s interpreted speed run. The fix (one line in <code>HazelLibCore.param_type</code>, and a test) is on <code>trial/896-interp-param</code>, its CI pending: merge it into #2857?</li>
+<li><b>New: the night’s trials.</b> Merge <code>trial/1126-night</code>’s five (^ticket(792), ^ticket(681), ^ticket(890), ^ticket(891), ^ticket(791)) into #2859 and #2857, all or some, and publish a 0.0.15?</li>
+</ol>
+
+<h2 id="next">What next for speed</h2>
+<ol>
+<li><b>Convert by declared type, in one step.</b> <i>Done 11-24 (build 5); since then 0.91× → {{ct_last}} the ahead-of-time code’s time.</i></li>
+<li><b>Time the converters on a game’s own run of states.</b> <i>Done 11-24, and again on 11-25 with 0.0.14’s library (<a href="#runs">above</a>).</i></li>
+<li><b>Keep values compiled between calls.</b> <i>Not started.</i> Fresh inputs are now nearly all of the crossing’s cost (<a href="#crossing">above</a>); ^ticket(681)’s threshold softens it, and handles, or an interpreter that keeps compiled values, would remove it.</li>
+<li><b>Load time.</b> <i>Answered for Gnome world by compiling ahead of time (0.0.147), and for any page by ^ticket(890)’s trial; the statics PRs make building itself {{wb_gain}} as fast.</i> Next week’s jit subcommand for the CLI (^ticket(899)) would make the ahead-of-time files the games ship.</li>
+<li><b>The costs over plain JavaScript.</b> <i>In part:</i> loops, JS arguments, constructors once and modules by name (0.0.14), and Int division and folding (^ticket(891), on the trials). World.step still takes {{ws_nx}} plain JavaScript’s time with them; the step budget and exact Ints are about a sixth of compiled code’s time.</li>
+<li><b>Agreement in CI.</b> <i>Done in #2859.</i> The cast check of ^ticket(898) comes before more speed.</li>
+<li><b>New: the statics.</b> #2603 and #2717 are open PRs on <code>dev</code>; under the package’s branch they make Gnome world’s warm build {{wb_gain}} as fast. Porting them to Core and landing them on <code>dev</code> is Matthew’s and Cyrus’s call.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<table class="nums"><thead><tr><th>build</th><th class="l">what</th><th class="l">where</th></tr></thead><tbody>
+<tr><td>Then · builds 1 to 6</td><td class="l">report 063’s: hazeljs 0.0.11 interpreted, its jit, ahead of time, plain JS; the converters (build 5), the memos as links (build 6)</td><td class="l">hazelgrove/hazel 98c482395d, a97b6f7465, ca851b422d; runs 45247119864, 45424324608, 45452623490, 45459402709; <code>063/data/</code></td></tr>
+<tr><td>hazeljs 0.0.14</td><td class="l">the package on npm (2026-11-25); its jit on each game’s own run</td><td class="l">hazelgrove/hazeljs f56faf9; <code>hazel-lib.js</code> from hazelgrove/hazel 2c4a61560f; ^report(65)’s run 45666570615 (<code>bench/4way</code>)</td></tr>
+<tr><td>The three-way job</td><td class="l">hazeljs 0.0.4 interpreting; each game’s compiled.js (hazel-jit 5405a2e87d, f2cc549b3a, 70d0178872, d15466c7b1, 11-20); plain.js</td><td class="l">matthewhammer/hazeljs-examples 2026142, run 46013126145</td></tr>
+<tr><td>The package’s branch</td><td class="l">0.0.14 and holes in mixed mode</td><td class="l">hazelgrove/hazel b1b4e19286 (<code>hazeljs</code>, #2857), build.hazel.org/hazeljs</td></tr>
+<tr><td>The night’s trials</td><td class="l">^ticket(792), ^ticket(681), ^ticket(890), ^ticket(891), ^ticket(791) together; not merged</td><td class="l"><code>trial/1126-night</code> abf653a21d</td></tr>
+<tr><td>The statics experiment</td><td class="l">#2603 and #2717 on the night’s trials; not to merge (^ticket(894))</td><td class="l"><code>trial/1127-statics</code> ba32db7481</td></tr>
+</tbody></table>
+<ul>
+<li><b>The three-way job’s numbers</b> were read from its job’s log (<code>gh api</code>; the artifact was not downloaded) into <code>067/data/threeway.json</code>. Its driver times a call in batches and takes the median, hazeljs at least 3 times and for 1.5 s, the others at least 30 times and for 0.3 s; a whole game is one play.</li>
+<li><b>Gnome world’s numbers</b> (build timing 46023240545, World.step 46025727949, the speed run 46027689744, the statics trial’s same answers 46023247014) were read from each run’s log on 2026-11-27, and are in <code>067/data/world.json</code> with their sources. ^report(64)’s fresh inputs (laptop) and pieces (<code>064/data/now.json</code>) are its own, not rechecked.</li>
+<li><b>The runs</b> are ^report(65)’s data (<code>065/data/games-4way/</code>), read as they are; the converters over time are ^report(65)’s table (<code>065/data/tables.json</code>).</li>
+<li><b>The diff and the PRs:</b> <code>git diff --numstat origin/dev...origin/hazeljs</code> and <code>gh pr view</code> on 2026-11-27, in <code>067/data/diff.json</code> and <code>067/data/prs.json</code>; npm’s versions from <code>npm view hazeljs time</code>.</li>
+<li><b>The machines differ</b> between runs, and within report 063’s and ^report(65)’s runs between games. Each figure’s ratios are within one runner; times across runs carry the runners’ spread (in report 063 the same ahead-of-time code took {{cv_c_rng}} times its time from one day to the next).</li>
+<li><b>Not measured here:</b> the night’s trials on the 14 games’ runs (only World.step and Gnome world’s build were timed with them); the three oracles with 0.0.14; and today’s jit on 063’s repeated operations.</li>
+</ul>
+</main></body>
+</html>

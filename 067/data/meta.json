@@ -1,0 +1,23 @@
+{
+ "title": "Hazel as an npm Package, Then and Now",
+ "blurb": "Report 063's questions and charts, asked again four days later of hazeljs 0.0.14, the first version on npm with hazel-jit. On each game's own run of states, the package's jit now takes 0.32 of the time of each game's compiled.js, where it took 0.91 on 11-24 and, on 11-23's repeated operations, 7.50 times, and runs 4,148 times as fast as the interpreter. Gnome world's whole speed run takes 6% longer with every piece Hazel's than with every piece in JavaScript; World.step alone 5.3 times plain JavaScript's time, 4.0 with the night's trials. Building the rules is still seconds, nearly all Hazel's type checker: two open statics PRs bring Gnome world's warm build from about 3.2 s to 0.33 s, and its rules now ship compiled ahead of time. Then the decisions before dev, as the 11-27 meeting left them.",
+ "builds": {
+  "package": "hazeljs 0.0.14 (hazelgrove/hazeljs f56faf9), on npm since 2026-11-25 22:18 UTC, its hazel-lib.js from hazelgrove/hazel 2c4a61560f (branch hazeljs, #2857)",
+  "hazeljs branch": "hazelgrove/hazel b1b4e19286 (2026-11-26): 0.0.14's build plus holes in mixed mode (#2859, ticket 769); build.hazel.org/hazeljs",
+  "night": "trial/1126-night abf653a21d (tickets 792, 681, 890, 891, 791), not merged",
+  "statics": "trial/1127-statics ba32db7481 (#2603 and #2717 on the night's trials; ticket 894), not to merge",
+  "then": "^report(63)'s builds 1 to 6 (hazeljs 0.0.11, hazelgrove/hazel 98c482395d, a97b6f7465, ca851b422d), its data in 063/data"
+ },
+ "runs": {
+  "three-way": "hazeljs-examples three-way timing, run 46013126145 (commit 2026142, 2026-11-27), one runner, AMD EPYC 9V45 96-Core Processor: hazeljs 0.0.4 interpreting, each game's compiled.js (hazel-jit 5405a2e87d, f2cc549b3a, 70d0178872, d15466c7b1 on trial/794-games-aot, 2026-11-20), plain.js",
+  "four ways on runs": "^report(65): hazeljs-examples bench/4way, run 45666570615 (2026-11-25), one runner a game, Hazel.jitProgram with the library of 2c4a61560f",
+  "build timing": "hazeljs-examples 'build timing' run 46023240545 (commit 2026142, 2026-11-27 15:15 UTC): node/build-time.mjs, Gnome world's rules built and compiled with Hazel.jitProgram, the three libraries interleaved on one runner, three rounds, each a fresh process: the first build, then the median of five more",
+  "World.step": "hazeljs-examples 'build timing' run 46025727949 (commit 5e43910, 2026-11-27 15:31 UTC): node/step-time.mjs, World.step through Hazel.jitProgram against world/plain.js, one runner, three rounds; the same as plain.js at 20,000 of 20,000 steps each time",
+  "speed run": "hazeljs-examples 'world speed run, three ways' run 46027689744 (commit b085172, 2026-11-27 15:45 UTC): node/world-speedrun.mjs, Gnome world in headless Chrome on one runner (AMD EPYC 7763), seed 7",
+  "fresh": "^report(64) #fresh: each piece's time a call on fresh copies of its inputs and the crossing alone (a Hazel function of the same type answering 0), two runs in Node on the laptop, the hazeljs library at hazel 2c4a61560f; ranges over the two runs"
+ },
+ "measures": {
+  "usPerCall": "µs a call on a game's own run of states: the run's calls timed and summed, over the number of calls",
+  "ms": "the three-way job: ms a call, the median of batches (as many calls as take at least 1 ms); a whole game: its total"
+ }
+}
