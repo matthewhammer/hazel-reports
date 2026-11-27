@@ -6,7 +6,7 @@ import json, os
 R = lambda n: f'<code class="ref"><b>^report(</b>{n}<b>)</b></code>'
 RL = lambda n: f'<a href="../{n:03d}/">{R(n)}</a>'
 T = lambda n: f'<code class="ref"><b>^ticket(</b>{n}<b>)</b></code>'
-UPDATED = "2026-11-27 07:11 MST"
+UPDATED = "2026-11-27 08:09 MST"
 AS_OF = "2026-11-27 07:05 MST (git, gh, npm and the dashboard read then)"
 
 jit = {
@@ -49,10 +49,10 @@ npm = {
         f"<li>{T(681)} trial/681-memo-big: the converters stop remembering small conversions. On fresh copies, Solitaire 30 to 8.6 ms and Mahjong solitaire 33 to 12; on the same objects again most within 5%, a few slower (Solitaire 3.32 to 3.79 ms), and Minesweeper slower on fresh copies (13 to 16 ms).</li>"
         f"<li>{T(792)} trial/792-big-ints: an Int past 2^31 from JS arrives whole (a safe whole number to 2^53, a BigInt past it).</li>"
         f"<li>{T(791)} trial/791-labels-linear: two quadratic labeled-tuple helpers in Hazel's statics made linear; a build about 9% faster (warm 4.10–4.20 s to 3.77–3.79). LabeledTuple.re is shared Hazel code.</li></ul></li>"
-        f"<li><b>Finding:</b> building a page's rules is Hazel's statics, not the jit. A CPU profile of Gnome world's build puts 70% of it in Statics.re and 28% in garbage collection; hazel-jit's compiling is 0.5% ({RL(64)}). Together the trials make the build about 8% faster (the figure).</li>"
+        f"<li id=\"build-cost\"><b>Why a build takes seconds when the jit is fast</b> (Matthew's question, 11-27): the jit makes the rules <i>run</i> fast (Gnome world's step takes microseconds); <i>building</i> them is a one-time cost, and nearly all of it comes before hazel-jit compiles anything, as Hazel parses the rules and type-checks them. A CPU profile of Gnome world's build ({RL(64)}) puts 70% of it in the statics (Statics.re, inclusive), 31% in operations on types (Typ.meet, the common type of two branches, and matching labeled tuples' fields by name), 16% in LabeledTuple.re, 14% in the map of each term's information, and 28% in garbage collection (the parts overlap: each counts what it calls); the parser does not show, and hazel-jit's compiling is 0.5%, about 0.1 s. The statics are the editor's, built for live feedback: they record every term's type and context for the cursor's inspector, which a compile does not need. And Gnome world's rules are heavy in records (the gnome has 17 named fields), each field matched by name in every function; the birds' module, with the most and largest records, costs about three times the world's per character. In Node on a GitHub runner a build is about 5 s; in a browser on Matthew's laptop, 13.6 to 16.5 s this week. Together the trials make it about 8% faster (the figure); kept rules (890) skip it on a reload.</li>"
         f"</ul>"
     ),
-    "meeting": "Take the four trials into hazeljs (#2857) and publish 0.0.15? <code>jitProgramSaved</code> is an addition to the package's API. Should 791 go to dev as a small PR of its own, since LabeledTuple is shared code? And who on the team reviews the package's API and packaging, as Cyrus asked on 11-19?",
+    "meeting": "Take the four trials into hazeljs (#2857) and publish 0.0.15? <code>jitProgramSaved</code> is an addition to the package's API. Should 791 go to dev as a small PR of its own, since LabeledTuple is shared code? And who on the team reviews the package's API and packaging, as Cyrus asked on 11-19? Since a build is nearly all the statics: is a build-only mode of the statics (no per-term information for the editor) worth doing, given they are shared code?",
 }
 
 backburner = {
