@@ -48,7 +48,7 @@ PLAN = [
     dict(t=757, short="Int and Nat exact", name="Int and Nat exact, as the interpreter's", sec="numbers", stage=4, st="done",
          status="On the branch: a JS number while it is a safe integer, a BigInt past that. Measured on the Witch."),
     dict(t=758, short="overflow: a stuck term", name="Overflow stops at a stuck term", sec="overflow", stage=4, st="done",
-         status="On the branch: SInt is 32 bits everywhere, each result checked in the interpreter and hazel-jit (decided 11-16). The interpreter's half is on a PR to dev, hazelgrove/hazel#2828: CI green, its tests reaching 96% of the changed lines; waiting on review."),
+         status="SInt has 64 bits everywhere (decided 11-19; 32 from 11-16), each result checked: the interpreter's on a PR to dev, hazelgrove/hazel#2828 (a Bigint checked to 64 bits; CI green, waiting on review), compiled code's on the prototype #2817 (a number while safe, a BigInt past it). hazel-jit's own PR #2859 still checks 32 bits, as dev's SInt is OCaml's int, until #2828 lands (ticket 781)."),
     dict(t=759, short="divide by zero: a stuck term", name="Divide by zero stops at a stuck term", sec="errors", stage=4, st="done",
          status="On the branch: the compiled run stops, and the interpreter makes the stuck term."),
     dict(t=760, short="holes, the stepper: the interpreter's", name="Holes and the stepper stay with the interpreter", sec="rules", stage=4, st="done",
