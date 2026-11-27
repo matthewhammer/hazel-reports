@@ -282,7 +282,7 @@ BLURB = ("Which parts of Gnome world are Hazel and which JavaScript, then (0.0.1
   "the wind, and the bunnies', frogs' and birds' minds, each moved in its own module and checked against the JavaScript it replaced at "
   "every step. Hazel's code nearly doubled (40,213 characters to 74,118), but the JavaScript grew too, mostly drawing, so its share of "
   "the code went only from 8% to 10%. In Hazel, compiled by hazel-jit, each piece takes 1.9 to 6.6 times its JavaScript's time a call, "
-  "at most about 4 µs; and since 0.0.147 the rules are compiled ahead of time, ready in 0.2 s instead of 4 to 16.")
+  "at most about 4 µs, and the whole game, every piece Hazel's, about 6% longer than every piece in JavaScript; and since 0.0.147 the rules are compiled ahead of time, ready in 0.2 s instead of 4 to 16.")
 page = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -302,7 +302,7 @@ page = f'''<!doctype html>
 
 <h2 id="outline">Outline</h2>
 <ol class="outline">
-<li><a href="#now">Then and now</a>: at 0.0.103 Hazel decided 2 of the 12 parts of a step; at 0.0.148, 7 of 16, every way the gnome moves and the animals’ minds among them. Its code nearly doubled (40,213 characters to 74,118); the JavaScript grew too, so Hazel’s share of the code went only from 8% to 10%. In Hazel each piece takes 1.9 to 6.6 times its JavaScript twin’s time a call, at most about 4 µs.</li>
+<li><a href="#now">Then and now</a>: at 0.0.103 Hazel decided 2 of the 12 parts of a step; at 0.0.148, 7 of 16, every way the gnome moves and the animals’ minds among them. Its code nearly doubled (40,213 characters to 74,118); the JavaScript grew too, so Hazel’s share of the code went only from 8% to 10%. In Hazel each piece takes 1.9 to 6.6 times its JavaScript twin’s time a call, at most about 4 µs, and the whole game, every piece Hazel’s, about 6% longer than every piece in JavaScript.</li>
 <li><a href="#split">The split</a>: Hazel decides what the world is, how the gnome moves in every way it can, and what the boulders and the animals do; JavaScript keeps the state, takes the input, moves the water and the rest, and draws.</li>
 <li><a href="#step">One step of the world</a>: Hazel is called for the gnome, the boulders, picking things up, the wind and each animal in view, and every sixth step for each beaver; JavaScript does the rest of the step.</li>
 <li><a href="#events">Event handling</a>: every input is JavaScript’s; Hazel sees one record a step and answers with one.</li>

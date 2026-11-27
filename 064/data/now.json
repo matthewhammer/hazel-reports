@@ -120,32 +120,20 @@
  "speedrun": {
   "rows": [
    [
-    "11-25, “plain”: 3 rules in JavaScript",
+    "every piece in JavaScript (⚡)",
     "js",
-    24.7,
-    " · 44,933 steps, 0.55 ms a step"
+    32.27,
+    " · 46,276 steps, 0.697 ms a step"
    ],
    [
-    "11-25, Hazel’s rules, hazel-jit",
+    "every piece Hazel’s, ahead of time",
     "hz",
-    25.5,
-    " · 0.57 ms a step; in the rules 0.34 s, 1.3%"
-   ],
-   [
-    "11-27, “plain”: 3 rules in JavaScript",
-    "js",
-    26.37,
-    " · 46,276 steps, 0.570 ms a step"
-   ],
-   [
-    "11-27, Hazel’s rules, ahead of time",
-    "hz",
-    27.22,
-    " · 46,270 steps, 0.588 ms a step; in the rules 0.90 s, 3.3%"
+    34.11,
+    " · 46,276 steps, 0.737 ms a step; in the rules 1.22 s, 3.6%"
    ]
   ],
-  "lead": "Not yet a comparison with plain JavaScript: the speed run’s “plain” way put only three rules in JavaScript (the gnome’s step, the beavers’, the river’s level) and left every other piece Hazel’s, on 11-25 as on 11-27; it is being run again with the page’s own ⚡, every piece in JavaScript (^ticket(896)).",
-  "body": "What the runs do show: with every piece Hazel’s, the whole speed run took 27.2 s on 11-27 (588 µs a step), 0.90 s of it in the rules (3.3%), the birds alone 261,889 calls and 0.36 s; on 11-25, before the animals moved, 25.5 s, 0.34 s in the rules (1.3%). The rest of each step is the page’s JavaScript: the water, the rest of the world, the speed run’s own way-finding. The interpreter’s way did not start on 0.0.148: a library bug, found and fixed on a trial branch (^ticket(896): the interpreter’s calls of a function typed on its let took whole numbers as Ints where Floats are declared, and stopped).",
-  "cap": "Gnome world’s speed run in headless Chrome on GitHub’s machines (<code>node/world-speedrun.mjs</code>): 11-25 at <code>bbfde10</code> (^report(65)) and 11-27 at 0.0.148, <code>5e43910</code> (run 46025660460). Its “plain” bars are not plain JavaScript: only the gnome’s step, the beavers’ and the river’s level were swapped; the other pieces stayed Hazel’s (^ticket(896)). The worlds of the two days differ, so compare within a day."
+  "lead": "The whole game takes about 6% longer with every piece Hazel’s than with every piece in JavaScript: Gnome world’s speed run, 46,276 steps, took 34.1 s against 32.3 s on one runner (737 against 697 µs a step), the two runs the same at every one of their 24 fingerprints.",
+  "body": "That is about 40 µs a step. The rules’ own calls are 1.22 s of the 34.1 (3.6%), the birds 0.47 s of it in 260,120 calls; World.step alone, replayed on 4,627 of its calls, takes 2.36 µs compiled against 0.69 in plain JavaScript (and 6.3 ms interpreted). The rest of each step is the page’s JavaScript in both runs: the water, the rest of the world, the speed run’s own way-finding. The interpreter’s whole run did not start on the shipped library: its calls of a function typed on its let took whole numbers as Ints where Floats are declared, and stopped; a fix waits on a trial branch (^ticket(896)). Until this run, the speed run’s “plain” way swapped only the gnome’s step, the beavers’ and the river’s level into JavaScript and left every other piece Hazel’s, so ^report(65)’s comparison of 11-25 (25.5 s against 24.7) set Hazel against mostly Hazel for the boulders, picking up and the wind; now the plain way is the page’s own ⚡.",
+  "cap": "Gnome world’s speed run, the whole game from a fresh world to its end, in headless Chrome on one GitHub runner (<code>node/world-speedrun.mjs</code>, run 46027689744, the game of 0.0.148): every piece in JavaScript, as ⚡ in ⚙️ Advanced has it (world/plain.js and the page’s twins), against every piece Hazel’s, compiled ahead of time with the night’s trials. The time is the steps’, without drawing. Runner to runner the times move (the same Hazel run took 27.2 s on another this morning), so compare within a run."
  }
 }
