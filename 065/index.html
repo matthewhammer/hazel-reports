@@ -165,7 +165,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-27 19:29 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-28 08:19 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -283,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <section class="inpr"><h2 id="exec">Executive summary<a class="anchor" href="#exec" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="exec" title="copy this section's address">copy link</button></h2>
 <p class="tag">In the PR’s description</p>
-<ul><li><b>What it is.</b> hazel-jit compiles a complete Hazel program to JavaScript and runs that in place of the interpreter. Where it can&#x27;t (a hole, a test, an error the interpreter would show), the interpreter runs the program as it does today, so an answer never changes.</li><li><b>Why.</b> Speed, toward 60 frames a second for small edits. Compiled ahead of time, the games of hazeljs-examples run 2,392 times as fast as on the interpreter (the geometric mean over 45 operations in 17 games). Gnome dig&#x27;s step takes 82 ms on the interpreter and 0.28 ms through the jit.</li><li>**What it changes in <code>dev</code>.** It adds new files, and 13 lines to two of <code>dev</code>&#x27;s, <code>Builtins.re</code> and <code>Transition.re</code>, for mixed mode. Nothing in the app turns hazel-jit on yet: the editor, the evaluator and the stepper run as before.</li><li><b>How it is checked.</b> Every evaluator test also runs compiled, where it compiles, and must give the interpreter&#x27;s answer. Of the 289 checks, 234 compile; 211 of those give the interpreter&#x27;s answer and none differs. The other 23 end where the interpreter&#x27;s result is not a value, which the sweep doesn&#x27;t compare. hazel-jit also has 13 tests of its own.</li><li><b>Who uses it.</b> The hazeljs npm package (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>): its <code>Hazel.jit</code> and <code>Hazel.compile</code> are hazel-jit. And the games of hazeljs-examples, which keep their rules compiled ahead of time.</li><li><b>What to review.</b> The two hooks into the interpreter; the shapes compiled code gives values, which pages that keep compiled code depend on; and the list of what is left to the interpreter.</li></ul>
+<ul><li><b>What it is.</b> hazel-jit compiles a complete Hazel program to JavaScript and runs that in place of the interpreter. Where it can&#x27;t (a hole, a test, an error the interpreter would show), the interpreter runs the program as it does today, so an answer never changes.</li><li><b>Why.</b> Speed, toward 60 frames a second for small edits. Compiled ahead of time, the games of hazeljs-examples run 2,392 times as fast as on the interpreter (the geometric mean over 45 operations in 17 games). Gnome dig&#x27;s step takes 82 ms on the interpreter and 0.28 ms through the jit.</li><li>**What it changes in <code>dev</code>.** It adds new files, and 13 lines to two of <code>dev</code>&#x27;s, <code>Builtins.re</code> and <code>Transition.re</code>, for mixed mode. Nothing in the app turns hazel-jit on yet: the editor, the evaluator and the stepper run as before.</li><li><b>How it is checked.</b> Every evaluator test also runs compiled, where it compiles, and must give the interpreter&#x27;s answer. Of the 289 checks, 234 compile; 211 of those give the interpreter&#x27;s answer and none differs. The other 23 end where the interpreter&#x27;s result is not a value, which the sweep doesn&#x27;t compare. Mixed mode is held to the interpreter the same way, as are 2,000 random programs, and a floor fails the build if fewer programs compile. hazel-jit also has 13 tests of its own.</li><li><b>Who uses it.</b> The hazeljs npm package (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>): its <code>Hazel.jit</code> and <code>Hazel.compile</code> are hazel-jit. And the games of hazeljs-examples, which keep their rules compiled ahead of time.</li><li><b>What to review.</b> The two hooks into the interpreter; the shapes compiled code gives values, which pages that keep compiled code depend on; and the list of what is left to the interpreter.</li></ul>
 </section>
 
 <section class="inpr"><h2 id="eng">Engineering summary<a class="anchor" href="#eng" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="eng" title="copy this section's address">copy link</button></h2>
@@ -331,14 +331,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <section class="inpr"><h2 id="agree">Checked against the interpreter, in CI<a class="anchor" href="#agree" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="agree" title="copy this section's address">copy link</button></h2>
 <p class="tag">In the PR’s description</p>
-<p>The interpreter is the specification, and CI holds the jit to it on every push. In the Fast checks job, a program whose compiled answer differs from the interpreter&#x27;s fails the build.</p>
-<ul><li><b>The sweep, over every evaluator program</b> (<code>test/Test_HazelJit_Agree.re</code>, hooked into <code>Test_Evaluator_Prelude.evaluation_test</code>). Each program of the evaluator&#x27;s own tests is elaborated, run by the interpreter, and, where hazel-jit compiles it, run compiled. The two answers are compared shape by shape: numbers by value (a float within a relative 1e-9); lists, tuples, labels and constructors by structure; a function only as a function. Where the interpreter stops at an error (a division by zero), the compiled run must stop at the same one. Where its answer is left indeterminate, the compiled run must stop as indeterminate.</li><li><b>The agreement tests</b> (<code>test/Test_HazelJit.re</code>). These are written by hand, each run both ways and compared the same way. They cover the language&#x27;s forms, big Ints, invalid operations, the string builtins, partial and mutual functions, the step limit, labels and Unicode, plus values carried back and diffs.</li><li><b>Mixed mode, swept the same way.</b> For every evaluator program with a top-level function of a declared type, those functions are compiled and the rest interpreted, and the answer is compared with the interpreter&#x27;s alone.</li></ul>
-<p>On this branch&#x27;s latest push (664c49c49a, CI run 46079274764):</p>
-<div class="tw"><table><thead><tr><th>The sweep</th><th>programs</th></tr></thead><tbody><tr><td>evaluator checks</td><td>289</td></tr><tr><td>compiled and run</td><td>234</td></tr><tr><td>the same answer</td><td>211</td></tr><tr><td>a different answer, or the compiled run threw</td><td>0</td></tr><tr><td>the interpreter&#x27;s answer is not a value (an error or a stuck term), checked as above</td><td>23</td></tr><tr><td>not compiled: holes 15, type holes 10, free variables 24, other forms 6</td><td>55</td></tr><tr><td>mixed mode: programs with a function compiled, all the same answer</td><td>6 (2,263 calls compiled, 8 fell back)</td></tr></tbody></table></div>
+<p>The interpreter is the specification, and CI holds the jit to it on every push: a program whose compiled answer differs from the interpreter&#x27;s fails the build.</p>
+<ul><li><b>The sweep, over every evaluator program</b> (<code>test/Test_HazelJit_Agree.re</code>, hooked into <code>Test_Evaluator_Prelude.evaluation_test</code>). Each program of the evaluator&#x27;s own tests is elaborated, run by the interpreter, and, where hazel-jit compiles it, run compiled. The two answers are compared shape by shape: numbers by value (a float within a relative 1e-9); lists, tuples, labels and constructors by structure; a function only as a function. Where the interpreter stops at an error (a division by zero), the compiled run must stop at the same one. Where its answer is left indeterminate, the compiled run must stop as indeterminate.</li><li><b>Mixed mode, swept the same way.</b> For every evaluator program with a top-level function of a declared type, those functions are compiled and the rest interpreted. A different answer from the interpreter&#x27;s, or a run or rewrite that raises, fails that program&#x27;s test.</li><li><b>Random programs</b> (Full tests). The generator of the evaluator&#x27;s &quot;Evaluator does not crash&quot; property (<code>QCheck_Util.arb_exp</code>) makes 2,000 programs at a fixed seed, so a failure can be reproduced. Each one with no static error that the interpreter finishes within 10,000 steps is compiled where it compiles, run, and compared as the sweep compares.</li><li><b>A floor on what compiles.</b> At least 234 of the evaluator&#x27;s programs must compile, and at least 6 in mixed mode, so a change that leaves more programs to the interpreter fails the build. The floor is checked when the whole sweep has run.</li><li><b>The agreement tests</b> (<code>test/Test_HazelJit.re</code>). These are written by hand, each run both ways and compared the same way. They cover the language&#x27;s forms, big Ints, invalid operations, the string builtins, partial and mutual functions, the step limit, labels and Unicode, plus values carried back and diffs.</li></ul>
+<p>On this branch (31c7c89de1, CI run 46157399352):</p>
+<div class="tw"><table><thead><tr><th></th><th>programs</th></tr></thead><tbody><tr><td>evaluator checks (Fast checks; Full tests 290)</td><td>289</td></tr><tr><td>compiled and run (the floor: 234)</td><td>234</td></tr><tr><td>the same answer</td><td>211</td></tr><tr><td>a different answer, or the compiled run threw</td><td>0</td></tr><tr><td>the interpreter&#x27;s answer is not a value (an error or a stuck term), checked as above</td><td>23</td></tr><tr><td>not compiled: holes 15, type holes 10, free variables 24, other forms 6</td><td>55</td></tr><tr><td>mixed mode: programs with a function compiled, all the same answer</td><td>6 (2,263 calls compiled, 8 fell back)</td></tr><tr><td>random programs made; with no static error; finished by the interpreter</td><td>2,000; 80; 80</td></tr><tr><td>random programs compiled; the same answer; not a value, not compared</td><td>61; 60; 1</td></tr></tbody></table></div>
 <p><b>What it does not hold the jit to yet:</b></p>
-<ul><li><b>Ill-typed programs.</b> Thirty tests are listed as known (<code>known_not_a_value</code>): the interpreter stops at a failed cast, while compiled code, its types erased, runs on. The editor compiles no program with a static error; see *Types: errors, type holes and unknowns*.</li><li><b>What is not compiled is not compared.</b> A program the jit does not compile (55 of 289) runs on the interpreter, so it cannot disagree, but a change that compiles less goes unnoticed.</li><li><b>Mixed mode&#x27;s sweep reports and does not fail the build.</b></li><li><b>Only the evaluator&#x27;s programs.</b> The games&#x27; rules in hazeljs-examples are checked in that repository&#x27;s CI against hand-written plain JavaScript twins: each piece of Gnome world against its twin, the speed run&#x27;s world state step for step, and every game&#x27;s answers three ways (an older interpreter, the jit&#x27;s code compiled ahead of time, plain JavaScript). Plain JavaScript there is a second witness for the games and the baseline for speed, not the specification.</li></ul>
+<ul><li><b>Ill-typed programs.</b> Thirty tests are listed as known (<code>known_not_a_value</code>): the interpreter stops at a failed cast, while compiled code, its types erased, runs on. The editor compiles no program with a static error; see *Types: errors, type holes and unknowns*.</li><li><b>Programs that are not compiled.</b> A program the jit does not compile runs on the interpreter, so it cannot disagree; the floor keeps that number from growing.</li><li><b>Few random programs.</b> The generator makes mostly ill-typed programs: of 2,000, 80 had no static error and 61 compiled.</li><li><b>Only the evaluator&#x27;s programs.</b> The games&#x27; rules in hazeljs-examples are checked in that repository&#x27;s CI against hand-written plain JavaScript twins: each piece of Gnome world against its twin, the speed run&#x27;s world state step for step, and every game&#x27;s answers three ways (an older interpreter, the jit&#x27;s code compiled ahead of time, plain JavaScript). Plain JavaScript there is a second witness for the games and the baseline for speed, not the specification.</li></ul>
 <p><b>Systematically, from here:</b></p>
-<p>1. Mixed mode&#x27;s sweep fails the build on a different answer, as the jit&#x27;s does. 2. Random programs. The evaluator&#x27;s &quot;Evaluator does not crash&quot; property already generates 10,000 programs a run (<code>QCheck_Util.arb_exp</code>). The same generator, with each program run both ways where both finish, compared as the sweep compares, would cover the forms the hand-written tests miss. 3. A floor on what compiles: the sweep&#x27;s compiled count (234 of 289) may only go up, so a change that leaves more programs to the interpreter fails. 4. A check where a value leaves an unknown type for a ground one, so the thirty ill-typed programs agree and come off the known list. 5. The games&#x27; rules and their recorded runs as test programs here, each answer against the interpreter&#x27;s.</p>
+<p>1. More random programs that type: 10,000 a run, as &quot;Evaluator does not crash&quot; runs, or a generator of well-typed programs. 2. A check where a value leaves an unknown type for a ground one, so the thirty ill-typed programs agree and come off the known list. 3. The games&#x27; rules and their recorded runs as test programs here, each answer against the interpreter&#x27;s.</p>
 </section>
 
 <section class="inpr"><h2 id="differs">Where it differs from the interpreter on <code>dev</code><a class="anchor" href="#differs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="differs" title="copy this section's address">copy link</button></h2>
@@ -527,7 +527,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 
 <h2 id="github">The text for GitHub<a class="anchor" href="#github" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="github" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
-<p><b>The whole description as GitHub will show it, 4,208 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
+<p><b>The whole description as GitHub will show it, 4,307 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
 <p><button class="copy-md" type="button" onclick="(async b=>{try{await navigator.clipboard.writeText(document.getElementById('pr-md').textContent);b.textContent='Copied'}catch(e){b.textContent='Select the text below instead'}})(this)">Copy the description’s Markdown</button></p>
 <details><summary>The Markdown</summary>
 <pre class="md">🤖 hazel-jit, for `dev`: a compiler from Hazel to JavaScript, with the tests that hold it to the interpreter&#x27;s answers. This is the one PR that tracks the jit. The npm package&#x27;s branch, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> (`hazeljs`), merges it rather than keeping a copy of its own.
@@ -537,7 +537,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 - **What it is.** hazel-jit compiles a complete Hazel program to JavaScript and runs that in place of the interpreter. Where it can&#x27;t (a hole, a test, an error the interpreter would show), the interpreter runs the program as it does today, so an answer never changes.
 - **Why.** Speed, toward 60 frames a second for small edits. Compiled ahead of time, the games of hazeljs-examples run 2,392 times as fast as on the interpreter (the geometric mean over 45 operations in 17 games). Gnome dig&#x27;s step takes 82 ms on the interpreter and 0.28 ms through the jit.
 - **What it changes in `dev`.** It adds new files, and 13 lines to two of `dev`&#x27;s, `Builtins.re` and `Transition.re`, for mixed mode. Nothing in the app turns hazel-jit on yet: the editor, the evaluator and the stepper run as before.
-- **How it is checked.** Every evaluator test also runs compiled, where it compiles, and must give the interpreter&#x27;s answer. Of the 289 checks, 234 compile; 211 of those give the interpreter&#x27;s answer and none differs. The other 23 end where the interpreter&#x27;s result is not a value, which the sweep doesn&#x27;t compare. hazel-jit also has 13 tests of its own.
+- **How it is checked.** Every evaluator test also runs compiled, where it compiles, and must give the interpreter&#x27;s answer. Of the 289 checks, 234 compile; 211 of those give the interpreter&#x27;s answer and none differs. The other 23 end where the interpreter&#x27;s result is not a value, which the sweep doesn&#x27;t compare. Mixed mode is held to the interpreter the same way, as are 2,000 random programs, and a floor fails the build if fewer programs compile. hazel-jit also has 13 tests of its own.
 - **Who uses it.** The hazeljs npm package (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>): its `Hazel.jit` and `Hazel.compile` are hazel-jit. And the games of hazeljs-examples, which keep their rules compiled ahead of time.
 - **What to review.** The two hooks into the interpreter; the shapes compiled code gives values, which pages that keep compiled code depend on; and the list of what is left to the interpreter.
 
@@ -632,38 +632,40 @@ Hazel is gradually typed: the interpreter runs code with type errors and unknown
 
 ## Checked against the interpreter, in CI
 
-The interpreter is the specification, and CI holds the jit to it on every push. In the Fast checks job, a program whose compiled answer differs from the interpreter&#x27;s fails the build.
+The interpreter is the specification, and CI holds the jit to it on every push: a program whose compiled answer differs from the interpreter&#x27;s fails the build.
 
 - **The sweep, over every evaluator program** (`test/Test_HazelJit_Agree.re`, hooked into `Test_Evaluator_Prelude.evaluation_test`). Each program of the evaluator&#x27;s own tests is elaborated, run by the interpreter, and, where hazel-jit compiles it, run compiled. The two answers are compared shape by shape: numbers by value (a float within a relative 1e-9); lists, tuples, labels and constructors by structure; a function only as a function. Where the interpreter stops at an error (a division by zero), the compiled run must stop at the same one. Where its answer is left indeterminate, the compiled run must stop as indeterminate.
+- **Mixed mode, swept the same way.** For every evaluator program with a top-level function of a declared type, those functions are compiled and the rest interpreted. A different answer from the interpreter&#x27;s, or a run or rewrite that raises, fails that program&#x27;s test.
+- **Random programs** (Full tests). The generator of the evaluator&#x27;s &quot;Evaluator does not crash&quot; property (`QCheck_Util.arb_exp`) makes 2,000 programs at a fixed seed, so a failure can be reproduced. Each one with no static error that the interpreter finishes within 10,000 steps is compiled where it compiles, run, and compared as the sweep compares.
+- **A floor on what compiles.** At least 234 of the evaluator&#x27;s programs must compile, and at least 6 in mixed mode, so a change that leaves more programs to the interpreter fails the build. The floor is checked when the whole sweep has run.
 - **The agreement tests** (`test/Test_HazelJit.re`). These are written by hand, each run both ways and compared the same way. They cover the language&#x27;s forms, big Ints, invalid operations, the string builtins, partial and mutual functions, the step limit, labels and Unicode, plus values carried back and diffs.
-- **Mixed mode, swept the same way.** For every evaluator program with a top-level function of a declared type, those functions are compiled and the rest interpreted, and the answer is compared with the interpreter&#x27;s alone.
 
-On this branch&#x27;s latest push (664c49c49a, CI run 46079274764):
+On this branch (31c7c89de1, CI run 46157399352):
 
-| The sweep | programs |
+| | programs |
 |---|---|
-| evaluator checks | 289 |
-| compiled and run | 234 |
+| evaluator checks (Fast checks; Full tests 290) | 289 |
+| compiled and run (the floor: 234) | 234 |
 | the same answer | 211 |
 | a different answer, or the compiled run threw | 0 |
 | the interpreter&#x27;s answer is not a value (an error or a stuck term), checked as above | 23 |
 | not compiled: holes 15, type holes 10, free variables 24, other forms 6 | 55 |
 | mixed mode: programs with a function compiled, all the same answer | 6 (2,263 calls compiled, 8 fell back) |
+| random programs made; with no static error; finished by the interpreter | 2,000; 80; 80 |
+| random programs compiled; the same answer; not a value, not compared | 61; 60; 1 |
 
 **What it does not hold the jit to yet:**
 
 - **Ill-typed programs.** Thirty tests are listed as known (`known_not_a_value`): the interpreter stops at a failed cast, while compiled code, its types erased, runs on. The editor compiles no program with a static error; see *Types: errors, type holes and unknowns*.
-- **What is not compiled is not compared.** A program the jit does not compile (55 of 289) runs on the interpreter, so it cannot disagree, but a change that compiles less goes unnoticed.
-- **Mixed mode&#x27;s sweep reports and does not fail the build.**
+- **Programs that are not compiled.** A program the jit does not compile runs on the interpreter, so it cannot disagree; the floor keeps that number from growing.
+- **Few random programs.** The generator makes mostly ill-typed programs: of 2,000, 80 had no static error and 61 compiled.
 - **Only the evaluator&#x27;s programs.** The games&#x27; rules in hazeljs-examples are checked in that repository&#x27;s CI against hand-written plain JavaScript twins: each piece of Gnome world against its twin, the speed run&#x27;s world state step for step, and every game&#x27;s answers three ways (an older interpreter, the jit&#x27;s code compiled ahead of time, plain JavaScript). Plain JavaScript there is a second witness for the games and the baseline for speed, not the specification.
 
 **Systematically, from here:**
 
-1. Mixed mode&#x27;s sweep fails the build on a different answer, as the jit&#x27;s does.
-2. Random programs. The evaluator&#x27;s &quot;Evaluator does not crash&quot; property already generates 10,000 programs a run (`QCheck_Util.arb_exp`). The same generator, with each program run both ways where both finish, compared as the sweep compares, would cover the forms the hand-written tests miss.
-3. A floor on what compiles: the sweep&#x27;s compiled count (234 of 289) may only go up, so a change that leaves more programs to the interpreter fails.
-4. A check where a value leaves an unknown type for a ground one, so the thirty ill-typed programs agree and come off the known list.
-5. The games&#x27; rules and their recorded runs as test programs here, each answer against the interpreter&#x27;s.
+1. More random programs that type: 10,000 a run, as &quot;Evaluator does not crash&quot; runs, or a generator of well-typed programs.
+2. A check where a value leaves an unknown type for a ground one, so the thirty ill-typed programs agree and come off the known list.
+3. The games&#x27; rules and their recorded runs as test programs here, each answer against the interpreter&#x27;s.
 
 ## Where it differs from the interpreter on `dev`
 
@@ -696,7 +698,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
 - **What it is.** hazel-jit compiles a complete Hazel program to JavaScript and runs that in place of the interpreter. Where it can't (a hole, a test, an error the interpreter would show), the interpreter runs the program as it does today, so an answer never changes.
 - **Why.** Speed, toward 60 frames a second for small edits. Compiled ahead of time, the games of hazeljs-examples run 2,392 times as fast as on the interpreter (the geometric mean over 45 operations in 17 games). Gnome dig's step takes 82 ms on the interpreter and 0.28 ms through the jit.
 - **What it changes in `dev`.** It adds new files, and 13 lines to two of `dev`'s, `Builtins.re` and `Transition.re`, for mixed mode. Nothing in the app turns hazel-jit on yet: the editor, the evaluator and the stepper run as before.
-- **How it is checked.** Every evaluator test also runs compiled, where it compiles, and must give the interpreter's answer. Of the 289 checks, 234 compile; 211 of those give the interpreter's answer and none differs. The other 23 end where the interpreter's result is not a value, which the sweep doesn't compare. hazel-jit also has 13 tests of its own.
+- **How it is checked.** Every evaluator test also runs compiled, where it compiles, and must give the interpreter's answer. Of the 289 checks, 234 compile; 211 of those give the interpreter's answer and none differs. The other 23 end where the interpreter's result is not a value, which the sweep doesn't compare. Mixed mode is held to the interpreter the same way, as are 2,000 random programs, and a floor fails the build if fewer programs compile. hazel-jit also has 13 tests of its own.
 - **Who uses it.** The hazeljs npm package (#2857): its `Hazel.jit` and `Hazel.compile` are hazel-jit. And the games of hazeljs-examples, which keep their rules compiled ahead of time.
 - **What to review.** The two hooks into the interpreter; the shapes compiled code gives values, which pages that keep compiled code depend on; and the list of what is left to the interpreter.
 
@@ -791,38 +793,40 @@ Hazel is gradually typed: the interpreter runs code with type errors and unknown
 
 ## Checked against the interpreter, in CI
 
-The interpreter is the specification, and CI holds the jit to it on every push. In the Fast checks job, a program whose compiled answer differs from the interpreter's fails the build.
+The interpreter is the specification, and CI holds the jit to it on every push: a program whose compiled answer differs from the interpreter's fails the build.
 
 - **The sweep, over every evaluator program** (`test/Test_HazelJit_Agree.re`, hooked into `Test_Evaluator_Prelude.evaluation_test`). Each program of the evaluator's own tests is elaborated, run by the interpreter, and, where hazel-jit compiles it, run compiled. The two answers are compared shape by shape: numbers by value (a float within a relative 1e-9); lists, tuples, labels and constructors by structure; a function only as a function. Where the interpreter stops at an error (a division by zero), the compiled run must stop at the same one. Where its answer is left indeterminate, the compiled run must stop as indeterminate.
+- **Mixed mode, swept the same way.** For every evaluator program with a top-level function of a declared type, those functions are compiled and the rest interpreted. A different answer from the interpreter's, or a run or rewrite that raises, fails that program's test.
+- **Random programs** (Full tests). The generator of the evaluator's "Evaluator does not crash" property (`QCheck_Util.arb_exp`) makes 2,000 programs at a fixed seed, so a failure can be reproduced. Each one with no static error that the interpreter finishes within 10,000 steps is compiled where it compiles, run, and compared as the sweep compares.
+- **A floor on what compiles.** At least 234 of the evaluator's programs must compile, and at least 6 in mixed mode, so a change that leaves more programs to the interpreter fails the build. The floor is checked when the whole sweep has run.
 - **The agreement tests** (`test/Test_HazelJit.re`). These are written by hand, each run both ways and compared the same way. They cover the language's forms, big Ints, invalid operations, the string builtins, partial and mutual functions, the step limit, labels and Unicode, plus values carried back and diffs.
-- **Mixed mode, swept the same way.** For every evaluator program with a top-level function of a declared type, those functions are compiled and the rest interpreted, and the answer is compared with the interpreter's alone.
 
-On this branch's latest push (664c49c49a, CI run 46079274764):
+On this branch (31c7c89de1, CI run 46157399352):
 
-| The sweep | programs |
+| | programs |
 |---|---|
-| evaluator checks | 289 |
-| compiled and run | 234 |
+| evaluator checks (Fast checks; Full tests 290) | 289 |
+| compiled and run (the floor: 234) | 234 |
 | the same answer | 211 |
 | a different answer, or the compiled run threw | 0 |
 | the interpreter's answer is not a value (an error or a stuck term), checked as above | 23 |
 | not compiled: holes 15, type holes 10, free variables 24, other forms 6 | 55 |
 | mixed mode: programs with a function compiled, all the same answer | 6 (2,263 calls compiled, 8 fell back) |
+| random programs made; with no static error; finished by the interpreter | 2,000; 80; 80 |
+| random programs compiled; the same answer; not a value, not compared | 61; 60; 1 |
 
 **What it does not hold the jit to yet:**
 
 - **Ill-typed programs.** Thirty tests are listed as known (`known_not_a_value`): the interpreter stops at a failed cast, while compiled code, its types erased, runs on. The editor compiles no program with a static error; see *Types: errors, type holes and unknowns*.
-- **What is not compiled is not compared.** A program the jit does not compile (55 of 289) runs on the interpreter, so it cannot disagree, but a change that compiles less goes unnoticed.
-- **Mixed mode's sweep reports and does not fail the build.**
+- **Programs that are not compiled.** A program the jit does not compile runs on the interpreter, so it cannot disagree; the floor keeps that number from growing.
+- **Few random programs.** The generator makes mostly ill-typed programs: of 2,000, 80 had no static error and 61 compiled.
 - **Only the evaluator's programs.** The games' rules in hazeljs-examples are checked in that repository's CI against hand-written plain JavaScript twins: each piece of Gnome world against its twin, the speed run's world state step for step, and every game's answers three ways (an older interpreter, the jit's code compiled ahead of time, plain JavaScript). Plain JavaScript there is a second witness for the games and the baseline for speed, not the specification.
 
 **Systematically, from here:**
 
-1. Mixed mode's sweep fails the build on a different answer, as the jit's does.
-2. Random programs. The evaluator's "Evaluator does not crash" property already generates 10,000 programs a run (`QCheck_Util.arb_exp`). The same generator, with each program run both ways where both finish, compared as the sweep compares, would cover the forms the hand-written tests miss.
-3. A floor on what compiles: the sweep's compiled count (234 of 289) may only go up, so a change that leaves more programs to the interpreter fails.
-4. A check where a value leaves an unknown type for a ground one, so the thirty ill-typed programs agree and come off the known list.
-5. The games' rules and their recorded runs as test programs here, each answer against the interpreter's.
+1. More random programs that type: 10,000 a run, as "Evaluator does not crash" runs, or a generator of well-typed programs.
+2. A check where a value leaves an unknown type for a ground one, so the thirty ill-typed programs agree and come off the known list.
+3. The games' rules and their recorded runs as test programs here, each answer against the interpreter's.
 
 ## Where it differs from the interpreter on `dev`
 
@@ -1036,7 +1040,7 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
    number per page load; if GitHub does not answer, what it said when the
    page was built (tools/link_prs.py writes this block). */
 (() => {
-  const CACHED = {"hazelgrove/hazel#2472": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-28T13:52:38Z", "kind": "pull", "state": "merged", "title": "Migrate src/language to Jane Street Core", "updated": "2026-11-19T21:40:57Z", "base": "cleanup/core-idioms"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-27T03:50:38Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-27T23:12:36Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-27T22:52:59Z", "base": "dev"}}, BUILT = "2026-11-27";
+  const CACHED = {"hazelgrove/hazel#2472": {"author": "7h3kk1d", "comments": 1, "created": "2026-08-28T13:52:38Z", "kind": "pull", "state": "merged", "title": "Migrate src/language to Jane Street Core", "updated": "2026-11-19T21:40:57Z", "base": "cleanup/core-idioms"}, "hazelgrove/hazel#2817": {"author": "matthewhammer", "comments": 1, "created": "2026-11-09T03:18:27Z", "kind": "pull", "state": "draft", "title": "non-`dev` (`integration/livelits-modular-editors`): hazel-jit: livelit views and a slide's whole run compiled to JavaScript; try it with a frame-rate HUD", "updated": "2026-11-27T03:50:38Z", "base": "integration/livelits-modular-editors"}, "hazelgrove/hazel#2828": {"author": "matthewhammer", "comments": 1, "created": "2026-11-16T21:45:00Z", "kind": "pull", "state": "draft", "title": "SInt has 64 bits everywhere, and overflow is an error", "updated": "2026-11-19T22:15:21Z", "base": "dev"}, "hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-27T23:12:36Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-28T15:18:49Z", "base": "dev"}}, BUILT = "2026-11-28";
   const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
   const asked = new Map();
   /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
@@ -1338,16 +1342,16 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
    "section": "Checked against the interpreter, in CI",
    "section_id": "agree",
    "columns": [
-    "The sweep",
+    "",
     "programs"
    ],
    "rows": [
     [
-     "evaluator checks",
+     "evaluator checks (Fast checks; Full tests 290)",
      "289"
     ],
     [
-     "compiled and run",
+     "compiled and run (the floor: 234)",
      "234"
     ],
     [
@@ -1369,6 +1373,14 @@ The design and the measurements are in Hazel reports: [report 54](https://matthe
     [
      "mixed mode: programs with a function compiled, all the same answer",
      "6 (2,263 calls compiled, 8 fell back)"
+    ],
+    [
+     "random programs made; with no static error; finished by the interpreter",
+     "2,000; 80; 80"
+    ],
+    [
+     "random programs compiled; the same answer; not a value, not compared",
+     "61; 60; 1"
     ]
    ]
   },
