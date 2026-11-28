@@ -19,6 +19,7 @@
 
 <div class="summary">
 <p><b>In short.</b> Three new Hazel modules take over the speed run’s planning (Plan.hz), the rivers, pumps, rain and drying (Rivers.hz), and the villagers, squirrels, insects and hawks (Folk.hz). Each is off unless chosen under ⚙️ Advanced or by a query (<code>?plan=hazel</code>, <code>?rivers=hazel</code>, <code>?folk=hazel</code>). The page’s JavaScript stays the default and is each one’s twin: the world save check runs both from one state on every push and finds the same plan, the same water in every tile and the same state in every creature. For the creatures to match, Hazel works out the page’s own random numbers from its seed, to the bit. Hazel takes from about as long as the JavaScript ({{x_lo_name}}) to {{x_hi}} times as long ({{x_hi_name}}), and the pieces are small: with one of them on, the speed run takes {{plan_real}}, {{rivers_real}} or {{folk_real}} against {{js_real}}. With every Hazel option on, the water in Hazel (^report(69)) among them, it does not finish in two minutes. Hazel is now {{share_new}} of the game’s own code and {{share_nd_new}} of the code that is not drawing. The drawing is 44% of <code>app.js</code>, and it is the next piece to move to Hazel (^ticket(908)).</p>
+<p><b>Since, the same day (revised {{updated}}).</b> Exact integers were most of the creatures’ cost (^report(71)), so in 0.0.157 <code>Folk.hz</code> writes its numbers as Floats under <code>use Float in</code> (Matthew: “Float, use Float in”), and in 0.0.158 <code>Path.hz</code> and <code>Rivers.hz</code> do too, every answer still the same as the page’s. An insect’s step in Hazel now takes 0.37 µs where it took 4.7 µs, against about 0.11 µs in JavaScript; all the creatures together, 0.09 ms a step where they took 0.24 ms. The README of hazeljs-examples now tells this story, Gnome world’s JavaScript and Hazel so far.</p>
 </div>
 
 <h2 id="builds">The builds</h2>
@@ -62,7 +63,7 @@
 <li><b>Interpreted.</b> npm’s hazeljs 0.0.4, only when build.hazel.org cannot be reached. It did not run here. Interpreted, the games take about four thousand times as long as through hazel-jit (^report(65)).</li>
 </ul>
 <p>The two builds compile alike: both have ticket 891’s integer division and arithmetic folded at compile time. <code>trial/1126-night</code> also has ticket 791’s faster labeled tuples in the type checker, and the hazeljs branch has ticket 896’s interpreted calls. Not in either: the agreement tests of ^ticket(903) (tests only), the bench builds of ticket 853 (Ints as plain JavaScript numbers, options unboxed), and the hybrid lists of <code>hazel-jit-lists</code>.</p>
-<p>So the Hazel pieces’ times above are hazel-jit’s, and the gap to the page’s JavaScript is what compiled Hazel still pays. ^report(71) breaks it down. Converting lists into and out of compiled code is from 5% to 70% of a call, most where the calls are small. Exact integers are most of the creatures’ time: Folk.bug’s step for an insect takes 2.3 µs with plain-number Ints against 5.9 µs as compiled. Its next steps are lists as arrays in hazel-jit (^ticket(909)) and Matthew and Cyrus’s JSNum (^ticket(910)).</p>
+<p>So the Hazel pieces’ times above are hazel-jit’s, and the gap to the page’s JavaScript is what compiled Hazel still pays. ^report(71) breaks it down. Converting lists into and out of compiled code is from 5% to 70% of a call, most where the calls are small. Exact integers are most of the creatures’ time: Folk.bug’s step for an insect takes 2.3 µs with plain-number Ints against 5.9 µs as compiled. Its next steps were lists as arrays in hazel-jit (^ticket(909)), now built on a trial and measured there, and a number type as JavaScript’s; Matthew chose Floats under <code>use Float in</code> for that (^ticket(910)), and Gnome world’s creatures, way and rivers use them since 0.0.157 and 0.0.158.</p>
 
 <h2 id="runs">The speed run, five ways</h2>
 <p><b>On one GitHub runner, the speed run as the page plays it takes {{js_real}} with the JavaScript, {{plan_real}} with the planning alone in Hazel, {{rivers_real}} with the rivers, and {{folk_real}} with the creatures: a run’s noise of a second or two. With every Hazel option on it does not finish in two minutes: {{all_where}}.</b> {{runs_note}}</p>
@@ -80,7 +81,7 @@
 <ol>
 <li>The drawing in Hazel, one part at a time, each timed against the page’s JavaScript and compared pixel for pixel (^ticket(908), Matthew, 2026-11-28: “let’s start to port the drawing code from JS to Hazel … one component at a time”).</li>
 <li>Arrays in Hazel (ticket 846): Plan.hz’s table of best tours and Folk.hz’s squirrel graphs both work around the lack of them.</li>
-<li>A builtin for JavaScript’s float multiply, or a 53-bit rounding, so the page’s random numbers in Hazel need no search at all.</li>
+<li><b>Done another way (0.0.157):</b> <code>Folk.hz</code> in Floats, the page’s random numbers as its own steps in doubles, <code>float_mod(s * 1103515245 + 12345, 2147483648)</code>, with no rounding to emulate and no BigInts; an insect’s step 0.37 µs where it was 4.7 µs.</li>
 <li>An <code>atan2</code> builtin in Hazel, so the hawks’ twin can use the browser’s own.</li>
 </ol>
 

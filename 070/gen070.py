@@ -91,7 +91,9 @@ def t_builds():
             ("2", "0.0.153", "build 1 with Plan.hz, the speed run’s planning, off unless <code>?plan=hazel</code> or 🗺️ (<code>50826bd</code>)"),
             ("3", "0.0.154", "build 2 with Rivers.hz, the rivers, pumps, rain and drying, off unless <code>?rivers=hazel</code> or 🌧️ (<code>aa7801e</code>)"),
             ("4", "0.0.155", "build 3 with Folk.hz, the villagers, squirrels, insects and hawks, off unless <code>?folk=hazel</code> or 🐿️ (<code>92ccd28</code>)"),
-            ("5", "0.0.156", "build 4 with Folk.hz’s random numbers about four times as cheap (<code>97fccb2</code>); the frames job’s two more setups")]
+            ("5", "0.0.156", "build 4 with Folk.hz’s random numbers about four times as cheap (<code>97fccb2</code>); the frames job’s two more setups"),
+            ("6", "0.0.157", "build 5 with Folk.hz in Floats under <code>use Float in</code> (<code>691db10</code>): an insect’s step about 13 times as fast, every answer the same"),
+            ("7", "0.0.158", "build 6 with Path.hz and Rivers.hz in Floats too (<code>47be613</code>)")]
     return ('<table class="nums"><thead><tr><th>build</th><th class="l">version</th><th class="l">what</th></tr></thead><tbody>' + "".join(f'<tr><td>{a}</td><td class="l">{b}</td><td class="l">{c}</td></tr>' for a, b, c in rows) + "</tbody></table>")
 def share(Z, nd=False): hz, app = Z["hz_total"], Z["app_js"]; return 100 * hz / (hz + app - (Z["app_by"]["drawing"] if nd else 0))
 def t_share():
