@@ -25,7 +25,7 @@ PANE = json.load(open(os.path.join(DATA, "pane.json")))
 F, F1 = load(FINAL), load(FIRST)
 SAVE = {r: open(os.path.join(DATA, f"save-check-{r}.log")).read() for r in ("46102840887", "46103505212") if os.path.exists(os.path.join(DATA, f"save-check-{r}.log"))}
 f1 = lambda x: f"{x:.1f}"; f2 = lambda x: f"{x:.2f}"
-NAME = {"0.0.149": "0.0.149, as it was", "0.0.150": "0.0.150", "water-hazel": "0.0.150, 💧 the water in Hazel", "way-hazel": "0.0.150, 🧭 the way in Hazel", "wateps-1e-3": "0.0.150, the water's threshold at 1e-3"}
+NAME = {"0.0.149": "0.0.149, as it was", "0.0.150": "0.0.150", "water-hazel": "0.0.150, 💧 the water in Hazel", "way-hazel": "0.0.150, 🧭 the way in Hazel", "wateps-1e-3": "0.0.150, the water's threshold at 1e-3 (0.0.151's)"}
 ORDER = ["0.0.149", "0.0.150", "way-hazel", "water-hazel", "wateps-1e-3"]
 part = lambda S, k: S.get("stepParts", {}).get(k, 0.0)
 def search_s(S): return S["stepsS"] * part(S, "its path search") / 100
@@ -120,7 +120,8 @@ def t_margins():
 def t_builds():
     rows = [("1", "0.0.149", "Gnome world 0.0.149 (matthewhammer/hazeljs-examples <code>ea6b603</code>), ^report(68)’s fixes: the water’s passes and the run’s search as they had been"),
             ("2", "0.0.150", "build 1 with the water’s passes in locals, the run’s way by A* (wayJS), and Water.hz and Path.hz, off by default: perf/902-904 <code>1849ca5</code>, released as 0.0.150"),
-            ("2, options", "💧, 🧭, threshold", "build 2 with <code>?water=hazel</code> (the water by Water.hz), <code>?way=hazel</code> (the way by Path.hz), or <code>?wateps=0.001</code> (the water’s waking threshold a thousandth, not the game’s)")]
+            ("2, options", "💧, 🧭, threshold", "build 2 with <code>?water=hazel</code> (the water by Water.hz), <code>?way=hazel</code> (the way by Path.hz), or <code>?wateps=0.001</code> (the water’s waking threshold a thousandth: 0.0.151’s, which Matthew chose)"),
+            ("3", "0.0.151", "build 2 with the water’s waking threshold a thousandth (hazeljs-examples <code>78d88c3</code>, 2026-11-27): the page’s water the same as build 2’s with <code>?wateps=0.001</code>")]
     return ('<table class="nums"><thead><tr><th>build</th><th class="l">name</th><th class="l">what</th></tr></thead><tbody>' + "".join(f'<tr><td>{a}</td><td class="l">{b}</td><td class="l">{c}</td></tr>' for a, b, c in rows) + "</tbody></table>")
 
 FIG = {"moves": fig_moves(), "runs": fig_runs(), "threshold": fig_threshold(), "t_runs": t_runs(), "t_margins": t_margins(), "t_builds": t_builds()}
@@ -159,7 +160,7 @@ left = re.findall(r"\{\{(\w+)\}\}", body); assert not left, left
 TITLE = "Gnome World’s Water and Way, in Hazel"
 DESC = (f"The water and the speed run's way, made cheaper in Gnome world 0.0.150 and written in Hazel too, each Hazel version off by default and the same as the page's JavaScript to the bit. "
         f"The speed run takes {N['b_real']} where it took {N['a_real']}. The water in Hazel takes {N['w_hz_x']} the time of the page's, and the way in Hazel {N['way_x']}: the same answers, but Hazel has no arrays, so a block of tiles crosses as a list and a search keeps its best costs in a tree. "
-        f"Most of the water's work is seepage of under a thousandth of a tile a step; letting that sleep makes the run {N['ep_x']} as fast, and floods {N['th_fpct']} fewer tiles: a decision for Matthew.")
+        f"Most of the water's work is seepage of under a thousandth of a tile a step; letting that sleep makes the run {N['ep_x']} as fast, with {N['th_fpct']} fewer flooded tiles: Matthew chose it, and 0.0.151 has it.")
 EXTRA = """
   figure.chart svg { width: 100%; height: auto; display: block; }
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
