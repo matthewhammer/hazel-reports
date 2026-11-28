@@ -1,0 +1,221 @@
+[
+ {
+  "section": "How a list crosses today",
+  "section_id": "today",
+  "columns": [
+   "a value of type",
+   "the page holds",
+   "compiled code holds",
+   "crossing"
+  ],
+  "rows": [
+   [
+    "a number, a boolean, a string",
+    "the same",
+    "the same",
+    "a check of its kind"
+   ],
+   [
+    "a record of plain values",
+    "an object",
+    "the same object",
+    "each field checked, nothing copied (^ticket(847))"
+   ],
+   [
+    "a record holding a list or a sum",
+    "an object",
+    "a new object",
+    "its fields converted, remembered by a link"
+   ],
+   [
+    "a list",
+    "an array",
+    "cells {$h, $t}, null for []",
+    "rebuilt both ways; remembered when 16 elements or more"
+   ],
+   [
+    "a constructor",
+    "{tag, value}",
+    "{$c, $v}",
+    "renamed both ways"
+   ]
+  ]
+ },
+ {
+  "section": "What crossing costs Gnome world",
+  "section_id": "cost",
+  "columns": [
+   "call",
+   "elements in, fresh",
+   "crossing",
+   "compiled work",
+   "crossing’s share"
+  ],
+  "rows": [
+   [
+    "Water.down, a block's tiles over the row beneath",
+    "9",
+    "1.46 µs",
+    "1.28 µs",
+    "53%"
+   ],
+   [
+    "Water.across, a block's row across",
+    "11",
+    "1.11 µs",
+    "2.00 µs",
+    "36%"
+   ],
+   [
+    "Rivers.hold, a river's open tiles",
+    "76",
+    "4.20 µs",
+    "1.78 µs",
+    "70%"
+   ],
+   [
+    "Rivers.rain, a step's 24 drops",
+    "25",
+    "1.34 µs",
+    "3.26 µs",
+    "29%"
+   ],
+   [
+    "Rivers.pump, the pumped rooms' water",
+    "806",
+    "10.0 µs",
+    "21.4 µs",
+    "32%"
+   ],
+   [
+    "Rivers.dry, every column's top",
+    "897",
+    "19.5 µs",
+    "35.0 µs",
+    "36%"
+   ],
+   [
+    "Folk.walk, a villager",
+    "8",
+    "0.23 µs",
+    "0.12 µs",
+    "66%"
+   ],
+   [
+    "Folk.hawk",
+    "16",
+    "0.51 µs",
+    "0.42 µs",
+    "55%"
+   ],
+   [
+    "Folk.squirrel, its graph remembered",
+    "4",
+    "0.18 µs",
+    "1.21 µs",
+    "13%"
+   ],
+   [
+    "Folk.bug, an insect",
+    "7",
+    "0.25 µs",
+    "2.99 µs",
+    "8%"
+   ],
+   [
+    "Path.way, A* over a window",
+    "4,843",
+    "87.5 µs",
+    "1,838 µs",
+    "5%"
+   ]
+  ]
+ },
+ {
+  "section": "The rest of the gap",
+  "section_id": "rest",
+  "columns": [
+   "Folk.bug, compiled, an insect",
+   "as compiled",
+   "plain-number Ints",
+   "no fuel checks",
+   "both"
+  ],
+  "rows": [
+   [
+    "drawing its chances (most steps)",
+    "5.88 µs",
+    "2.32 µs",
+    "5.50 µs",
+    "2.38 µs"
+   ],
+   [
+    "waiting, no chances drawn",
+    "2.23 µs",
+    "0.77 µs",
+    "2.31 µs",
+    "0.70 µs"
+   ]
+  ]
+ },
+ {
+  "section": "The hybrid, as prototyped",
+  "section_id": "hybrid",
+  "columns": [
+   "a list of 1,000 Ints, compiled",
+   "cells (today)",
+   "arrays, copied by ::",
+   "the hybrid"
+  ],
+  "rows": [
+   [
+    "sum by recursion over x :: rest",
+    "13.6 µs",
+    "273 µs",
+    "15.7 µs"
+   ],
+   [
+    "map, f(x) :: map(rest)",
+    "15.3 µs",
+    "756 µs",
+    "19.3 µs"
+   ],
+   [
+    "build with an accumulator, then reverse",
+    "22.9 µs",
+    "1,592 µs",
+    "26.1 µs"
+   ],
+   [
+    "length (a builtin)",
+    "1.37 µs",
+    "0.01 µs",
+    "0.01 µs"
+   ],
+   [
+    "nth, the middle (a builtin)",
+    "0.65 µs",
+    "0.01 µs",
+    "0.01 µs"
+   ],
+   [
+    "nth, the middle, by recursion",
+    "3.39 µs",
+    "222 µs",
+    "4.36 µs"
+   ],
+   [
+    "a page's array in and back out",
+    "6.14 µs",
+    "0.01 µs",
+    "0.01 µs"
+   ],
+   [
+    "a page's array in, mapped, back out",
+    "22.3 µs",
+    "758 µs",
+    "21.0 µs"
+   ]
+  ]
+ }
+]

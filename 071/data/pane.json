@@ -1,0 +1,22 @@
+{
+ "where": "the Claude app's browser pane on the laptop (hidden), Gnome world 0.0.156 at http://localhost:8141/world/?test=1, 2026-11-28 10:20-10:40 MST; compiled code from world/rules-aot.json (hazel-jit, trial/1126-night abf653a21d, the same compiler as the hazeljs branch's 0f24cea171)",
+ "recorded": "400 steps of the speed run with every Hazel option on (water, way, plan, rivers, folk) and rain started, each Hazel call's arguments recorded (up to 400 a function); replayed 100 of each: the converters (the AOT file's own wrap) around a stub that returns the compiled answer (the crossing alone), and the compiled code alone given the very arguments the converters made; fresh copies of the page's arguments each call (structuredClone), but a squirrel's tree graph and the hawks' great trees handed over as the same objects each call, as the game does",
+ "crossing": {
+  "water_down":    {"what": "Water.down, a block's tiles over the row beneath", "elements": 9,    "crossing_us": 1.46,  "compiled_us": 1.28},
+  "water_across":  {"what": "Water.across, a block's row across", "elements": 11,   "crossing_us": 1.11,  "compiled_us": 2.00},
+  "rivers_hold":   {"what": "Rivers.hold, a river's open tiles", "elements": 76,   "crossing_us": 4.20,  "compiled_us": 1.78},
+  "rivers_pump":   {"what": "Rivers.pump, the pumped rooms' water", "elements": 806,  "crossing_us": 10.0,  "compiled_us": 21.4},
+  "rivers_dry":    {"what": "Rivers.dry, every column's top", "elements": 897,  "crossing_us": 19.49, "compiled_us": 35.0},
+  "rivers_rain":   {"what": "Rivers.rain, a step's 24 drops", "elements": 25,   "crossing_us": 1.34,  "compiled_us": 3.26},
+  "folk_walk":     {"what": "Folk.walk, a villager", "elements": 8,    "crossing_us": 0.23,  "compiled_us": 0.12},
+  "folk_squirrel": {"what": "Folk.squirrel, its graph remembered", "elements": 4,    "crossing_us": 0.18,  "compiled_us": 1.21},
+  "folk_bug":      {"what": "Folk.bug, an insect", "elements": 7,    "crossing_us": 0.25,  "compiled_us": 2.99},
+  "folk_hawk":     {"what": "Folk.hawk", "elements": 16,   "crossing_us": 0.51,  "compiled_us": 0.42},
+  "way":           {"what": "Path.way, A* over a window", "elements": 4843, "crossing_us": 87.5,  "compiled_us": 1837.5}
+ },
+ "ints": {"note": "Folk.bug's compiled code alone over the 70 insects, 400 rounds, microseconds an insect: as compiled; with the runtime's Int operations replaced by plain JS arithmetic (iadd, isub, imul, idiv, ipow, inorm: not exact, for the measurement only); with the 267 per-call fuel checks taken out of the source; both",
+   "drawing": {"as compiled": 5.875, "plain-number Ints": 2.318, "no fuel checks": 5.504, "both": 2.382},
+   "quiet": {"as compiled": 2.232, "plain-number Ints": 0.768, "no fuel checks": 2.314, "both": 0.700},
+   "js_twin_us": 0.11, "fuel_checks": 267},
+ "first_try": {"note": "the same replay, but the converters against the page's own compiled copy (built at load) and the compiled alone against the AOT copy: two copies, so not used; recorded to show why"}
+}

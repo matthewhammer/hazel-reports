@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lists as Arrays in hazel-jit</title>
+<meta name="description" content="Compiled Hazel keeps a list as cells, so every call converts a page&#x27;s arrays to cells and back: in Gnome world that is 5% to 70% of a Hazel call&#x27;s time. A hybrid from 11-23 (cells for ::, array segments for a page&#x27;s arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. Status and next steps; and the rest of the gap: exact Ints (5.9 µs an insect, 2.3 with plain numbers), for JSNum.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  figure.chart svg { width: 100%; height: auto; display: block; }
+  table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
+  .wrap { overflow-x: auto; } p.note { font-size: 0.9em; color: var(--muted); }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+li.anchored .anchor { margin-left: 6px; color: var(--muted); text-decoration: none; opacity: 0.5; } li.anchored .copyanchor { opacity: 0.8; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>71<b>)</b></code> · Lists as arrays in hazel-jit · 2026-11-28, revised 2026-11-28 10:22 MST · <span class="wip">work in progress</span> · after <a href="../070/"><code class="ref"><b>^report(</b>70<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Lists as Arrays in hazel-jit</h1>
+<p class="sub">Matthew, 2026-11-28, on Gnome world in Hazel: “ideally, the game state would stay in post JIT form -- native JS arrays form for lists, and objects for records, in particular”; “we want arrays for lists, whenever possible”; “We introduced a hybrid representation, IIRC, so that lists can be represented by arrays, but still support efficient cons pattern matching”; and “let’s write a report about this issue (representing lists as arrays), including the current status and next steps” (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-909"><code class="ref"><b>^ticket(</b>909<b>)</b></code></a>). He also asked how to close the rest of the gap between JavaScript and Hazel: “is this all because of precise numbers? Step counts? Some other cost (conversion into and out of JIT code)?”</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#today">How a list crosses today</a>: a page’s array becomes a chain of cells, and back, at every call.</li>
+<li><a href="#cost">What crossing costs Gnome world</a>: from 5% to 70% of a call’s time, most where the lists are long or the work small.</li>
+<li><a href="#rest">The rest of the gap</a>: exact integers are most of it in the creatures; fuel checks are not.</li>
+<li><a href="#hybrid">The hybrid, as prototyped</a>: cells for <code>::</code>, array segments for literals and a page’s arrays (11-23, not merged).</li>
+<li><a href="#since">What has changed since</a>: the converters cross by declared type, so a list’s conversion is now the cost left at the edge.</li>
+<li><a href="#next">Next steps</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<div class="summary">
+<p><b>In short.</b> In hazel-jit’s compiled code a record is already a plain JavaScript object, and one whose fields are all plain values crosses as the page’s own object, with nothing copied. A list is not: compiled code holds it as a chain of cells, <code>{$h, $t}</code>, so each call turns the page’s array into cells and the answer’s cells back into an array. In Gnome world that crossing is 5% to 70% of a Hazel call’s time: most for the water’s and the rivers’ short calls (53% of Water.down, 70% of Rivers.hold), and a third of the calls over the 897 columns. A hybrid built on 11-23 (branch <code>hazel-jit-lists</code>) lets a list be an array segment as well as cells: a page’s array goes in as a segment with no copy, and <code>::</code> still makes cells. It was 4% to 8% slower on the games then, when every value still crossed through Hazel’s own values and the arrays saved little. Since then, crossing goes by declared type, which leaves the lists’ conversion as the cost at the edge. The next steps are to bring the hybrid up to date, let the converters hand segments over, and measure it on Gnome world. The other big cost is exact integers. With Folk.hz’s integer operations replaced by plain JavaScript arithmetic, an insect’s step takes 2.3 µs instead of 5.9. Matthew and Cyrus’s JSNum type (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>) answers that one.</p>
+</div>
+
+<h2 id="today">How a list crosses today<a class="anchor" href="#today" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="today" title="copy this section's address">copy link</button></h2>
+<p><b>A page calls a compiled Hazel function with its own values, and the library converts each argument by the function’s declared type, then converts the answer back: a record of plain values passes as it is, but a list is rebuilt both ways.</b> These are the converters of hazeljs’s package branch (hazelgrove/hazel <code>hazeljs</code>, 0f24cea171), which Gnome world loads from build.hazel.org; its ahead-of-time file was compiled with the same compiler. For each type:</p>
+<div class="wrap"><table class="nums"><thead><tr><th class="l">a value of type</th><th class="l">the page holds</th><th class="l">compiled code holds</th><th class="l">crossing</th></tr></thead><tbody><tr><td class="l">a number, a boolean, a string</td><td class="l">the same</td><td class="l">the same</td><td class="l">a check of its kind</td></tr><tr><td class="l">a record of plain values</td><td class="l">an object</td><td class="l">the same object</td><td class="l">each field checked, nothing copied (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>)</td></tr><tr><td class="l">a record holding a list or a sum</td><td class="l">an object</td><td class="l">a new object</td><td class="l">its fields converted, remembered by a link</td></tr><tr><td class="l">a list</td><td class="l">an array</td><td class="l">cells <code>{$h, $t}</code>, <code>null</code> for <code>[]</code></td><td class="l"><b>rebuilt both ways</b>; remembered when 16 elements or more</td></tr><tr><td class="l">a constructor</td><td class="l"><code>{tag, value}</code></td><td class="l"><code>{$c, $v}</code></td><td class="l">renamed both ways</td></tr></tbody></table></div>
+<p>A list is the one shape that must be rebuilt. Compiled code walks a list by <code>x :: rest</code>, so it keeps cells: the tail of a cell is already there, and a pattern match is a property read. The page keeps arrays. So <code>$Lin</code> builds a cell for each element of the page’s array, last to first, and <code>$Lout</code> walks the answer’s cells into a new array. A list of 16 elements or more is remembered by a hidden link on the page’s array, so the same array handed over again costs one lookup (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-681"><code class="ref"><b>^ticket(</b>681<b>)</b></code></a>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-795"><code class="ref"><b>^ticket(</b>795<b>)</b></code></a>). A game that builds its arrays fresh each step, as Gnome world does, pays the full conversion every call.</p>
+
+<h2 id="cost">What crossing costs Gnome world<a class="anchor" href="#cost" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="cost" title="copy this section's address">copy link</button></h2>
+<p><b>Over 400 steps of the speed run with every Hazel option on, crossing was 5% to 70% of a call’s time. It was most where a call is small, as in the water’s per-block calls and a river’s hold, and about a third where the lists are long but the work is too, as in the rivers’ 806 and 897 elements.</b> Each call was replayed twice: through the converters around a stub that returns the compiled answer (the crossing alone), and as the compiled code alone, given exactly what the converters gave it.</p>
+<figure class="chart">
+<svg viewBox="0 0 960 502" role="img" aria-label="Each Hazel call in Gnome world: its crossing and its compiled work, microseconds, log scale"><style>.l{fill:var(--ink);font:600 13px system-ui,sans-serif}.m{fill:var(--muted);font:12px system-ui,sans-serif}</style><line x1="359.6" y1="22" x2="359.6" y2="476" stroke="var(--line)"/><text class="m" x="349.6" y="16">0.1 µs</text><line x1="458.0" y1="22" x2="458.0" y2="476" stroke="var(--line)"/><text class="m" x="448.0" y="16">1 µs</text><line x1="556.3" y1="22" x2="556.3" y2="476" stroke="var(--line)"/><text class="m" x="546.3" y="16">10 µs</text><line x1="654.7" y1="22" x2="654.7" y2="476" stroke="var(--line)"/><text class="m" x="644.7" y="16">100 µs</text><line x1="753.1" y1="22" x2="753.1" y2="476" stroke="var(--line)"/><text class="m" x="743.1" y="16">1000 µs</text><text class="m" x="8" y="43">Water.down, a block&#x27;s tiles over the row beneath</text><text class="m" x="8" y="57">9 elements in</text><rect x="330" y="32" width="144.1" height="13" fill="var(--warn)"><title>crossing 1.46 µs</title></rect><text class="m" x="479.1" y="43">1.46 · 53%</text><rect x="330" y="47" width="138.5" height="13" fill="var(--accent)"><title>compiled 1.28 µs</title></rect><text class="m" x="473.5" y="58">1.28</text><text class="m" x="8" y="83">Water.across, a block&#x27;s row across</text><text class="m" x="8" y="97">11 elements in</text><rect x="330" y="72" width="132.4" height="13" fill="var(--warn)"><title>crossing 1.11 µs</title></rect><text class="m" x="467.4" y="83">1.11 · 36%</text><rect x="330" y="87" width="157.6" height="13" fill="var(--accent)"><title>compiled 2.0 µs</title></rect><text class="m" x="492.6" y="98">2.00</text><text class="m" x="8" y="123">Rivers.hold, a river&#x27;s open tiles</text><text class="m" x="8" y="137">76 elements in</text><rect x="330" y="112" width="189.3" height="13" fill="var(--warn)"><title>crossing 4.2 µs</title></rect><text class="m" x="524.3" y="123">4.20 · 70%</text><rect x="330" y="127" width="152.6" height="13" fill="var(--accent)"><title>compiled 1.78 µs</title></rect><text class="m" x="487.6" y="138">1.78</text><text class="m" x="8" y="163">Rivers.rain, a step&#x27;s 24 drops</text><text class="m" x="8" y="177">25 elements in</text><rect x="330" y="152" width="140.5" height="13" fill="var(--warn)"><title>crossing 1.34 µs</title></rect><text class="m" x="475.5" y="163">1.34 · 29%</text><rect x="330" y="167" width="178.5" height="13" fill="var(--accent)"><title>compiled 3.26 µs</title></rect><text class="m" x="513.5" y="178">3.26</text><text class="m" x="8" y="203">Rivers.pump, the pumped rooms&#x27; water</text><text class="m" x="8" y="217">806 elements in</text><rect x="330" y="192" width="226.3" height="13" fill="var(--warn)"><title>crossing 10.0 µs</title></rect><text class="m" x="561.3" y="203">10.0 · 32%</text><rect x="330" y="207" width="258.8" height="13" fill="var(--accent)"><title>compiled 21.4 µs</title></rect><text class="m" x="593.8" y="218">21.4</text><text class="m" x="8" y="243">Rivers.dry, every column&#x27;s top</text><text class="m" x="8" y="257">897 elements in</text><rect x="330" y="232" width="254.8" height="13" fill="var(--warn)"><title>crossing 19.49 µs</title></rect><text class="m" x="589.8" y="243">19.5 · 36%</text><rect x="330" y="247" width="279.9" height="13" fill="var(--accent)"><title>compiled 35.0 µs</title></rect><text class="m" x="614.9" y="258">35.0</text><text class="m" x="8" y="283">Folk.walk, a villager</text><text class="m" x="8" y="297">8 elements in</text><rect x="330" y="272" width="65.2" height="13" fill="var(--warn)"><title>crossing 0.23 µs</title></rect><text class="m" x="400.2" y="283">0.23 · 66%</text><rect x="330" y="287" width="37.4" height="13" fill="var(--accent)"><title>compiled 0.12 µs</title></rect><text class="m" x="372.4" y="298">0.12</text><text class="m" x="8" y="323">Folk.hawk</text><text class="m" x="8" y="337">16 elements in</text><rect x="330" y="312" width="99.2" height="13" fill="var(--warn)"><title>crossing 0.51 µs</title></rect><text class="m" x="434.2" y="323">0.51 · 55%</text><rect x="330" y="327" width="90.9" height="13" fill="var(--accent)"><title>compiled 0.42 µs</title></rect><text class="m" x="425.9" y="338">0.42</text><text class="m" x="8" y="363">Folk.squirrel, its graph remembered</text><text class="m" x="8" y="377">4 elements in</text><rect x="330" y="352" width="54.7" height="13" fill="var(--warn)"><title>crossing 0.18 µs</title></rect><text class="m" x="389.7" y="363">0.18 · 13%</text><rect x="330" y="367" width="136.1" height="13" fill="var(--accent)"><title>compiled 1.21 µs</title></rect><text class="m" x="471.1" y="378">1.21</text><text class="m" x="8" y="403">Folk.bug, an insect</text><text class="m" x="8" y="417">7 elements in</text><rect x="330" y="392" width="68.8" height="13" fill="var(--warn)"><title>crossing 0.25 µs</title></rect><text class="m" x="403.8" y="403">0.25 · 8%</text><rect x="330" y="407" width="174.8" height="13" fill="var(--accent)"><title>compiled 2.99 µs</title></rect><text class="m" x="509.8" y="418">2.99</text><text class="m" x="8" y="443">Path.way, A* over a window</text><text class="m" x="8" y="457">4,843 elements in</text><rect x="330" y="432" width="319.0" height="13" fill="var(--warn)"><title>crossing 87.5 µs</title></rect><text class="m" x="654.0" y="443">87.5 · 5%</text><rect x="330" y="447" width="449.1" height="13" fill="var(--accent)"><title>compiled 1837.5 µs</title></rect><text class="m" x="784.1" y="458">1,838</text><rect x="330" y="484" width="12" height="10" fill="var(--warn)"/><text class="m" x="346" y="493">crossing (and its share of the call)</text><rect x="580" y="484" width="12" height="10" fill="var(--accent)"/><text class="m" x="596" y="493">compiled work</text></svg>
+<figcaption>Each Hazel call in Gnome world, its crossing (the converters, in and out) and its compiled work, microseconds on a log scale (build 0.0.156, the browser pane, a mean over 100 recorded calls each replayed many times).</figcaption>
+</figure>
+<div class="wrap"><table class="nums"><thead><tr><th class="l">call</th><th>elements in, fresh</th><th>crossing</th><th>compiled work</th><th>crossing’s share</th></tr></thead><tbody><tr><td class="l">Water.down, a block&#x27;s tiles over the row beneath</td><td>9</td><td>1.46 µs</td><td>1.28 µs</td><td>53%</td></tr><tr><td class="l">Water.across, a block&#x27;s row across</td><td>11</td><td>1.11 µs</td><td>2.00 µs</td><td>36%</td></tr><tr><td class="l">Rivers.hold, a river&#x27;s open tiles</td><td>76</td><td>4.20 µs</td><td>1.78 µs</td><td>70%</td></tr><tr><td class="l">Rivers.rain, a step&#x27;s 24 drops</td><td>25</td><td>1.34 µs</td><td>3.26 µs</td><td>29%</td></tr><tr><td class="l">Rivers.pump, the pumped rooms&#x27; water</td><td>806</td><td>10.0 µs</td><td>21.4 µs</td><td>32%</td></tr><tr><td class="l">Rivers.dry, every column&#x27;s top</td><td>897</td><td>19.5 µs</td><td>35.0 µs</td><td>36%</td></tr><tr><td class="l">Folk.walk, a villager</td><td>8</td><td>0.23 µs</td><td>0.12 µs</td><td>66%</td></tr><tr><td class="l">Folk.hawk</td><td>16</td><td>0.51 µs</td><td>0.42 µs</td><td>55%</td></tr><tr><td class="l">Folk.squirrel, its graph remembered</td><td>4</td><td>0.18 µs</td><td>1.21 µs</td><td>13%</td></tr><tr><td class="l">Folk.bug, an insect</td><td>7</td><td>0.25 µs</td><td>2.99 µs</td><td>8%</td></tr><tr><td class="l">Path.way, A* over a window</td><td>4,843</td><td>87.5 µs</td><td>1,838 µs</td><td>5%</td></tr></tbody></table></div>
+<p>A squirrel’s tree graph, 400 to 1,650 points, and the hawks’ list of great trees cross nearly free because the page hands over the same objects each step and the converters remember them. The insects and the villagers cross nearly free for a different reason: their records hold only plain values, so they cross as the page’s own objects. Their small lists (a few flowers, a few columns of land) are the part that converts.</p>
+
+<h2 id="rest">The rest of the gap<a class="anchor" href="#rest" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="rest" title="copy this section's address">copy link</button></h2>
+<p><b>In the creatures, exact integers cost the most. With hazel-jit’s integer operations replaced by plain JavaScript arithmetic, Folk.bug’s compiled step for an insect takes 2.3 µs where it took 5.9, and 0.8 µs where it took 2.2 when no random numbers are drawn. Taking out the check at each function’s entry changes it by less than the noise.</b> The page’s own JavaScript takes about 0.11 µs an insect.</p>
+<table class="nums"><thead><tr><th class="l">Folk.bug, compiled, an insect</th><th>as compiled</th><th>plain-number Ints</th><th>no fuel checks</th><th>both</th></tr></thead><tbody><tr><td class="l">drawing its chances (most steps)</td><td>5.88 µs</td><td>2.32 µs</td><td>5.50 µs</td><td>2.38 µs</td></tr><tr><td class="l">waiting, no chances drawn</td><td>2.23 µs</td><td>0.77 µs</td><td>2.31 µs</td><td>0.70 µs</td></tr></tbody></table><p class="note">The page’s own JavaScript: about 0.11 µs an insect. Plain-number Ints are for this measurement only: past 2<sup>53</sup> they are not exact.</p>
+<p>Hazel’s Int is exact, so compiled code adds and multiplies through the runtime’s <code>$R.iadd</code>, <code>$R.imul</code> and the rest. Each checks that both are numbers and that the answer is a safe integer, and goes to a BigInt past 2<sup>53</sup>. Folk.hz works out the page’s random numbers in Ints, and their products pass 2<sup>53</sup>, so BigInts flow through the same helpers that the counters use. In the generated code, equality on Ints goes through the generic <code>$R.eq</code>, a builtin such as <code>sqrt</code> is looked up by name on each call, and a helper defined inside a function is a new closure on each call. Floats, by contrast, are JavaScript’s own numbers in compiled code, with plain <code>+</code> and <code>*</code>.</p>
+<p>So the gap has three parts that can each be closed. Crossing is the lists’ conversion (this report). Exact integers can be avoided by numbers that are JavaScript’s own: Matthew and Cyrus’s JSNum, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>, which the drawing and physics ports will use (Matthew, 2026-11-28). The rest is in the generated code: Int equality, builtins by name, and closures made per call. Step counts matter where a list stands in for an array, such as an <code>nth</code> walk, a tree for a table, or a 32-point chunk for a squirrel’s graph (<a href="../070/"><code class="ref"><b>^report(</b>70<b>)</b></code></a>). Lists as arrays give <code>length</code> and <code>nth</code> in one step.</p>
+
+<h2 id="hybrid">The hybrid, as prototyped<a class="anchor" href="#hybrid" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="hybrid" title="copy this section's address">copy link</button></h2>
+<p><b>On 2026-11-23, branch <code>hazel-jit-lists</code> (bba0a9c005, f4a3e3b082) made a list one of three things: <code>null</code>, a cell <code>{h, t}</code>, or a segment <code>{a, i}</code>, the elements of a shared JavaScript array <code>a</code> from index <code>i</code> on. A literal, or a page’s array, is a segment, made with no cells, and <code>x :: xs</code> still makes a cell.</b> A pattern reads a head and a tail through <code>$R.hd</code> and <code>$R.tl</code>, and a segment’s tail is the segment from <code>i + 1</code>. A cell’s tail can be any list, so a list built by <code>::</code> onto a page’s array ends in that array, with no copy. The runtime’s list walks (append, equality, <code>string_join</code> and the rest) take both shapes, and the agreement tests read both.</p>
+<p><a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a> measured it two ways. In a microbenchmark, recursion through <code>x :: rest</code> came within 15 to 40% of cells’ time, <code>length</code> and <code>nth</code> took constant time, and a page’s array crossed in and out with no copy:</p>
+<div class="wrap"><table class="nums"><thead><tr><th class="l">a list of 1,000 Ints, compiled</th><th>cells (today)</th><th>arrays, copied by <code>::</code></th><th>the hybrid</th></tr></thead><tbody><tr><td class="l">sum by recursion over x :: rest</td><td>13.6 µs</td><td>273 µs</td><td>15.7 µs</td></tr><tr><td class="l">map, f(x) :: map(rest)</td><td>15.3 µs</td><td>756 µs</td><td>19.3 µs</td></tr><tr><td class="l">build with an accumulator, then reverse</td><td>22.9 µs</td><td>1,592 µs</td><td>26.1 µs</td></tr><tr><td class="l">length (a builtin)</td><td>1.37 µs</td><td>0.01 µs</td><td>0.01 µs</td></tr><tr><td class="l">nth, the middle (a builtin)</td><td>0.65 µs</td><td>0.01 µs</td><td>0.01 µs</td></tr><tr><td class="l">nth, the middle, by recursion</td><td>3.39 µs</td><td>222 µs</td><td>4.36 µs</td></tr><tr><td class="l">a page&#x27;s array in and back out</td><td>6.14 µs</td><td>0.01 µs</td><td>0.01 µs</td></tr><tr><td class="l">a page&#x27;s array in, mapped, back out</td><td>22.3 µs</td><td>758 µs</td><td>21.0 µs</td></tr></tbody></table></div><p class="note"><a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>, Node v22.23.2 on the laptop, 2026-11-23; each the median of batches.</p>
+<p>On the seventeen games of <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a>, the hybrid was about 8% slower ahead of time and 4% through the jit (geometric means over 45 operations), all answers the same. Each head and tail had one more test, a segment’s tail was a new small object where a cell’s tail was already there, and the two shapes meeting in one hot loop cost the JavaScript engine more than one shape would. The games’ lists were short and rarely asked for <code>length</code> or <code>nth</code>. Through the jit, every value still crossed through Hazel’s own values whatever its shape, so the segments saved nothing at the edge. The branch was not merged, and it was kept as an experiment off <code>hazel-jit</code>.</p>
+
+<h2 id="since">What has changed since<a class="anchor" href="#since" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="since" title="copy this section's address">copy link</button></h2>
+<p><b>Two things make lists as arrays worth taking up again. The library now crosses by declared type, with converters generated once for each function (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>’s converters), so nothing goes through Hazel’s own values. And Gnome world hands its Hazel code long lists fresh every step.</b> With the old crossing gone, a list’s conversion to cells and back is what is left at the edge, and the table above shows it at a third to three quarters of a call. Records already cross as the page’s own objects (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>). Lists are the one shape that still has to be rebuilt.</p>
+<p>The prototype is five days behind <code>hazel-jit</code>. Since then <code>hazel-jit</code> has gained the converters by declared type, calls with their arguments written out (<code>$d</code>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-853"><code class="ref"><b>^ticket(</b>853<b>)</b></code></a>), exact Int division by <code>Math.trunc</code> and integer arithmetic folded when compiled (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-891"><code class="ref"><b>^ticket(</b>891<b>)</b></code></a>), and the agreement tests against the interpreter (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-903"><code class="ref"><b>^ticket(</b>903<b>)</b></code></a>). The prototype’s cells are <code>{h, t}</code>; today’s are <code>{$h, $t}</code>. And the converters, which are new, know nothing of segments.</p>
+
+<h2 id="next">Next steps<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li><b>Bring the hybrid up to date</b>: merge <code>hazel-jit</code> into <code>hazel-jit-lists</code> (or replay its two commits on a new trial, <code>trial/909-lists</code>), with today’s <code>{$h, $t}</code>, and run CI: the static, fast and full tests, and the agreement tests with segments in them.</li>
+<li><b>Let the converters hand segments over.</b> A page’s array goes in as a segment <code>{a, i: 0}</code> with no copy when its elements need no conversion: numbers, strings, booleans, and records of plain values, each checked but not copied. Otherwise it is one mapped array, still no cells. Going out, a segment over the whole of a page’s array is that array, a segment from a later index is a slice, and cells become an array as now. This is the change that keeps a game’s lists in the form the page holds.</li>
+<li><b>Builtins over segments</b>: <code>length</code> and <code>nth</code> in one step, and <code>map</code>, <code>filter</code>, <code>fold_left</code>, <code>reverse</code> and <code>append</code> as JavaScript loops that make arrays, not cells.</li>
+<li><b>Measure on Gnome world</b> with <code>?libat=trial/909-lists</code>: this report’s crossing table again in the pane, and the speed run with every Hazel option on in the GitHub frames job. Then the 17 games of <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> (<code>bench/4way</code>), to see what the hybrid costs where lists are short.</li>
+<li><b>Bring the hybrid’s in-loop cost toward zero</b>: give cells and segments one shape (the same fields, so each match site sees one hidden class), and, later, compile a function that walks a segment through <code>x :: rest</code> to a loop over its index.</li>
+<li><b>Constructors</b>: a page writes <code>{tag, value}</code> and compiled code <code>{$c, $v}</code>, so a sum is renamed both ways. If compiled code read and wrote the page’s shape, sums would cross as they are too, and a game’s whole state could stay in one form.</li>
+<li><b>JSNum</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>), for the other half of the gap: a PR against dev for the type, and hazel-jit extended on a trial as if it were merged. Gnome world’s drawing (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-908"><code class="ref"><b>^ticket(</b>908<b>)</b></code></a>) and physics will be written in it.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>The crossing and the integers were measured in the Claude app’s browser pane on the laptop, on Gnome world 0.0.156 (hazeljs-examples 97fccb2) with its test hooks. The compiled code was <code>world/rules-aot.json</code> (hazel-jit from <code>trial/1126-night</code>, abf653a21d, the same compiler as the <code>hazeljs</code> branch’s 0f24cea171, which the page itself loaded). Calls were recorded over 400 steps of the speed run with every Hazel option on and the rain started, then replayed with fresh copies of the page’s arguments, except the squirrels’ graphs and the hawks’ great trees, which the game hands over as the same objects. The crossing was timed through the AOT file’s own converters around a stub that returns the compiled answer, and the compiled work by calling the compiled function with exactly the arguments the converters had made for it. A first try timed the page’s own compiled copy against the AOT copy and was dropped: two copies of the compiled code ran at different speeds. The integer experiment replaced the runtime’s integer operations on a second copy of the compiled code, for timing only (its answers are not exact past 2<sup>53</sup>), and took the fuel checks out of a third. The hybrid’s numbers are <a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>’s. Every number here is one run in a hidden pane, whose timer is coarse; each is a mean over thousands of calls. The page is built by <code>gen071.py</code> from <code>data/pane.json</code>.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/071/data"><code>071/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 71,
+ "title": "Lists as Arrays in hazel-jit",
+ "blurb": "Compiled Hazel keeps a list as cells, so every call converts a page's arrays to cells and back: in Gnome world that is 5% to 70% of a Hazel call's time. A hybrid from 11-23 (cells for ::, array segments for a page's arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. Status and next steps; and the rest of the gap: exact Ints (5.9 µs an insect, 2.3 with plain numbers), for JSNum.",
+ "builds": {
+  "Gnome world": "0.0.156 (hazeljs-examples 97fccb2)",
+  "hazel-jit": "hazeljs branch 0f24cea171 (the page); trial/1126-night abf653a21d (the AOT file)",
+  "hybrid": "hazel-jit-lists bba0a9c005, f4a3e3b082 (2026-11-23)"
+ },
+ "runs": {
+  "pane": "the Claude app's browser pane on the laptop (hidden), Gnome world 0.0.156 at http://localhost:8141/world/?test=1, 2026-11-28 10:20-10:40 MST; compiled code from world/rules-aot.json (hazel-jit, trial/1126-night abf653a21d, the same compiler as the hazeljs branch's 0f24cea171)",
+  "recorded": "400 steps of the speed run with every Hazel option on (water, way, plan, rivers, folk) and rain started, each Hazel call's arguments recorded (up to 400 a function); replayed 100 of each: the converters (the AOT file's own wrap) around a stub that returns the compiled answer (the crossing alone), and the compiled code alone given the very arguments the converters made; fresh copies of the page's arguments each call (structuredClone), but a squirrel's tree graph and the hawks' great trees handed over as the same objects each call, as the game does",
+  "microbenchmark": "^report(54) lists-bench.mjs, 2026-11-23T19:56:57.330Z"
+ },
+ "measures": {
+  "crossing": "the converters in and out around a stub that returns the compiled answer, a mean a call",
+  "compiled work": "the compiled function alone with the converters' own arguments"
+ },
+ "files": [
+  "data/lists-bench-054.json",
+  "data/meta.json",
+  "data/pane.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "How a list crosses today",
+   "section_id": "today",
+   "columns": [
+    "a value of type",
+    "the page holds",
+    "compiled code holds",
+    "crossing"
+   ],
+   "rows": [
+    [
+     "a number, a boolean, a string",
+     "the same",
+     "the same",
+     "a check of its kind"
+    ],
+    [
+     "a record of plain values",
+     "an object",
+     "the same object",
+     "each field checked, nothing copied (^ticket(847))"
+    ],
+    [
+     "a record holding a list or a sum",
+     "an object",
+     "a new object",
+     "its fields converted, remembered by a link"
+    ],
+    [
+     "a list",
+     "an array",
+     "cells {$h, $t}, null for []",
+     "rebuilt both ways; remembered when 16 elements or more"
+    ],
+    [
+     "a constructor",
+     "{tag, value}",
+     "{$c, $v}",
+     "renamed both ways"
+    ]
+   ]
+  },
+  {
+   "section": "What crossing costs Gnome world",
+   "section_id": "cost",
+   "columns": [
+    "call",
+    "elements in, fresh",
+    "crossing",
+    "compiled work",
+    "crossing’s share"
+   ],
+   "rows": [
+    [
+     "Water.down, a block's tiles over the row beneath",
+     "9",
+     "1.46 µs",
+     "1.28 µs",
+     "53%"
+    ],
+    [
+     "Water.across, a block's row across",
+     "11",
+     "1.11 µs",
+     "2.00 µs",
+     "36%"
+    ],
+    [
+     "Rivers.hold, a river's open tiles",
+     "76",
+     "4.20 µs",
+     "1.78 µs",
+     "70%"
+    ],
+    [
+     "Rivers.rain, a step's 24 drops",
+     "25",
+     "1.34 µs",
+     "3.26 µs",
+     "29%"
+    ],
+    [
+     "Rivers.pump, the pumped rooms' water",
+     "806",
+     "10.0 µs",
+     "21.4 µs",
+     "32%"
+    ],
+    [
+     "Rivers.dry, every column's top",
+     "897",
+     "19.5 µs",
+     "35.0 µs",
+     "36%"
+    ],
+    [
+     "Folk.walk, a villager",
+     "8",
+     "0.23 µs",
+     "0.12 µs",
+     "66%"
+    ],
+    [
+     "Folk.hawk",
+     "16",
+     "0.51 µs",
+     "0.42 µs",
+     "55%"
+    ],
+    [
+     "Folk.squirrel, its graph remembered",
+     "4",
+     "0.18 µs",
+     "1.21 µs",
+     "13%"
+    ],
+    [
+     "Folk.bug, an insect",
+     "7",
+     "0.25 µs",
+     "2.99 µs",
+     "8%"
+    ],
+    [
+     "Path.way, A* over a window",
+     "4,843",
+     "87.5 µs",
+     "1,838 µs",
+     "5%"
+    ]
+   ]
+  },
+  {
+   "section": "The rest of the gap",
+   "section_id": "rest",
+   "columns": [
+    "Folk.bug, compiled, an insect",
+    "as compiled",
+    "plain-number Ints",
+    "no fuel checks",
+    "both"
+   ],
+   "rows": [
+    [
+     "drawing its chances (most steps)",
+     "5.88 µs",
+     "2.32 µs",
+     "5.50 µs",
+     "2.38 µs"
+    ],
+    [
+     "waiting, no chances drawn",
+     "2.23 µs",
+     "0.77 µs",
+     "2.31 µs",
+     "0.70 µs"
+    ]
+   ]
+  },
+  {
+   "section": "The hybrid, as prototyped",
+   "section_id": "hybrid",
+   "columns": [
+    "a list of 1,000 Ints, compiled",
+    "cells (today)",
+    "arrays, copied by ::",
+    "the hybrid"
+   ],
+   "rows": [
+    [
+     "sum by recursion over x :: rest",
+     "13.6 µs",
+     "273 µs",
+     "15.7 µs"
+    ],
+    [
+     "map, f(x) :: map(rest)",
+     "15.3 µs",
+     "756 µs",
+     "19.3 µs"
+    ],
+    [
+     "build with an accumulator, then reverse",
+     "22.9 µs",
+     "1,592 µs",
+     "26.1 µs"
+    ],
+    [
+     "length (a builtin)",
+     "1.37 µs",
+     "0.01 µs",
+     "0.01 µs"
+    ],
+    [
+     "nth, the middle (a builtin)",
+     "0.65 µs",
+     "0.01 µs",
+     "0.01 µs"
+    ],
+    [
+     "nth, the middle, by recursion",
+     "3.39 µs",
+     "222 µs",
+     "4.36 µs"
+    ],
+    [
+     "a page's array in and back out",
+     "6.14 µs",
+     "0.01 µs",
+     "0.01 µs"
+    ],
+    [
+     "a page's array in, mapped, back out",
+     "22.3 µs",
+     "758 µs",
+     "21.0 µs"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/071/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+<!-- highlights: begin -->
+<style>
+  .hl-s { border-radius: 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-color .15s, color .15s; }
+  @media (hover: hover) { .hl-s:not([data-hl]):hover { background: color-mix(in srgb, #facc15 22%, transparent); cursor: pointer; } .hl-s[data-hl]:hover { cursor: pointer; } }
+  .hl-s[data-hl="1"], .hl-chip[data-hl="1"] { background: #fde047; color: #111827; }
+  .hl-s[data-hl="2"], .hl-chip[data-hl="2"] { background: #475569; color: #f1f5f9; }
+  .hl-s[data-hl] code { background: transparent; color: inherit; }
+  .hl-s.hl-flash { outline: 3px solid var(--accent, #6d28d9); outline-offset: 2px; }
+  #highlights h2 { margin-top: 56px; }
+  #highlights .hl-help { color: var(--muted, GrayText); }
+  #highlights ol { padding-left: 1.6em; }
+  #highlights li { margin: .5em 0; cursor: pointer; }
+  #highlights li:hover .hl-text { text-decoration: underline; text-decoration-color: var(--line, #ccc); }
+  .hl-chip { display: inline-block; font: 600 0.78em system-ui, sans-serif; padding: 1px 8px; border-radius: 999px; margin-right: 6px; white-space: nowrap; vertical-align: 1px; }
+  .hl-gone { color: var(--muted, GrayText); font-style: italic; }
+  .hl-tools button { font: inherit; font-size: 0.9em; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; margin-right: 6px; }
+  .hl-badge { position: fixed; right: 14px; bottom: 14px; z-index: 40; padding: 6px 12px; border-radius: 999px; font: 600 13px system-ui, sans-serif;
+    text-decoration: none; background: var(--paper, Canvas); color: var(--ink, CanvasText); border: 1px solid var(--line, #ccc); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+  .hl-badge[hidden] { display: none; }
+  @media print { .hl-badge, .hl-tools { display: none; } .hl-s:not([data-hl]) { background: none; } }
+</style>
+<script>
+/* Sentence highlights (tools/add_highlights.py): a click on a sentence cycles it through not highlighted, pre discussion and
+   post discussion; kept in this browser for this report; one list of them at the end, in the order they appear. */
+(() => {
+  "use strict";
+  const KEY = "hazel-reports/highlights:" + location.pathname.replace(/index\.html$/, "");
+  const main = document.querySelector("main") || document.body;
+  const SKIP = "script,style,pre,svg,math,button,input,textarea,select,nav,h1,h2,h3,h4,h5,h6,.series,.hl-skip,#highlights,.hl-badge,.theme-toggle";
+  const BLOCKS = "p,li,figcaption,td,th,dd,dt,blockquote";
+  const NAMES = { 1: "pre discussion", 2: "post discussion" };
+  const load = () => { try { const m = JSON.parse(localStorage.getItem(KEY)); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch (e) { /* this visit only */ } };
+  const hash = t => { let x = 0x811c9dc5; for (let i = 0; i < t.length; i++) { x ^= t.charCodeAt(i); x = Math.imul(x, 0x01000193); } return (x >>> 0).toString(36); };
+  const norm = t => t.replace(/\s+/g, " ").trim();
+  // 1. the text, block by block: each paragraph, item, caption or cell's own text nodes, in order
+  const groups = new Map(), walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+  for (let n; (n = walker.nextNode()); ) {
+    const el = n.parentElement; if (!el || !n.data.trim() || el.closest(SKIP)) continue;
+    const b = el.closest(BLOCKS); if (!b || !main.contains(b)) continue;
+    if (!groups.has(b)) groups.set(b, []); groups.get(b).push(n);
+  }
+  // 2. each block's sentences: a cut after . ! ? or …, and closing quotes or brackets, where the next word starts with a capital,
+  // a digit, a quote or an opening bracket; each sentence known by its words, a second of the same words numbered
+  const END = /[.!?…]+["”’)\]]*(?=\s+["“‘(\[]*[\p{Lu}\d^¹²³\p{Extended_Pictographic}])/gu;
+  const TEXT = new Map(), ORDER = [], seen = new Map();
+  for (const [b, nodes] of groups) {
+    const full = nodes.map(n => n.data).join(""), cuts = [0];
+    END.lastIndex = 0; for (let m; (m = END.exec(full)); ) cuts.push(m.index + m[0].length);
+    cuts.push(full.length);
+    const sents = [];
+    for (let i = 0; i + 1 < cuts.length; i++) {
+      let a = cuts[i], z = cuts[i + 1]; while (a < z && /\s/.test(full[a])) a++; while (z > a && /\s/.test(full[z - 1])) z--;
+      const t = norm(full.slice(a, z)); if (!/[\p{L}\d]/u.test(t)) continue;
+      const h = hash(t), k = seen.get(h) || 0; seen.set(h, k + 1);
+      const id = h + (k ? "-" + k : ""); sents.push({ a, z, id }); TEXT.set(id, t); ORDER.push(id);
+    }
+    // 3. each text node's parts that lie in a sentence, wrapped: a sentence through a link or a chip is several spans, one id
+    let off = 0;
+    for (const n of nodes) {
+      const s0 = off, s1 = off + n.data.length; off = s1;
+      const parts = sents.filter(S => S.a < s1 && S.z > s0); if (!parts.length) continue;
+      const frag = document.createDocumentFragment(); let p = s0;
+      for (const S of parts) {
+        const a = Math.max(S.a, s0), z = Math.min(S.z, s1);
+        if (a > p) frag.append(n.data.slice(p - s0, a - s0));
+        const sp = document.createElement("span"); sp.className = "hl-s"; sp.dataset.s = S.id; sp.textContent = n.data.slice(a - s0, z - s0);
+        frag.append(sp); p = z;
+      }
+      if (p < s1) frag.append(n.data.slice(p - s0));
+      n.replaceWith(frag);
+    }
+  }
+  const rank = new Map(ORDER.map((id, i) => [id, i]));
+  let marks = load();
+  // 4. the list at the end, and a badge that goes to it
+  const sec = document.createElement("section"); sec.id = "highlights";
+  sec.innerHTML = '<h2>Highlighted sentences</h2><p class="hl-help">Click any sentence above to mark it <span class="hl-chip" data-hl="1">pre discussion</span>; ' +
+    'again, <span class="hl-chip" data-hl="2">post discussion</span>; again, not highlighted. Kept in this browser, for this report.</p>' +
+    '<div class="hl-list"></div><p class="hl-tools"><button type="button" class="hl-copy">📋 Copy the list</button><button type="button" class="hl-clear">Clear all</button></p>';
+  const dataEl = main.querySelector('script[type="application/json"]');
+  if (dataEl && dataEl.parentElement === main) main.insertBefore(sec, dataEl); else main.append(sec);
+  const badge = document.createElement("a"); badge.className = "hl-badge"; badge.href = "#highlights"; badge.hidden = true; document.body.append(badge);
+  const esc = t => t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const listed = () => Object.keys(marks).filter(id => marks[id] && (marks[id].s === 1 || marks[id].s === 2))
+    .sort((a, b) => (rank.has(a) ? rank.get(a) : 1e9) - (rank.has(b) ? rank.get(b) : 1e9) || String(marks[a].at).localeCompare(String(marks[b].at)));
+  function paint() {
+    for (const el of main.querySelectorAll(".hl-s")) { const m = marks[el.dataset.s]; if (m && m.s) el.dataset.hl = m.s; else delete el.dataset.hl; }
+    const ids = listed(), box = sec.querySelector(".hl-list");
+    box.innerHTML = ids.length ? "<ol>" + ids.map(id => { const m = marks[id], gone = !rank.has(id);
+      return `<li data-id="${esc(id)}"><span class="hl-chip" data-hl="${m.s}">${NAMES[m.s]}</span><span class="hl-text">${esc(TEXT.get(id) || m.t || "")}</span>${gone ? ' <span class="hl-gone">(no longer in this report)</span>' : ""}</li>`; }).join("") + "</ol>"
+      : '<p class="hl-gone">None yet.</p>';
+    const pre = ids.filter(id => marks[id].s === 1).length, post = ids.length - pre;
+    badge.hidden = !ids.length; badge.textContent = `🖍 ${pre} pre · ${post} post discussion`;
+  }
+  // 5. a click on a sentence cycles it; a link, a button or a selection of text is left alone
+  main.addEventListener("click", e => {
+    if (e.target.closest("a,button,input,select,textarea,summary,label,svg,#highlights")) return;
+    const sel = window.getSelection ? String(window.getSelection()) : ""; if (sel.trim()) return;
+    const sp = e.target.closest(".hl-s"); if (!sp) return;
+    const id = sp.dataset.s, cur = (marks[id] && marks[id].s) | 0, nx = (cur + 1) % 3;
+    if (nx) marks[id] = { s: nx, t: TEXT.get(id) || sp.textContent, at: (marks[id] && marks[id].at) || new Date().toISOString() }; else delete marks[id];
+    save(); paint();
+  });
+  sec.addEventListener("click", e => {
+    if (e.target.closest(".hl-copy")) {
+      const lines = listed().map(id => `- [${NAMES[marks[id].s]}] ${TEXT.get(id) || marks[id].t}`), text = (document.title + "\n" + location.href.split("#")[0] + "\n\n" + lines.join("\n")).trim();
+      const b = e.target.closest(".hl-copy"), done = () => { b.textContent = "📋 Copied"; setTimeout(() => { b.textContent = "📋 Copy the list"; }, 1500); };
+      try { navigator.clipboard.writeText(text).then(done, () => {}); } catch (err) { /* no clipboard here */ }
+      return;
+    }
+    if (e.target.closest(".hl-clear")) { const n = listed().length; if (n && confirm(`Clear all ${n} highlighted sentences in this report?`)) { marks = {}; save(); paint(); } return; }
+    const li = e.target.closest("li[data-id]"); if (!li) return;
+    const first = main.querySelector(`.hl-s[data-s="${CSS.escape(li.dataset.id)}"]`); if (!first) return;
+    first.scrollIntoView({ behavior: "smooth", block: "center" });
+    const all = main.querySelectorAll(`.hl-s[data-s="${CSS.escape(li.dataset.id)}"]`); all.forEach(el => el.classList.add("hl-flash"));
+    setTimeout(() => all.forEach(el => el.classList.remove("hl-flash")), 1400);
+  });
+  addEventListener("storage", e => { if (e.key === KEY) { marks = load(); paint(); } });   // (another tab of this report)
+  paint();
+})();
+</script>
+<!-- highlights: end -->
+</body>
+</html>

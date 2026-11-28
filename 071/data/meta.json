@@ -1,0 +1,23 @@
+{
+ "title": "Lists as Arrays in hazel-jit",
+ "blurb": "Compiled Hazel keeps a list as cells, so every call converts a page's arrays to cells and back: in Gnome world that is 5% to 70% of a Hazel call's time. A hybrid from 11-23 (cells for ::, array segments for a page's arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. Status and next steps; and the rest of the gap: exact Ints (5.9 µs an insect, 2.3 with plain numbers), for JSNum.",
+ "builds": {
+  "Gnome world": "0.0.156 (hazeljs-examples 97fccb2)",
+  "hazel-jit": "hazeljs branch 0f24cea171 (the page); trial/1126-night abf653a21d (the AOT file)",
+  "hybrid": "hazel-jit-lists bba0a9c005, f4a3e3b082 (2026-11-23)"
+ },
+ "runs": {
+  "pane": "the Claude app's browser pane on the laptop (hidden), Gnome world 0.0.156 at http://localhost:8141/world/?test=1, 2026-11-28 10:20-10:40 MST; compiled code from world/rules-aot.json (hazel-jit, trial/1126-night abf653a21d, the same compiler as the hazeljs branch's 0f24cea171)",
+  "recorded": "400 steps of the speed run with every Hazel option on (water, way, plan, rivers, folk) and rain started, each Hazel call's arguments recorded (up to 400 a function); replayed 100 of each: the converters (the AOT file's own wrap) around a stub that returns the compiled answer (the crossing alone), and the compiled code alone given the very arguments the converters made; fresh copies of the page's arguments each call (structuredClone), but a squirrel's tree graph and the hawks' great trees handed over as the same objects each call, as the game does",
+  "microbenchmark": "^report(54) lists-bench.mjs, 2026-11-23T19:56:57.330Z"
+ },
+ "measures": {
+  "crossing": "the converters in and out around a stub that returns the compiled answer, a mean a call",
+  "compiled work": "the compiled function alone with the converters' own arguments"
+ },
+ "files": [
+  "data/pane.json",
+  "data/lists-bench-054.json",
+  "gen071.py"
+ ]
+}
