@@ -1,0 +1,393 @@
+frames	Set up job	﻿2026-11-28T16:58:05.5866026Z Current runner version: '2.338.2'
+Hosted Compute Agent
+Version: 20261111.635
+Commit: b8a594ea514ff44cadb5342986c68b1eac6e22ed
+Build Date: 2026-11-11T01:49:01Z
+Worker ID: {cb1cc7cc-9cf1-42be-bb82-365926f0c027}
+Region: westus2
+Cloud: Azure
+Ubuntu
+26.04.1
+LTS
+Image: ubuntu-26.04
+Version: 20261122.9.1
+Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261122.9/images/ubuntu/Ubuntu2604-Readme.md
+Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261122.9
+Contents: read
+Metadata: read
+Packages: read
+Secret source: Actions
+Cache mode: write
+Prepare workflow directory
+Prepare all required actions
+Getting action download info
+Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+Complete job name: frames
+frames	Run actions/checkout@v4	﻿2026-11-28T16:58:06.5100367Z ##[group]Run actions/checkout@v4
+with:
+  fetch-depth: 0
+  repository: matthewhammer/hazeljs-examples
+  token: ***
+  ssh-strict: true
+  ssh-user: git
+  persist-credentials: true
+  clean: true
+  sparse-checkout-cone-mode: true
+  fetch-tags: false
+  show-progress: true
+  lfs: false
+  submodules: false
+  set-safe-directory: true
+  allow-unsafe-pr-checkout: false
+Syncing repository: matthewhammer/hazeljs-examples
+Working directory is '/home/runner/work/hazeljs-examples/hazeljs-examples'
+[command]/usr/bin/git version
+git version 2.56.1
+Temporarily overriding HOME='/home/runner/work/_temp/a1e54112-20da-4bb5-a3d8-a8e77e4c0ad0' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+[command]/usr/bin/git config --global --add safe.directory /home/runner/work/hazeljs-examples/hazeljs-examples
+Deleting the contents of '/home/runner/work/hazeljs-examples/hazeljs-examples'
+[command]/usr/bin/git init /home/runner/work/hazeljs-examples/hazeljs-examples
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /home/runner/work/hazeljs-examples/hazeljs-examples/.git/
+[command]/usr/bin/git remote add origin https://github.com/matthewhammer/hazeljs-examples
+[command]/usr/bin/git config --local gc.auto 0
+[command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+[command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+[command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+[command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+From https://github.com/matthewhammer/hazeljs-examples
+ * [new branch]      bench/4way             -> origin/bench/4way
+ * [new branch]      bench/681-memo         -> origin/bench/681-memo
+ * [new branch]      bench/847-a-vs-c       -> origin/bench/847-a-vs-c
+ * [new branch]      bench/847-direct       -> origin/bench/847-direct
+ * [new branch]      bench/853              -> origin/bench/853
+ * [new branch]      bench/853-more         -> origin/bench/853-more
+ * [new branch]      bench/853-split        -> origin/bench/853-split
+ * [new branch]      bench/converters-a97b6f7 -> origin/bench/converters-a97b6f7
+ * [new branch]      bench/lists-hybrid     -> origin/bench/lists-hybrid
+ * [new branch]      bench/package-0.0.11   -> origin/bench/package-0.0.11
+ * [new branch]      bench/runs-a97b6f7     -> origin/bench/runs-a97b6f7
+ * [new branch]      bench/runs-ca851b4     -> origin/bench/runs-ca851b4
+ * [new branch]      main                   -> origin/main
+ * [new branch]      perf/902-904           -> origin/perf/902-904
+ * [new branch]      perf/902-907-folk      -> origin/perf/902-907-folk
+ * [new branch]      perf/902-frames        -> origin/perf/902-frames
+ * [new branch]      trial/794-compiled-games -> origin/trial/794-compiled-games
+ * [new branch]      wip/793-pinball        -> origin/wip/793-pinball
+ * [new branch]      wip/793-pinball-0.0.36 -> origin/wip/793-pinball-0.0.36
+[command]/usr/bin/git branch --list --remote origin/perf/902-907-folk
+  origin/perf/902-907-folk
+[command]/usr/bin/git rev-parse refs/remotes/origin/perf/902-907-folk
+97fccb2e3acf11a8f8bbf9cb7e71bcd4732cf63a
+[command]/usr/bin/git sparse-checkout disable
+[command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+[command]/usr/bin/git checkout --progress --force -B perf/902-907-folk refs/remotes/origin/perf/902-907-folk
+Switched to a new branch 'perf/902-907-folk'
+branch 'perf/902-907-folk' set up to track 'origin/perf/902-907-folk'.
+[command]/usr/bin/git log -1 --format=%H
+97fccb2e3acf11a8f8bbf9cb7e71bcd4732cf63a
+frames	Run actions/setup-node@v4	﻿2026-11-28T16:58:08.2703296Z ##[group]Run actions/setup-node@v4
+with:
+  node-version: 22
+  always-auth: false
+  check-latest: false
+  token: ***
+Found in cache @ /opt/hostedtoolcache/node/22.23.5/x64
+(node:2201) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+node: v22.23.5
+npm: 10.9.9
+yarn: 1.22.22
+frames	The machine	﻿2026-11-28T16:58:09.0497965Z ##[group]Run mkdir -p world-frames
+[36;1mmkdir -p world-frames[0m
+[36;1m{ nproc; grep -m1 'model name' /proc/cpuinfo; node --version; google-chrome --version; } | tee world-frames/machine.txt[0m
+shell: /usr/bin/bash -e {0}
+4
+model name	: AMD EPYC 9V74 80-Core Processor
+v22.23.5
+Google Chrome 158.0.8127.36 
+frames	Gnome world as it was (0.0.103, 2026-11-24), beside today's	﻿2026-11-28T16:58:12.0745646Z ##[group]Run mkdir -p old && git worktree add old/0.0.103 02b73ab && git worktree add old/0.0.148 5e3734e && git worktree add old/0.0.149 ea6b603
+[36;1mmkdir -p old && git worktree add old/0.0.103 02b73ab && git worktree add old/0.0.148 5e3734e && git worktree add old/0.0.149 ea6b603[0m
+shell: /usr/bin/bash -e {0}
+Preparing worktree (detached HEAD 02b73ab)
+HEAD is now at 02b73ab 0.0.103: Gnome world's booklet revised whole, every picture drawn again; line drawings outline the rabbit as one shape
+Preparing worktree (detached HEAD 5e3734e)
+HEAD is now at 5e3734e Gnome world: each frame of the speed run recorded (PERF.rec, for tests), and a GitHub job that plays it in four setups and names its worst frames (ticket 902)
+Preparing worktree (detached HEAD ea6b603)
+HEAD is now at ea6b603 Gnome world 0.0.149: the speed run's frames kept to a sixtieth of a second, its long frames spread out (ticket 902)
+frames	Serve the site	﻿2026-11-28T16:58:12.4310691Z ##[group]Run python3 -m http.server 8000 --bind 127.0.0.1 > server.log 2>&1 &
+[36;1mpython3 -m http.server 8000 --bind 127.0.0.1 > server.log 2>&1 &[0m
+[36;1msleep 1[0m
+shell: /usr/bin/bash -e {0}
+frames	The speed run, frame by frame	﻿2026-11-28T16:58:13.4453798Z ##[group]Run node node/world-frames.mjs http://127.0.0.1:8000/ world-frames
+[36;1mnode node/world-frames.mjs http://127.0.0.1:8000/ world-frames[0m
+shell: /usr/bin/bash -e {0}
+== js: 1280×800 CSS px at 1x (canvas 536×302, a tile 19 px), CPU 1x; rules hazel (compiled by hazel-jit at load); seed 7
+  15.2 s: phase gems, 841 frames
+  30.4 s: phase dig, 1687 frames
+js: 1971 frames recorded; the run: things 12/12, tree parts 64/64, gems 333/336, at phase dig; its time 12:43, real 20.0 s
+  frame gap: median 16.7 ms (59.9 fps), p90 16.8, p99 33.4, worst 50.0; over 16.7 ms 234 of 1971, over 33 7, over 50 0, over 100 0, over 200 0
+  the steps' budget a frame: median 10.0 ms, from 4.0 to 11.6; pictures painted 192, put off to a later frame 724
+  a frame's steps: median 10.1 ms (35 steps), the slowest step in a frame: median 0.5 ms, p99 2.7, worst 34.8; drawing: median 3.4 ms, p99 19.5, worst 39.4
+  phase items: 362 frames, gap median 16.7 ms, p99 33.5, worst 50.0; steps a frame 38, drawing median 5.0 ms
+  phase trees: 172 frames, gap median 16.7 ms, p99 33.3, worst 33.4; steps a frame 58, drawing median 4.2 ms
+  phase gems: 578 frames, gap median 16.7 ms, p99 33.4, worst 33.4; steps a frame 38, drawing median 3.7 ms
+  phase dig: 859 frames, gap median 16.7 ms, p99 33.4, worst 50.0; steps a frame 34, drawing median 2.9 ms
+  the steps' time by part (⏱, whole run, 19.0 s): water 79.3% · birds, frogs, bugs 6.9% · the gnome 3.2% · its path search 1.3% · rabbits 1.2% · beavers 1.1% · villagers 1.0% · squirrels 0.9% · music, sparks 0.9% · picking things up 0.8% · wind and smoke 0.7% · the speed run's way 0.6% · boulders 0.5% · pebbles 0.5%
+  the drawing by part (whole run, 9.1 s): roots 17.4% · tunnels 10.6% · creatures 10.3% · hud 9.6% · surface 5.4% · ground 4.9% · trees 4.9% · ladders 4.1% · sky 2.9% · dark 2.8% · flowers 2.4% · greats 1.7% · wildlife 0.8% · bushes 0.6%
+  the page's thread, sampled (34.9 s busy; idle left out): the page (app.js) 62.0% · (program) 18.5% · native (canvas, DOM, builtins) 15.5% · the rules compiled from Hazel 3.5% · garbage collection 0.5% · sound 0.0% · other script: chip.js?v=0.0.129 0.0%
+  its top functions, self time: waterPasses app.js?v=0.0.156:534 40.5% · (program) (native) 18.5% · draw app.js?v=0.0.156:4845 3.5% · drawImage (native) 2.1% · drawImage (native) 1.9% · wakeNear app.js?v=0.0.156:107 1.5% · timedDraw app.js?v=0.0.156:5415 1.1% · fillRect (native) 0.9% · tick app.js?v=0.0.156:1609 0.7% · drawImage (native) 0.7% · fillRect (native) 0.7% · gemAim app.js?v=0.0.156:1243 0.7% · wildStep app.js?v=0.0.156:3257 0.6% · plank app.js?v=0.0.156:1713 0.6% · waterTail app.js?v=0.0.156:608 0.5% · tmark app.js?v=0.0.156:1608 0.5% · rect (native) 0.5% · drawImage (native) 0.5%
+  the 25 worst frames (the work done from a frame to the next; ms):
+   50.0 ms at 14.6 s, items: 1 steps 17.6 (slowest 17.6: water 16.3, the gnome 0.8, birds, frogs, bugs 0.2, picking things up 0.1); drawing 19.5 (roots 6.8, hud 5.5, creatures 2.2, sky 1.5); sampled: waterPasses app.js?v=0.0.156:534 15.2, drawImage (native) 8.6, waterStep app.js?v=0.0.156:596 6.2, (program) (native) 4.9, draw app.js?v=0.0.156:4845 3.6
+   50.0 ms at 40.6 s, dig: 1 steps 34.8 (slowest 34.8: birds, frogs, bugs 34.3, water 0.4, the gnome 0.1); drawing 12.9 (roots 6.2, creatures 2.1, tunnels 1.6, ground 0.5); sampled: (garbage collector) (native) 36.0, drawImage (native) 5.2, (program) (native) 3.4, fillRect (native) 1.1, setTransform (native) 0.6
+   49.9 ms at 17.7 s, items: 18 steps 4.0 (slowest 0.4: water 0.3, birds, frogs, bugs 0.1); drawing 39.4 (greats 27.2, hud 4.5, trees 1.7, bushes 1.7); sampled: drawImage (native) 19.7, translate (native) 5.1, strokeRect (native) 3.4, fill (native) 2.9, waterPasses app.js?v=0.0.156:534 2.2
+   49.9 ms at 17.8 s, items: 16 steps 4.3 (slowest 0.5: water 0.2, the gnome 0.1, villagers 0.1, birds, frogs, bugs 0.1); drawing 37.5 (trees 30.6, wildlife 2.8, ladders 0.8, creatures 0.5); sampled: drawImage (native) 17.4, waterPasses app.js?v=0.0.156:534 4.7, (program) (native) 4.6, translate (native) 4.0, fill (native) 3.4
+   33.5 ms at 20.8 s, items: 69 steps 10.6 (slowest 0.4: water 0.2, the gnome 0.1, villagers 0.1); drawing 12.7 (greats 8.8, bushes 0.6, creatures 0.5, ground 0.4); sampled: waterPasses app.js?v=0.0.156:534 9.0, (program) (native) 3.4, translate (native) 2.8, lineTo (native) 1.7, stroke (native) 1.1
+   33.5 ms at 49.1 s, dig: 39 steps 11.6 (slowest 0.5: its path search 0.2, water 0.2, birds, frogs, bugs 0.1); drawing 3.7 (tunnels 1.4, ground 0.4, creatures 0.4, surface 0.3); sampled: waterPasses app.js?v=0.0.156:534 12.6, (program) (native) 5.7, draw app.js?v=0.0.156:4845 1.7, drawSkyClouds app.js?v=0.0.156:4702 1.2, viewNear app.js?v=0.0.156:3103 1.2
+   33.4 ms at 14.3 s, items: 1 steps 12.9 (slowest 12.8: the speed run's way 5.9, its path search 4.0, water 2.5, the gnome 0.1); drawing 6.5 (creatures 2.0, hud 0.9, surface 0.7, wildlife 0.5); sampled: (program) (native) 12.2, botItemOrder app.js?v=0.0.156:1016 3.4, draw app.js?v=0.0.156:4845 2.3, waterPasses app.js?v=0.0.156:534 2.3, wayJS app.js?v=0.0.156:922 1.9
+   33.4 ms at 14.5 s, items: 8 steps 10.2 (slowest 1.4: water 1.2, the gnome 0.1, birds, frogs, bugs 0.1); drawing 7.2 (trees 3.5, sky 0.6, creatures 0.5, flowers 0.4); sampled: waterPasses app.js?v=0.0.156:534 14.0, (program) (native) 5.7, drawImage (native) 2.4, draw app.js?v=0.0.156:4845 1.8, drawLimbs app.js?v=0.0.156:2132 1.4
+   33.4 ms at 14.9 s, items: 3 steps 7.5 (slowest 2.7: water 2.3, birds, frogs, bugs 0.2, the gnome 0.1, picking things up 0.1); drawing 6.7 (flowers 1.4, surface 0.8, dark 0.8, creatures 0.6); sampled: (program) (native) 10.3, waterPasses app.js?v=0.0.156:534 9.4, waterTail app.js?v=0.0.156:608 2.6, petal app.js?v=0.0.156:2548 1.3, fillText (native) 1.2
+   33.4 ms at 15.0 s, items: 16 steps 6.7 (slowest 0.7: water 0.3, picking things up 0.1, wind and smoke 0.1, birds, frogs, bugs 0.1); drawing 15.1 (flowers 4.6, ground 4.0, wildlife 2.6, creatures 0.8); sampled: (program) (native) 6.9, cloudArt app.js?v=0.0.156:4678 4.4, fillRect (native) 4.3, waterPasses app.js?v=0.0.156:534 3.9, fill (native) 2.9
+   33.4 ms at 15.2 s, items: 26 steps 10.7 (slowest 3.1: its path search 2.5, water 0.4, the gnome 0.1, rabbits 0.1); drawing 8.3 (creatures 2.1, hud 1.7, dark 1.5, surface 0.6); sampled: waterPasses app.js?v=0.0.156:534 6.9, (program) (native) 5.2, draw app.js?v=0.0.156:4845 3.0, (anonymous) (compiled rules) 2.8, gemAim app.js?v=0.0.156:1243 1.7
+   33.4 ms at 15.4 s, items: 14 steps 5.7 (slowest 0.8: water 0.3, the speed run's way 0.1, the gnome 0.1, beavers 0.1); drawing 22.7 (roots 13.6, creatures 3.4, ladders 1.1, surface 0.9); sampled: drawImage (native) 5.9, setTransform (native) 3.4, waterPasses app.js?v=0.0.156:534 3.2, (anonymous) (compiled rules) 2.5, pass app.js?v=0.0.156:1780 2.2
+   33.4 ms at 16.2 s, items: 19 steps 6.1 (slowest 0.6: its path search 0.3, water 0.3); drawing 7.2 (dark 1.9, ladders 0.9, walls 0.7, surface 0.7); sampled: (program) (native) 6.2, waterPasses app.js?v=0.0.156:534 3.1, minimap app.js?v=0.0.156:5238 2.9, draw app.js?v=0.0.156:4845 2.8, drawImage (native) 2.3
+   33.4 ms at 16.4 s, items: 27 steps 7.5 (slowest 0.5: water 0.3, the gnome 0.1, birds, frogs, bugs 0.1); drawing 6.8 (dark 2.0, ladders 1.4, walls 0.8, creatures 0.5); sampled: (program) (native) 10.8, waterPasses app.js?v=0.0.156:534 4.3, timedDraw app.js?v=0.0.156:5415 2.9, draw app.js?v=0.0.156:4845 1.7, fillText (native) 1.7
+   33.4 ms at 17.1 s, items: 22 steps 9.4 (slowest 0.6: water 0.4, the gnome 0.1, beavers 0.1); drawing 3.7 (sky 0.9, creatures 0.6, hud 0.4, flowers 0.3); sampled: waterPasses app.js?v=0.0.156:534 15.8, (program) (native) 6.9, (anonymous) (compiled rules) 0.9, timedDraw app.js?v=0.0.156:5415 0.8, drawImage (native) 0.6
+   33.4 ms at 17.3 s, items: 53 steps 9.2 (slowest 0.4: water 0.3, villagers 0.1); drawing 5.3 (roots 2.3, surface 0.4, creatures 0.4, wildlife 0.4); sampled: waterPasses app.js?v=0.0.156:534 12.0, (program) (native) 4.0, draw app.js?v=0.0.156:4845 2.3, drawImage (native) 1.7, (anonymous) (compiled rules) 1.1
+   33.4 ms at 17.3 s, items: 49 steps 7.8 (slowest 0.4: water 0.3, the gnome 0.1); drawing 6.0 (roots 2.6, surface 0.7, sky 0.4, trees 0.4); sampled: waterPasses app.js?v=0.0.156:534 6.0, (program) (native) 4.0, tassel app.js?v=0.0.156:2383 1.7, translate (native) 1.1, lineTo (native) 1.1
+   33.4 ms at 17.6 s, items: 18 steps 4.2 (slowest 0.5: water 0.2, the gnome 0.1, trees, hearts, smoke 0.1, birds, frogs, bugs 0.1); drawing 23.2 (trees 19.5, surface 0.9, creatures 0.4, dark 0.4); sampled: drawImage (native) 12.0, translate (native) 5.0, (program) (native) 4.0, tick app.js?v=0.0.156:1609 1.3, (anonymous) app.js?v=0.0.156:2089 1.2
+   33.4 ms at 17.6 s, items: 19 steps 4.1 (slowest 0.6: birds, frogs, bugs 0.2, the gnome 0.1, water 0.1, trees, hearts, smoke 0.1); drawing 22.2 (trees 16.7, roots 1.6, surface 0.8, creatures 0.7); sampled: drawImage (native) 14.7, (program) (native) 3.3, translate (native) 2.3, paintTall app.js?v=0.0.156:2430 1.1, wildStep app.js?v=0.0.156:3257 1.1
+   33.4 ms at 17.7 s, items: 22 steps 4.0 (slowest 0.6: water 0.3, the speed run's way 0.1, birds, frogs, bugs 0.1, music, sparks 0.1); drawing 22.5 (roots 10.6, creatures 6.4, greats 2.3, surface 0.5); sampled: drawImage (native) 20.7, (program) (native) 2.8, waterPasses app.js?v=0.0.156:534 1.7, draw app.js?v=0.0.156:4845 1.1, at app.js?v=0.0.156:114 0.6
+   33.4 ms at 17.8 s, items: 21 steps 4.2 (slowest 0.4: water 0.2, boulders 0.1, birds, frogs, bugs 0.1); drawing 19.2 (trees 12.5, greats 2.8, surface 0.8, ladders 0.8); sampled: drawImage (native) 13.1, translate (native) 3.4, waterPasses app.js?v=0.0.156:534 2.9, (program) (native) 2.8, save (native) 2.2
+   33.4 ms at 17.9 s, items: 20 steps 4.1 (slowest 0.5: water 0.2, the gnome 0.1, picking things up 0.1, music, sparks 0.1); drawing 13.2 (ladders 9.1, trees 1.8, roots 0.4, sky 0.3); sampled: drawImage (native) 10.7, waterPasses app.js?v=0.0.156:534 4.2, (program) (native) 3.4, draw app.js?v=0.0.156:4845 1.1, stroke (native) 1.1
+   33.4 ms at 19.1 s, items: 31 steps 13.3 (slowest 5.0: villagers 4.7, water 0.2, birds, frogs, bugs 0.1); drawing 19.2 (roots 9.4, ground 4.7, surface 1.0, creatures 0.8); sampled: drawImage (native) 8.1, rect (native) 5.1, waterPasses app.js?v=0.0.156:534 4.6, tick app.js?v=0.0.156:1609 4.3, (anonymous) (compiled rules) 3.4
+   33.4 ms at 19.8 s, items: 42 steps 7.3 (slowest 0.5: water 0.2, the gnome 0.1, squirrels 0.1, birds, frogs, bugs 0.1); drawing 6.1 (roots 1.9, creatures 1.1, surface 0.6, ground 0.3); sampled: drawImage (native) 8.0, (program) (native) 5.6, waterPasses app.js?v=0.0.156:534 4.0, draw app.js?v=0.0.156:4845 2.3, (anonymous) (compiled rules) 1.2
+   33.4 ms at 20.1 s, items: 61 steps 9.4 (slowest 0.8: birds, frogs, bugs 0.7, water 0.1); drawing 6.4 (roots 2.0, creatures 0.9, dark 0.8, tunnels 0.5); sampled: (program) (native) 10.0, waterPasses app.js?v=0.0.156:534 7.3, draw app.js?v=0.0.156:4845 1.7, (garbage collector) (native) 1.1, drawImage (native) 1.1
+== plan-hazel: 1280×800 CSS px at 1x (canvas 536×302, a tile 19 px), CPU 1x; rules hazel (compiled by hazel-jit at load); seed 7
+  15.2 s: phase gems, 842 frames
+  30.3 s: phase dig, 1689 frames
+plan-hazel: 1912 frames recorded; the run: things 12/12, tree parts 64/64, gems 333/336, at phase dig; its time 12:43, real 19.0 s
+  frame gap: median 16.7 ms (59.9 fps), p90 16.8, p99 33.4, worst 116.7; over 16.7 ms 231 of 1912, over 33 7, over 50 2, over 100 1, over 200 0
+  the steps' budget a frame: median 10.0 ms, from 4.0 to 11.8; pictures painted 195, put off to a later frame 703
+  a frame's steps: median 10.2 ms (36 steps), the slowest step in a frame: median 0.5 ms, p99 3.1, worst 106.2; drawing: median 3.4 ms, p99 19.2, worst 37.1
+  phase items: 329 frames, gap median 16.7 ms, p99 50.0, worst 116.7; steps a frame 42, drawing median 4.9 ms
+  phase trees: 174 frames, gap median 16.7 ms, p99 33.3, worst 50.0; steps a frame 56, drawing median 3.9 ms
+  phase gems: 556 frames, gap median 16.7 ms, p99 33.4, worst 33.4; steps a frame 39, drawing median 3.5 ms
+  phase dig: 853 frames, gap median 16.7 ms, p99 33.4, worst 49.9; steps a frame 33, drawing median 2.9 ms
+  the steps' time by part (⏱, whole run, 18.8 s): water 78.1% · birds, frogs, bugs 6.9% · the gnome 3.2% · the speed run's way 1.7% · rabbits 1.5% · its path search 1.2% · beavers 1.1% · villagers 1.0% · music, sparks 0.9% · squirrels 0.9% · picking things up 0.8% · wind and smoke 0.7% · pebbles 0.6% · boulders 0.5%
+  the drawing by part (whole run, 8.6 s): roots 18.7% · tunnels 11.4% · creatures 10.7% · hud 9.9% · surface 5.6% · trees 5.4% · ground 4.9% · ladders 4.3% · sky 2.7% · flowers 2.7% · dark 2.7% · greats 1.9% · wildlife 0.8% · bushes 0.6%
+  the page's thread, sampled (33.9 s busy; idle left out): the page (app.js) 61.4% · (program) 18.5% · native (canvas, DOM, builtins) 15.3% · the rules compiled from Hazel 4.2% · garbage collection 0.6% · sound 0.0% · other script: chip.js?v=0.0.129 0.0% · other script: offline.js?v=0.0.138 0.0%
+  its top functions, self time: waterPasses app.js?v=0.0.156:534 40.7% · (program) (native) 18.5% · draw app.js?v=0.0.156:4845 3.2% · drawImage (native) 2.2% · drawImage (native) 1.9% · wakeNear app.js?v=0.0.156:107 1.6% · fillRect (native) 0.9% · timedDraw app.js?v=0.0.156:5415 0.9% · gemAim app.js?v=0.0.156:1243 0.8% · drawImage (native) 0.7% · tick app.js?v=0.0.156:1609 0.6% · waterTail app.js?v=0.0.156:608 0.6% · fillRect (native) 0.6% · tmark app.js?v=0.0.156:1608 0.6% · (garbage collector) (native) 0.6% · plank app.js?v=0.0.156:1713 0.6% · wildStep app.js?v=0.0.156:3257 0.6% · rect (native) 0.5%
+  the 25 worst frames (the work done from a frame to the next; ms):
+   116.7 ms at 11.8 s, items: 1 steps 106.3 (slowest 106.2: the speed run's way 102.5, its path search 2.2, water 1.1, the gnome 0.2); drawing 4.8 (creatures 1.7, hud 0.8, flowers 0.3, surface 0.3); sampled: (anonymous) (compiled rules) 69.7, ipow (compiled rules) 18.3, (program) (native) 5.4, inorm (compiled rules) 3.4, waterPasses app.js?v=0.0.156:534 2.8
+   50.1 ms at 12.2 s, items: 4 steps 11.6 (slowest 7.1: water 6.2, the gnome 0.6, boulders 0.1, wind and smoke 0.1); drawing 28.0 (hud 9.9, roots 8.5, creatures 3.5, ladders 1.2); sampled: waterPasses app.js?v=0.0.156:534 17.2, drawImage (native) 7.0, draw app.js?v=0.0.156:4845 4.2, (program) (native) 3.4, hud app.js?v=0.0.156:5317 3.4
+   50.0 ms at 14.8 s, items: 45 steps 7.2 (slowest 0.3: the gnome 0.1, water 0.1, birds, frogs, bugs 0.1); drawing 21.3 (trees 17.7, surface 0.8, roots 0.5, wildlife 0.4); sampled: drawImage (native) 9.0, waterPasses app.js?v=0.0.156:534 5.1, translate (native) 4.5, (program) (native) 3.9, stroke (native) 3.0
+   50.0 ms at 20.7 s, trees: 30 steps 8.9 (slowest 1.1: water 0.6, the gnome 0.2, wind and smoke 0.1, squirrels 0.1); drawing 34.4 (greats 30.4, bushes 1.4, flowers 0.7, sky 0.4); sampled: drawImage (native) 10.1, translate (native) 8.7, waterPasses app.js?v=0.0.156:534 7.5, (program) (native) 6.9, fill (native) 2.4
+   49.9 ms at 15.0 s, items: 16 steps 4.0 (slowest 0.6: water 0.2, birds, frogs, bugs 0.2, the gnome 0.1, wind and smoke 0.1); drawing 37.1 (greats 30.2, trees 1.5, bushes 1.4, creatures 0.7); sampled: drawImage (native) 16.3, translate (native) 5.1, save (native) 4.5, strokeRect (native) 3.4, fill (native) 2.9
+   49.9 ms at 38.4 s, dig: 2 steps 31.4 (slowest 31.0: rabbits 30.6, water 0.2, the gnome 0.1, birds, frogs, bugs 0.1); drawing 10.2 (roots 4.6, creatures 1.4, tunnels 1.1, hud 0.7); sampled: (garbage collector) (native) 30.0, drawImage (native) 5.1, (program) (native) 4.6, fillRect (native) 1.7, draw app.js?v=0.0.156:4845 1.7
+   33.4 ms at 12.9 s, items: 35 steps 7.9 (slowest 0.5: water 0.3, the gnome 0.1, music, sparks 0.1); drawing 11.4 (ladders 6.1, roots 1.8, surface 0.8, creatures 0.6); sampled: waterPasses app.js?v=0.0.156:534 5.3, (program) (native) 3.4, draw app.js?v=0.0.156:4845 2.3, (anonymous) app.js?v=0.0.156:4453 1.7, drawImage (native) 1.5
+   33.4 ms at 13.1 s, items: 15 steps 5.6 (slowest 2.1: water 2.0, rabbits 0.1); drawing 17.8 (trees 15.3, ladders 0.5, surface 0.4, creatures 0.4); sampled: fill (native) 11.3, (program) (native) 4.0, waterPasses app.js?v=0.0.156:534 2.9, H app.js?v=0.0.156:133 1.7, translate (native) 1.7
+   33.4 ms at 13.6 s, items: 48 steps 8.8 (slowest 0.6: its path search 0.2, water 0.2, the gnome 0.1, trees, hearts, smoke 0.1); drawing 5.8 (ground 1.2, dark 1.2, ladders 0.9, creatures 0.5); sampled: waterPasses app.js?v=0.0.156:534 7.9, (program) (native) 6.7, draw app.js?v=0.0.156:4845 3.4, timedDraw app.js?v=0.0.156:5415 2.8, (anonymous) (compiled rules) 1.7
+   33.4 ms at 14.9 s, items: 18 steps 4.1 (slowest 0.4: water 0.2, villagers 0.1, birds, frogs, bugs 0.1); drawing 23.5 (trees 14.9, hud 4.2, surface 1.0, roots 0.5); sampled: drawImage (native) 11.4, (program) (native) 3.4, translate (native) 3.1, waterPasses app.js?v=0.0.156:534 1.8, fill (native) 1.7
+   33.4 ms at 15.1 s, items: 15 steps 4.0 (slowest 1.2: birds, frogs, bugs 1.1, water 0.1); drawing 24.3 (roots 12.5, creatures 6.3, greats 2.3, wildlife 0.8); sampled: drawImage (native) 17.5, save (native) 3.4, (program) (native) 2.3, draw app.js?v=0.0.156:4845 1.1, now (native) 0.9
+   33.4 ms at 15.1 s, items: 20 steps 4.2 (slowest 0.4: water 0.3, birds, frogs, bugs 0.1); drawing 24.6 (trees 21.1, ladders 0.6, surface 0.5, wildlife 0.4); sampled: drawImage (native) 8.5, translate (native) 6.2, waterPasses app.js?v=0.0.156:534 3.2, save (native) 2.8, (program) (native) 2.3
+   33.4 ms at 17.4 s, items: 73 steps 8.9 (slowest 0.3: water 0.2, birds, frogs, bugs 0.1); drawing 3.2 (dark 0.5, surface 0.4, creatures 0.4, flowers 0.3); sampled: waterPasses app.js?v=0.0.156:534 10.7, (program) (native) 5.6, drawImage (native) 2.8, draw app.js?v=0.0.156:4845 2.8, holdRiver app.js?v=0.0.156:436 1.7
+   33.4 ms at 17.8 s, items: 51 steps 7.8 (slowest 0.4: water 0.2, the gnome 0.1, villagers 0.1); drawing 4.3 (roots 1.3, surface 0.5, creatures 0.5, ground 0.4); sampled: waterPasses app.js?v=0.0.156:534 7.3, (program) (native) 3.4, draw app.js?v=0.0.156:4845 1.7, fillRect (native) 1.1, save (native) 1.1
+   33.4 ms at 17.9 s, items: 38 steps 7.0 (slowest 0.4: the gnome 0.1, water 0.1, wind and smoke 0.1, birds, frogs, bugs 0.1); drawing 9.4 (roots 4.1, ladders 2.4, surface 0.6, ground 0.5); sampled: drawImage (native) 10.6, waterPasses app.js?v=0.0.156:534 5.4, (program) (native) 4.5, timedDraw app.js?v=0.0.156:5415 1.2, draw app.js?v=0.0.156:4845 1.1
+   33.4 ms at 20.6 s, trees: 69 steps 8.4 (slowest 0.4: water 0.2, the gnome 0.1, birds, frogs, bugs 0.1); drawing 3.4 (roots 1.5, surface 0.3, creatures 0.3, hud 0.3); sampled: waterPasses app.js?v=0.0.156:534 10.1, drawImage (native) 3.4, (program) (native) 2.8, (anonymous) (compiled rules) 1.7, wakeNear app.js?v=0.0.156:107 1.1
+   33.4 ms at 22.3 s, gems: 32 steps 8.5 (slowest 0.6: the speed run's way 0.2, water 0.2, its path search 0.1, squirrels 0.1); drawing 12.0 (hud 5.6, ground 3.0, tunnels 0.6, surface 0.5); sampled: waterPasses app.js?v=0.0.156:534 10.8, fillText (native) 4.0, (program) (native) 2.3, drawImage (native) 2.3, pmark app.js?v=0.0.156:5375 2.3
+   33.4 ms at 23.0 s, gems: 51 steps 8.4 (slowest 0.5: its path search 0.2, water 0.2, the speed run's way 0.1); drawing 6.9 (roots 3.7, ground 0.5, surface 0.5, flowers 0.4); sampled: waterPasses app.js?v=0.0.156:534 7.9, drawImage (native) 6.2, (program) (native) 5.1, (anonymous) (compiled rules) 1.7, getContext (native) 1.1
+   33.4 ms at 24.1 s, gems: 28 steps 5.8 (slowest 0.4: water 0.4); drawing 17.6 (roots 10.6, creatures 3.9, tunnels 0.6, surface 0.5); sampled: drawImage (native) 16.9, waterPasses app.js?v=0.0.156:534 6.2, (program) (native) 2.8, strokeLines app.js?v=0.0.156:1699 2.2, draw app.js?v=0.0.156:4845 0.6
+   33.4 ms at 24.3 s, gems: 18 steps 5.0 (slowest 1.1: its path search 0.8, water 0.2, the speed run's way 0.1); drawing 13.0 (roots 6.4, creatures 3.8, tunnels 0.5, surface 0.5); sampled: drawImage (native) 15.2, (program) (native) 4.5, waterPasses app.js?v=0.0.156:534 2.8, gemAim app.js?v=0.0.156:1243 1.1, stroke (native) 0.6
+   33.4 ms at 24.8 s, gems: 34 steps 8.6 (slowest 1.5: water 0.8, the gnome 0.3, beavers 0.2, villagers 0.1); drawing 16.1 (roots 10.0, tunnels 2.9, creatures 0.8, ground 0.5); sampled: drawImage (native) 7.4, (program) (native) 6.1, waterPasses app.js?v=0.0.156:534 3.6, setTransform (native) 1.7, strokeLines app.js?v=0.0.156:1699 1.7
+   33.4 ms at 25.9 s, gems: 47 steps 10.0 (slowest 0.5: water 0.4, birds, frogs, bugs 0.1); drawing 5.6 (roots 2.6, tunnels 0.5, ground 0.4, surface 0.4); sampled: waterPasses app.js?v=0.0.156:534 8.4, (program) (native) 4.0, drawImage (native) 2.8, dropCanvas app.js?v=0.0.156:81 1.1, setItem (native) 1.1
+   33.4 ms at 26.3 s, gems: 42 steps 9.2 (slowest 0.5: water 0.2, the speed run's way 0.1, its path search 0.1, beavers 0.1); drawing 3.6 (hud 0.6, ground 0.4, surface 0.4, creatures 0.4); sampled: waterPasses app.js?v=0.0.156:534 13.7, (program) (native) 5.8, drawImage (native) 3.4, draw app.js?v=0.0.156:4845 1.2, timedDraw app.js?v=0.0.156:5415 1.2
+   33.4 ms at 26.9 s, gems: 38 steps 10.1 (slowest 0.6: water 0.3, the speed run's way 0.1, wind and smoke 0.1, birds, frogs, bugs 0.1); drawing 5.5 (roots 2.9, tunnels 0.4, ground 0.3, surface 0.3); sampled: waterPasses app.js?v=0.0.156:534 8.0, (program) (native) 2.2, fill (native) 1.4, wakeNear app.js?v=0.0.156:107 1.1, fillRect (native) 1.1
+   33.4 ms at 27.2 s, gems: 38 steps 9.4 (slowest 0.5: water 0.4, rabbits 0.1); drawing 4.9 (fallen 1.8, tunnels 0.4, surface 0.4, ground 0.3); sampled: waterPasses app.js?v=0.0.156:534 11.3, (program) (native) 5.6, drawImage (native) 2.3, fillRect (native) 1.7, setTransform (native) 1.1
+== rivers-hazel: 1280×800 CSS px at 1x (canvas 536×302, a tile 19 px), CPU 1x; rules hazel (compiled by hazel-jit at load); seed 7
+  15.2 s: phase gems, 860 frames
+  30.4 s: phase dig, 1721 frames
+rivers-hazel: 2114 frames recorded; the run: things 12/12, tree parts 64/64, gems 333/336, at phase dig; its time 12:43, real 21.6 s
+  frame gap: median 16.7 ms (59.9 fps), p90 16.8, p99 33.4, worst 50.0; over 16.7 ms 213 of 2114, over 33 4, over 50 0, over 100 0, over 200 0
+  the steps' budget a frame: median 10.5 ms, from 4.0 to 12.0; pictures painted 200, put off to a later frame 751
+  a frame's steps: median 10.6 ms (33 steps), the slowest step in a frame: median 0.5 ms, p99 2.5, worst 20.9; drawing: median 2.9 ms, p99 16.7, worst 34.0
+  phase items: 373 frames, gap median 16.7 ms, p99 33.4, worst 50.0; steps a frame 38, drawing median 4.1 ms
+  phase trees: 210 frames, gap median 16.7 ms, p99 33.4, worst 33.4; steps a frame 47, drawing median 3.4 ms
+  phase gems: 647 frames, gap median 16.7 ms, p99 33.4, worst 50.0; steps a frame 35, drawing median 2.8 ms
+  phase dig: 884 frames, gap median 16.7 ms, p99 33.4, worst 33.5; steps a frame 30, drawing median 2.6 ms
+  the steps' time by part (⏱, whole run, 21.8 s): water 83.1% · birds, frogs, bugs 5.7% · the gnome 2.7% · rabbits 1.1% · its path search 0.9% · beavers 0.8% · villagers 0.8% · squirrels 0.7% · music, sparks 0.7% · picking things up 0.7% · wind and smoke 0.6% · the speed run's way 0.6% · boulders 0.5% · pebbles 0.4%
+  the drawing by part (whole run, 8.4 s): roots 18.9% · tunnels 11.8% · creatures 10.2% · hud 9.0% · surface 5.4% · ground 5.2% · trees 5.0% · ladders 4.4% · dark 2.6% · flowers 2.1% · sky 1.9% · greats 1.9% · bushes 0.8% · wildlife 0.7%
+  the page's thread, sampled (37.0 s busy; idle left out): the page (app.js) 57.9% · (program) 17.7% · native (canvas, DOM, builtins) 13.5% · the rules compiled from Hazel 9.9% · garbage collection 1.0% · sound 0.0% · other script: chip.js?v=0.0.129 0.0%
+  its top functions, self time: waterPasses app.js?v=0.0.156:534 37.5% · (program) (native) 17.7% · draw app.js?v=0.0.156:4845 3.1% · drawImage (native) 2.1% · waterTailHazel app.js?v=0.0.156:621 2.0% · drawImage (native) 1.8% · wakeNear app.js?v=0.0.156:107 1.3% · (garbage collector) (native) 1.0% · (anonymous) (compiled rules) 0.9% · fillRect (native) 0.9% · timedDraw app.js?v=0.0.156:5415 0.8% · tick app.js?v=0.0.156:1609 0.7% · tmark app.js?v=0.0.156:1608 0.6% · drawImage (native) 0.6% · gemAim app.js?v=0.0.156:1243 0.6% · $Lin (compiled rules) 0.6% · plank app.js?v=0.0.156:1713 0.6% · fillRect (native) 0.6%
+  the 25 worst frames (the work done from a frame to the next; ms):
+   50.0 ms at 31.2 s, gems: 30 steps 9.8 (slowest 0.5: water 0.4, birds, frogs, bugs 0.1); drawing 34.0 (greats 31.5, ground 0.5, surface 0.3, creatures 0.3); sampled: drawImage (native) 14.2, draw app.js?v=0.0.156:4845 6.0, waterPasses app.js?v=0.0.156:534 5.7, (program) (native) 5.1, translate (native) 3.6
+   33.5 ms at 37.3 s, dig: 37 steps 11.6 (slowest 0.5: water 0.5); drawing 2.3 (tunnels 1.0, hud 0.3); sampled: waterPasses app.js?v=0.0.156:534 18.1, (program) (native) 6.2, fillRect (native) 2.3, (anonymous) (compiled rules) 1.1, waterTailHazel app.js?v=0.0.156:621 0.6
+   33.5 ms at 38.9 s, dig: 26 steps 11.0 (slowest 1.5: water 1.4, birds, frogs, bugs 0.1); drawing 12.7 (roots 4.8, tunnels 3.3, creatures 1.4, hud 0.8); sampled: (program) (native) 9.8, waterPasses app.js?v=0.0.156:534 8.9, drawImage (native) 3.1, fillRect (native) 1.9, draw app.js?v=0.0.156:4845 1.5
+   33.4 ms at 12.0 s, items: 1 steps 19.2 (slowest 19.2: water 18.5, birds, frogs, bugs 0.2, rabbits 0.2, the gnome 0.1); drawing 4.8 (surface 0.7, creatures 0.7, ground 0.6, dark 0.6); sampled: waterPasses app.js?v=0.0.156:534 14.3, (program) (native) 9.1, waterStep app.js?v=0.0.156:596 4.0, timedDraw app.js?v=0.0.156:5415 1.1, (anonymous) (compiled rules) 0.6
+   33.4 ms at 12.2 s, items: 8 steps 11.9 (slowest 2.1: water 1.9, picking things up 0.1, rabbits 0.1); drawing 2.7 (creatures 0.4, flowers 0.3, surface 0.3, wildlife 0.3); sampled: waterPasses app.js?v=0.0.156:534 11.9, (program) (native) 6.9, drawImage (native) 2.8, timedDraw app.js?v=0.0.156:5415 1.9, (anonymous) (compiled rules) 1.7
+   33.4 ms at 12.5 s, items: 7 steps 9.5 (slowest 1.6: water 1.3, beavers 0.2, birds, frogs, bugs 0.1); drawing 29.8 (greats 26.3, surface 0.6, hud 0.5, flowers 0.4); sampled: drawImage (native) 9.0, waterPasses app.js?v=0.0.156:534 7.4, fill (native) 3.8, translate (native) 3.4, save (native) 1.7
+   33.4 ms at 12.8 s, items: 32 steps 11.0 (slowest 0.7: birds, frogs, bugs 0.5, water 0.2); drawing 4.7 (surface 1.2, flowers 0.5, ground 0.5, creatures 0.5); sampled: waterPasses app.js?v=0.0.156:534 8.5, (program) (native) 7.3, timedDraw app.js?v=0.0.156:5415 2.3, (anonymous) (compiled rules) 2.0, draw app.js?v=0.0.156:4845 1.7
+   33.4 ms at 13.0 s, items: 30 steps 10.0 (slowest 1.1: beavers 0.9, water 0.1, music, sparks 0.1); drawing 8.1 (roots 3.2, creatures 1.7, dark 0.5, tunnels 0.4); sampled: waterPasses app.js?v=0.0.156:534 10.7, (program) (native) 5.1, drawImage (native) 3.4, (anonymous) (compiled rules) 2.7, draw app.js?v=0.0.156:4845 1.7
+   33.4 ms at 13.1 s, items: 19 steps 5.9 (slowest 0.7: water 0.3, beavers 0.2, the speed run's way 0.1, pebbles 0.1); drawing 3.2 (ladders 0.6, creatures 0.5, surface 0.4, dark 0.3); sampled: (program) (native) 6.2, hud app.js?v=0.0.156:5317 3.6, drawImage (native) 3.5, waterPasses app.js?v=0.0.156:534 2.4, fill (native) 1.2
+   33.4 ms at 13.2 s, items: 21 steps 6.3 (slowest 0.6: water 0.3, birds, frogs, bugs 0.2, the speed run's way 0.1); drawing 12.6 (roots 6.1, hud 2.7, dark 1.6, ladders 0.6); sampled: (program) (native) 10.3, drawImage (native) 5.7, waterPasses app.js?v=0.0.156:534 3.9, draw app.js?v=0.0.156:4845 2.3, fillText (native) 2.3
+   33.4 ms at 13.8 s, items: 47 steps 9.3 (slowest 0.3: water 0.2, boulders 0.1); drawing 8.4 (hud 4.1, dark 1.1, ladders 0.9, walls 0.5); sampled: waterPasses app.js?v=0.0.156:534 8.7, (program) (native) 5.1, (anonymous) (compiled rules) 2.8, drawImage (native) 2.7, minimap app.js?v=0.0.156:5238 2.3
+   33.4 ms at 14.7 s, items: 38 steps 10.9 (slowest 0.5: water 0.4, beavers 0.1); drawing 5.3 (roots 1.5, bushes 1.0, surface 0.4, creatures 0.4); sampled: waterPasses app.js?v=0.0.156:534 14.1, (program) (native) 6.2, drawImage (native) 4.0, (anonymous) (compiled rules) 1.3, waterTailHazel app.js?v=0.0.156:621 0.6
+   33.4 ms at 14.9 s, items: 44 steps 9.4 (slowest 0.3: water 0.3); drawing 8.7 (trees 5.4, surface 0.5, roots 0.4, creatures 0.4); sampled: waterPasses app.js?v=0.0.156:534 7.3, (program) (native) 5.6, (anonymous) (compiled rules) 2.8, translate (native) 1.7, lineTo (native) 1.7
+   33.4 ms at 15.1 s, items: 34 steps 7.8 (slowest 0.3: water 0.2, birds, frogs, bugs 0.1); drawing 20.2 (trees 16.7, roots 0.7, surface 0.7, creatures 0.4); sampled: drawImage (native) 6.2, translate (native) 4.6, waterPasses app.js?v=0.0.156:534 4.0, (program) (native) 2.8, (anonymous) (compiled rules) 1.7
+   33.4 ms at 15.2 s, items: 16 steps 4.2 (slowest 0.5: water 0.3, the speed run's way 0.1, birds, frogs, bugs 0.1); drawing 21.2 (trees 14.3, hud 3.4, surface 0.8, roots 0.5); sampled: drawImage (native) 11.1, translate (native) 4.0, (program) (native) 3.4, lineTo (native) 2.3, waterPasses app.js?v=0.0.156:534 1.8
+   33.4 ms at 15.2 s, items: 15 steps 4.0 (slowest 0.6: water 0.4, birds, frogs, bugs 0.1, music, sparks 0.1); drawing 20.5 (roots 10.6, creatures 4.8, greats 2.2, surface 0.5); sampled: drawImage (native) 12.0, save (native) 5.6, (program) (native) 2.3, waterPasses app.js?v=0.0.156:534 1.7, moveTo (native) 1.7
+   33.4 ms at 16.8 s, items: 30 steps 9.6 (slowest 0.9: water 0.9); drawing 5.5 (roots 1.4, bushes 1.3, surface 0.7, creatures 0.4); sampled: waterPasses app.js?v=0.0.156:534 8.5, (program) (native) 6.7, draw app.js?v=0.0.156:4845 2.3, has (native) 1.9, drawImage (native) 1.2
+   33.4 ms at 17.3 s, items: 52 steps 9.5 (slowest 0.3: water 0.2, beavers 0.1); drawing 6.7 (roots 3.3, creatures 0.9, surface 0.7, ground 0.3); sampled: waterPasses app.js?v=0.0.156:534 9.1, (program) (native) 5.9, drawImage (native) 5.1, (anonymous) (compiled rules) 2.9, draw app.js?v=0.0.156:4845 1.7
+   33.4 ms at 18.6 s, items: 42 steps 9.3 (slowest 0.3: water 0.2, wind and smoke 0.1); drawing 11.4 (ladders 6.6, trees 1.3, surface 0.9, ground 0.5); sampled: drawImage (native) 8.1, waterPasses app.js?v=0.0.156:534 6.9, (program) (native) 3.4, shingles app.js?v=0.0.156:4247 1.8, fill (native) 1.2
+   33.4 ms at 20.4 s, trees: 46 steps 10.6 (slowest 0.5: water 0.4, birds, frogs, bugs 0.1); drawing 5.6 (roots 2.5, creatures 1.0, lodges 0.3, wildlife 0.3); sampled: waterPasses app.js?v=0.0.156:534 12.4, (program) (native) 8.4, drawImage (native) 4.5, (anonymous) (compiled rules) 1.7, draw app.js?v=0.0.156:4845 1.1
+   33.4 ms at 21.9 s, trees: 66 steps 10.3 (slowest 0.3: water 0.2, the gnome 0.1); drawing 22.0 (greats 20.6, creatures 0.4, flowers 0.2, hud 0.2); sampled: drawImage (native) 9.0, waterPasses app.js?v=0.0.156:534 6.7, translate (native) 3.9, (anonymous) (compiled rules) 2.3, (program) (native) 2.2
+   33.4 ms at 22.1 s, trees: 1 steps 20.9 (slowest 20.9: water 20.8, birds, frogs, bugs 0.1); drawing 4.2 (roots 1.4, ladders 0.7, creatures 0.5, sky 0.4); sampled: (garbage collector) (native) 20.3, (program) (native) 5.7, gemAim app.js?v=0.0.156:1243 0.6, at app.js?v=0.0.156:114 0.6, save (native) 0.6
+   33.4 ms at 22.9 s, gems: 44 steps 9.1 (slowest 0.4: water 0.2, the gnome 0.1, music, sparks 0.1); drawing 2.3 (ground 0.4, surface 0.4, ladders 0.3, hud 0.3); sampled: waterPasses app.js?v=0.0.156:534 12.5, drawImage (native) 5.1, (program) (native) 4.5, draw app.js?v=0.0.156:4845 1.7, (anonymous) (compiled rules) 1.5
+   33.4 ms at 24.4 s, gems: 52 steps 10.5 (slowest 0.4: water 0.2, the gnome 0.1, trees, hearts, smoke 0.1); drawing 11.9 (roots 6.4, creatures 2.8, tunnels 0.7, ground 0.4); sampled: waterPasses app.js?v=0.0.156:534 8.6, drawImage (native) 7.9, (program) (native) 4.5, draw app.js?v=0.0.156:4845 1.7, songStep app.js?v=0.0.156:3231 1.1
+   33.4 ms at 25.4 s, gems: 26 steps 6.9 (slowest 0.8: its path search 0.6, water 0.2); drawing 14.6 (roots 7.8, creatures 4.4, tunnels 0.7, surface 0.4); sampled: drawImage (native) 18.1, waterPasses app.js?v=0.0.156:534 4.0, (program) (native) 2.3, moveTo (native) 1.2, (anonymous) (compiled rules) 1.2
+== folk-hazel: 1280×800 CSS px at 1x (canvas 536×302, a tile 19 px), CPU 1x; rules hazel (compiled by hazel-jit at load); seed 7
+  15.2 s: phase gems, 850 frames
+  30.4 s: phase dig, 1704 frames
+folk-hazel: 2043 frames recorded; the run: things 12/12, tree parts 64/64, gems 333/336, at phase dig; its time 12:43, real 21.1 s
+  frame gap: median 16.7 ms (59.9 fps), p90 16.8, p99 33.4, worst 50.0; over 16.7 ms 220 of 2043, over 33 9, over 50 0, over 100 0, over 200 0
+  the steps' budget a frame: median 10.4 ms, from 4.0 to 12.0; pictures painted 206, put off to a later frame 706
+  a frame's steps: median 10.6 ms (33 steps), the slowest step in a frame: median 0.5 ms, p99 3.3, worst 20.4; drawing: median 3.0 ms, p99 18.5, worst 41.1
+  phase items: 388 frames, gap median 16.7 ms, p99 49.9, worst 50.0; steps a frame 35, drawing median 4.3 ms
+  phase trees: 190 frames, gap median 16.7 ms, p99 33.4, worst 50.0; steps a frame 53, drawing median 3.6 ms
+  phase gems: 607 frames, gap median 16.7 ms, p99 33.4, worst 33.5; steps a frame 35, drawing median 3.0 ms
+  phase dig: 858 frames, gap median 16.7 ms, p99 33.4, worst 50.0; steps a frame 31, drawing median 2.4 ms
+  the steps' time by part (⏱, whole run, 20.8 s): water 70.8% · birds, frogs, bugs 9.6% · squirrels 6.9% · the gnome 3.3% · villagers 1.6% · rabbits 1.2% · its path search 1.0% · beavers 0.9% · music, sparks 0.8% · picking things up 0.8% · wind and smoke 0.7% · the speed run's way 0.6% · boulders 0.5% · pebbles 0.5%
+  the drawing by part (whole run, 8.4 s): roots 19.2% · tunnels 11.5% · creatures 9.9% · hud 8.7% · surface 5.8% · trees 5.3% · ground 5.1% · ladders 4.6% · dark 2.6% · flowers 2.1% · greats 1.9% · sky 1.9% · wildlife 0.8% · bushes 0.7%
+  the page's thread, sampled (36.0 s busy; idle left out): the page (app.js) 57.9% · (program) 17.9% · native (canvas, DOM, builtins) 14.4% · the rules compiled from Hazel 9.0% · garbage collection 0.8% · sound 0.0% · other script: chip.js?v=0.0.129 0.0% · other script: offline.js?v=0.0.138 0.0% · other script: pause.js?v=0.0.121 0.0%
+  its top functions, self time: waterPasses app.js?v=0.0.156:534 38.6% · (program) (native) 17.9% · draw app.js?v=0.0.156:4845 3.1% · drawImage (native) 2.2% · drawImage (native) 1.9% · wakeNear app.js?v=0.0.156:107 1.3% · fillRect (native) 0.9% · (garbage collector) (native) 0.8% · timedDraw app.js?v=0.0.156:5415 0.8% · tick app.js?v=0.0.156:1609 0.7% · wildStep app.js?v=0.0.156:3257 0.7% · drawImage (native) 0.6% · tmark app.js?v=0.0.156:1608 0.6% · fillRect (native) 0.6% · plank app.js?v=0.0.156:1713 0.6% · gemAim app.js?v=0.0.156:1243 0.5% · rect (native) 0.5% · drawImage (native) 0.5%
+  the 25 worst frames (the work done from a frame to the next; ms):
+   50.0 ms at 14.9 s, items: 35 steps 7.6 (slowest 0.4: water 0.2, birds, frogs, bugs 0.2); drawing 23.2 (trees 19.6, surface 0.9, roots 0.7, creatures 0.3); sampled: drawImage (native) 13.5, (program) (native) 6.2, waterPasses app.js?v=0.0.156:534 3.9, translate (native) 3.9, draw app.js?v=0.0.156:4845 2.3
+   50.0 ms at 18.3 s, items: 38 steps 10.8 (slowest 0.4: water 0.2, trees, hearts, smoke 0.1, squirrels 0.1); drawing 28.1 (greats 23.5, hud 2.1, ground 0.4, surface 0.4); sampled: waterPasses app.js?v=0.0.156:534 14.6, drawImage (native) 12.4, fill (native) 3.3, translate (native) 2.8, (program) (native) 2.8
+   50.0 ms at 21.8 s, trees: 64 steps 9.7 (slowest 0.4: water 0.4); drawing 30.2 (greats 28.2, surface 0.4, sky 0.3, hud 0.3); sampled: drawImage (native) 17.4, waterPasses app.js?v=0.0.156:534 6.2, translate (native) 5.0, (program) (native) 2.8, fill (native) 2.3
+   50.0 ms at 32.9 s, dig: 2 steps 7.4 (slowest 6.1: birds, frogs, bugs 5.1, water 0.5, squirrels 0.2, the gnome 0.1); drawing 23.7 (ground 6.4, dark 4.4, tunnels 3.9, roots 2.8); sampled: (program) (native) 13.7, $mo (compiled rules) 7.5, (garbage collector) (native) 6.8, fill (native) 5.9, drawImage (native) 4.0
+   50.0 ms at 39.6 s, dig: 26 steps 19.1 (slowest 8.4: water 5.8, boulders 1.9, birds, frogs, bugs 0.3, rabbits 0.2); drawing 12.3 (hud 4.5, tunnels 2.6, creatures 1.7, ground 0.7); sampled: waterPasses app.js?v=0.0.156:534 18.5, (program) (native) 7.3, drawImage (native) 3.9, frame app.js?v=0.0.156:5387 2.4, draw app.js?v=0.0.156:4845 1.7
+   49.9 ms at 12.2 s, items: 7 steps 9.6 (slowest 1.7: water 1.2, beavers 0.3, birds, frogs, bugs 0.2); drawing 29.7 (greats 25.4, surface 0.6, dark 0.5, hud 0.5); sampled: drawImage (native) 13.5, waterPasses app.js?v=0.0.156:534 12.1, (program) (native) 3.9, translate (native) 3.4, draw app.js?v=0.0.156:4845 2.3
+   49.9 ms at 15.0 s, items: 12 steps 4.0 (slowest 0.6: birds, frogs, bugs 0.3, water 0.2, the gnome 0.1); drawing 41.1 (greats 24.2, trees 9.3, surface 2.7, bushes 1.2); sampled: drawImage (native) 22.7, translate (native) 4.6, (program) (native) 3.4, fill (native) 3.2, (anonymous) app.js?v=0.0.156:2150 1.2
+   33.5 ms at 25.3 s, gems: 1 steps 20.2 (slowest 20.1: birds, frogs, bugs 19.8, water 0.2); drawing 18.5 (roots 10.8, creatures 3.5, tunnels 0.7, ground 0.6); sampled: (garbage collector) (native) 20.7, drawImage (native) 4.0, (program) (native) 2.2, draw app.js?v=0.0.156:4845 1.7, tmark app.js?v=0.0.156:1608 0.6
+   33.4 ms at 14.4 s, items: 29 steps 10.0 (slowest 0.6: water 0.3, the gnome 0.1, squirrels 0.1, birds, frogs, bugs 0.1); drawing 9.2 (hud 2.4, dark 2.1, roots 1.9, sky 0.5); sampled: waterPasses app.js?v=0.0.156:534 12.5, (program) (native) 4.5, drawImage (native) 1.7, (garbage collector) (native) 1.7, IN (compiled rules) 1.2
+   33.4 ms at 14.7 s, items: 36 steps 8.1 (slowest 0.5: water 0.2, the gnome 0.1, squirrels 0.1, birds, frogs, bugs 0.1); drawing 6.8 (roots 2.6, bushes 1.3, surface 0.8, hud 0.4); sampled: (program) (native) 6.8, waterPasses app.js?v=0.0.156:534 6.2, drawImage (native) 3.4, draw app.js?v=0.0.156:4845 2.3, fillText (native) 1.1
+   33.4 ms at 14.8 s, items: 31 steps 7.8 (slowest 0.6: water 0.3, rabbits 0.2, birds, frogs, bugs 0.1); drawing 6.3 (roots 2.5, creatures 1.1, surface 0.5, flowers 0.3); sampled: (program) (native) 6.8, waterPasses app.js?v=0.0.156:534 4.4, drawImage (native) 1.7, draw app.js?v=0.0.156:4845 1.7, (anonymous) (compiled rules) 1.1
+   33.4 ms at 15.0 s, items: 13 steps 4.0 (slowest 0.6: water 0.2, birds, frogs, bugs 0.2, the gnome 0.1, trees, hearts, smoke 0.1); drawing 23.7 (roots 9.7, creatures 5.3, greats 2.1, trees 1.8); sampled: drawImage (native) 11.8, save (native) 2.3, (program) (native) 2.3, waterPasses app.js?v=0.0.156:534 2.3, fillRect (native) 2.3
+   33.4 ms at 15.1 s, items: 16 steps 4.0 (slowest 0.4: water 0.3, birds, frogs, bugs 0.1); drawing 20.8 (trees 11.7, hud 4.2, greats 2.2, surface 0.6); sampled: drawImage (native) 8.5, translate (native) 4.6, (program) (native) 2.3, save (native) 2.2, timedDraw app.js?v=0.0.156:5415 2.2
+   33.4 ms at 15.3 s, items: 10 steps 4.0 (slowest 0.6: water 0.2, squirrels 0.2, the gnome 0.1, birds, frogs, bugs 0.1); drawing 21.7 (ladders 16.8, trees 1.8, roots 0.5, creatures 0.5); sampled: drawImage (native) 10.8, (program) (native) 4.0, fill (native) 2.9, mixHex app.js?v=0.0.156:2090 2.3, draw app.js?v=0.0.156:4845 1.7
+   33.4 ms at 16.8 s, items: 34 steps 9.4 (slowest 0.4: water 0.3, music, sparks 0.1); drawing 10.0 (bushes 2.5, roots 2.4, trees 1.3, creatures 0.9); sampled: waterPasses app.js?v=0.0.156:534 7.2, (program) (native) 5.6, drawImage (native) 3.9, fill (native) 1.6, tick app.js?v=0.0.156:1609 1.1
+   33.4 ms at 17.2 s, items: 54 steps 9.2 (slowest 0.4: water 0.2, the speed run's way 0.1, squirrels 0.1); drawing 4.7 (roots 1.3, creatures 0.5, dark 0.5, surface 0.4); sampled: waterPasses app.js?v=0.0.156:534 10.2, (program) (native) 6.7, (anonymous) (compiled rules) 3.9, drawImage (native) 2.3, tick app.js?v=0.0.156:1609 1.1
+   33.4 ms at 18.5 s, items: 25 steps 8.7 (slowest 0.5: water 0.4, birds, frogs, bugs 0.1); drawing 13.6 (roots 6.4, ladders 2.9, ground 1.0, tunnels 0.6); sampled: drawImage (native) 6.2, waterPasses app.js?v=0.0.156:534 5.2, (program) (native) 2.3, (anonymous) (compiled rules) 1.7, lineTo (native) 1.7
+   33.4 ms at 19.9 s, trees: 48 steps 10.0 (slowest 1.6: water 1.6); drawing 9.3 (roots 6.4, flowers 0.5, creatures 0.4, surface 0.3); sampled: waterPasses app.js?v=0.0.156:534 7.4, drawImage (native) 5.8, (program) (native) 4.0, (anonymous) (compiled rules) 2.3, dropCanvas app.js?v=0.0.156:81 1.7
+   33.4 ms at 21.1 s, trees: 15 steps 23.0 (slowest 15.0: birds, frogs, bugs 14.7, water 0.3); drawing 4.2 (creatures 1.9, sky 0.5, hud 0.5, wildlife 0.3); sampled: (garbage collector) (native) 13.3, waterPasses app.js?v=0.0.156:534 9.1, (anonymous) (compiled rules) 3.4, (program) (native) 2.8, $mi (compiled rules) 1.1
+   33.4 ms at 21.2 s, trees: 29 steps 10.0 (slowest 0.5: water 0.3, squirrels 0.1, rabbits 0.1); drawing 14.6 (trees 5.3, roots 4.8, creatures 2.2, wildlife 0.7); sampled: waterPasses app.js?v=0.0.156:534 8.5, drawImage (native) 5.5, (program) (native) 2.8, ell app.js?v=0.0.156:2791 1.6, draw app.js?v=0.0.156:4845 1.2
+   33.4 ms at 21.3 s, trees: 28 steps 8.8 (slowest 0.4: water 0.2, squirrels 0.1, birds, frogs, bugs 0.1); drawing 6.7 (roots 3.4, bushes 1.3, surface 0.3, hud 0.3); sampled: waterPasses app.js?v=0.0.156:534 10.3, (program) (native) 9.1, drawImage (native) 4.5, draw app.js?v=0.0.156:4845 1.7, (anonymous) (compiled rules) 1.7
+   33.4 ms at 21.5 s, trees: 20 steps 10.6 (slowest 0.9: birds, frogs, bugs 0.5, water 0.4); drawing 10.6 (roots 3.6, trees 1.5, bushes 1.5, surface 0.7); sampled: waterPasses app.js?v=0.0.156:534 9.5, (program) (native) 6.9, drawImage (native) 4.5, timedDraw app.js?v=0.0.156:5415 1.7, draw app.js?v=0.0.156:4845 1.2
+   33.4 ms at 24.7 s, gems: 43 steps 10.0 (slowest 0.5: birds, frogs, bugs 0.3, boulders 0.1, squirrels 0.1); drawing 18.9 (roots 10.2, creatures 6.6, tunnels 0.5, surface 0.4); sampled: drawImage (native) 17.1, waterPasses app.js?v=0.0.156:534 7.1, (program) (native) 4.0, (anonymous) (compiled rules) 2.0, draw app.js?v=0.0.156:4845 0.6
+   33.4 ms at 25.0 s, gems: 27 steps 6.0 (slowest 0.4: water 0.3, birds, frogs, bugs 0.1); drawing 18.6 (roots 9.8, creatures 6.0, tunnels 0.5, ground 0.4); sampled: drawImage (native) 16.9, (program) (native) 5.1, waterPasses app.js?v=0.0.156:534 4.5, draw app.js?v=0.0.156:4845 2.3, strokeLines app.js?v=0.0.156:1699 1.1
+   33.4 ms at 25.2 s, gems: 20 steps 4.8 (slowest 0.4: water 0.3, birds, frogs, bugs 0.1); drawing 11.3 (roots 4.3, creatures 2.4, hud 2.1, tunnels 0.5); sampled: drawImage (native) 15.8, (program) (native) 5.1, waterPasses app.js?v=0.0.156:534 2.8, strokeLines app.js?v=0.0.156:1699 1.1, inorm (compiled rules) 1.1
+== all-hazel: 1280×800 CSS px at 1x (canvas 536×302, a tile 19 px), CPU 1x; rules hazel (compiled by hazel-jit at load); seed 7
+  15.2 s: phase items, 724 frames
+  30.4 s: phase items, 1539 frames
+  45.6 s: phase trees, 2376 frames
+  60.8 s: phase trees, 3235 frames
+  75.9 s: phase gems, 4088 frames
+  91.1 s: phase gems, 4905 frames
+  106.3 s: phase gems, 5728 frames
+all-hazel: 6499 frames recorded; the run: things 12/12, tree parts 64/64, gems 251/336, at phase gems
+  frame gap: median 16.7 ms (59.9 fps), p90 33.3, p99 33.4, worst 150.0; over 16.7 ms 999 of 6499, over 33 24, over 50 10, over 100 2, over 200 0
+  the steps' budget a frame: median 11.4 ms, from 4.0 to 12.0; pictures painted 188, put off to a later frame 340
+  a frame's steps: median 12.4 ms (6 steps), the slowest step in a frame: median 2.2 ms, p99 19.1, worst 136.2; drawing: median 2.2 ms, p99 13.2, worst 40.0
+  phase items: 2308 frames, gap median 16.7 ms, p99 33.4, worst 150.0; steps a frame 6, drawing median 2.8 ms
+  phase trees: 1257 frames, gap median 16.7 ms, p99 33.4, worst 83.3; steps a frame 8, drawing median 2.0 ms
+  phase gems: 2934 frames, gap median 16.7 ms, p99 33.4, worst 50.1; steps a frame 5, drawing median 2.0 ms
+  the steps' time by part (⏱, whole run, 81.5 s): water 92.0% · birds, frogs, bugs 2.1% · squirrels 1.8% · the gnome 0.9% · its path search 0.8% · villagers 0.5% · the speed run's way 0.3% · rabbits 0.3% · music, sparks 0.3% · picking things up 0.2% · beavers 0.2% · wind and smoke 0.2% · boulders 0.1% · pebbles 0.1%
+  the drawing by part (whole run, 19.1 s): roots 10.7% · hud 10.3% · surface 8.3% · creatures 8.3% · ladders 7.5% · ground 6.9% · trees 6.3% · dark 4.0% · sky 3.6% · flowers 2.9% · tunnels 2.7% · greats 1.7% · wildlife 1.3% · walls 0.8%
+  the page's thread, sampled (120.3 s busy; idle left out): the rules compiled from Hazel 44.7% · the page (app.js) 26.8% · (program) 15.8% · native (canvas, DOM, builtins) 9.0% · garbage collection 3.7% · sound 0.0% · other script: offline.js?v=0.0.138 0.0% · other script: chip.js?v=0.0.129 0.0%
+  its top functions, self time: (program) (native) 15.8% · waterPassesHazel app.js?v=0.0.156:568 11.4% · (anonymous) (compiled rules) 8.7% · (anonymous) app.js?v=0.0.156:580 4.8% · (garbage collector) (native) 3.7% · draw app.js?v=0.0.156:4845 2.7% · (anonymous) (compiled rules) 2.4% · (anonymous) (compiled rules) 2.2% · (anonymous) (compiled rules) 2.2% · (anonymous) (compiled rules) 2.0% · IN (compiled rules) 1.8% · $Lout (compiled rules) 1.4% · $Lin (compiled rules) 1.0% · $Lout (compiled rules) 1.0% · drawImage (native) 0.9% · drawImage (native) 0.8% · drawImage (native) 0.8% · (anonymous) (compiled rules) 0.7%
+  the 25 worst frames (the work done from a frame to the next; ms):
+   150.0 ms at 12.0 s, items: 1 steps 136.3 (slowest 136.2: the speed run's way 99.6, water 24.6, its path search 11.4, birds, frogs, bugs 0.2); drawing 4.3 (creatures 1.3, hud 0.6, surface 0.4, sky 0.3); sampled: (anonymous) (compiled rules) 64.1, ipow (compiled rules) 20.4, inorm (compiled rules) 19.8, isub (compiled rules) 6.9, waterPassesHazel app.js?v=0.0.156:568 6.7
+   100.0 ms at 44.7 s, items: 9 steps 86.3 (slowest 75.2: its path search 73.3, water 1.5, the gnome 0.1, squirrels 0.1); drawing 4.1 (rooms 0.7, dark 0.7, ladders 0.5, hud 0.5); sampled: (anonymous) (compiled rules) 62.2, idiv (compiled rules) 7.1, (program) (native) 4.5, inorm (compiled rules) 3.4, isub (compiled rules) 3.1
+   83.4 ms at 28.2 s, items: 4 steps 71.3 (slowest 60.8: its path search 56.1, water 4.2, the speed run's way 0.1, picking things up 0.1); drawing 2.9 (ladders 1.1, hud 0.5, creatures 0.4, sky 0.3); sampled: (anonymous) (compiled rules) 46.4, wayCode app.js?v=0.0.156:905 5.1, (program) (native) 5.1, (garbage collector) (native) 4.6, idiv (compiled rules) 2.3
+   83.3 ms at 34.0 s, items: 1 steps 54.1 (slowest 54.1: water 53.6, birds, frogs, bugs 0.2, trees, hearts, smoke 0.1, squirrels 0.1); drawing 26.1 (wildlife 18.8, roots 2.2, hud 1.4, surface 0.8); sampled: (garbage collector) (native) 41.7, waterPassesHazel app.js?v=0.0.156:568 18.3, (anonymous) (compiled rules) 4.0, strokeRect (native) 4.0, draw app.js?v=0.0.156:4845 3.4
+   83.3 ms at 74.5 s, trees: 1 steps 71.3 (slowest 71.3: water 70.9, the gnome 0.1, squirrels 0.1, birds, frogs, bugs 0.1); drawing 6.6 (ladders 4.4, hud 0.8, sky 0.4); sampled: (garbage collector) (native) 55.1, (anonymous) (compiled rules) 8.2, waterTailHazel app.js?v=0.0.156:621 6.1, waterPassesHazel app.js?v=0.0.156:568 3.9, drawVillager app.js?v=0.0.156:2789 3.0
+   66.8 ms at 41.0 s, items: 2 steps 10.8 (slowest 5.5: water 5.0, squirrels 0.2, boulders 0.1, birds, frogs, bugs 0.1); drawing 40.0 (surface 34.2, roots 2.7, creatures 0.7, sky 0.4); sampled: (garbage collector) (native) 42.5, (program) (native) 6.8, (anonymous) (compiled rules) 5.2, waterPassesHazel app.js?v=0.0.156:568 2.8, drawImage (native) 2.3
+   66.7 ms at 51.6 s, items: 4 steps 59.4 (slowest 48.4: its path search 42.0, water 6.0, the gnome 0.1, squirrels 0.1); drawing 3.2 (hud 0.6, surface 0.5, flowers 0.3, ground 0.3); sampled: (anonymous) (compiled rules) 42.6, waterPassesHazel app.js?v=0.0.156:568 4.0, (program) (native) 3.9, idiv (compiled rules) 2.8, inorm (compiled rules) 2.8
+   66.6 ms at 70.0 s, trees: 8 steps 62.8 (slowest 53.2: its path search 50.1, water 2.5, the gnome 0.1, picking things up 0.1); drawing 3.8 (ladders 1.1, creatures 0.5, sky 0.4, wildlife 0.4); sampled: (anonymous) (compiled rules) 39.2, (garbage collector) (native) 4.4, inorm (compiled rules) 3.9, idiv (compiled rules) 3.4, (program) (native) 2.8
+   50.1 ms at 122.8 s, gems: 5 steps 22.4 (slowest 11.8: water 11.6, the gnome 0.1, squirrels 0.1); drawing 10.0 (roots 7.1, creatures 0.8, ground 0.5, tunnels 0.5); sampled: (anonymous) (compiled rules) 15.6, (program) (native) 8.0, lineTo (native) 5.1, waterPassesHazel app.js?v=0.0.156:568 5.1, (garbage collector) (native) 4.7
+   50.0 ms at 13.1 s, items: 1 steps 34.9 (slowest 34.8: water 33.9, squirrels 0.2, birds, frogs, bugs 0.2, picking things up 0.1); drawing 3.0 (wildlife 0.5, surface 0.4, creatures 0.4, hud 0.4); sampled: (anonymous) (compiled rules) 25.8, (anonymous) app.js?v=0.0.156:580 5.6, (program) (native) 4.1, IN (compiled rules) 1.7, $B (compiled rules) 1.7
+   50.0 ms at 14.3 s, items: 1 steps 18.7 (slowest 18.7: water 18.3, birds, frogs, bugs 0.2, the gnome 0.1, squirrels 0.1); drawing 28.9 (greats 25.5, surface 0.6, creatures 0.5, flowers 0.4); sampled: drawImage (native) 13.6, (anonymous) (compiled rules) 13.0, translate (native) 3.4, (program) (native) 2.3, lineTo (native) 2.0
+   50.0 ms at 15.3 s, items: 1 steps 23.5 (slowest 19.5: water 19.0, boulders 0.1, trees, hearts, smoke 0.1, wind and smoke 0.1); drawing 9.7 (flowers 5.6, ground 1.1, surface 0.5, creatures 0.5); sampled: (anonymous) (compiled rules) 17.9, (program) (native) 7.9, (anonymous) app.js?v=0.0.156:4704 5.5, one app.js?v=0.0.156:5397 4.2, timedDraw app.js?v=0.0.156:5415 1.7
+   50.0 ms at 15.8 s, items: 1 steps 19.0 (slowest 19.0: water 18.4, the gnome 0.2, pebbles 0.2, squirrels 0.1); drawing 21.7 (hud 12.6, roots 4.4, creatures 2.2, tunnels 0.4); sampled: (anonymous) (compiled rules) 17.4, drawImage (native) 4.6, (program) (native) 3.4, hud app.js?v=0.0.156:5317 3.4, minimap app.js?v=0.0.156:5238 2.8
+   50.0 ms at 16.3 s, items: 1 steps 26.5 (slowest 26.4: water 26.0, the gnome 0.1, squirrels 0.1, birds, frogs, bugs 0.1); drawing 3.2 (creatures 0.6, surface 0.5, flowers 0.4, hud 0.4); sampled: (anonymous) (compiled rules) 23.3, (program) (native) 9.1, (anonymous) app.js?v=0.0.156:580 2.8, IN (compiled rules) 2.3, draw app.js?v=0.0.156:4845 1.7
+   50.0 ms at 17.1 s, items: 1 steps 27.3 (slowest 27.3: water 26.9, the gnome 0.1, picking things up 0.1, squirrels 0.1); drawing 14.7 (roots 5.4, hud 3.7, creatures 2.9, flowers 0.5); sampled: (anonymous) (compiled rules) 18.0, drawImage (native) 8.5, (program) (native) 6.8, waterPassesHazel app.js?v=0.0.156:568 5.6, (garbage collector) (native) 1.7
+   50.0 ms at 59.1 s, trees: 6 steps 54.7 (slowest 43.5: its path search 41.0, water 2.2, squirrels 0.1, birds, frogs, bugs 0.1); drawing 2.2 (ladders 0.7, sky 0.3, creatures 0.3); sampled: (anonymous) (compiled rules) 29.7, (garbage collector) (native) 4.5, $Lout (compiled rules) 2.8, wayCode app.js?v=0.0.156:905 2.8, inorm (compiled rules) 1.6
+   50.0 ms at 94.9 s, gems: 1 steps 33.3 (slowest 33.3: water 32.8, squirrels 0.2, beavers 0.1, birds, frogs, bugs 0.1); drawing 3.6 (wildlife 0.5, sky 0.4, surface 0.4, creatures 0.4); sampled: (garbage collector) (native) 28.9, (program) (native) 6.2, (anonymous) (compiled rules) 5.8, (anonymous) app.js?v=0.0.156:2090 2.7, fill (native) 1.1
+   50.0 ms at 102.3 s, gems: 1 steps 25.9 (slowest 25.9: water 25.1, squirrels 0.2, birds, frogs, bugs 0.2, the gnome 0.1); drawing 17.2 (roots 10.4, creatures 3.7, tunnels 0.6, surface 0.5); sampled: (garbage collector) (native) 18.3, drawImage (native) 13.0, (anonymous) (compiled rules) 5.7, (program) (native) 5.2, draw app.js?v=0.0.156:4845 1.7
+   49.9 ms at 14.2 s, items: 1 steps 33.8 (slowest 33.8: water 33.2, the gnome 0.1, boulders 0.1, trees, hearts, smoke 0.1); drawing 4.2 (creatures 0.6, surface 0.5, dark 0.5, sky 0.4); sampled: (anonymous) (compiled rules) 19.8, (program) (native) 10.9, waterPassesHazel app.js?v=0.0.156:568 4.9, IN (compiled rules) 2.8, drawImage (native) 2.3
+   49.9 ms at 52.5 s, items: 2 steps 20.7 (slowest 15.0: water 14.8, birds, frogs, bugs 0.2); drawing 15.5 (dark 5.4, ground 3.8, roots 2.0, tunnels 1.1); sampled: (anonymous) (compiled rules) 11.2, (garbage collector) (native) 5.5, $Lin (compiled rules) 5.2, fill (native) 5.1, (program) (native) 4.9
+   49.9 ms at 82.4 s, gems: 5 steps 13.4 (slowest 4.9: water 4.5, birds, frogs, bugs 0.2, picking things up 0.1, squirrels 0.1); drawing 17.7 (hud 6.5, roots 5.5, creatures 1.9, tunnels 0.8); sampled: (anonymous) (compiled rules) 13.7, drawImage (native) 9.5, (program) (native) 5.8, waterPassesHazel app.js?v=0.0.156:568 4.7, minimap app.js?v=0.0.156:5238 2.0
+   33.5 ms at 101.1 s, gems: 7 steps 13.2 (slowest 2.0: water 1.7, rainbows, the vortex 0.1, beavers 0.1, birds, frogs, bugs 0.1); drawing 16.9 (roots 10.7, creatures 4.0, tunnels 0.4, ground 0.3); sampled: drawImage (native) 11.8, (anonymous) (compiled rules) 4.5, waterPassesHazel app.js?v=0.0.156:568 3.9, (program) (native) 3.4, draw app.js?v=0.0.156:4845 1.7
+   33.5 ms at 111.9 s, gems: 4 steps 14.6 (slowest 3.8: water 3.7, villagers 0.1); drawing 1.7 (ground 0.3, surface 0.3, water 0.2); sampled: (anonymous) (compiled rules) 11.3, waterPassesHazel app.js?v=0.0.156:568 4.5, (program) (native) 3.9, (anonymous) app.js?v=0.0.156:580 2.8, (garbage collector) (native) 1.7
+   33.4 ms at 12.2 s, items: 1 steps 20.2 (slowest 20.2: water 19.5, birds, frogs, bugs 0.2, the speed run's way 0.1, the gnome 0.1); drawing 3.2 (surface 0.5, creatures 0.4, ladders 0.3, dark 0.3); sampled: (anonymous) (compiled rules) 16.3, $Lout (compiled rules) 3.4, (program) (native) 2.8, (garbage collector) (native) 2.3, waterPassesHazel app.js?v=0.0.156:568 2.2
+   33.4 ms at 12.3 s, items: 1 steps 26.4 (slowest 26.3: water 25.7, the speed run's way 0.1, the gnome 0.1, beavers 0.1); drawing 2.7 (surface 0.4, creatures 0.4, wildlife 0.4, dark 0.3); sampled: (anonymous) (compiled rules) 15.4, waterPassesHazel app.js?v=0.0.156:568 7.3, (program) (native) 4.0, draw app.js?v=0.0.156:4845 1.2, (anonymous) app.js?v=0.0.156:580 1.1
+frames	Run actions/upload-artifact@v4	﻿2026-11-28T17:03:51.1064409Z ##[group]Run actions/upload-artifact@v4
+with:
+  name: world-frames
+  path: world-frames/
+  if-no-files-found: warn
+  compression-level: 6
+  overwrite: false
+  include-hidden-files: false
+(node:3656) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+With the provided path, there will be 8 files uploaded
+Artifact name is valid!
+Root directory input is valid!
+Beginning upload of artifact content to blob storage
+(node:3656) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Uploaded bytes 400756
+Finished uploading artifact content to blob storage!
+SHA256 digest of uploaded artifact zip is 688a09d35c8ffacda67ba9384d21ac948596b2631c0b678dd0ac03c0bae151f3
+Finalizing artifact upload
+Artifact world-frames.zip successfully finalized. Artifact ID 15272542544
+Artifact world-frames has been successfully uploaded! Final size is 400756 bytes. Artifact ID is 15272542544
+Artifact download URL: https://github.com/matthewhammer/hazeljs-examples/actions/runs/46167931157/artifacts/15272542544
+frames	Post Run actions/setup-node@v4	﻿2026-11-28T17:03:52.8890077Z Post job cleanup.
+(node:3669) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+frames	Post Run actions/checkout@v4	﻿2026-11-28T17:03:53.0066084Z Post job cleanup.
+[command]/usr/bin/git version
+git version 2.56.1
+Temporarily overriding HOME='/home/runner/work/_temp/da98b5ee-0fc0-4c44-8c53-7c8472a9bbb3' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+[command]/usr/bin/git config --global --add safe.directory /home/runner/work/hazeljs-examples/hazeljs-examples
+[command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+http.https://github.com/.extraheader
+[command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+[command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+frames	Complete job	﻿2026-11-28T17:03:53.1979275Z Cleaning up orphan processes
+Terminate orphan process: pid (2255) (python3)

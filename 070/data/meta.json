@@ -1,0 +1,31 @@
+{
+ "title": "Gnome World’s Planning, Rivers and Folk, in Hazel",
+ "blurb": "Three more Hazel modules in Gnome world, each off by default and held by the save check to give the same answers as the page's JavaScript: the speed run's planning, the rivers, pumps and rain, and the villagers, squirrels, insects and hawks, with the page's own random numbers worked out in Hazel. Each piece takes from about as long to 26 times as long in Hazel, and is small: with one on, the speed run takes about what it did (20.0 s); with every Hazel option on, the water among them, it does not finish in two minutes. Hazel is now 14% of the game's code; the drawing, 44% of app.js, is next.",
+ "builds": {
+  "1 (0.0.152)": "hazeljs-examples 5631853",
+  "2 (0.0.153)": "50826bd, Plan.hz",
+  "3 (0.0.154)": "aa7801e, Rivers.hz",
+  "4 (0.0.155)": "92ccd28, Folk.hz",
+  "5 (0.0.156)": "97fccb2, Folk.hz's rand cheaper"
+ },
+ "runs": {
+  "pane": "the Claude app's browser pane on the laptop, Gnome world at http://localhost:8141/world/?test=1 (seed 7, as loaded), its rules built by hazel-jit at load; 2026-11-28 09:35-09:58 MST",
+  "frames": "hazeljs-examples 'world speed run, frame by frame' run 46167931157 (4 CPUs, AMD EPYC 9V74 80-Core Processor; Node v22.23.5; Google Chrome 158.0.8127.36), headless Chrome at 1280×800, each setup in turn up to two minutes",
+  "save check": "hazeljs-examples 'world save check' runs 46167673024, 46167928740"
+ },
+ "measures": {
+  "a piece's ms": "the mean over the steps run (planning: one call)",
+  "real time": "wall-clock seconds from pressing 🏃 to the run's dig",
+  "share of the code": "characters, comments left out of the Hazel (sizes.py)"
+ },
+ "files": [
+  "data/pane.json",
+  "data/frames-*.log",
+  "data/frames-*.json",
+  "data/save-check-*.log",
+  "data/sizes-*.json",
+  "parse_frames.py",
+  "sizes.py",
+  "gen070.py"
+ ]
+}

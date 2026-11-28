@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- theme: head begin -->
+<script>try { var t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+<!-- theme: head end -->
+<!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gnome World’s Planning, Rivers and Folk, in Hazel</title>
+<meta name="description" content="Three more Hazel modules in Gnome world, each off by default and held by the save check to give the same answers as the page&#x27;s JavaScript: the speed run&#x27;s planning, the rivers, pumps and rain, and the villagers, squirrels, insects and hawks, with the page&#x27;s own random numbers worked out in Hazel. Each piece takes from about as long to 26 times as long in Hazel, and is small: with one on, the speed run takes about what it did (20.0 s); with every Hazel option on, the water among them, it does not finish in two minutes. Hazel is now 14% of the game&#x27;s code; the drawing, 44% of app.js, is next.">
+<style>  :root {
+    --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
+    --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+      --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #15171a; --paper: #1d2024; --ink: #e8e6e3; --muted: #a2a9b3; --line: #33373d;
+    --accent: #c4b5fd; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --link: #93c5fd; --accent2: #67e8f9; --cx: #5d636b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1020px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2em; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 1.35em; margin: 48px 0 10px; padding-top: 8px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05em; margin: 26px 0 6px; }
+  p, li { max-width: 76ch; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .series { color: var(--muted); margin: 0 0 6px; font-size: 0.92em; }
+  .headline { background: var(--paper); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .headline > p { margin: 6px 0; }
+  ol.ans { padding-left: 1.4em; margin: 8px 0; }
+  ol.ans > li { max-width: none; margin: 14px 0; }
+  ol.ans > li > .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: center; }
+  ol.ans > li p { margin: 0; }
+  figure.mini { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  figure.mini figcaption { font-size: 0.8em; margin-top: 4px; }
+  @media (max-width: 760px) { ol.ans > li > .row { grid-template-columns: minmax(0, 1fr); } figure.mini { max-width: 340px; } }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a code { color: var(--link); }
+  a.cl { text-decoration: none; } a.cl:hover code { text-decoration: underline; }
+  sup.at { font-size: 0.68em; color: var(--muted); margin-left: 2px; font-weight: 600; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  figure.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0; }
+  .figscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 6px; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre.code { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+             font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 6px 0 4px; }
+  pre.code .rm { color: var(--bad); } pre.code .ad { color: var(--good); } pre.code .cm { color: var(--muted); }
+  .codepair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .codepair { grid-template-columns: minmax(0, 1fr); } }
+  .codepair h4 { margin: 6px 0 0; font-size: 0.95em; }
+  .note { color: var(--muted); font-size: 0.9em; }
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 8px 14px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  section.q { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 6px 16px 10px; margin: 20px 0; }
+  section.q h3 { margin: 10px 0 6px; line-height: 1.4; }
+  section.q h3 .qn { color: var(--accent); margin-right: 6px; }
+  .tags { margin: 2px 0 8px; }
+  .tag { display: inline-block; font-size: 0.78em; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 6px 4px 0; border: 1px solid; }
+  .tag.ans { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .tag.now { color: var(--accent2); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+  .tag.cyrus { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tag.block { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .tag.open { color: var(--muted); border-color: var(--line); }
+  .answer { background: color-mix(in srgb, var(--good) 9%, var(--paper)); border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 80ch; }
+  .after { max-width: 80ch; }
+  ul.ev { padding-left: 1.2em; } ul.ev li { margin: 5px 0; max-width: 84ch; }
+  ul.ev .refs { color: var(--muted); font-size: 0.92em; }
+  ol.opts li { margin: 6px 0; max-width: 82ch; }
+  .optnote { display: inline-block; font-size: 0.8em; font-weight: 600; color: var(--accent); margin-left: 4px; }
+  .optnote.out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  button.copylink { margin-left: 8px; font: 600 12px system-ui, sans-serif; padding: 1px 8px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); cursor: pointer; vertical-align: 2px; }
+  button.copylink:hover { color: var(--ink); border-color: var(--muted); }
+  button.copylink.done { color: var(--good); border-color: var(--good); }
+  input.copyfield { display: block; width: 100%; max-width: 640px; margin: 4px 0; font: 13px ui-monospace, monospace;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  .cyrus { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 4px 16px; }
+  .cyrus li { margin: 8px 0; }
+  details.ev summary { cursor: pointer; color: var(--link); }
+  .wip { color: var(--warn); font-weight: 600; }
+
+svg.fig { width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto; }
+svg.fig text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+svg.fig .mono { font: 12.5px ui-monospace, monospace; }
+svg.fig .small { font-size: 11px; fill: var(--muted); }
+svg.fig .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg.fig .hz { fill: color-mix(in srgb, var(--accent) 14%, var(--paper)); stroke: var(--accent); stroke-width: 1.5; }
+svg.fig .game { fill: color-mix(in srgb, var(--warn) 14%, var(--paper)); stroke: var(--warn); stroke-width: 1.5; }
+svg.fig .snap { fill: color-mix(in srgb, var(--accent2) 16%, var(--paper)); stroke: var(--accent2); stroke-width: 1.2; }
+svg.fig .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+svg.fig .ahead { fill: var(--muted); }
+svg.fig .on { fill: var(--accent); } svg.fig .off { fill: var(--line); }
+svg.fig .kindtxt { font-size: 10.5px; }
+figure { margin: 1.6em 0; } figcaption { color: var(--muted); font-size: 0.9em; max-width: 52em; margin: 0.5em auto 0; }
+pre.hz, pre.fu { background: #000; color: #f8f8f2; border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 0.86em; line-height: 1.5; }
+pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.hz .hk { color: #5fd7ff; font-weight: 700; } pre.hz .hC { color: #ff87ff; } pre.hz .hv { color: #f8f8f2; } pre.hz .hs { color: #ffb86c; }
+pre.hz .hn { color: #bd93f9; } pre.hz .hc { color: #87ff87; font-style: italic; } pre.hz .ho { color: #ffd75f; }
+pre.fu .fk { color: #569CD6; } pre.fu .fT { color: #a989d0; } pre.fu .fv { color: #f6ead2; } pre.fu .fs { color: #c87e60; } pre.fu .fc { color: #6A9955; }
+pre.fu .fy { color: #d3a8de; font-weight: 600; } pre.fu .ft { color: #e5c07b; }
+p.part { font: 700 1.5em system-ui, sans-serif; margin: 2.2em 0 0.1em; padding-top: 0.6em; border-top: 3px solid var(--accent); }
+p.part span { color: var(--accent); margin-right: 0.4em; } p.partsub { color: var(--muted); margin: 0 0 1em; font-style: italic; }
+nav.outline { border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; margin: 1em 0; background: var(--paper); }
+nav.outline ol.parts > li { margin: 0.35em 0; } nav.outline ol ol { margin: 0.1em 0 0.3em; font-size: 0.93em; } p.intro { font-size: 1.05em; }
+code.hzi { background: #000; color: #f8f8f2; padding: 1px 6px; border-radius: 5px; font-size: 0.88em; }
+code.hzi .hk { color: #5fd7ff; font-weight: 700; } code.hzi .hC { color: #ff87ff; } code.hzi .hv { color: #f8f8f2; } code.hzi .hs { color: #ffb86c; }
+code.hzi .hn { color: #bd93f9; } code.hzi .ho { color: #ffd75f; }
+.codecap { color: var(--muted); font-size: 0.85em; margin: 0.6em 0 0.2em; }
+a.src code { font-size: 0.85em; }
+table.t { border-collapse: collapse; font-size: 0.9em; } table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.addr { font: 0.86em ui-monospace, monospace; }
+details[data-pic] { border-bottom: 1px solid var(--line); padding: 2px 0; }
+details[data-pic] summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details[data-pic] summary::-webkit-details-marker { display: none; }
+details[data-pic] summary .addr { color: var(--accent); }
+details[data-pic] summary .what { color: var(--muted); font-size: 0.85em; }
+details[data-pic] .pic { margin: 6px 0 14px; } details[data-pic] .pic .main { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+details[data-pic] .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+details[data-pic] .gallery figure.small img { width: 100%; max-height: none; } details[data-pic] .gallery figcaption { font-size: 0.72em; line-height: 1.25; }
+button.copylink { margin-left: auto; font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; } details[data-pic] .pic figure { margin: 0; } details[data-pic] .pic figcaption { margin: 2px 0 0; font-size: 0.8em; } details[data-pic] .pic img { max-height: 280px; max-width: min(100%, 560px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+h3.grp { margin-top: 1.2em; }
+
+  table.ideas td:first-child { font-weight: 600; white-space: nowrap; }
+  .meas { color: var(--good); font-weight: 600; } .est { color: var(--warn); font-weight: 600; }
+
+  figure.chart svg { width: 100%; height: auto; display: block; }
+  table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }
+  .wrap { overflow-x: auto; }
+  pre.log { white-space: pre-wrap; word-break: break-word; font-size: 12px; }
+</style>
+<style id="anchors-css">
+h2 .anchor, h3 .anchor, .lh .anchor { margin-left: 8px; color: var(--muted); text-decoration: none; font-weight: 400; opacity: 0.35; }
+h2:hover .anchor, h3:hover .anchor, .lh:hover .anchor, .anchor:focus { opacity: 1; }
+li.anchored .anchor { margin-left: 6px; color: var(--muted); text-decoration: none; opacity: 0.5; } li.anchored .copyanchor { opacity: 0.8; }
+.copyanchor { margin-left: 6px; font: 400 0.62em system-ui, sans-serif; vertical-align: middle; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; opacity: 0.45; }
+h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:focus { opacity: 1; }
+.copyanchor.done { color: var(--good); border-color: var(--good); opacity: 1; }
+:target { scroll-margin-top: 12px; }
+</style>
+</head>
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>70<b>)</b></code> · Gnome world’s planning, rivers and folk · 2026-11-28, revised 2026-11-28 10:07 MST · <span class="wip">work in progress</span> · after <a href="../069/"><code class="ref"><b>^report(</b>69<b>)</b></code></a></p>
+<!-- listen: begin -->
+<style>
+  .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
+  .listen[hidden] { display: none; }
+  .listen button { font: inherit; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; }
+  .listen button[aria-pressed="true"] { border-color: var(--accent, #6d28d9); color: var(--accent, #6d28d9); }
+  .listen select { font: inherit; max-width: 16em; border-radius: 6px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); }
+  .listen input[type=range] { width: 8em; vertical-align: middle; accent-color: var(--accent, #6d28d9); }
+  .listen .speed { min-width: 3.2em; display: inline-block; font-variant-numeric: tabular-nums; }
+  .listen-now { outline: 2px solid color-mix(in srgb, var(--accent, #6d28d9) 55%, transparent); outline-offset: 3px; border-radius: 4px;
+    background: color-mix(in srgb, var(--accent, #6d28d9) 8%, transparent); }
+  @media print { .listen { display: none; } }
+</style>
+<div class="listen" hidden role="group" aria-label="Listen to this report">
+  <button type="button" class="listen-play" aria-pressed="false">🔊 Listen</button>
+  <button type="button" class="listen-stop">⏹ Stop</button>
+  <label>speed <input type="range" class="listen-rate" min="0.5" max="2" step="0.1" value="1"> <span class="speed">1.0×</span></label>
+  <select class="listen-voice" aria-label="voice"></select>
+  <span class="listen-time"></span>
+</div>
+<script>
+/* (^ticket(573)) Listen: the report read aloud by this browser's own voices; nothing leaves the page. */
+// (once the whole page is parsed: this runs where the bar is, near the top, before the report's sections exist)
+document.addEventListener("DOMContentLoaded", () => {
+  const S = window.speechSynthesis, bar = document.querySelector(".listen");
+  if (!S || !bar || typeof SpeechSynthesisUtterance === "undefined") return;
+  bar.hidden = false;
+  const main = document.querySelector("main") || document.body;
+  const play = bar.querySelector(".listen-play"), stop = bar.querySelector(".listen-stop"), rate = bar.querySelector(".listen-rate"),
+        speed = bar.querySelector(".speed"), voiceSel = bar.querySelector(".listen-voice"), timeEl = bar.querySelector(".listen-time");
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  // the blocks to read, in order: prose only, each once (a point holding paragraphs is read as its paragraphs)
+  const SKIP = "table, pre, svg, script, style, .listen, .theme-toggle, details:not([open]), [aria-hidden=true], button, nav, #report-data";
+  const blocks = [...main.querySelectorAll("h1, .sub, h2, h3, h4, p, li, blockquote, figcaption, summary")]
+    .filter(el => !el.closest(SKIP) && !el.querySelector("p, li, blockquote") && !el.matches(".series"));
+  const textOf = el => { const c = el.cloneNode(true); c.querySelectorAll(".anchor, .copyanchor, button, sup").forEach(x => x.remove()); return c.textContent.replace(/\s+/g, " ").trim(); };
+  const texts = blocks.map(textOf), words = texts.reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+  const WPM = 160;
+  let i = 0, playing = false, voices = [];
+  const r = () => +rate.value;
+  const showTime = () => {
+    speed.textContent = r().toFixed(1) + "×";
+    const left = texts.slice(playing || i ? i : 0).reduce((n, t) => n + (t ? t.split(" ").length : 0), 0);
+    const min = Math.max(1, Math.round(left / (WPM * r())));
+    timeEl.textContent = (i && left < words ? "about " + min + " min left" : "about " + min + " min to listen") + " at " + r().toFixed(1) + "×";
+  };
+  const fill = () => {
+    voices = S.getVoices().filter(v => !document.documentElement.lang || v.lang.slice(0, 2) === document.documentElement.lang.slice(0, 2) || v.lang.startsWith("en"));
+    const want = store("listen-voice");
+    voiceSel.replaceChildren(...voices.map(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name + (v.localService ? "" : " (online)"); return o; }));
+    voiceSel.hidden = !voices.length;
+    if (want && voices.some(v => v.name === want)) voiceSel.value = want;
+    else { const d = voices.find(v => v.default) || voices[0]; if (d) voiceSel.value = d.name; }
+  };
+  fill(); if ("onvoiceschanged" in S) S.onvoiceschanged = fill;
+  const saved = parseFloat(store("listen-rate")); if (saved >= 0.5 && saved <= 2) rate.value = saved;
+  const mark = el => { document.querySelectorAll(".listen-now").forEach(x => x.classList.remove("listen-now")); if (el) { el.classList.add("listen-now"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } };
+  // one block at a time (a long utterance is cut short in some browsers); the next when it ends
+  const speak = () => {
+    while (i < blocks.length && !texts[i]) i++;
+    if (i >= blocks.length) { end(); return; }
+    const u = new SpeechSynthesisUtterance(texts[i]), v = voices.find(v => v.name === voiceSel.value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = r();
+    u.onend = () => { if (!playing) return; i++; showTime(); speak(); };
+    u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; i++; if (playing) speak(); };
+    mark(blocks[i]); S.speak(u);
+  };
+  const end = () => { playing = false; S.cancel(); i = 0; mark(null); play.textContent = "🔊 Listen"; play.setAttribute("aria-pressed", "false"); showTime(); };
+  play.onclick = () => {
+    if (playing && !S.paused) { S.pause(); play.textContent = "▶ Resume"; return; }
+    if (playing && S.paused) { S.resume(); play.textContent = "⏸ Pause"; return; }
+    playing = true; play.textContent = "⏸ Pause"; play.setAttribute("aria-pressed", "true"); S.cancel(); speak();
+  };
+  stop.onclick = end;
+  // a new speed or voice takes effect from the block being read, said again from its start
+  const again = () => { if (playing) { S.cancel(); setTimeout(speak, 0); } };
+  rate.oninput = () => { store("listen-rate", rate.value); showTime(); };
+  rate.onchange = again;
+  voiceSel.onchange = () => { store("listen-voice", voiceSel.value); again(); };
+  addEventListener("pagehide", () => S.cancel());
+  showTime();
+});
+</script>
+<!-- listen: end -->
+<h1>Gnome World’s Planning, Rivers and Folk, in Hazel</h1>
+<p class="sub">Matthew asked how much of Gnome world is Hazel, and then for more of it, each piece opt-in and off by default: “the villagers walking, the squirrels, the hawks and insects; the rivers held at their level, the pumps and the rain; the speed run’s planning (the order of things, its targets, the dig’s chunks)” (2026-11-28, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-907"><code class="ref"><b>^ticket(</b>907<b>)</b></code></a>). This report covers the three Hazel modules that do it, how each is held to the page’s JavaScript, what each costs, and the speed run with each switched on.</p>
+
+<h2 id="outline">Outline<a class="anchor" href="#outline" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="outline" title="copy this section's address">copy link</button></h2>
+<ol class="outline">
+<li><a href="#builds">The builds</a>: 0.0.152, and 0.0.153 to 0.0.156, one module each.</li>
+<li><a href="#twins">How a Hazel piece is held to the page’s</a>: two versions of each piece, the same answers on every push.</li>
+<li><a href="#plan">The speed run’s planning</a>: the same plan, the order of the things in 95 ms against 3.7, once a run.</li>
+<li><a href="#rivers">The rivers, the pumps and the rain</a>: every tile’s water the same, 0.079 ms a step against 0.009.</li>
+<li><a href="#folk">The villagers, squirrels, insects and hawks</a>: every creature the same over 900 steps, 0.24 ms a step for all of them against 0.031.</li>
+<li><a href="#rand">The page’s chances, worked out in Hazel</a>: a draw went from 3.2 µs to 0.7 µs.</li>
+<li><a href="#runs">The speed run, five ways</a>: each new module alone leaves it about as it was (20.0 s); every Hazel option on, the water among them, and it does not finish in two minutes.</li>
+<li><a href="#share">How much of Gnome world is Hazel</a>: 11% of the code became 14%; the drawing is next.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<div class="summary">
+<p><b>In short.</b> Three new Hazel modules take over the speed run’s planning (Plan.hz), the rivers, pumps, rain and drying (Rivers.hz), and the villagers, squirrels, insects and hawks (Folk.hz). Each is off unless chosen under ⚙️ Advanced or by a query (<code>?plan=hazel</code>, <code>?rivers=hazel</code>, <code>?folk=hazel</code>). The page’s JavaScript stays the default and is each one’s twin: the world save check runs both from one state on every push and finds the same plan, the same water in every tile and the same state in every creature. For the creatures to match, Hazel works out the page’s own random numbers from its seed, to the bit. Hazel takes from about as long as the JavaScript (the 2 hawks) to 26 times as long (the order of the 12 things, worked out once), and the pieces are small: with one of them on, the speed run takes 19.0 s, 21.6 s or 21.1 s against 20.0 s. With every Hazel option on, the water in Hazel (<a href="../069/"><code class="ref"><b>^report(</b>69<b>)</b></code></a>) among them, it does not finish in two minutes. Hazel is now 14% of the game’s own code and 22% of the code that is not drawing. The drawing is 44% of <code>app.js</code>, and it is the next piece to move to Hazel (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-908"><code class="ref"><b>^ticket(</b>908<b>)</b></code></a>).</p>
+</div>
+
+<h2 id="builds">The builds<a class="anchor" href="#builds" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="builds" title="copy this section's address">copy link</button></h2>
+<p><b>Each module came in its own release, the same day, and every figure below names the build it measures.</b></p>
+<table class="nums"><thead><tr><th>build</th><th class="l">version</th><th class="l">what</th></tr></thead><tbody><tr><td>1</td><td class="l">0.0.152</td><td class="l">Gnome world 0.0.152 (hazeljs-examples <code>5631853</code>): the flying level’s changes; the code counted in Matthew’s question</td></tr><tr><td>2</td><td class="l">0.0.153</td><td class="l">build 1 with Plan.hz, the speed run’s planning, off unless <code>?plan=hazel</code> or 🗺️ (<code>50826bd</code>)</td></tr><tr><td>3</td><td class="l">0.0.154</td><td class="l">build 2 with Rivers.hz, the rivers, pumps, rain and drying, off unless <code>?rivers=hazel</code> or 🌧️ (<code>aa7801e</code>)</td></tr><tr><td>4</td><td class="l">0.0.155</td><td class="l">build 3 with Folk.hz, the villagers, squirrels, insects and hawks, off unless <code>?folk=hazel</code> or 🐿️ (<code>92ccd28</code>)</td></tr><tr><td>5</td><td class="l">0.0.156</td><td class="l">build 4 with Folk.hz’s random numbers about four times as cheap (<code>97fccb2</code>); the frames job’s two more setups</td></tr></tbody></table>
+
+<h2 id="twins">How a Hazel piece is held to the page’s<a class="anchor" href="#twins" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="twins" title="copy this section's address">copy link</button></h2>
+<p><b>Each piece has two versions, the page’s JavaScript and a Hazel module, and a test runs both from one state and compares every value they leave; the world save check runs those tests on every push to the repository.</b> This is the pattern of Water.hz and Path.hz (<a href="../069/"><code class="ref"><b>^report(</b>69<b>)</b></code></a>). The JavaScript stays the default, so a player sees nothing new unless a switch is on; with a switch on, the page hands the Hazel function what it needs, takes back what it returns, and writes that into the world. The tests are <code>WorldTest.planSame</code>, <code>riversSame</code> and <code>folkSame</code>. Each sets the world back after itself, so the tests can run in the middle of a game.</p>
+<p>Where a piece reads the world (a tile’s height, a flower in reach, a tree’s limbs), the page reads it and hands it over: Hazel has no arrays and cannot read the page’s, so each call gets the few values it needs as lists and records. Where a piece writes the world, Hazel returns the new values and the page stores them. The first three tests on GitHub, from the world the save check’s tour leaves:</p>
+<pre class="log">🗺️ the planning: the order of 12 things the same, the trees&#x27; 64 parts the same, 230 gems nearest first the same, the dig&#x27;s chunk the same at 15 of 15; ms {&quot;orderJS&quot;:4.4,&quot;orderHazel&quot;:94.1,&quot;treesJS&quot;:0.1,&quot;treesHazel&quot;:2.4,&quot;nearestJS&quot;:0.4,&quot;nearestHazel&quot;:2,&quot;chunkHazel&quot;:11.5}
+🌧️ the rivers, pumps, rain and drying: {&quot;a&quot;:{&quot;steps&quot;:120,&quot;rain&quot;:[602,27495],&quot;waterDiffers&quot;:0,&quot;wakeDiffers&quot;:0,&quot;rainSame&quot;:true,&quot;chancesSame&quot;:true,&quot;jsMs&quot;:0.006,&quot;hazelMs&quot;:0.225},&quot;b&quot;:{&quot;steps&quot;:240,&quot;rain&quot;:[600,27133],&quot;waterDiffers&quot;:0,&quot;wakeDiffers&quot;:0,&quot;rainSame&quot;:true,&quot;chancesSame&quot;:true,&quot;jsMs&quot;:0.005,&quot;hazelMs&quot;:0.103}}
+🐿️ the villagers, squirrels, insects and hawks: {&quot;steps&quot;:900,&quot;villagers&quot;:80,&quot;squirrels&quot;:14,&quot;bugs&quot;:70,&quot;villagersDiffer&quot;:0,&quot;squirrelsDiffer&quot;:0,&quot;bugsDiffer&quot;:0,&quot;hawks&quot;:2,&quot;hawksDiffer&quot;:0,&quot;hawkSteps&quot;:{&quot;soar&quot;:19,&quot;fly&quot;:1371,&quot;rest&quot;:410},&quot;hawkStepsSame&quot;:true,&quot;chancesSame&quot;:true,&quot;fleeSteps&quot;:315,&quot;fleeSame&quot;:true,&quot;nearSteps&quot;:598,&quot;scolded&quot;:3,&quot;walking&quot;:23,&quot;busy&quot;:31,&quot;resting&quot;:25,&quot;jsMs&quot;:{&quot;walk&quot;:0.006,&quot;squirrels&quot;:0.013,&quot;bugs&quot;:0.011,&quot;hawks&quot;:0.006},&quot;hazelMs&quot;:{&quot;walk&quot;:0.057,&quot;squirrels&quot;:0.106,&quot;bugs&quot;:0.23,&quot;hawks&quot;:0.012}}</pre>
+
+<h2 id="plan">The speed run’s planning<a class="anchor" href="#plan" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="plan" title="copy this section's address">copy link</button></h2>
+<p><b>Plan.hz finds the same plan as the page: the same order for the 12 things, the same 64 tree parts, the same 336 gems nearest first and the same next chunk of the dig. The order costs the most, 95 ms in Hazel against 3.7 ms in JavaScript, but the run works it out once.</b> The order is the shortest tour through the things, found by Held and Karp’s method: for each set of things and each last thing, the shortest way through that set ending there. JavaScript keeps those best ways in an array indexed by the set’s bits. Plan.hz keeps each size’s sets in a balanced tree and builds each size from the one before. In the speed run that one call makes one frame of 117 ms, where the page’s own longest frame is 50 ms. The other three pieces are a filter, a stable sort and a choice, each a millisecond or two in Hazel.</p>
+
+<h2 id="rivers">The rivers, the pumps and the rain<a class="anchor" href="#rivers" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="rivers" title="copy this section's address">copy link</button></h2>
+<p><b>Rivers.hz leaves every tile with the same water as the page’s JavaScript, to the bit, in dry steps and in rain. It takes 0.079 ms a step against 0.009 ms, where a whole step of the speed run takes about 0.3 ms.</b> Each step it holds each river at its level, draws the villages’ pumped rooms down by 0.004, starts a shower when one is due, lets its 24 drops fall, and every half second dries the land’s top. The page still draws the rain’s chances, as it always has, and hands them in. Each amount is rounded as the page stores it, to a 32-bit float, by Veltkamp’s split (<a href="../069/"><code class="ref"><b>^report(</b>69<b>)</b></code></a>).</p>
+
+<h2 id="folk">The villagers, squirrels, insects and hawks<a class="anchor" href="#folk" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="folk" title="copy this section's address">copy link</button></h2>
+<p><b>Folk.hz moves all 80 villagers, 14 squirrels, 70 insects and 2 hawks just as the page does. Over 900 steps, with the gnome led past each squirrel and each insect, every value of every creature comes out the same, and so does the page’s random seed. All of them together take 0.24 ms a step in Hazel against 0.031 ms in JavaScript (0.0.156).</b></p>
+<figure class="chart">
+<svg viewBox="0 0 960 434" role="img" aria-label="Each piece in JavaScript and in Hazel, milliseconds on a log scale: Hazel takes 4 to 40 times as long"><style>.l{fill:var(--ink);font:600 13px system-ui,sans-serif}.m{fill:var(--muted);font:12px system-ui,sans-serif}.w{fill:#fff;font:600 11px system-ui,sans-serif}</style><line x1="290.0" y1="24" x2="290.0" y2="412" stroke="var(--line)"/><text class="m" x="280.0" y="18">0.001 ms</text><line x1="391.9" y1="24" x2="391.9" y2="412" stroke="var(--line)"/><text class="m" x="381.9" y="18">0.01 ms</text><line x1="493.7" y1="24" x2="493.7" y2="412" stroke="var(--line)"/><text class="m" x="483.7" y="18">0.1 ms</text><line x1="595.6" y1="24" x2="595.6" y2="412" stroke="var(--line)"/><text class="m" x="585.6" y="18">1 ms</text><line x1="697.5" y1="24" x2="697.5" y2="412" stroke="var(--line)"/><text class="m" x="687.5" y="18">10 ms</text><line x1="799.3" y1="24" x2="799.3" y2="412" stroke="var(--line)"/><text class="m" x="789.3" y="18">100 ms</text><text class="m" x="8" y="52">the order of the 12 things (once)</text><rect x="290" y="36" width="363.5" height="14" fill="var(--accent2)"><title>JavaScript 3.7 ms</title></rect><text class="m" x="658.5" y="48">3.7</text><rect x="290" y="53" width="507.1" height="14" fill="var(--accent)"><title>Hazel 95.1 ms</title></rect><text class="m" x="802.1" y="65">95.1 · 26×</text><text class="m" x="8" y="98">the great trees’ 64 parts (once)</text><rect x="290" y="82" width="234.4" height="14" fill="var(--accent2)"><title>JavaScript 0.2 ms</title></rect><text class="m" x="529.4" y="94">0.2</text><rect x="290" y="99" width="329.1" height="14" fill="var(--accent)"><title>Hazel 1.7 ms</title></rect><text class="m" x="624.1" y="111">1.7 · 8×</text><text class="m" x="8" y="144">336 gems, nearest first</text><rect x="290" y="128" width="265.1" height="14" fill="var(--accent2)"><title>JavaScript 0.4 ms</title></rect><text class="m" x="560.1" y="140">0.4</text><rect x="290" y="145" width="320.5" height="14" fill="var(--accent)"><title>Hazel 1.4 ms</title></rect><text class="m" x="615.5" y="157">1.4 · 3×</text><text class="m" x="8" y="190">the rivers, pumps, rain, a step</text><rect x="290" y="174" width="97.2" height="14" fill="var(--accent2)"><title>JavaScript 0.009 ms</title></rect><text class="m" x="392.2" y="186">0.009</text><rect x="290" y="191" width="193.0" height="14" fill="var(--accent)"><title>Hazel 0.0785 ms</title></rect><text class="m" x="488.0" y="203">0.0785 · 9×</text><text class="m" x="8" y="236">80 villagers, a step</text><rect x="290" y="220" width="86.1" height="14" fill="var(--accent2)"><title>JavaScript 0.007 ms</title></rect><text class="m" x="381.1" y="232">0.007</text><rect x="290" y="237" width="160.9" height="14" fill="var(--accent)"><title>Hazel 0.038 ms</title></rect><text class="m" x="455.9" y="249">0.038 · 5×</text><text class="m" x="8" y="282">14 squirrels, a step</text><rect x="290" y="266" width="97.2" height="14" fill="var(--accent2)"><title>JavaScript 0.009 ms</title></rect><text class="m" x="392.2" y="278">0.009</text><rect x="290" y="283" width="173.1" height="14" fill="var(--accent)"><title>Hazel 0.05 ms</title></rect><text class="m" x="468.1" y="295">0.05 · 6×</text><text class="m" x="8" y="328">70 insects, a step</text><rect x="290" y="312" width="92.0" height="14" fill="var(--accent2)"><title>JavaScript 0.008 ms</title></rect><text class="m" x="387.0" y="324">0.008</text><rect x="290" y="329" width="221.1" height="14" fill="var(--accent)"><title>Hazel 0.148 ms</title></rect><text class="m" x="516.1" y="341">0.148 · 18×</text><text class="m" x="8" y="374">2 hawks, a step</text><rect x="290" y="358" width="86.1" height="14" fill="var(--accent2)"><title>JavaScript 0.007 ms</title></rect><text class="m" x="381.1" y="370">0.007</text><rect x="290" y="375" width="92.0" height="14" fill="var(--accent)"><title>Hazel 0.008 ms</title></rect><text class="m" x="387.0" y="387">0.008 · 1×</text><rect x="290" y="418" width="12" height="10" fill="var(--accent2)"/><text class="m" x="306" y="427">JavaScript</text><rect x="400" y="418" width="12" height="10" fill="var(--accent)"/><text class="m" x="416" y="427">Hazel (and how many times the JavaScript)</text></svg>
+<figcaption>Each piece’s time, JavaScript and Hazel, in milliseconds on a log scale (build 5, 0.0.156, in the browser pane; the planning’s are once a run, the others a step). Every piece gives the same answers both ways.</figcaption>
+</figure>
+<ul>
+<li><b>A villager</b> stands a while, walks within its reach (its room, its stretch of land or its platform), and is busy at what its room is for. The page hands Hazel the land’s height under the columns a walk crosses.</li>
+<li><b>A squirrel</b> runs along its tree’s limbs, a graph of 400 to 1,650 points. Near the gnome, it flees by a breadth-first search to the point furthest from the gnome within 30 points. Looking a point up in a list of 1,650 would take as many steps, so the page hands the graph over 32 points to a chunk, made once a tree and kept: a point is then a few dozen steps away. In the test, squirrels fled on 208 of the steps.</li>
+<li><b>An insect</b>: a dragonfly darts and hovers over the water; a bee or a butterfly wanders, flies to a flower in reach, rests on it, and flees the gnome. The page hands each bee or butterfly the flowers still standing in its reach and the land’s height at each.</li>
+<li><b>A hawk</b> soars in a ring that drifts toward the gnome, flies to the nearest great tree and rests there, and leaves when the gnome comes near. In the test, the two hawks soared, flew and rested (soar 78, fly 1061, rest 661 steps).</li>
+</ul>
+<p>Three small changes make the page’s own version give the very numbers Hazel’s does. It takes its distances by <code>Math.sqrt</code>, not <code>Math.hypot</code>, which can differ in the last bit. It rounds as <code>Math.floor(x + 0.5)</code>, which differs from <code>Math.round</code> for a few numbers just under a half. And a hawk’s angle comes from <code>Math.atan</code>, worked out as fdlibm’s <code>atan2</code> does but without its last small correction, because Hazel has <code>atan</code> and no <code>atan2</code>. None of these changes shows on the screen.</p>
+
+<h2 id="rand">The page’s chances, worked out in Hazel<a class="anchor" href="#rand" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="rand" title="copy this section's address">copy link</button></h2>
+<p><b>The creatures’ chances are the page’s own random numbers, worked out in Hazel from the page’s seed: the seed goes in with each call and the new one comes back. Every draw is the page’s draw, so the page’s version and Hazel’s draw the same numbers in the same order.</b> The page’s generator multiplies the seed by 1,103,515,245, adds 12,345 and keeps the last 31 bits. It does this in JavaScript’s 64-bit floats: a product past 2<sup>53</sup> is rounded to 53 significant bits, ties to even, before the last bits are kept. Hazel’s integers are exact, so Folk.hz rounds the same way itself. It matched the page on every one of 2.3 million seeds tried.</p>
+<p>In 0.0.155 a draw took about 3.2 µs: to round, Folk.hz counted the product’s bits one at a time, about 62 steps on numbers past 2<sup>53</sup>, which the compiled code works out as JavaScript BigInts. In 0.0.156 it finds the size by a search over the nine sizes the product can have, and a draw takes about 0.7 µs. The insects, which draw two to six times a step each, went from 0.28 ms to 0.15 ms a step for all 70.</p>
+
+<h2 id="runs">The speed run, five ways<a class="anchor" href="#runs" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="runs" title="copy this section's address">copy link</button></h2>
+<p><b>On one GitHub runner, the speed run as the page plays it takes 20.0 s with the JavaScript, 19.0 s with the planning alone in Hazel, 21.6 s with the rivers, and 21.1 s with the creatures: a run’s noise of a second or two. With every Hazel option on it does not finish in two minutes: after two minutes it had found all 12 things, all 64 tree parts and 251 of 336 gems.</b> The frames come at 16.7 ms (60 fps) median either way, but with every Hazel option on a frame gets through 6 of the game’s steps where it got through 35. With every option on, the compiled Hazel is 45% of the page’s busy time and garbage collection 3.7%; <a href="../069/"><code class="ref"><b>^report(</b>69<b>)</b></code></a> found the water in Hazel alone at about half the busy time, so the water is most of it. The three new modules alone cost little: compiled Hazel is 4.2% of the busy time with the planning in Hazel, 9.9% with the rivers and 9.0% with the creatures, against 3.5% with none of them on (the gnome’s step and the other rules that were Hazel already).</p>
+<figure class="chart">
+<svg viewBox="0 0 960 264" role="img" aria-label="The speed run’s real time, five ways"><style>.l{fill:var(--ink);font:600 13px system-ui,sans-serif}.m{fill:var(--muted);font:12px system-ui,sans-serif}.w{fill:#fff;font:600 11px system-ui,sans-serif}</style><text class="m" x="8" y="18">the speed run’s real time, from 🏃 to the dig (seconds), and its frames</text><text class="m" x="8" y="48">the page’s JavaScript</text><rect x="300" y="35" width="78.8" height="18" fill="var(--accent2)"/><text class="m" x="384.8" y="48">20.0 s · 60 fps median · 35 steps a frame</text><text class="m" x="8" y="88">🗺️ the planning in Hazel</text><rect x="300" y="75" width="74.8" height="18" fill="var(--accent)"/><text class="m" x="380.8" y="88">19.0 s · 60 fps median · 36 steps a frame</text><text class="m" x="8" y="128">🌧️ the rivers in Hazel</text><rect x="300" y="115" width="85.1" height="18" fill="var(--accent)"/><text class="m" x="391.1" y="128">21.6 s · 60 fps median · 33 steps a frame</text><text class="m" x="8" y="168">🐿️ the creatures in Hazel</text><rect x="300" y="155" width="83.1" height="18" fill="var(--accent)"/><text class="m" x="389.1" y="168">21.1 s · 60 fps median · 33 steps a frame</text><text class="m" x="8" y="208">all five Hazel options (🗺️ 🌧️ 🐿️ 💧 🧭)</text><rect x="300" y="195" width="472.7" height="18" fill="var(--accent)"/><text class="m" x="778.7" y="208">not done in 120 s · 60 fps median · 6 steps a frame</text><text class="m" x="8" y="256">One GitHub runner, headless Chrome at 1280×800, each setup a fresh page in turn.</text></svg>
+<figcaption>The speed run’s real time and its frames, five ways, each in turn on one GitHub runner (build 5, 0.0.156; run 46167931157).</figcaption>
+</figure>
+<div class="wrap"><table class="nums"><thead><tr><th class="l">setup</th><th>real time</th><th>frame gap, median</th><th>p99</th><th>over 16.7 ms</th><th>steps a frame</th><th>a step, median</th><th>Hazel’s share of the busy time</th><th>garbage collection</th></tr></thead><tbody><tr><td class="l">the page’s JavaScript</td><td>20.0 s</td><td>16.7 ms (60 fps)</td><td>33.4 ms</td><td>12%</td><td>35</td><td>10.1 ms</td><td>3.5%</td><td>0.5%</td></tr><tr><td class="l">🗺️ the planning in Hazel</td><td>19.0 s</td><td>16.7 ms (60 fps)</td><td>33.4 ms</td><td>12%</td><td>36</td><td>10.2 ms</td><td>4.2%</td><td>0.6%</td></tr><tr><td class="l">🌧️ the rivers in Hazel</td><td>21.6 s</td><td>16.7 ms (60 fps)</td><td>33.4 ms</td><td>10%</td><td>33</td><td>10.6 ms</td><td>9.9%</td><td>1.0%</td></tr><tr><td class="l">🐿️ the creatures in Hazel</td><td>21.1 s</td><td>16.7 ms (60 fps)</td><td>33.4 ms</td><td>11%</td><td>33</td><td>10.6 ms</td><td>9.0%</td><td>0.8%</td></tr><tr><td class="l">all five Hazel options (🗺️ 🌧️ 🐿️ 💧 🧭)</td><td>over 120 s</td><td>16.7 ms (60 fps)</td><td>33.4 ms</td><td>15%</td><td>6</td><td>12.4 ms</td><td>44.7%</td><td>3.7%</td></tr></tbody></table></div>
+
+<h2 id="share">How much of Gnome world is Hazel<a class="anchor" href="#share" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="share" title="copy this section's address">copy link</button></h2>
+<p><b>Counted by characters, comments left out of the Hazel, Hazel’s rules went from 11% of the game’s own code (0.0.152) to 14% (0.0.156), and from 18% to 22% of the code that is not drawing.</b> The rules are 1,178 lines in 16 modules; <code>app.js</code> is 728 thousand characters, of which the drawing is 322 thousand, 44%. Switching on a Hazel option changes which code runs, not how much there is. With every option on, the step’s pieces that are still only JavaScript are the gnome’s input and camera, the sound, saving and loading, and the HUD. The drawing is still all JavaScript.</p>
+<table class="nums"><thead><tr><th class="l"></th><th>0.0.152</th><th>0.0.156</th></tr></thead><tbody><tr><td class="l">Hazel’s rules (characters, comments left out)</td><td>84,958</td><td>116,738</td></tr><tr><td class="l">their lines</td><td>878</td><td>1,178</td></tr><tr><td class="l"><code>app.js</code> (characters)</td><td>707,928</td><td>727,872</td></tr><tr><td class="l">of which the drawing</td><td>321,889</td><td>321,889</td></tr><tr><td class="l">Hazel’s share of the game’s own code</td><td>10.7%</td><td>13.8%</td></tr><tr><td class="l">Hazel’s share of the code that is not drawing</td><td>18.0%</td><td>22.3%</td></tr></tbody></table>
+
+<h2 id="next">What next<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
+<ol>
+<li>The drawing in Hazel, one part at a time, each timed against the page’s JavaScript and compared pixel for pixel (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-908"><code class="ref"><b>^ticket(</b>908<b>)</b></code></a>, Matthew, 2026-11-28: “let’s start to port the drawing code from JS to Hazel … one component at a time”).</li>
+<li>Arrays in Hazel (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-846"><code class="ref"><b>^ticket(</b>846<b>)</b></code></a>): Plan.hz’s table of best tours and Folk.hz’s squirrel graphs both work around the lack of them.</li>
+<li>A builtin for JavaScript’s float multiply, or a 53-bit rounding, so the page’s random numbers in Hazel need no search at all.</li>
+<li>An <code>atan2</code> builtin in Hazel, so the hawks’ twin can use the browser’s own.</li>
+</ol>
+
+<h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
+<p>The pieces’ times and the random numbers’ costs were measured in the Claude app’s browser pane on the laptop, with Gnome world’s test hooks (<code>WorldTest.planSame</code>, <code>riversSame</code>, <code>folkSame</code>, and calls to the compiled <code>folk_bug</code> alone), its rules built by hazel-jit at load. A piece’s time is the mean over the steps run: three rounds for the rivers and the creatures in 0.0.155, one in 0.0.156. The twins’ lines are from hazeljs-examples’ “world save check” on GitHub, runs 46167673024 and 46167928740. The speed run is hazeljs-examples’ “world speed run, frame by frame” (<code>node/world-frames.mjs</code>), run 46167931157 on one runner (4 CPUs, AMD EPYC 9V74 80-Core Processor; Node v22.23.5; Google Chrome 158.0.8127.36), headless Chrome at 1280×800, each setup a fresh page in turn, up to two minutes each; its log is read with <code>gh run view --log</code> and parsed by <code>parse_frames.py</code>. The code sizes are <code>sizes.py</code>, <a href="../068/"><code class="ref"><b>^report(</b>68<b>)</b></code></a>’s, run on hazeljs-examples at 5631853 (0.0.152) and 97fccb2 (0.0.156). The page is built by <code>gen070.py</code> from <code>data/</code>.</p>
+
+<!-- data-line: begin -->
+<h2 id="data">The data<a class="anchor" href="#data" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="data" title="copy this section's address">copy link</button></h2>
+<ul>
+  <li><b>The numbers, for programs too:</b> every table in this report, and what its numbers measure, is also in this page as JSON, in its <code>&lt;script type="application/json" id="report-data"&gt;</code> element, so a reader or an agent that fetches the page alone has the dataset. The same, with any raw files that survive, is in <a href="https://github.com/matthewhammer/hazel-performance-analysis/tree/main/070/data"><code>070/data/</code></a>.</li>
+</ul>
+<!-- data-line: end -->
+
+</main><!-- theme: begin -->
+<style>
+  .theme-toggle { position: fixed; top: 10px; right: 10px; z-index: 30; font: 13px system-ui, sans-serif; padding: 3px 10px;
+    border-radius: 999px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--muted, GrayText);
+    cursor: pointer; opacity: 0.85; }
+  .theme-toggle:hover { opacity: 1; color: var(--ink, CanvasText); }
+  @media print { .theme-toggle { display: none; } }
+</style>
+<script>
+/* The theme switch: Auto (the system's choice), Light, Dark; remembered for this site. */
+(() => {
+  const order = ["auto", "light", "dark"], label = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" };
+  const get = () => { try { return localStorage.getItem("theme") || "auto"; } catch (_) { return "auto"; } };
+  const apply = m => m === "auto" ? document.documentElement.removeAttribute("data-theme")
+                                  : document.documentElement.setAttribute("data-theme", m);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "theme-toggle";
+  const show = () => { const m = get(); b.textContent = label[m] || label.auto;
+    b.title = "Theme: " + m + ". Click for " + order[(order.indexOf(m) + 1) % 3] + "; remembered on this site."; };
+  b.addEventListener("click", () => {
+    const m = order[(order.indexOf(get()) + 1) % 3];
+    try { m === "auto" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch (_) {}
+    apply(m); show();
+  });
+  window.addEventListener("storage", e => { if (e.key === "theme") { apply(get()); show(); } });
+  show(); document.body.append(b);
+})();
+</script>
+<!-- theme: end -->
+<!-- refs: begin -->
+<style>
+  code.ref { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; white-space: nowrap; }
+  code.ref b { font-weight: 800; }
+</style>
+<!-- refs: end -->
+<!-- ref-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .ref-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(400px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .ref-card .rc-head { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-title { font-weight: 600; margin: 3px 0 4px; }
+  .ref-card .rc-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .ref-card .rc-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .rc-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px;
+    vertical-align: 1px; background: #6e7781; }
+  .rc-state.current { background: #1f883d; } .rc-state.queued { background: #9a6700; } .rc-state.open { background: #0969da; }
+  .rc-state.done { background: #8250df; }
+</style>
+<script>
+/* A card for each ^ticket(N) and ^report(N) link, on hover or focus: a
+   ticket from the work dashboard's data (its area, its status, its first
+   line), carried by the dashboard's own pages and read live from the
+   published data anywhere else; a report from its own page, live (its
+   title, date and opening). Once per page load each. */
+(() => {
+  const PUBLIC = "https://matthewhammer.org/hazel-work-notes/dashboard-data/data.json";
+  const DATA = location.port === "8000" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/data.json" : PUBLIC;
+  /* the dashboard itself carries its tickets (made with the page, changed
+     with it); any other page asks the published data */
+  const EMBED = null;
+  let data = EMBED ? Promise.resolve(EMBED) : null;
+  const loadData = () => data || (data = fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null));
+  const pages = new Map();
+  const loadReport = url => {
+    if (!pages.has(url)) pages.set(url, fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => {
+      const doc = new DOMParser().parseFromString(t, "text/html"), h1 = doc.querySelector("h1");
+      let p = h1 && h1.nextElementSibling;
+      while (p && p.tagName !== "P") p = p.nextElementSibling;
+      const label = (doc.querySelector(".series") || {}).textContent || "";
+      return { title: h1 ? h1.textContent.trim() : doc.title, date: (label.match(/\d{4}-\d{2}-\d{2}/) || [""])[0],
+               lead: p ? p.textContent.replace(/\s+/g, " ").trim() : "" };
+    }).catch(() => null));
+    return pages.get(url);
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cut = (t, n) => t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…";
+  const plain = h => new DOMParser().parseFromString("<div>" + (h || "") + "</div>", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+  const lead = h => { const m = /^\s*<b>([\s\S]*?)<\/b>/.exec(h || ""); return m ? plain(m[1]) : cut(plain(h), 200); };
+  const ticketCard = (n, d) => {
+    const open = (d.tickets || []).find(t => t.id === n), closed = (d.closed_tickets || []).find(t => t.id === n), t = open || closed;
+    if (!t) return `<div class="rc-head">^ticket(${n})</div><div class="rc-note">Not on the dashboard.</div>`;
+    const q = (d.queue || []).indexOf(n);
+    const [cls, state] = closed ? ["done", `${t.status || "closed"}, ${t.closed || ""}`]
+      : d.current_ticket === n ? ["current", "current" + (d.current_waiting ? " · ✋❔ waiting on Matthew" : "")]
+      : q >= 0 ? ["queued", `queued, ${q + 1} in line`] : ["open", "open"];
+    return `<div class="rc-head">^ticket(${n}) · ${esc(t.area || "")}<span class="rc-state ${cls}">${esc(state)}</span></div>` +
+      `<div class="rc-title">${esc(lead(t.text))}</div>` +
+      `<div class="rc-meta">${t.added ? "added " + esc(t.added) + " · " : ""}from ${esc(plain(t.source || "") || "?")}</div>` +
+      (closed && t.outcome ? `<div class="rc-meta">${esc(cut(plain(t.outcome), 180))}</div>` : "");
+  };
+  const reportCard = (n, r) => r
+    ? `<div class="rc-head">^report(${n}) · Hazel reports${r.date ? " · " + esc(r.date) : ""}</div>` +
+      `<div class="rc-title">${esc(r.title)}</div>` + (r.lead ? `<div class="rc-meta">${esc(cut(r.lead, 240))}</div>` : "")
+    : `<div class="rc-head">^report(${n})</div><div class="rc-note">The report's page didn't load just now.</div>`;
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = (Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16)) + scrollX) + "px";
+    card.style.top = ((r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const refOf = a => { const c = a.querySelector("code.ref"); const m = c && /^\^(ticket|report)\((\d+)\)$/.exec(c.textContent.trim()); return m && { kind: m[1], n: Number(m[2]) }; };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = (a, ref) => {
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "ref-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      card.innerHTML = `<div class="rc-head">^${ref.kind}(${ref.n})</div><div class="rc-note">loading…</div>`;
+      card.hidden = false; place(a);
+      let html;
+      if (ref.kind === "ticket") { const d = await loadData(); html = d ? ticketCard(ref.n, d) : `<div class="rc-head">^ticket(${ref.n})</div><div class="rc-note">The dashboard's data didn't load just now.</div>`; }
+      else html = reportCard(ref.n, await loadReport(a.href));
+      if (over !== a) return;
+      card.innerHTML = html; place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target), r = a && refOf(a); if (r && a !== over) show(a, r); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target), r = a && refOf(a); if (r) show(a, r); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- ref-cards: end -->
+
+<!-- steps: begin -->
+<style>
+  button.mint { margin-left: 4px; font: inherit; font-size: 0.75em; padding: 0 6px; border: 1px solid var(--line, #ccc);
+    border-radius: 4px; background: transparent; color: var(--muted, #666); cursor: pointer; vertical-align: 1px; }
+  button.mint:hover { color: inherit; }
+  button.mint.done { color: var(--good, #15803d); border-color: var(--good, #15803d); }
+  a.step-link { color: var(--muted, #666); text-decoration: none; font-size: 0.85em; margin-left: 4px; }
+  a.step-link:hover { text-decoration: underline; }
+  li:target { background: color-mix(in srgb, var(--good, #15803d) 12%, transparent); border-radius: 6px; }
+</style>
+<script>
+/* Each "What next" step: a link to it, and a button copying a request to
+   mint a ticket for it (to paste to Claude): the report, the step, its URL. */
+(() => {
+  const h = document.getElementById("next");
+  if (!h) return;
+  let list = h.nextElementSibling;
+  while (list && !/^(OL|UL)$/.test(list.tagName)) {
+    if (list.tagName === "H2") return;
+    list = list.nextElementSibling;
+  }
+  if (!list) return;
+  /* the report's number, from its label: ^report(13) (before 2026-10-14, "Issue 013") */
+  const label = (document.querySelector(".series") || document.body).textContent;
+  const m = label.match(/\^(?:report|issue)\((\d+)\)/) || label.match(/Issue (\d{3})/);
+  const report = m ? String(Number(m[1])) : "?";
+  const base = "http://matthewhammer.org/hazel/reports/" + report.padStart(3, "0") + "/";
+  [...list.children].filter(li => li.tagName === "LI").forEach((li, i) => {
+    const n = i + 1;
+    if (!li.id) li.id = "step-" + n;
+    /* (its lead in bold, if it has one; not the bold inside a ^ticket(N) or ^report(N) chip, whose first part is
+       "^ticket(": Matthew, 2026-11-07, a step ending in a chip was copied as "^ticket(") */
+    const b = [...li.querySelectorAll("b, strong")].find(x => !x.closest("code.ref"));
+    const title = (b ? b.textContent : li.textContent).replace(/\s+/g, " ").trim().replace(/[:.,;]$/, "").slice(0, 160);
+    const url = base + "#" + li.id;
+    const text = "Mint a ticket for this step: Hazel reports, ^report(" + report +
+      "), What next, step " + n + ': "' + title + '". ' + url;
+    const a = document.createElement("a");
+    a.href = "#" + li.id; a.className = "step-link"; a.textContent = "#" + n; a.title = "A link to this step";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "mint"; btn.textContent = "copy for a ticket";
+    btn.title = "Copies a request to mint a ticket for this step, to paste to Claude";
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) {
+        const t = document.createElement("textarea"); t.value = text; document.body.append(t);
+        t.select(); document.execCommand("copy"); t.remove();
+      }
+      btn.textContent = "copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "copy for a ticket"; btn.classList.remove("done"); }, 1500);
+    });
+    li.append(" ", a, " ", btn);
+  });
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+<!-- steps: end -->
+<!-- report-data: begin -->
+<script type="application/json" id="report-data">
+{
+ "report": 70,
+ "title": "Gnome World’s Planning, Rivers and Folk, in Hazel",
+ "blurb": "Three more Hazel modules in Gnome world, each off by default and held by the save check to give the same answers as the page's JavaScript: the speed run's planning, the rivers, pumps and rain, and the villagers, squirrels, insects and hawks, with the page's own random numbers worked out in Hazel. Each piece takes from about as long to 26 times as long in Hazel, and is small: with one on, the speed run takes about what it did (20.0 s); with every Hazel option on, the water among them, it does not finish in two minutes. Hazel is now 14% of the game's code; the drawing, 44% of app.js, is next.",
+ "builds": {
+  "1 (0.0.152)": "hazeljs-examples 5631853",
+  "2 (0.0.153)": "50826bd, Plan.hz",
+  "3 (0.0.154)": "aa7801e, Rivers.hz",
+  "4 (0.0.155)": "92ccd28, Folk.hz",
+  "5 (0.0.156)": "97fccb2, Folk.hz's rand cheaper"
+ },
+ "runs": {
+  "pane": "the Claude app's browser pane on the laptop, Gnome world at http://localhost:8141/world/?test=1 (seed 7, as loaded), its rules built by hazel-jit at load; 2026-11-28 09:35-09:58 MST",
+  "frames": "hazeljs-examples 'world speed run, frame by frame' run 46167931157 (4 CPUs, AMD EPYC 9V74 80-Core Processor; Node v22.23.5; Google Chrome 158.0.8127.36), headless Chrome at 1280×800, each setup in turn up to two minutes",
+  "save check": "hazeljs-examples 'world save check' runs 46167673024, 46167928740"
+ },
+ "measures": {
+  "a piece's ms": "the mean over the steps run (planning: one call)",
+  "real time": "wall-clock seconds from pressing 🏃 to the run's dig",
+  "share of the code": "characters, comments left out of the Hazel (sizes.py)"
+ },
+ "files": [
+  "data/frames-46167931157.json",
+  "data/frames-46167931157.log",
+  "data/machine-46167931157.txt",
+  "data/meta.json",
+  "data/pane.json",
+  "data/save-check-46167673024.log",
+  "data/save-check-46167928740.log",
+  "data/sizes-0.0.152.json",
+  "data/sizes-0.0.156.json",
+  "data/tables.json"
+ ],
+ "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
+ "tables": [
+  {
+   "section": "The builds",
+   "section_id": "builds",
+   "columns": [
+    "build",
+    "version",
+    "what"
+   ],
+   "rows": [
+    [
+     "1",
+     "0.0.152",
+     "Gnome world 0.0.152 (hazeljs-examples 5631853): the flying level’s changes; the code counted in Matthew’s question"
+    ],
+    [
+     "2",
+     "0.0.153",
+     "build 1 with Plan.hz, the speed run’s planning, off unless ?plan=hazel or 🗺️ (50826bd)"
+    ],
+    [
+     "3",
+     "0.0.154",
+     "build 2 with Rivers.hz, the rivers, pumps, rain and drying, off unless ?rivers=hazel or 🌧️ (aa7801e)"
+    ],
+    [
+     "4",
+     "0.0.155",
+     "build 3 with Folk.hz, the villagers, squirrels, insects and hawks, off unless ?folk=hazel or 🐿️ (92ccd28)"
+    ],
+    [
+     "5",
+     "0.0.156",
+     "build 4 with Folk.hz’s random numbers about four times as cheap (97fccb2); the frames job’s two more setups"
+    ]
+   ]
+  },
+  {
+   "section": "The speed run, five ways",
+   "section_id": "runs",
+   "columns": [
+    "setup",
+    "real time",
+    "frame gap, median",
+    "p99",
+    "over 16.7 ms",
+    "steps a frame",
+    "a step, median",
+    "Hazel’s share of the busy time",
+    "garbage collection"
+   ],
+   "rows": [
+    [
+     "the page’s JavaScript",
+     "20.0 s",
+     "16.7 ms (60 fps)",
+     "33.4 ms",
+     "12%",
+     "35",
+     "10.1 ms",
+     "3.5%",
+     "0.5%"
+    ],
+    [
+     "🗺️ the planning in Hazel",
+     "19.0 s",
+     "16.7 ms (60 fps)",
+     "33.4 ms",
+     "12%",
+     "36",
+     "10.2 ms",
+     "4.2%",
+     "0.6%"
+    ],
+    [
+     "🌧️ the rivers in Hazel",
+     "21.6 s",
+     "16.7 ms (60 fps)",
+     "33.4 ms",
+     "10%",
+     "33",
+     "10.6 ms",
+     "9.9%",
+     "1.0%"
+    ],
+    [
+     "🐿️ the creatures in Hazel",
+     "21.1 s",
+     "16.7 ms (60 fps)",
+     "33.4 ms",
+     "11%",
+     "33",
+     "10.6 ms",
+     "9.0%",
+     "0.8%"
+    ],
+    [
+     "all five Hazel options (🗺️ 🌧️ 🐿️ 💧 🧭)",
+     "over 120 s",
+     "16.7 ms (60 fps)",
+     "33.4 ms",
+     "15%",
+     "6",
+     "12.4 ms",
+     "44.7%",
+     "3.7%"
+    ]
+   ]
+  },
+  {
+   "section": "How much of Gnome world is Hazel",
+   "section_id": "share",
+   "columns": [
+    "",
+    "0.0.152",
+    "0.0.156"
+   ],
+   "rows": [
+    [
+     "Hazel’s rules (characters, comments left out)",
+     "84,958",
+     "116,738"
+    ],
+    [
+     "their lines",
+     "878",
+     "1,178"
+    ],
+    [
+     "app.js (characters)",
+     "707,928",
+     "727,872"
+    ],
+    [
+     "of which the drawing",
+     "321,889",
+     "321,889"
+    ],
+    [
+     "Hazel’s share of the game’s own code",
+     "10.7%",
+     "13.8%"
+    ],
+    [
+     "Hazel’s share of the code that is not drawing",
+     "18.0%",
+     "22.3%"
+    ]
+   ]
+  }
+ ],
+ "files_on_github": "https://github.com/matthewhammer/hazel-performance-analysis/tree/main/070/data"
+}
+</script>
+<!-- report-data: end -->
+<!-- anchors (tools/add_anchors.py) -->
+<script id="anchors-js">
+/* each section's "copy link": its public address, whichever copy of the page this is (tools/add_anchors.py) */
+(() => {
+  const n = (location.pathname.match(/(\d{3})\/?(index\.html)?$/) || [])[1];
+  const base = n ? "https://matthewhammer.org/hazel/reports/" + n + "/" : location.origin + location.pathname;
+  document.querySelectorAll(".copyanchor").forEach(b => b.addEventListener("click", async () => {
+    const url = base + "#" + b.dataset.id;
+    try { await navigator.clipboard.writeText(url); b.textContent = "copied"; b.classList.add("done"); }
+    catch (e) { prompt("this section's address", url); }
+    setTimeout(() => { b.textContent = "copy link"; b.classList.remove("done"); }, 1500);
+  }));
+})();
+</script>
+<!-- highlights: begin -->
+<style>
+  .hl-s { border-radius: 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-color .15s, color .15s; }
+  @media (hover: hover) { .hl-s:not([data-hl]):hover { background: color-mix(in srgb, #facc15 22%, transparent); cursor: pointer; } .hl-s[data-hl]:hover { cursor: pointer; } }
+  .hl-s[data-hl="1"], .hl-chip[data-hl="1"] { background: #fde047; color: #111827; }
+  .hl-s[data-hl="2"], .hl-chip[data-hl="2"] { background: #475569; color: #f1f5f9; }
+  .hl-s[data-hl] code { background: transparent; color: inherit; }
+  .hl-s.hl-flash { outline: 3px solid var(--accent, #6d28d9); outline-offset: 2px; }
+  #highlights h2 { margin-top: 56px; }
+  #highlights .hl-help { color: var(--muted, GrayText); }
+  #highlights ol { padding-left: 1.6em; }
+  #highlights li { margin: .5em 0; cursor: pointer; }
+  #highlights li:hover .hl-text { text-decoration: underline; text-decoration-color: var(--line, #ccc); }
+  .hl-chip { display: inline-block; font: 600 0.78em system-ui, sans-serif; padding: 1px 8px; border-radius: 999px; margin-right: 6px; white-space: nowrap; vertical-align: 1px; }
+  .hl-gone { color: var(--muted, GrayText); font-style: italic; }
+  .hl-tools button { font: inherit; font-size: 0.9em; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line, #ccc); background: var(--paper, Canvas); color: var(--ink, CanvasText); cursor: pointer; margin-right: 6px; }
+  .hl-badge { position: fixed; right: 14px; bottom: 14px; z-index: 40; padding: 6px 12px; border-radius: 999px; font: 600 13px system-ui, sans-serif;
+    text-decoration: none; background: var(--paper, Canvas); color: var(--ink, CanvasText); border: 1px solid var(--line, #ccc); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+  .hl-badge[hidden] { display: none; }
+  @media print { .hl-badge, .hl-tools { display: none; } .hl-s:not([data-hl]) { background: none; } }
+</style>
+<script>
+/* Sentence highlights (tools/add_highlights.py): a click on a sentence cycles it through not highlighted, pre discussion and
+   post discussion; kept in this browser for this report; one list of them at the end, in the order they appear. */
+(() => {
+  "use strict";
+  const KEY = "hazel-reports/highlights:" + location.pathname.replace(/index\.html$/, "");
+  const main = document.querySelector("main") || document.body;
+  const SKIP = "script,style,pre,svg,math,button,input,textarea,select,nav,h1,h2,h3,h4,h5,h6,.series,.hl-skip,#highlights,.hl-badge,.theme-toggle";
+  const BLOCKS = "p,li,figcaption,td,th,dd,dt,blockquote";
+  const NAMES = { 1: "pre discussion", 2: "post discussion" };
+  const load = () => { try { const m = JSON.parse(localStorage.getItem(KEY)); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch (e) { /* this visit only */ } };
+  const hash = t => { let x = 0x811c9dc5; for (let i = 0; i < t.length; i++) { x ^= t.charCodeAt(i); x = Math.imul(x, 0x01000193); } return (x >>> 0).toString(36); };
+  const norm = t => t.replace(/\s+/g, " ").trim();
+  // 1. the text, block by block: each paragraph, item, caption or cell's own text nodes, in order
+  const groups = new Map(), walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+  for (let n; (n = walker.nextNode()); ) {
+    const el = n.parentElement; if (!el || !n.data.trim() || el.closest(SKIP)) continue;
+    const b = el.closest(BLOCKS); if (!b || !main.contains(b)) continue;
+    if (!groups.has(b)) groups.set(b, []); groups.get(b).push(n);
+  }
+  // 2. each block's sentences: a cut after . ! ? or …, and closing quotes or brackets, where the next word starts with a capital,
+  // a digit, a quote or an opening bracket; each sentence known by its words, a second of the same words numbered
+  const END = /[.!?…]+["”’)\]]*(?=\s+["“‘(\[]*[\p{Lu}\d^¹²³\p{Extended_Pictographic}])/gu;
+  const TEXT = new Map(), ORDER = [], seen = new Map();
+  for (const [b, nodes] of groups) {
+    const full = nodes.map(n => n.data).join(""), cuts = [0];
+    END.lastIndex = 0; for (let m; (m = END.exec(full)); ) cuts.push(m.index + m[0].length);
+    cuts.push(full.length);
+    const sents = [];
+    for (let i = 0; i + 1 < cuts.length; i++) {
+      let a = cuts[i], z = cuts[i + 1]; while (a < z && /\s/.test(full[a])) a++; while (z > a && /\s/.test(full[z - 1])) z--;
+      const t = norm(full.slice(a, z)); if (!/[\p{L}\d]/u.test(t)) continue;
+      const h = hash(t), k = seen.get(h) || 0; seen.set(h, k + 1);
+      const id = h + (k ? "-" + k : ""); sents.push({ a, z, id }); TEXT.set(id, t); ORDER.push(id);
+    }
+    // 3. each text node's parts that lie in a sentence, wrapped: a sentence through a link or a chip is several spans, one id
+    let off = 0;
+    for (const n of nodes) {
+      const s0 = off, s1 = off + n.data.length; off = s1;
+      const parts = sents.filter(S => S.a < s1 && S.z > s0); if (!parts.length) continue;
+      const frag = document.createDocumentFragment(); let p = s0;
+      for (const S of parts) {
+        const a = Math.max(S.a, s0), z = Math.min(S.z, s1);
+        if (a > p) frag.append(n.data.slice(p - s0, a - s0));
+        const sp = document.createElement("span"); sp.className = "hl-s"; sp.dataset.s = S.id; sp.textContent = n.data.slice(a - s0, z - s0);
+        frag.append(sp); p = z;
+      }
+      if (p < s1) frag.append(n.data.slice(p - s0));
+      n.replaceWith(frag);
+    }
+  }
+  const rank = new Map(ORDER.map((id, i) => [id, i]));
+  let marks = load();
+  // 4. the list at the end, and a badge that goes to it
+  const sec = document.createElement("section"); sec.id = "highlights";
+  sec.innerHTML = '<h2>Highlighted sentences</h2><p class="hl-help">Click any sentence above to mark it <span class="hl-chip" data-hl="1">pre discussion</span>; ' +
+    'again, <span class="hl-chip" data-hl="2">post discussion</span>; again, not highlighted. Kept in this browser, for this report.</p>' +
+    '<div class="hl-list"></div><p class="hl-tools"><button type="button" class="hl-copy">📋 Copy the list</button><button type="button" class="hl-clear">Clear all</button></p>';
+  const dataEl = main.querySelector('script[type="application/json"]');
+  if (dataEl && dataEl.parentElement === main) main.insertBefore(sec, dataEl); else main.append(sec);
+  const badge = document.createElement("a"); badge.className = "hl-badge"; badge.href = "#highlights"; badge.hidden = true; document.body.append(badge);
+  const esc = t => t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const listed = () => Object.keys(marks).filter(id => marks[id] && (marks[id].s === 1 || marks[id].s === 2))
+    .sort((a, b) => (rank.has(a) ? rank.get(a) : 1e9) - (rank.has(b) ? rank.get(b) : 1e9) || String(marks[a].at).localeCompare(String(marks[b].at)));
+  function paint() {
+    for (const el of main.querySelectorAll(".hl-s")) { const m = marks[el.dataset.s]; if (m && m.s) el.dataset.hl = m.s; else delete el.dataset.hl; }
+    const ids = listed(), box = sec.querySelector(".hl-list");
+    box.innerHTML = ids.length ? "<ol>" + ids.map(id => { const m = marks[id], gone = !rank.has(id);
+      return `<li data-id="${esc(id)}"><span class="hl-chip" data-hl="${m.s}">${NAMES[m.s]}</span><span class="hl-text">${esc(TEXT.get(id) || m.t || "")}</span>${gone ? ' <span class="hl-gone">(no longer in this report)</span>' : ""}</li>`; }).join("") + "</ol>"
+      : '<p class="hl-gone">None yet.</p>';
+    const pre = ids.filter(id => marks[id].s === 1).length, post = ids.length - pre;
+    badge.hidden = !ids.length; badge.textContent = `🖍 ${pre} pre · ${post} post discussion`;
+  }
+  // 5. a click on a sentence cycles it; a link, a button or a selection of text is left alone
+  main.addEventListener("click", e => {
+    if (e.target.closest("a,button,input,select,textarea,summary,label,svg,#highlights")) return;
+    const sel = window.getSelection ? String(window.getSelection()) : ""; if (sel.trim()) return;
+    const sp = e.target.closest(".hl-s"); if (!sp) return;
+    const id = sp.dataset.s, cur = (marks[id] && marks[id].s) | 0, nx = (cur + 1) % 3;
+    if (nx) marks[id] = { s: nx, t: TEXT.get(id) || sp.textContent, at: (marks[id] && marks[id].at) || new Date().toISOString() }; else delete marks[id];
+    save(); paint();
+  });
+  sec.addEventListener("click", e => {
+    if (e.target.closest(".hl-copy")) {
+      const lines = listed().map(id => `- [${NAMES[marks[id].s]}] ${TEXT.get(id) || marks[id].t}`), text = (document.title + "\n" + location.href.split("#")[0] + "\n\n" + lines.join("\n")).trim();
+      const b = e.target.closest(".hl-copy"), done = () => { b.textContent = "📋 Copied"; setTimeout(() => { b.textContent = "📋 Copy the list"; }, 1500); };
+      try { navigator.clipboard.writeText(text).then(done, () => {}); } catch (err) { /* no clipboard here */ }
+      return;
+    }
+    if (e.target.closest(".hl-clear")) { const n = listed().length; if (n && confirm(`Clear all ${n} highlighted sentences in this report?`)) { marks = {}; save(); paint(); } return; }
+    const li = e.target.closest("li[data-id]"); if (!li) return;
+    const first = main.querySelector(`.hl-s[data-s="${CSS.escape(li.dataset.id)}"]`); if (!first) return;
+    first.scrollIntoView({ behavior: "smooth", block: "center" });
+    const all = main.querySelectorAll(`.hl-s[data-s="${CSS.escape(li.dataset.id)}"]`); all.forEach(el => el.classList.add("hl-flash"));
+    setTimeout(() => all.forEach(el => el.classList.remove("hl-flash")), 1400);
+  });
+  addEventListener("storage", e => { if (e.key === KEY) { marks = load(); paint(); } });   // (another tab of this report)
+  paint();
+})();
+</script>
+<!-- highlights: end -->
+</body>
+</html>

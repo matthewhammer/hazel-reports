@@ -1,0 +1,79 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 070 · Gnome world’s planning, rivers and folk · 2026-11-28, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 069</p>
+<h1>Gnome World’s Planning, Rivers and Folk, in Hazel</h1>
+<p class="sub">Matthew asked how much of Gnome world is Hazel, and then for more of it, each piece opt-in and off by default: “the villagers walking, the squirrels, the hawks and insects; the rivers held at their level, the pumps and the rain; the speed run’s planning (the order of things, its targets, the dig’s chunks)” (2026-11-28, ^ticket(907)). This report covers the three Hazel modules that do it, how each is held to the page’s JavaScript, what each costs, and the speed run with each switched on.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#builds">The builds</a>: 0.0.152, and 0.0.153 to 0.0.156, one module each.</li>
+<li><a href="#twins">How a Hazel piece is held to the page’s</a>: two versions of each piece, the same answers on every push.</li>
+<li><a href="#plan">The speed run’s planning</a>: the same plan, the order of the things in {{order_hz}} ms against {{order_js}}, once a run.</li>
+<li><a href="#rivers">The rivers, the pumps and the rain</a>: every tile’s water the same, {{rv_hz}} ms a step against {{rv_js}}.</li>
+<li><a href="#folk">The villagers, squirrels, insects and hawks</a>: every creature the same over 900 steps, {{folk_hz}} ms a step for all of them against {{folk_js}}.</li>
+<li><a href="#rand">The page’s chances, worked out in Hazel</a>: a draw went from {{rand_old}} µs to {{rand_new}} µs.</li>
+<li><a href="#runs">The speed run, five ways</a>: each new module alone leaves it about as it was ({{js_real}}); every Hazel option on, the water among them, and it does not finish in two minutes.</li>
+<li><a href="#share">How much of Gnome world is Hazel</a>: {{share_old}} of the code became {{share_new}}; the drawing is next.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<div class="summary">
+<p><b>In short.</b> Three new Hazel modules take over the speed run’s planning (Plan.hz), the rivers, pumps, rain and drying (Rivers.hz), and the villagers, squirrels, insects and hawks (Folk.hz). Each is off unless chosen under ⚙️ Advanced or by a query (<code>?plan=hazel</code>, <code>?rivers=hazel</code>, <code>?folk=hazel</code>). The page’s JavaScript stays the default and is each one’s twin: the world save check runs both from one state on every push and finds the same plan, the same water in every tile and the same state in every creature. For the creatures to match, Hazel works out the page’s own random numbers from its seed, to the bit. Hazel takes from about as long as the JavaScript ({{x_lo_name}}) to {{x_hi}} times as long ({{x_hi_name}}), and the pieces are small: with one of them on, the speed run takes {{plan_real}}, {{rivers_real}} or {{folk_real}} against {{js_real}}. With every Hazel option on, the water in Hazel (^report(69)) among them, it does not finish in two minutes. Hazel is now {{share_new}} of the game’s own code and {{share_nd_new}} of the code that is not drawing. The drawing is 44% of <code>app.js</code>, and it is the next piece to move to Hazel (^ticket(908)).</p>
+</div>
+
+<h2 id="builds">The builds</h2>
+<p><b>Each module came in its own release, the same day, and every figure below names the build it measures.</b></p>
+{{t_builds}}
+
+<h2 id="twins">How a Hazel piece is held to the page’s</h2>
+<p><b>Each piece has two versions, the page’s JavaScript and a Hazel module, and a test runs both from one state and compares every value they leave; the world save check runs those tests on every push to the repository.</b> This is the pattern of Water.hz and Path.hz (^report(69)). The JavaScript stays the default, so a player sees nothing new unless a switch is on; with a switch on, the page hands the Hazel function what it needs, takes back what it returns, and writes that into the world. The tests are <code>WorldTest.planSame</code>, <code>riversSame</code> and <code>folkSame</code>. Each sets the world back after itself, so the tests can run in the middle of a game.</p>
+<p>Where a piece reads the world (a tile’s height, a flower in reach, a tree’s limbs), the page reads it and hands it over: Hazel has no arrays and cannot read the page’s, so each call gets the few values it needs as lists and records. Where a piece writes the world, Hazel returns the new values and the page stores them. The first three tests on GitHub, from the world the save check’s tour leaves:</p>
+<pre class="log">{{save_lines}}</pre>
+
+<h2 id="plan">The speed run’s planning</h2>
+<p><b>Plan.hz finds the same plan as the page: the same order for the 12 things, the same 64 tree parts, the same 336 gems nearest first and the same next chunk of the dig. The order costs the most, {{order_hz}} ms in Hazel against {{order_js}} ms in JavaScript, but the run works it out once.</b> The order is the shortest tour through the things, found by Held and Karp’s method: for each set of things and each last thing, the shortest way through that set ending there. JavaScript keeps those best ways in an array indexed by the set’s bits. Plan.hz keeps each size’s sets in a balanced tree and builds each size from the one before. In the speed run that one call makes one frame of {{plan_worst}} ms, where the page’s own longest frame is {{js_worst}} ms. The other three pieces are a filter, a stable sort and a choice, each a millisecond or two in Hazel.</p>
+
+<h2 id="rivers">The rivers, the pumps and the rain</h2>
+<p><b>Rivers.hz leaves every tile with the same water as the page’s JavaScript, to the bit, in dry steps and in rain. It takes {{rv_hz}} ms a step against {{rv_js}} ms, where a whole step of the speed run takes about {{step_ms}} ms.</b> Each step it holds each river at its level, draws the villages’ pumped rooms down by 0.004, starts a shower when one is due, lets its 24 drops fall, and every half second dries the land’s top. The page still draws the rain’s chances, as it always has, and hands them in. Each amount is rounded as the page stores it, to a 32-bit float, by Veltkamp’s split (^report(69)).</p>
+
+<h2 id="folk">The villagers, squirrels, insects and hawks</h2>
+<p><b>Folk.hz moves all 80 villagers, 14 squirrels, 70 insects and 2 hawks just as the page does. Over 900 steps, with the gnome led past each squirrel and each insect, every value of every creature comes out the same, and so does the page’s random seed. All of them together take {{folk_hz}} ms a step in Hazel against {{folk_js}} ms in JavaScript (0.0.156).</b></p>
+<figure class="chart">
+{{costs}}
+<figcaption>Each piece’s time, JavaScript and Hazel, in milliseconds on a log scale (build 5, 0.0.156, in the browser pane; the planning’s are once a run, the others a step). Every piece gives the same answers both ways.</figcaption>
+</figure>
+<ul>
+<li><b>A villager</b> stands a while, walks within its reach (its room, its stretch of land or its platform), and is busy at what its room is for. The page hands Hazel the land’s height under the columns a walk crosses.</li>
+<li><b>A squirrel</b> runs along its tree’s limbs, a graph of 400 to 1,650 points. Near the gnome, it flees by a breadth-first search to the point furthest from the gnome within 30 points. Looking a point up in a list of 1,650 would take as many steps, so the page hands the graph over 32 points to a chunk, made once a tree and kept: a point is then a few dozen steps away. In the test, squirrels fled on {{flee}} of the steps.</li>
+<li><b>An insect</b>: a dragonfly darts and hovers over the water; a bee or a butterfly wanders, flies to a flower in reach, rests on it, and flees the gnome. The page hands each bee or butterfly the flowers still standing in its reach and the land’s height at each.</li>
+<li><b>A hawk</b> soars in a ring that drifts toward the gnome, flies to the nearest great tree and rests there, and leaves when the gnome comes near. In the test, the two hawks soared, flew and rested ({{hawk_steps}} steps).</li>
+</ul>
+<p>Three small changes make the page’s own version give the very numbers Hazel’s does. It takes its distances by <code>Math.sqrt</code>, not <code>Math.hypot</code>, which can differ in the last bit. It rounds as <code>Math.floor(x + 0.5)</code>, which differs from <code>Math.round</code> for a few numbers just under a half. And a hawk’s angle comes from <code>Math.atan</code>, worked out as fdlibm’s <code>atan2</code> does but without its last small correction, because Hazel has <code>atan</code> and no <code>atan2</code>. None of these changes shows on the screen.</p>
+
+<h2 id="rand">The page’s chances, worked out in Hazel</h2>
+<p><b>The creatures’ chances are the page’s own random numbers, worked out in Hazel from the page’s seed: the seed goes in with each call and the new one comes back. Every draw is the page’s draw, so the page’s version and Hazel’s draw the same numbers in the same order.</b> The page’s generator multiplies the seed by 1,103,515,245, adds 12,345 and keeps the last 31 bits. It does this in JavaScript’s 64-bit floats: a product past 2<sup>53</sup> is rounded to 53 significant bits, ties to even, before the last bits are kept. Hazel’s integers are exact, so Folk.hz rounds the same way itself. It matched the page on every one of 2.3 million seeds tried.</p>
+<p>In 0.0.155 a draw took about {{rand_old}} µs: to round, Folk.hz counted the product’s bits one at a time, about 62 steps on numbers past 2<sup>53</sup>, which the compiled code works out as JavaScript BigInts. In 0.0.156 it finds the size by a search over the nine sizes the product can have, and a draw takes about {{rand_new}} µs. The insects, which draw two to six times a step each, went from {{bugs_old}} ms to {{bugs_new}} ms a step for all 70.</p>
+
+<h2 id="runs">The speed run, five ways</h2>
+<p><b>On one GitHub runner, the speed run as the page plays it takes {{js_real}} with the JavaScript, {{plan_real}} with the planning alone in Hazel, {{rivers_real}} with the rivers, and {{folk_real}} with the creatures: a run’s noise of a second or two. With every Hazel option on it does not finish in two minutes: {{all_where}}.</b> {{runs_note}}</p>
+<figure class="chart">
+{{runs}}
+<figcaption>The speed run’s real time and its frames, five ways, each in turn on one GitHub runner (build 5, 0.0.156; run {{run_f}}).</figcaption>
+</figure>
+{{t_runs}}
+
+<h2 id="share">How much of Gnome world is Hazel</h2>
+<p><b>Counted by characters, comments left out of the Hazel, Hazel’s rules went from {{share_old}} of the game’s own code (0.0.152) to {{share_new}} (0.0.156), and from {{share_nd_old}} to {{share_nd_new}} of the code that is not drawing.</b> The rules are {{hz_lines}} lines in {{hz_modules}} modules; <code>app.js</code> is {{app_kb}} thousand characters, of which the drawing is {{draw_kb}} thousand, 44%. Switching on a Hazel option changes which code runs, not how much there is. With every option on, the step’s pieces that are still only JavaScript are the gnome’s input and camera, the sound, saving and loading, and the HUD. The drawing is still all JavaScript.</p>
+{{t_share}}
+
+<h2 id="next">What next</h2>
+<ol>
+<li>The drawing in Hazel, one part at a time, each timed against the page’s JavaScript and compared pixel for pixel (^ticket(908), Matthew, 2026-11-28: “let’s start to port the drawing code from JS to Hazel … one component at a time”).</li>
+<li>Arrays in Hazel (ticket 846): Plan.hz’s table of best tours and Folk.hz’s squirrel graphs both work around the lack of them.</li>
+<li>A builtin for JavaScript’s float multiply, or a 53-bit rounding, so the page’s random numbers in Hazel need no search at all.</li>
+<li>An <code>atan2</code> builtin in Hazel, so the hawks’ twin can use the browser’s own.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>The pieces’ times and the random numbers’ costs were measured in the Claude app’s browser pane on the laptop, with Gnome world’s test hooks (<code>WorldTest.planSame</code>, <code>riversSame</code>, <code>folkSame</code>, and calls to the compiled <code>folk_bug</code> alone), its rules built by hazel-jit at load. A piece’s time is the mean over the steps run: three rounds for the rivers and the creatures in 0.0.155, one in 0.0.156. The twins’ lines are from hazeljs-examples’ “world save check” on GitHub, runs {{save_runs}}. The speed run is hazeljs-examples’ “world speed run, frame by frame” (<code>node/world-frames.mjs</code>), run {{run_f}} on one runner ({{m_f}}), headless Chrome at 1280×800, each setup a fresh page in turn, up to two minutes each; its log is read with <code>gh run view --log</code> and parsed by <code>parse_frames.py</code>. The code sizes are <code>sizes.py</code>, ^report(68)’s, run on hazeljs-examples at 5631853 (0.0.152) and 97fccb2 (0.0.156). The page is built by <code>gen070.py</code> from <code>data/</code>.</p>
+</main></body>
+</html>
