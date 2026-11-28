@@ -1,0 +1,29 @@
+{
+ "title": "Gnome World’s Speed Run, Frame by Frame",
+ "blurb": "Why Gnome world's speed run played at a poor frame rate, with frames of hundreds of milliseconds on a busy laptop, and what 0.0.149 changes. Not Hazel: its compiled rules are 1.3% to 1.8% of the page's busy time, and with every piece in plain JavaScript the frames are the same. The run gave its steps a fixed 12 ms of every frame, so any drawing over 4.7 ms missed the screen's refresh; and each picture coming into view was painted in the frame that showed it, several at once. Now the steps take what the frame leaves, and a frame paints 4 ms of new pictures: in a 1920×1080 window at 2×, 30 fps becomes 60 fps. Hazel is 10% of the code.",
+ "builds": {
+  "build 1 (before)": "Gnome world 0.0.148 (matthewhammer/hazeljs-examples b085172, 2026-11-27) with a record of each frame for tests, nothing else changed: perf/902-frames 5e3734e",
+  "build 2 (after)": "build 1 with this report’s changes, to be released as 0.0.149: perf/902-frames afb95f3",
+  "build 3 (then)": "Gnome world 0.0.103 (02b73ab, 2026-11-24), ^report(64)’s “then”: the world planned by Hazel, the gnome’s step and the beavers’ Hazel’s, every other piece JavaScript; its rules built at load by today’s library"
+ },
+ "runs": {
+  "diagnosis": "matthewhammer/hazeljs-examples 'world speed run, frame by frame' run 46093539386 (perf/902-frames 5e3734e), one GitHub runner (AMD EPYC 9V45 96-Core Processor), headless Chrome: build 1 four ways (Hazel's rules at 1280×800; ⚡ plain JavaScript at 1280×800; Hazel's rules full screen at 1920×1080 CSS px on a 2× display; Hazel's rules with the CPU 4× slower)",
+  "before and after": "the same job, run 46095645407 (perf/902-frames afb95f3), one GitHub runner (AMD EPYC 7763 64-Core Processor): builds 1 and 2 in turn, the same setups, and build 3 at 1280×800",
+  "sizes": "068/sizes.py at matthewhammer/hazeljs-examples b085172 (0.0.148)"
+ },
+ "measures": {
+  "gap": "the time from one frame to the next, as requestAnimationFrame gives it (ms); it falls on whole refreshes of the screen, 16.7, 33.3, 50.0 ms",
+  "steps": "the time a frame spends stepping the world (ms), and how many steps",
+  "drawing": "the time a frame spends drawing (ms)",
+  "parts": "⏱'s parts of each step and the drawing's parts, summed over the run, as shares",
+  "thread": "V8's CPU profiler, a sample each 0.5 ms, idle left out: each sample's function, grouped by its script; '(program)' is time V8 gives no function"
+ },
+ "files": [
+  "data/frames-*.log",
+  "data/frames-*.json",
+  "data/sizes.json",
+  "parse_frames.py",
+  "sizes.py",
+  "gen068.py"
+ ]
+}

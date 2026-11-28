@@ -1,0 +1,103 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 068 · Gnome world’s speed run · 2026-11-27, revised {{updated}} MST · <span class="wip">work in progress</span> · after reports 064 and 067</p>
+<h1>Gnome World’s Speed Run, Frame by Frame</h1>
+<p class="sub">Demoing Gnome world over a video call on 2026-11-27, Matthew pressed 🏃, the speed run, and saw a poor frame rate, with the HUD’s worst frame in the hundreds of milliseconds, far over the 16.7 ms of a 60 fps screen. He asked for a deep look at what a speed run costs and how to lower it, with what can be fixed made without him; and how much of Gnome world is Hazel, and whether that is what slows the run, or some other decision made recently. This report times the speed run one frame at a time on GitHub, names what fills its slow frames, and measures the changes made for 0.0.149.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#builds">The builds</a>: 0.0.148 as it was, 0.0.149 with this report’s changes, and 0.0.103 from three days earlier.</li>
+<li><a href="#frames">The frames, before and after</a>: in a 1920×1080 window at 2×, the speed run’s median frame goes from {{b2_med}} to {{a2_med}}; at 1280×800, the frames that miss the screen’s refresh go from {{b_missed}} to {{a_missed}}.</li>
+<li><a href="#why">Why most frames missed</a>: the run gave its steps a fixed 12 ms of every frame, so any drawing over 4.7 ms missed the refresh.</li>
+<li><a href="#worst">The worst frames</a>: pictures painted as the view sweeps across the world, several in one frame, and the overview map drawn every frame.</li>
+<li><a href="#steps">Inside the steps</a>: the water is {{water_d}} of the steps’ time; it sets how fast the run goes, not its frame rate.</li>
+<li><a href="#hazel">Hazel’s share</a>: {{hz_size}} of Gnome world’s own code (its rules and app.js), and {{hz_d}} of the page’s busy time; with every piece in plain JavaScript the frames are the same. Hazel is not what slows the run.</li>
+<li><a href="#decisions">The decisions that cost the frames</a>: all in the page’s JavaScript, most older than the move to Hazel.</li>
+<li><a href="#call">On a laptop in a video call</a>: what a slower CPU does to the speed run, as a stand-in for one busy sharing its screen.</li>
+<li><a href="#changes">What 0.0.149 changes</a>, and what each change costs.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<div class="summary">
+<p><b>In short.</b> The speed run steps the world as fast as the page can and draws it once a frame. Until 0.0.148 its steps took a fixed 12 ms of every frame, so a frame whose drawing took more than about 4.7 ms missed the screen’s sixtieth of a second and showed a frame late. In a 1920×1080 window on a 2× screen that was most frames ({{b2_missed}}: the median frame {{b2_med}}), and on a slower CPU, as a laptop sharing its screen in a video call is, most frames too. The longest frames, up to {{d_worst}} ms on a GitHub runner with its CPU slowed, were pictures painted as the view swept the world: a tall tree, a great tree, a patch of roots, each painted in the frame that first showed it, several in one frame; and the overview map, drawn again on every frame of the run. None of it is Hazel’s: the rules compiled from Hazel are {{hz_d}} of the page’s busy time, the water, in JavaScript, is most of the steps, and with every piece in plain JavaScript the frames are the same. 0.0.149 gives the steps what a frame leaves after its drawing, paints 4 ms of new pictures a frame, draws the map on the clock, and repaints a dug patch of roots at most four times a second. In that window the median frame goes from {{b2_med}} to {{a2_med}}. The cost is the run’s own speed where drawing is heavy: in that window it now takes {{a2_real}} to finish, against {{b2_real}}; at 1280×800 it is faster, {{a_real}} against {{b_real}}, since more of its frames now make the refresh.</p>
+</div>
+
+<h2 id="builds">The builds</h2>
+<p>Every figure says which of these it plots.</p>
+{{t_builds}}
+
+<h2 id="frames">The frames, before and after</h2>
+<p><b>Build 2 holds the speed run at 60 frames a second where the drawing leaves room, and cuts the frames of 50 ms and more; on a slowed CPU it goes from 20 frames a second to 30.</b> In a 1920×1080 window at 2×, the median frame goes from {{b2_med}} to {{a2_med}}, and the frames that miss a refresh from {{b2_missed}} to {{a2_missed}}. At 1280×800 the median was already 60 fps; the frames that miss a refresh go from {{b_missed}} to {{a_missed}}, and the worst from {{b_worst}} to {{a_worst}} ms. With the CPU 4× slower the median is {{b4_med}} before and {{a4_med}} after, and the frames of 50 ms and more go from {{b4_50}} of {{b4_n}} to {{a4_50}} of {{a4_n}}.</p>
+<figure class="chart">
+{{frames}}
+<figcaption>Each setup’s frames, by how many refreshes of the screen they took. A frame’s gap falls on whole refreshes, 16.7, 33.3 or 50 ms. Builds 1, 2 and 3 in turn on one GitHub runner, run {{run_f}}, in headless Chrome.</figcaption>
+</figure>
+<div class="wrap">{{t_frames}}</div>
+<p>“The speed run’s real time” is the wall-clock time from pressing 🏃 to the run’s end, before its dig, where the run got there within the job’s two minutes. Build 2 takes longer where drawing costs more: that is the trade, described under <a href="#changes">what 0.0.149 changes</a>.</p>
+
+<h2 id="why">Why most frames missed: twelve milliseconds of steps</h2>
+<p><b>The speed run stepped the world for a fixed 12 ms of every frame, then drew it, so a frame was 12 ms plus its drawing, and any drawing over about 4.7 ms made it miss the refresh.</b> At 1280×800 the drawing’s median is {{b_draw}}, so most frames are over 16.7 ms of work and about half miss ({{b_missed}}). In a 1920×1080 window at 2× the drawing’s median is {{b2_draw}}, and nearly every frame takes two refreshes: 30 frames a second. The loop has been this way since the speed run was made (0.0.87): a player’s frame steps the world once, about 0.5 ms, and the 12 ms was chosen to make the run fast, not to fit the frame.</p>
+<figure class="chart">
+{{budget}}
+<figcaption>A typical frame of the speed run: the median time its steps took, then its drawing, against the screen’s refresh, before and after. Build 1 gives the steps 12 ms; build 2 gives them 14 ms less the drawing, between 4 and 12. Run {{run_f}}.</figcaption>
+</figure>
+<p>Build 2 gives the steps what a frame leaves: 14 ms less the drawing’s recent time, at least 4 ms and at most 12. At 1280×800 that is {{a_steps}} steps a frame in place of {{b_steps}}; at 1920×1080 on a 2× screen, {{a2_steps}} in place of {{b2_steps}}, its drawing now {{a2_draw}} in place of {{b2_draw}}.</p>
+
+<h2 id="worst">The worst frames: pictures painted as the view sweeps</h2>
+<p><b>The longest frames were drawing, not steps: each new picture coming into view was painted in the frame that first showed it, and the speed run sweeps the view across the world several times as fast as a player, so several came in one frame.</b> The page paints each tree, great tree, house and patch of roots once into a picture of its own and copies it on every frame after, which costs almost nothing; but painting one costs from a few milliseconds to over a hundred with the CPU slowed, and the caches keep 70 pictures and 30 patches of roots on a computer (fewer on an iPad; counted and capped since 0.0.115), so a run that goes back and forth across the world paints many again. Two more costs belonged to the speed run alone: the overview map was drawn again every 45 steps of the world, which in the speed run is every frame, all 186,368 tiles each time; and the patch of roots the gnome was digging in was painted again whenever a tile in it was dug, which in the run is nearly every frame.</p>
+<div class="wrap">{{t_worst}}</div>
+<p>The four worst frames of each setup of build 1, run {{run_d}}: the time from that frame to the next; the frame’s steps and its drawing; the drawing’s two largest parts; and the function the page’s thread was sampled in most during it. “hud” holds the overview map. One HUD frame of 70 ms came at the start of the run’s dig, the first time the HUD wrote a number with its thousands marked, which probably set up the browser’s number formats (the first such call takes 12 ms in Node on the laptop); build 2 makes its one formatter as the page loads.</p>
+<figure class="chart">
+{{parts}}
+<figcaption>Where build 1’s speed run spends its time: ⏱’s parts of every step, and the drawing’s parts, over the whole run. Run {{run_d}} ({{m_d}}).</figcaption>
+</figure>
+
+<h2 id="steps">Inside the steps: the water</h2>
+<p><b>The water is {{water_d}} of the steps’ time, in every setup; Hazel’s pieces together are a few percent.</b> The water seeps through each kind of ground and fills the dug tunnels, every wet tile stepped in blocks of eight by eight that sleep while still (0.0.131). A step is about half a millisecond on a GitHub runner, so the run’s 12 ms took about 24 steps. The water sets how much of the world a frame of the run gets through, so how fast the run goes, and in build 2 how fast it goes where drawing costs more; it is not what makes frames miss. A step stands alone, so a long one still makes a long frame: the water stepping the whole world after a restart, and the run’s path search, each about 10 ms at worst on the runner.</p>
+
+<h2 id="hazel">Hazel’s share of the code, and of the time</h2>
+<p><b>Hazel is {{hz_size}} of Gnome world’s own code (its rules and app.js) and {{hz_d}} of the page’s busy time in the speed run, and with every piece in plain JavaScript the frames are the same. Hazel is not what slows the run.</b></p>
+<figure class="chart">
+{{share}}
+<figcaption>Hazel’s share by size (characters, comments left out of the Hazel) and by the time the page’s thread spends in each kind of code during the speed run. Builds 2 and 3, run {{run_f}} ({{m_f}}).</figcaption>
+</figure>
+<p>Hazel’s rules are {{hz_chars}} characters in twelve files (eleven modules and a preamble): the world’s plan, its villages and houses, the gnome’s step, the beavers, the carpet, the cat tail, Clover’s ride, the boulders, picking things up, the wind, the bunnies, frogs, birds and the flying jellyfish. app.js is {{app_chars}} characters, {{draw_app}} of them drawing. In the speed run the compiled Hazel is called for the gnome every step and for the creatures near the view: a few microseconds a call, under 2% of the thread.</p>
+{{t_sizes}}
+<p>Two comparisons settle it. On one runner, the page with every piece in ⚡ plain JavaScript (build 1, run {{run_d}}) misses the refresh on {{dplain_missed}} of its frames, Hazel’s on {{dhazel_missed}}; in run {{run_f}}, build 2 with ⚡ misses on {{ap_missed}}, with Hazel’s rules on {{a_missed}}. And build 3, 0.0.103 of 11-24, from before ten pieces moved into Hazel, missed the refresh on {{then_missed}} of its frames (worst {{then_worst}} ms) where build 1 missed on {{b_missed}}, on the same runner. Its world is not build 1’s (the levels changed between them), so this is no measure of any one change; but its compiled Hazel was {{hz_t}} of the thread against build 1’s {{hz_b}}, and a point and a half of the thread cannot make that difference. Build 1’s drawing can: its median is {{b_draw}}, {{b_hud}} of it the HUD with the overview map and {{b_roots}} the roots.</p>
+
+<h2 id="decisions">The decisions that cost the frames</h2>
+<p><b>Each cost is a decision in the page’s JavaScript, most of them older than the move to Hazel; recent ones made it worse on big screens and small caches.</b></p>
+<ul>
+<li><b>The run’s 12 ms of steps a frame</b> (0.0.87, the speed run itself): fast, and blind to the drawing.</li>
+<li><b>The overview map every 45 steps</b> (0.0.76, before there was a speed run): a player’s three quarters of a second, the run’s every frame.</li>
+<li><b>Roots drawn once a patch, again when a tile in it is dug</b> (0.0.93): right for a player digging now and then; the run digs every frame.</li>
+<li><b>Trees three times as tall</b> (0.0.102) and <b>up to 56 pixels a tile</b> (0.0.95): bigger pictures, more to paint; a 1920×1080 window on a 2× screen has 46 pixels a tile, a 1280×800 one 19.</li>
+<li><b>Caches counted and capped</b> (0.0.115, for the iPad’s sake): on a computer 70 pictures and 30 patches kept, so a run back and forth paints many again.</li>
+<li><b>The water stepped tile by tile</b> (0.0.76, made to sleep in 0.0.131): most of a step.</li>
+</ul>
+
+<h2 id="call">On a laptop in a video call</h2>
+<p><b>A laptop sharing its screen in a video call has less CPU and GPU for the page; with the runner’s CPU slowed 4×, the speed run goes from {{b4_med}} to {{a4_med}}, its worst frame from {{b4_worst}} to {{a4_worst}} ms.</b> There, the drawing alone takes most of a frame, so no budget for the steps can make 60. The call itself costs more than this measures: capturing and encoding the screen takes the GPU the canvas draws with, and frames the browser shows late also reach the call late. The HUD’s “worst” is the worst of the last 60 frames, so a single painted tree shows there for a second. To see a given laptop’s numbers, ⚙️ Advanced’s “⏱ time the speed run” measures the run there, with and without the call.</p>
+
+<h2 id="changes">What 0.0.149 changes, and what each costs</h2>
+<ul>
+<li><b>The run’s steps take what a frame leaves</b>: 14 ms less the drawing’s recent time, 4 to 12 ms. Cost: where drawing costs more, fewer steps a frame: in the 1920×1080 window on a 2× screen the run takes {{a2_real}} in place of {{b2_real}}. At 1280×800 it is faster, {{a_real}} in place of {{b_real}}, as more of its frames make the refresh. The run’s own time, counted in steps, is the same.</li>
+<li><b>A frame paints 4 ms of new pictures</b>; the rest wait a frame or two, the first of each frame always painted. Cost: on a fast sweep, a tree or a patch of roots shows a frame or two late at the edge of the view ({{a_put}} pictures put off in the 1280×800 run, {{a2_put}} at 2×). The booklet, the tests and the zine are never put off.</li>
+<li><b>A dug patch of roots is painted again at most every quarter second.</b> Cost: for up to a quarter second, roots show through a tile just dug.</li>
+<li><b>The overview map is drawn on the clock</b>, every 0.75 s and a quarter second after a tile is dug; and drawn as one pass of packed colours, the same pixels, in place of a new array for each tile. Cost: a dug tile shows on the map up to a quarter second later.</li>
+<li><b>The dig’s count</b> for the HUD once a real second, not every 60 steps; and numbers formatted by one formatter made as the page loads.</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Release 0.0.149 with these changes, and time the speed run on Matthew’s laptop with ⏱, in a call and out of it, to see the stand-in against the real thing.</li>
+<li>Decide the trade: keep 60 frames a second and a slower run where drawing is heavy (0.0.149), or let the run choose 30 frames a second and its old speed there, as a setting under ⚙️ Advanced.</li>
+<li>Paint pictures ahead of the view: the speed run knows its way, and a player’s frames leave time between them, so a tree can be painted before it comes into view, not in the frame that shows it.</li>
+<li>Make the water cheaper, so a step is less and the run faster at the same frame rate: it is {{water_d}} of the steps.</li>
+<li>Find the run’s way by A* rather than by searching the whole world from the gnome outward, so a long search does not make a long step.</li>
+<li>Name in the HUD what its worst frame spent its time on, so a slow frame seen in a demo says why.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>A job in hazeljs-examples, <code>world speed run, frame by frame</code> (<code>node/world-frames.mjs</code>, <code>.github/workflows/world-frames.yml</code>), opens Gnome world in headless Chrome on a GitHub runner, starts the speed run with the 🏃 button, and lets the page play it with its own frames for up to two minutes, through 15 s of the dig that follows. The page keeps a record of each frame for the test (<code>PERF.rec</code>): its gap from the frame before, its steps, the slowest step and ⏱’s parts of it, the drawing’s parts, the run’s phase; build 3, too old to keep one, is timed by the job’s own <code>requestAnimationFrame</code>. V8’s profiler samples the page’s thread every 0.5 ms; a busy wait of the job’s, found in the profile, puts its samples on the page’s clock, so each slow frame’s samples are named. Setups: a 1280×800 window at 1× (the page’s canvas 536×302 pixels, 19 a tile); a 1920×1080 window on a 2× screen (the canvas 1282×721, 46 a tile); and 1280×800 with Chrome’s CPU slowed 4×. Two runs of the job met CPUs whose steps differed by 70% (AMD EPYC 9V45 and 7763), so before and after are compared only within one run: {{run_f}} ({{m_f}}) runs builds 1, 2 and 3 in turn. Run {{run_d}} ({{m_d}}) is the diagnosis, build 1 with ⚡ plain JavaScript beside it. The logs are read with <code>gh run view --log</code>, no artifact downloaded; <code>068/parse_frames.py</code> turns them into <code>068/data/frames-*.json</code>. Sizes: <code>068/sizes.py</code> at b085172. Headless Chrome on a runner draws without a GPU, so its drawing times are higher than a laptop’s and its steps lower than a busy one’s; the comparisons, not the absolute numbers, are the point.</p>
+</main></body>
+</html>

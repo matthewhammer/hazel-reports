@@ -1,0 +1,372 @@
+[
+ {
+  "section": "The builds",
+  "section_id": "builds",
+  "columns": [
+   "build",
+   "name",
+   "what"
+  ],
+  "rows": [
+   [
+    "1",
+    "before",
+    "Gnome world 0.0.148 (matthewhammer/hazeljs-examples b085172, 2026-11-27) with a record of each frame for tests, nothing else changed: perf/902-frames 5e3734e"
+   ],
+   [
+    "2",
+    "after",
+    "build 1 with this report’s changes, to be released as 0.0.149: perf/902-frames afb95f3"
+   ],
+   [
+    "3",
+    "then",
+    "Gnome world 0.0.103 (02b73ab, 2026-11-24), ^report(64)’s “then”: the world planned by Hazel, the gnome’s step and the beavers’ Hazel’s, every other piece JavaScript; its rules built at load by today’s library"
+   ]
+  ]
+ },
+ {
+  "section": "The frames, before and after",
+  "section_id": "frames",
+  "columns": [
+   "setup",
+   "build",
+   "median frame",
+   "frames missing a refresh",
+   "50 ms and over",
+   "worst",
+   "steps a frame",
+   "drawing, median",
+   "the speed run’s real time"
+  ],
+  "rows": [
+   [
+    "1280×800",
+    "3",
+    "16.7 ms (60 fps)",
+    "27%",
+    "42 of 5,839",
+    "83 ms",
+    "—",
+    "—",
+    "—"
+   ],
+   [
+    "1280×800",
+    "1",
+    "16.7 ms (60 fps)",
+    "46%",
+    "71 of 3,421",
+    "250 ms",
+    "15",
+    "7.6 ms",
+    "67.4 s"
+   ],
+   [
+    "1280×800",
+    "2",
+    "16.7 ms (60 fps)",
+    "14%",
+    "10 of 4,206",
+    "67 ms",
+    "13",
+    "3.0 ms",
+    "61.7 s"
+   ],
+   [
+    "1920×1080 at 2×",
+    "1",
+    "33.4 ms (30 fps)",
+    "89%",
+    "1,152 of 3,042",
+    "183 ms",
+    "15",
+    "16.3 ms",
+    "109.5 s"
+   ],
+   [
+    "1920×1080 at 2×",
+    "2",
+    "16.7 ms (60 fps)",
+    "46%",
+    "178 of 4,930",
+    "100 ms",
+    "8",
+    "7.3 ms",
+    "not finished in 120 s"
+   ],
+   [
+    "CPU 4× slower",
+    "1",
+    "50.0 ms (20 fps)",
+    "100%",
+    "1,563 of 2,572",
+    "283 ms",
+    "4",
+    "13.4 ms",
+    "not finished in 120 s"
+   ],
+   [
+    "CPU 4× slower",
+    "2",
+    "33.4 ms (30 fps)",
+    "95%",
+    "1,021 of 3,110",
+    "217 ms",
+    "1",
+    "13.3 ms",
+    "not finished in 120 s"
+   ]
+  ]
+ },
+ {
+  "section": "The worst frames: pictures painted as the view sweeps",
+  "section_id": "worst",
+  "columns": [
+   "setup",
+   "the frame",
+   "phase",
+   "its steps",
+   "its drawing",
+   "the drawing’s largest parts (ms)",
+   "sampled most (ms)"
+  ],
+  "rows": [
+   [
+    "1280×800",
+    "100 ms",
+    "dig",
+    "12.3 ms (12)",
+    "71.7 ms",
+    "hud 70.4, tunnels 0.3",
+    "hud app.js?v=0.0.148:4927 68.0"
+   ],
+   [
+    "1280×800",
+    "83 ms",
+    "items",
+    "12.2 ms (17)",
+    "66.9 ms",
+    "trees 43.5, roots 14.7",
+    "drawImage (native) 39.0"
+   ],
+   [
+    "1280×800",
+    "67 ms",
+    "items",
+    "12.2 ms (26)",
+    "44.4 ms",
+    "roots 16.1, greats 15.5",
+    "drawImage (native) 37.7"
+   ],
+   [
+    "1280×800",
+    "50 ms",
+    "gems",
+    "12.1 ms (33)",
+    "19.8 ms",
+    "roots 12.0, creatures 4.3",
+    "drawImage (native) 23.5"
+   ],
+   [
+    "1920×1080 at 2×",
+    "167 ms",
+    "items",
+    "12.4 ms (17)",
+    "149.6 ms",
+    "trees 83.7, roots 37.1",
+    "drawImage (native) 98.3"
+   ],
+   [
+    "1920×1080 at 2×",
+    "117 ms",
+    "items",
+    "12.0 ms (21)",
+    "94.2 ms",
+    "roots 49.8, creatures 18.6",
+    "drawImage (native) 69.1"
+   ],
+   [
+    "1920×1080 at 2×",
+    "100 ms",
+    "gems",
+    "12.1 ms (34)",
+    "92.1 ms",
+    "roots 46.8, creatures 26.3",
+    "drawImage (native) 70.6"
+   ],
+   [
+    "1920×1080 at 2×",
+    "83 ms",
+    "gems",
+    "12.1 ms (33)",
+    "66.4 ms",
+    "roots 39.5, creatures 14.0",
+    "drawImage (native) 54.9"
+   ],
+   [
+    "CPU 4× slower",
+    "167 ms",
+    "items",
+    "12.0 ms (6)",
+    "133.1 ms",
+    "trees 126.0, hud 1.4",
+    "drawImage (native) 54.8"
+   ],
+   [
+    "CPU 4× slower",
+    "167 ms",
+    "trees",
+    "13.8 ms (7)",
+    "145.3 ms",
+    "greats 121.7, roots 18.4",
+    "drawImage (native) 57.3"
+   ],
+   [
+    "CPU 4× slower",
+    "167 ms",
+    "gems",
+    "12.7 ms (8)",
+    "149.3 ms",
+    "roots 82.0, creatures 43.4",
+    "drawImage (native) 111.1"
+   ],
+   [
+    "CPU 4× slower",
+    "150 ms",
+    "items",
+    "12.9 ms (3)",
+    "128.2 ms",
+    "roots 62.4, creatures 30.8",
+    "drawImage (native) 98.0"
+   ]
+  ]
+ },
+ {
+  "section": "Hazel’s share of the code, and of the time",
+  "section_id": "hazel",
+  "columns": [
+   "app.js, by what its top-level definitions do",
+   "characters",
+   "share"
+  ],
+  "rows": [
+   [
+    "drawing",
+    "317,960",
+    "47%"
+   ],
+   [
+    "rules, input, sound, setup and the rest",
+    "155,325",
+    "23%"
+   ],
+   [
+    "simulation",
+    "81,433",
+    "12%"
+   ],
+   [
+    "building the world",
+    "56,297",
+    "8%"
+   ],
+   [
+    "the speed run",
+    "28,125",
+    "4%"
+   ],
+   [
+    "save and load",
+    "24,409",
+    "4%"
+   ],
+   [
+    "JavaScript twins of Hazel's pieces",
+    "16,951",
+    "2%"
+   ],
+   [
+    "app.js",
+    "680,500",
+    "100%"
+   ]
+  ]
+ },
+ {
+  "section": "Hazel’s share of the code, and of the time",
+  "section_id": "hazel",
+  "columns": [
+   "Hazel’s rules",
+   "characters",
+   "lines"
+  ],
+  "rows": [
+   [
+    "World.hz",
+    "41,049",
+    "310"
+   ],
+   [
+    "Bird.hz",
+    "9,243",
+    "122"
+   ],
+   [
+    "Frog.hz",
+    "5,837",
+    "89"
+   ],
+   [
+    "Bunny.hz",
+    "3,344",
+    "46"
+   ],
+   [
+    "Pickup.hz",
+    "3,342",
+    "28"
+   ],
+   [
+    "Jelly.hz",
+    "2,633",
+    "30"
+   ],
+   [
+    "Ride.hz",
+    "2,376",
+    "22"
+   ],
+   [
+    "Fly.hz",
+    "1,956",
+    "23"
+   ],
+   [
+    "Tail.hz",
+    "1,861",
+    "20"
+   ],
+   [
+    "preamble.hz",
+    "1,542",
+    "16"
+   ],
+   [
+    "Boulder.hz",
+    "1,463",
+    "16"
+   ],
+   [
+    "Wind.hz",
+    "899",
+    "9"
+   ],
+   [
+    "all",
+    "75,545",
+    "731"
+   ]
+  ]
+ }
+]
