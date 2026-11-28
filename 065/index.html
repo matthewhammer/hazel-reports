@@ -165,7 +165,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-27 18:54 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>65<b>)</b></code> · hazel-jit · 2026-11-25, revised 2026-11-27 19:29 MST · <span class="wip">work in progress</span> · after reports 046, 054 and 063</p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -314,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <p class="tag">In the PR’s description</p>
 <p>The compiler and its tests come from the livelits line&#x27;s <code>trial/794-games-aot</code> (the jit of <a href="https://github.com/hazelgrove/hazel/pull/2817">#2817</a>), ported to Jane Street Core, with the arms for livelit-only forms (<code>Quote</code>, <code>Unquote</code>, <code>Bind</code>, <code>Splice</code>, a module&#x27;s <code>ModVal</code>) taken out. The livelit views compiled (<code>HazelJitRun</code>, <code>HazelJitDOM</code>) and their tests stay on the livelits line.</p>
 <p>Since it opened:</p>
-<ul><li><b>Records as objects</b> (9ec865976d), above.</li><li><b>A recursive function&#x27;s own capture</b>, undefined when the function was made, is bound again by its <code>FixF</code> on the way back (5ec4ff4307).</li><li><b>A pattern by position that meets a labeled entry</b> leaves the run to the interpreter (e0a5925f3b).</li><li><b>A recursive function&#x27;s calls of itself in tail position are a loop</b> (50b70d5a40), its variables declared in each pass, so a closure keeps its pass&#x27;s values.</li><li><b>A named function of a tuple pattern takes the parts as JS arguments</b> (43828037c9).</li><li><b>A constructor without an argument is one constant</b> (ae29353ff0), <b>a module&#x27;s member is read as its own variable</b> (9dd8fce210), and **<code>==</code> against a literal is <code>===</code>** (0ce95a2e8f): together 0.95 of the jit&#x27;s time on the games. With both, the games take 0.70 of the jit&#x27;s time as their pages play them (the geometric mean over 14 games), every answer the same; nearly all of it is the arguments.</li></ul>
+<ul><li><b>Records as objects</b> (9ec865976d), above.</li><li><b>A recursive function&#x27;s own capture</b>, undefined when the function was made, is bound again by its <code>FixF</code> on the way back (5ec4ff4307).</li><li><b>A pattern by position that meets a labeled entry</b> leaves the run to the interpreter (e0a5925f3b).</li><li><b>A recursive function&#x27;s calls of itself in tail position are a loop</b> (50b70d5a40), its variables declared in each pass, so a closure keeps its pass&#x27;s values.</li><li><b>A named function of a tuple pattern takes the parts as JS arguments</b> (43828037c9).</li><li><b>A constructor without an argument is one constant</b> (ae29353ff0), <b>a module&#x27;s member is read as its own variable</b> (9dd8fce210), and **<code>==</code> against a literal is <code>===</code>** (0ce95a2e8f): together 0.95 of the jit&#x27;s time on the games. With both, the games take 0.70 of the jit&#x27;s time as their pages play them (the geometric mean over 14 games), every answer the same; nearly all of it is the arguments.</li><li>**Int division is <code>Math.trunc(a / b) + 0</code>** (136fecdcaf): exact for safe integers, checked against BigInt on two million divisions, twice as fast, and never <code>-0</code>, where the old form gave <code>-0</code> for a negative divisor and no quotient (<code>-1 / -2</code>), which shows through a Float as <code>-infinity</code>. <b>Int arithmetic on numbers written out is folded at compile time</b> (664c49c49a). Together, Gnome world&#x27;s <code>World.step</code> takes about 42% less time.</li></ul>
 </section>
 
 <section class="inpr"><h2 id="mixed">Mixed mode, at its boundary<a class="anchor" href="#mixed" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="mixed" title="copy this section's address">copy link</button></h2>
@@ -527,7 +527,7 @@ return (len$12 = $R.fn((a$13) =&gt; {</pre>
 
 <h2 id="github">The text for GitHub<a class="anchor" href="#github" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="github" title="copy this section's address">copy link</button></h2>
 <p class="tag own">This report’s</p>
-<p><b>The whole description as GitHub will show it, 4,137 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
+<p><b>The whole description as GitHub will show it, 4,208 words, in one file:</b> <a href="pr-2859.md"><code>pr-2859.md</code></a>, the same file the sections above are rendered from. It is posted only when Matthew says so, with <code>gh pr edit --body-file</code>.</p>
 <p><button class="copy-md" type="button" onclick="(async b=>{try{await navigator.clipboard.writeText(document.getElementById('pr-md').textContent);b.textContent='Copied'}catch(e){b.textContent='Select the text below instead'}})(this)">Copy the description’s Markdown</button></p>
 <details><summary>The Markdown</summary>
 <pre class="md">🤖 hazel-jit, for `dev`: a compiler from Hazel to JavaScript, with the tests that hold it to the interpreter&#x27;s answers. This is the one PR that tracks the jit. The npm package&#x27;s branch, <a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a> (`hazeljs`), merges it rather than keeping a copy of its own.
@@ -606,6 +606,7 @@ Since it opened:
 - **A recursive function&#x27;s calls of itself in tail position are a loop** (50b70d5a40), its variables declared in each pass, so a closure keeps its pass&#x27;s values.
 - **A named function of a tuple pattern takes the parts as JS arguments** (43828037c9).
 - **A constructor without an argument is one constant** (ae29353ff0), **a module&#x27;s member is read as its own variable** (9dd8fce210), and **`==` against a literal is `===`** (0ce95a2e8f): together 0.95 of the jit&#x27;s time on the games. With both, the games take 0.70 of the jit&#x27;s time as their pages play them (the geometric mean over 14 games), every answer the same; nearly all of it is the arguments.
+- **Int division is `Math.trunc(a / b) + 0`** (136fecdcaf): exact for safe integers, checked against BigInt on two million divisions, twice as fast, and never `-0`, where the old form gave `-0` for a negative divisor and no quotient (`-1 / -2`), which shows through a Float as `-infinity`. **Int arithmetic on numbers written out is folded at compile time** (664c49c49a). Together, Gnome world&#x27;s `World.step` takes about 42% less time.
 
 ## Mixed mode, at its boundary
 
@@ -764,6 +765,7 @@ Since it opened:
 - **A recursive function's calls of itself in tail position are a loop** (50b70d5a40), its variables declared in each pass, so a closure keeps its pass's values.
 - **A named function of a tuple pattern takes the parts as JS arguments** (43828037c9).
 - **A constructor without an argument is one constant** (ae29353ff0), **a module's member is read as its own variable** (9dd8fce210), and **`==` against a literal is `===`** (0ce95a2e8f): together 0.95 of the jit's time on the games. With both, the games take 0.70 of the jit's time as their pages play them (the geometric mean over 14 games), every answer the same; nearly all of it is the arguments.
+- **Int division is `Math.trunc(a / b) + 0`** (136fecdcaf): exact for safe integers, checked against BigInt on two million divisions, twice as fast, and never `-0`, where the old form gave `-0` for a negative divisor and no quotient (`-1 / -2`), which shows through a Float as `-infinity`. **Int arithmetic on numbers written out is folded at compile time** (664c49c49a). Together, Gnome world's `World.step` takes about 42% less time.
 
 ## Mixed mode, at its boundary
 
