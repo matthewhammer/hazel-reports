@@ -1,0 +1,89 @@
+<body><main>
+<p class="series"><a href="../">Hazel reports</a> · report 069 · Gnome world’s water and way · 2026-11-27, revised {{updated}} MST · <span class="wip">work in progress</span> · after report 068</p>
+<h1>Gnome World’s Water and Way, in Hazel</h1>
+<p class="sub">^report(68) found the water to be 88% to 93% of the speed run’s steps, and the run’s search for its way to be able to make a long step. Matthew asked for both as next steps: to make the water cheaper, so the run goes faster at the same frame rate, with a Hazel version of the water, off by default, to turn on to profile and measure; and to find the run’s way by A*, in Hazel. This report gives the outcome. Both are now written in Hazel, each giving the same answers as the page’s JavaScript to the bit, and both are off by default, because Hazel takes many times as long. The JavaScript got cheaper too.</p>
+
+<h2 id="outline">Outline</h2>
+<ol class="outline">
+<li><a href="#builds">The builds</a>: 0.0.149, and 0.0.150 with its three options.</li>
+<li><a href="#water">Where the water’s time goes</a>: real flow, not idle blocks; but in {{tiny}} of about {{changing}} blocks a step, the most that moves is under a thousandth of a tile.</li>
+<li><a href="#passes">The passes, cheaper to the bit</a>: {{w_old}} ms a step becomes {{w_new}} ms, every tile’s water the same.</li>
+<li><a href="#water-hazel">The water in Hazel</a>: the same water to the bit, at {{w_hz_x}} the time.</li>
+<li><a href="#threshold">Letting seepage sleep</a>: the water {{th_x}} as cheap and the run {{ep_x}} as fast, but {{th_fpct}} fewer flooded tiles; a decision for Matthew, not made here.</li>
+<li><a href="#way">The run’s way by A*</a>: within 32 tiles of the gnome and its target, every way found, in about half the time of 0.0.149’s search.</li>
+<li><a href="#way-hazel">The way in Hazel</a>: the same ways, at {{way_x}} the time; nearly all of it the search, not the handing over.</li>
+<li><a href="#runs">The speed run, five ways</a>: {{a_real}} becomes {{b_real}}.</li>
+<li><a href="#arrays">What Hazel would need</a>: arrays, a way to read the page’s, and a 32-bit float.</li>
+<li><a href="#next">What next</a>, and <a href="#method">how this was put together</a>.</li>
+</ol>
+
+<div class="summary">
+<p><b>In short.</b> The water is slow because it moves: about {{moving_pct}} of the awake blocks move water every step, the seepage from the rivers toward the villages’ pumps, and in nearly all of them the most that moves is under a thousandth of a tile. Its passes are rewritten to be cheaper with every tile’s water the same to the bit ({{w_old}} to {{w_new}} ms a step in the browser pane), and the run’s way is found by A* over a window round the gnome and its target, in about half the time of the old search. Together, the speed run takes {{b_real}} where it took {{a_real}}, on one GitHub runner. Both are also written in Hazel, Water.hz and Path.hz, off by default and switched on under ⚙️ Advanced or by <code>?water=hazel</code> and <code>?way=hazel</code>: the world save check holds each to the page’s JavaScript on every push, the same water to the bit and the very same ways. Hazel’s water takes {{w_hz_x}} the time, and its way {{way_x}}. The reason is the one ticket 846 named: Hazel has no arrays, so a block of tiles crosses into Hazel as a list of records, and a search keeps its best costs in a balanced tree where JavaScript writes into an array. The one large saving left is a game decision: letting seepage of under a thousandth of a tile sleep makes the run {{ep_x}} as fast, and leaves {{th_fpct}} fewer flooded tiles after 10,000 steps.</p>
+</div>
+
+<h2 id="builds">The builds</h2>
+{{t_builds}}
+
+<h2 id="water">Where the water’s time goes</h2>
+<p><b>The water costs what it does because it moves: of about {{awake}} awake blocks of eight tiles by eight, about {{moving}} move water every step. But in {{tiny}} of about {{changing}} blocks changing in a step, the most that moves is under a thousandth of a tile.</b> Since 0.0.131 the water sleeps in blocks: a block is stepped only while water moves in it, more than a ten-thousandth of a tile in a step, and for a second and a half after. The world has 2,912 blocks; after the first few seconds of a run, about 340 are awake, holding about 17,000 wet tiles, and 77% of those blocks are awake because water is still moving in them. It is seepage: water from the rivers working down through sand and gravel toward the villages’ pumps, which draw it off, so it never stops.</p>
+<figure class="chart">
+{{moves}}
+<figcaption>The blocks whose water changed in a step, by the largest move in each. Most of the water’s work is moves of under a thousandth of a tile.</figcaption>
+</figure>
+
+<h2 id="passes">The passes, cheaper to the bit</h2>
+<p><b>The water’s two passes are rewritten to do the same arithmetic in fewer steps, every tile’s water and every block’s waking the same to the bit: {{w_old}} ms a step becomes {{w_new}} ms in the browser pane, {{w_gain}} less.</b> The world’s arrays and the ground’s numbers are held in locals, and <code>Math.min</code> is written out as comparisons; no amount it compares can be −0 or not a number, so the answers are the same. The tests keep 0.0.149’s passes beside the new ones, and the world save check runs both from the tour’s world for 20 steps on every push, comparing every tile. A step was already about 11 ns a tile, so the rewrite cannot save much; the work is the number of tiles.</p>
+<figure class="chart">
+{{costs}}
+<figcaption>A step of the water and a search for the way: 0.0.149, 0.0.150’s JavaScript, and Hazel. Milliseconds on a log scale.</figcaption>
+</figure>
+
+<h2 id="water-hazel">The water in Hazel</h2>
+<p><b>Water.hz gives every tile the same water as the page’s JavaScript, to the bit, and takes {{w_hz_x}} the time: {{w_hz}} ms a step against {{w_new}}.</b> It is the two passes, a block’s row at a time: <code>Water.down</code> takes the block’s eight tiles over the row beneath them, and <code>Water.across</code> takes them in the way the pass goes, with the tile either side of the block, which takes water and does not give it. The page calls it for each awake block of each row, in the same order its own passes go, and writes the answers back. The page keeps each tile’s water as a 32-bit float, rounded every time it is stored, and the order of the stores matters across a row; so Water.hz rounds each amount to 24 bits as it would be stored, by Veltkamp’s split (multiply by 2<sup>29</sup>+1, then two subtractions), which gave the same as JavaScript’s <code>Math.fround</code> on each of 25 million amounts of the kinds the water makes.</p>
+<p>A step makes about {{calls}} calls: {{down_us}} µs each down and {{across_us}} µs across, of which {{dry_us}} µs is handing the tiles over and back. In the speed run, with the water in Hazel, the compiled Hazel is {{wh_hz}} of the page’s busy time and garbage collection {{wh_gc}}; the frames still come at 60 a second, as 0.0.149’s budget gives the steps what a frame leaves, but a frame gets through {{wh_steps}} steps where it got through {{b_steps}}, and the run had not reached the gems in two minutes. That is what it is for: a version of the water to switch on, profile and measure.</p>
+
+<h2 id="threshold">Letting seepage sleep</h2>
+<p><b>With the water’s waking threshold a thousandth of a tile, not a ten-thousandth, the water is {{th_x}} as cheap and the speed run {{ep_x}} as fast, but {{th_fpct}} fewer open tiles are flooded after 10,000 steps: the water behaves differently, so this is Matthew’s decision, and the game keeps a ten-thousandth.</b> At 10,000 steps of the run, {{th_a3}} blocks are awake where {{th_a4}} were, and the water takes {{th_w3}} ms a step where it took {{th_w4}}. What sleeps is the slowest seepage: left alone, a block whose water moves less than a thousandth of a tile a step stops a second and a half later, until digging, rain or a river wakes it. The world holds {{th_tpct}} less water at 10,000 steps, and tunnels and caves fill more slowly: {{th_f3}} open tiles half full or more, against {{th_f4}}. It is in 0.0.150 as <code>?wateps=0.001</code>, for trying.</p>
+<figure class="chart">
+{{threshold}}
+<figcaption>The water at the game’s threshold (a ten-thousandth of a tile) and at a thousandth: its time a step, and the open tiles half full or more, over 10,000 steps of the speed run.</figcaption>
+</figure>
+
+<h2 id="way">The run’s way by A*</h2>
+<p><b>The run’s way is now found by A* over a window: the gnome’s tile and its target’s, and 32 tiles more each way. That window reached every target tried, in about half the time of 0.0.149’s search.</b> 0.0.149 searched from the gnome outward over the whole world until it reached the target, the cheapest way first. A* goes first where the cost so far plus a guess of what is left, 1,000 for each tile across and down, is least. The guess is never more than a way costs, so the way found is a cheapest one, as before. The costs are the old ones to the thousandth. A way underground goes round by the tunnels: within 16 tiles only 4 of 30 nearby gems were reached, within 32 all of them. So the page tries 32, then 128, then 0.0.149’s search over the whole world.</p>
+<div class="wrap">{{t_margins}}</div>
+<p>The browser pane, 2,000 steps into the run, the 30 gems nearest the gnome and the 8 things left; each a mean. In the first measured round on GitHub (run {{run_1}}), A* worked out every tile of its window before searching, and the search came to {{first_way}} of the run’s steps against 0.0.149’s {{first_way149}} in the same round: a way to the next tile of the dig looked at a few tiles, but the window’s 4,225 were all worked out first. wayJS now works out each tile as the search reaches it, and the way is {{b_way}} of the steps against 0.0.149’s {{a_way}} (run {{run_f}}): {{b_way_s}} of the run’s searching against {{a_way_s}}.</p>
+
+<h2 id="way-hazel">The way in Hazel</h2>
+<p><b>Path.hz finds the very same ways as the page’s JavaScript twin, and takes {{way_x}} the time: {{n_hz}} ms to a nearby gem where wayJS takes {{n_js}} ms, and {{f_hz}} ms to a thing far off against {{f_js}} ms.</b> Both take the least estimate first and, among equal estimates, the least place, a total order, so any correct heap takes the tiles in the same order and both find the same way. They did on all 38 targets in the browser pane, and the world save check runs 20 more on every push. Path.hz has its own types, a tree of the window’s tiles, a balanced tree (AVL) of the best cost to each, and a pairing heap of the tiles still to take, defined inside its one function, as the world’s program has as many definitions as the browser lets it build.</p>
+<p>Handing over the window costs little: for 10,000 tiles, {{sp10_build}} ms to turn the page’s list into Hazel’s and build the tree; for 40,000, {{sp40_build}} ms. The search is the cost: corner to corner across 10,000 open tiles, {{sp10_search}} ms in Hazel against {{sp10_js}} ms in JavaScript. Where JavaScript writes a tile’s best cost into an array, Hazel makes a new path of a balanced tree; where JavaScript swaps two slots of its heap, Hazel makes new heap nodes. A search of 16 to 85 ms in Hazel would make the very long steps ^ticket(905) set out to remove (with it on, the run’s slowest step was {{wy_slow}}), so wayJS finds the run’s way unless Path.hz is chosen.</p>
+
+<h2 id="runs">The speed run, five ways</h2>
+<p><b>On one GitHub runner, the speed run takes {{b_real}} in 0.0.150 against {{a_real}} in 0.0.149, {{run_gain}} less, at 60 frames a second both; with the threshold at a thousandth it takes {{ep_real}}.</b> A frame gets through {{b_steps}} steps where it got through {{a_steps}}. With the way in Hazel the run takes {{wy_real}}, its searches {{wy_way}} of the steps, and its worst frame {{wy_worst}}. With the water in Hazel, a frame gets through {{wh_steps}} steps, and in two minutes the run had found {{wh_things}} of its things and not yet begun on the trees.</p>
+<figure class="chart">
+{{runs}}
+<figcaption>The speed run’s real time, five ways, each in turn on one GitHub runner.</figcaption>
+</figure>
+{{t_runs}}
+
+<h2 id="arrays">What Hazel would need</h2>
+<p><b>Both Hazel versions give the right answers and are slow for one reason: Hazel has no arrays.</b> Three things would change that.</p>
+<ul>
+<li><b>Arrays, read and written in place.</b> This is ticket 846, which ^report(64) and the page’s own comment on its search already named. With them, the way’s best costs and its heap would be arrays, as wayJS’s are, and the water a pass over a row rather than a list built and taken apart for each block.</li>
+<li><b>A way for compiled code to read the page’s arrays.</b> The world lives in the page’s typed arrays. A Hazel function cannot take a JavaScript function or array as it is: the library has no converter for a function’s type, and a list is copied into Hazel’s cells. A Hazel search that could read the page’s tiles in place would not need the window handed over at all.</li>
+<li><b>A 32-bit float.</b> Water.hz rounds by Veltkamp’s split, which matched <code>Math.fround</code> on every amount tried but is three operations where a builtin would be one.</li>
+</ul>
+
+<h2 id="next">What next</h2>
+<ol>
+<li>Decide the water’s threshold: the game’s ten-thousandth, or a thousandth, which makes the speed run {{ep_x}} as fast and leaves tunnels and caves less flooded.</li>
+<li>Arrays in Hazel (ticket 846), then Water.hz and Path.hz again over them, measured the same way.</li>
+<li>A converter for function-typed arguments in the hazeljs library, so a Hazel search can ask the page for each tile it reaches.</li>
+<li>The water in Hazel by rows, not blocks: one call per row and pass, with the waking handled in Hazel, to see how much of its time is the calls.</li>
+<li>Profile Path.hz’s search alone (its tree of best costs against its heap) in the browser pane, to see which persistent structure costs more.</li>
+</ol>
+
+<h2 id="method">How this was put together</h2>
+<p>The water’s blocks and moves, the three ways of the passes, the threshold, the windows and Hazel’s way were measured in the Claude app’s browser pane on the laptop, with Gnome world’s test hooks (<code>WorldTest.waterSame</code>, <code>waySame</code>, <code>steps</code>), its rules built by hazel-jit at load from build.hazel.org’s hazeljs build (hazelgrove/hazel 0f24cea171). The numbers, as the pane gave them, are in <code>data/pane.json</code>. The speed run five ways is hazeljs-examples’ frames job (<code>node/world-frames.mjs</code>, ^report(68)), runs {{run_1}} and {{run_f}} ({{m_f}}), each setup in turn on one runner at 1280×800 for up to two minutes. Its logs are parsed by <code>parse_frames.py</code>, no artifact downloaded. The twins are checked on every push by the world save check (<code>node/world-save-check.mjs</code>): the water from the tour’s world, 20 steps, every tile compared; the way to the 20 nearest gems, every tile of each way compared.</p>
+</main></body>
+</html>

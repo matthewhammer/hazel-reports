@@ -1,0 +1,175 @@
+[
+ {
+  "section": "The builds",
+  "section_id": "builds",
+  "columns": [
+   "build",
+   "name",
+   "what"
+  ],
+  "rows": [
+   [
+    "1",
+    "0.0.149",
+    "Gnome world 0.0.149 (matthewhammer/hazeljs-examples ea6b603), ^report(68)’s fixes: the water’s passes and the run’s search as they had been"
+   ],
+   [
+    "2",
+    "0.0.150",
+    "build 1 with the water’s passes in locals, the run’s way by A* (wayJS), and Water.hz and Path.hz, off by default: perf/902-904 1849ca5, released as 0.0.150"
+   ],
+   [
+    "2, options",
+    "💧, 🧭, threshold",
+    "build 2 with ?water=hazel (the water by Water.hz), ?way=hazel (the way by Path.hz), or ?wateps=0.001 (the water’s waking threshold a thousandth, not the game’s)"
+   ]
+  ]
+ },
+ {
+  "section": "The run’s way by A*",
+  "section_id": "way",
+  "columns": [
+   "window: the gnome’s tile and the target’s, and this much more each way",
+   "nearby gems reached",
+   "A*, a search",
+   "the window’s tiles worked out",
+   "things far off reached",
+   "A*, a search",
+   "the window’s tiles"
+  ],
+  "rows": [
+   [
+    "16 tiles",
+    "4/30",
+    "0.24 ms",
+    "0.21 ms",
+    "1/8",
+    "0.11 ms",
+    "0.84 ms"
+   ],
+   [
+    "32 tiles",
+    "30/30",
+    "0.47 ms",
+    "0.32 ms",
+    "8/8",
+    "2.09 ms",
+    "1.27 ms"
+   ],
+   [
+    "64 tiles",
+    "30/30",
+    "0.57 ms",
+    "0.83 ms",
+    "8/8",
+    "2.34 ms",
+    "2.21 ms"
+   ],
+   [
+    "128 tiles",
+    "30/30",
+    "0.84 ms",
+    "2.25 ms",
+    "8/8",
+    "3.09 ms",
+    "4.3 ms"
+   ],
+   [
+    "the whole world",
+    "30/30",
+    "1.38 ms",
+    "6.41 ms",
+    "8/8",
+    "3.41 ms",
+    "6.6 ms"
+   ],
+   [
+    "0.0.149’s search (the whole world, from the gnome outward)",
+    "30/30",
+    "1.39 ms",
+    "—",
+    "8/8",
+    "6.7 ms",
+    "—"
+   ]
+  ]
+ },
+ {
+  "section": "The speed run, five ways",
+  "section_id": "runs",
+  "columns": [
+   "setup",
+   "the run’s real time",
+   "steps a frame",
+   "median frame",
+   "frames missing a refresh",
+   "worst frame",
+   "slowest step",
+   "the steps: water",
+   "the steps: the way",
+   "the thread: Hazel"
+  ],
+  "rows": [
+   [
+    "0.0.149, as it was",
+    "65.1 s",
+    "12",
+    "16.7 ms",
+    "15%",
+    "50 ms",
+    "23 ms",
+    "89%",
+    "1.2%",
+    "2.1%"
+   ],
+   [
+    "0.0.150",
+    "56.9 s",
+    "14",
+    "16.7 ms",
+    "14%",
+    "50 ms",
+    "20 ms",
+    "89%",
+    "0.4%",
+    "2.2%"
+   ],
+   [
+    "0.0.150, 🧭 the way in Hazel",
+    "58.7 s",
+    "13",
+    "16.7 ms",
+    "15%",
+    "83 ms",
+    "68 ms",
+    "86%",
+    "3.2%",
+    "3.4%"
+   ],
+   [
+    "0.0.150, 💧 the water in Hazel",
+    "not there in 120 s",
+    "2",
+    "16.7 ms",
+    "44%",
+    "167 ms",
+    "88 ms",
+    "98%",
+    "0.0%",
+    "47.6%"
+   ],
+   [
+    "0.0.150, the water's threshold at 1e-3",
+    "25.8 s",
+    "27",
+    "16.7 ms",
+    "16%",
+    "67 ms",
+    "21 ms",
+    "80%",
+    "1.0%",
+    "3.6%"
+   ]
+  ]
+ }
+]

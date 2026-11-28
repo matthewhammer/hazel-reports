@@ -1,0 +1,27 @@
+{
+ "title": "Gnome World’s Water and Way, in Hazel",
+ "blurb": "The water and the speed run's way, made cheaper in Gnome world 0.0.150 and written in Hazel too, each Hazel version off by default and the same as the page's JavaScript to the bit. The speed run takes 56.9 s where it took 65.1 s. The water in Hazel takes 13 times the time of the page's, and the way in Hazel 28 times: the same answers, but Hazel has no arrays, so a block of tiles crosses as a list and a search keeps its best costs in a tree. Most of the water's work is seepage of under a thousandth of a tile a step; letting that sleep makes the run 2.2 times as fast, and floods 24% fewer tiles: a decision for Matthew.",
+ "builds": {
+  "1 (0.0.149)": "matthewhammer/hazeljs-examples ea6b603",
+  "2 (0.0.150)": "perf/902-904 1849ca5, released as 0.0.150; options ?water=hazel, ?way=hazel, ?wateps=0.001"
+ },
+ "runs": {
+  "pane": "the laptop (matthew's), the Claude app's browser pane (Chromium), Gnome world at localhost from matthewhammer/hazeljs-examples perf/904-water, ?test=1; the rules built by hazel-jit at load (build.hazel.org/hazeljs, hazelgrove/hazel 0f24cea171); the speed run from a fresh world, seed 7, stepped by WorldTest.steps (no drawing)",
+  "frames": "hazeljs-examples 'world speed run, frame by frame' runs 46102840841 and 46103505251 (one GitHub runner each: AMD EPYC 9V74 80-Core Processor; INTEL(R) XEON(R) PLATINUM 8573C), headless Chrome at 1280×800, each setup in turn up to two minutes",
+  "save check": "hazeljs-examples 'world save check' runs 46102840887 and 46103505212: the twins from the tour's world, the water 20 steps, the way to 20 gems"
+ },
+ "measures": {
+  "water ms": "a step of the water's two passes, the mean over the steps run",
+  "search ms": "one search for the way, the mean over the targets",
+  "real time": "wall-clock seconds from pressing 🏃 to the run's dig",
+  "steps parts": "⏱'s parts of every step, as shares of the steps' time"
+ },
+ "files": [
+  "data/pane.json",
+  "data/frames-*.log",
+  "data/frames-*.json",
+  "data/save-check-*.log",
+  "parse_frames.py",
+  "gen069.py"
+ ]
+}
