@@ -57,11 +57,44 @@ def t_micro():
     for r in rows: h += f'<tr><td class="l">{E(r["workload"])}</td><td>{us(r["cells"])} µs</td><td>{us(r["arrays"])} µs</td><td>{us(r["hybrid"])} µs</td></tr>'
     return h + f'</tbody></table></div><p class="note">^report(54), Node {E(LB["node"])} on the laptop, {E(LB["when"][:10])}; each the median of batches.</p>'
 
-FIG = {"fig_cost": fig_cost(), "t_cost": t_cost(), "t_shapes": t_shapes(), "t_ints": t_ints(), "t_micro": t_micro()}
+SG = json.load(open(os.path.join(DATA, "segments.json")))
+AB = SG["ab_1"]; C0, C1, C2 = AB["cells"], AB["segments 1"], AB["segments 2"]
+def t_floats():
+    rows = [("Folk.bug, an insect drawing its chances", "4.73 µs", "0.37 µs", "about 0.11 µs"),
+            ("Folk.bug, an insect waiting", "1.74 µs", "0.19 µs", ""),
+            ("all 166 creatures, a step (folkSame)", "0.24 ms", "0.09 ms", "0.02 to 0.03 ms"),
+            ("Path.hz, 20 searches (105,834 tiles)", f'{SG["path_int_vs_float"]["int"]:.0f} ms', f'{SG["path_int_vs_float"]["float"]:.0f} ms', "about 5 ms")]
+    return ('<div class="wrap"><table class="nums"><thead><tr><th class="l">in the browser pane, through the page</th><th>Ints (0.0.156)</th><th>Floats (0.0.157, 0.0.158)</th><th>the page’s JavaScript</th></tr></thead><tbody>'
+            + "".join(f'<tr><td class="l">{a}</td><td>{b}</td><td>{c}</td><td>{d}</td></tr>' for a, b, c, d in rows) + "</tbody></table></div>")
+def t_ab():
+    rows = [("the water, a step", "water_step", None), ("the way to a gem, a search", "way_search", None), ("the rivers, a dry step", "rivers_dry", None), ("the rivers, a rainy step", "rivers_rain", None),
+            ("80 villagers, a step", "folk", "walk"), ("14 squirrels, a step", "folk", "squirrels"), ("70 insects, a step", "folk", "bugs"), ("2 hawks, a step", "folk", "hawks"),
+            ("the order of the 12 things, once", "plan_order", None), ("the dig’s next chunk, 15 times", "plan_chunk", None)]
+    get = lambda d, k, sub: d[k][sub] if sub else d[k]
+    js = {"water_step": C0["water_step_js"], "way_search": C0["way_search_js"], "plan_order": 5.0}
+    h = ('<div class="wrap"><table class="nums"><thead><tr><th class="l">ms, in one browser, one Gnome world</th><th>the page’s JavaScript</th><th>Hazel, cells (hazeljs 0f24cea171)</th>'
+         '<th>segments, first (50358e21b7)</th><th>segments, tails kept (8fe73e4322)</th></tr></thead><tbody>')
+    for n, k, sub in rows:
+        a, b, c = get(C0, k, sub), get(C1, k, sub), get(C2, k, sub)
+        j = js.get(k, "")
+        h += f'<tr><td class="l">{E(n)}</td><td>{j}</td><td>{a:g}</td><td>{b:g}</td><td><b>{c:g}</b></td></tr>'
+    return h + '</tbody></table></div><p class="note">The page’s own twin tests (waterSame, waySame, riversSame, folkSame, planSame), each the least of two to four runs on a fresh page; every answer the same on every build. The JavaScript beside the water and the way is the same page’s twin; the creatures’ and the rivers’ JavaScript take 0.002 to 0.014 ms.</p>'
+def t_cross2():
+    A, B = SG["crossing_cells"], SG["crossing_segments2"]
+    names = [("water_down", "Water.down"), ("water_across", "Water.across"), ("rivers_hold", "Rivers.hold"), ("rivers_rain", "Rivers.rain"), ("rivers_pump", "Rivers.pump"), ("rivers_dry", "Rivers.dry"),
+             ("folk_walk", "Folk.walk"), ("folk_hawk", "Folk.hawk"), ("folk_squirrel", "Folk.squirrel"), ("folk_bug", "Folk.bug"), ("way", "Path.way")]
+    h = ('<div class="wrap"><table class="nums"><thead><tr><th class="l">a call, µs</th><th>crossing, cells</th><th>compiled, cells</th><th>crossing, segments</th><th>compiled, segments</th></tr></thead><tbody>')
+    for k, n in names:
+        h += f'<tr><td class="l">{n}</td><td>{us(A[k][0])}</td><td>{us(A[k][1])}</td><td>{us(B[k][0])}</td><td>{us(B[k][1])}</td></tr>'
+    return h + '</tbody></table></div><p class="note">The rules of 0.0.158 (Folk, Path and Rivers in Floats), so these differ from the first table’s, which were Ints. One run each in a hidden pane: a difference under a third is within its noise.</p>'
+FIG = {"fig_cost": fig_cost(), "t_cost": t_cost(), "t_shapes": t_shapes(), "t_ints": t_ints(), "t_micro": t_micro(), "t_floats": t_floats(), "t_ab": t_ab(), "t_cross2": t_cross2()}
 shares = sorted(pct(k) for k in ORDER)
 N = {"x_lo": f"{shares[0]:.0f}%", "x_hi": f"{shares[-1]:.0f}%", "water_down_pct": f'{pct("water_down"):.0f}%', "hold_pct": f'{pct("rivers_hold"):.0f}%',
      "ints_before": f'{I["drawing"]["as compiled"]:.1f}', "ints_after": f'{I["drawing"]["plain-number Ints"]:.1f}',
-     "quiet_before": f'{I["quiet"]["as compiled"]:.1f}', "quiet_after": f'{I["quiet"]["plain-number Ints"]:.1f}', "js_twin": I["js_twin_us"], "updated": updated}
+     "quiet_before": f'{I["quiet"]["as compiled"]:.1f}', "quiet_after": f'{I["quiet"]["plain-number Ints"]:.1f}', "js_twin": I["js_twin_us"], "updated": updated,
+     "fl_before": "4.7", "fl_after": "0.37", "seg_water_c": f'{C0["water_step"]:.2f}', "seg_water_s": f'{C2["water_step"]:.2f}', "seg_way_c": f'{C0["way_search"]:.1f}', "seg_way_s": f'{C2["way_search"]:.1f}',
+     "seg_plan_c": f'{C0["plan_order"]:.0f}', "seg_plan_s": f'{C2["plan_order"]:.0f}', "seg_sq_c": f'{C0["folk"]["squirrels"]:.3f}', "seg_sq_s": f'{C2["folk"]["squirrels"]:.3f}',
+     "dry_cross": f'{SG["crossing_segments2"]["rivers_dry"][0]:.1f}', "dry_per": f'{1000 * SG["crossing_segments2"]["rivers_dry"][0] / 897:.0f}'}
 FIG.update(N)
 body = open(os.path.join(HERE, "body.html"), encoding="utf-8").read()
 for k, v in FIG.items(): body = body.replace("{{" + k + "}}", str(v))
@@ -69,7 +102,7 @@ left = re.findall(r"\{\{(\w+)\}\}", body); assert not left, left
 TITLE = "Lists as Arrays in hazel-jit"
 DESC = (f"Compiled Hazel keeps a list as cells, so every call converts a page's arrays to cells and back: in Gnome world that is {N['x_lo']} to {N['x_hi']} of a Hazel call's time. "
         "A hybrid from 11-23 (cells for ::, array segments for a page's arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. "
-        f"Status and next steps; and the rest of the gap: exact Ints ({N['ints_before']} µs an insect, {N['ints_after']} with plain numbers), for JSNum.")
+        f"Since: Gnome world's creatures in Floats, an insect {N['fl_before']} µs to {N['fl_after']}; lists as segments built on a trial, a water step {N['seg_water_c']} ms to {N['seg_water_s']}, every answer the same.")
 EXTRA = """
   figure.chart svg { width: 100%; height: auto; display: block; }
   table.nums td, table.nums th { text-align: right; font-variant-numeric: tabular-nums; } table.nums td.l, table.nums th.l { text-align: left; }

@@ -6,7 +6,7 @@
 <!-- nav: begin --><meta name="theme-support" content="data-theme"><script src="https://matthewhammer.org/nav/nav.js"></script><!-- nav: end -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lists as Arrays in hazel-jit</title>
-<meta name="description" content="Compiled Hazel keeps a list as cells, so every call converts a page&#x27;s arrays to cells and back: in Gnome world that is 5% to 70% of a Hazel call&#x27;s time. A hybrid from 11-23 (cells for ::, array segments for a page&#x27;s arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. Status and next steps; and the rest of the gap: exact Ints (5.9 µs an insect, 2.3 with plain numbers), for JSNum.">
+<meta name="description" content="Compiled Hazel keeps a list as cells, so every call converts a page&#x27;s arrays to cells and back: in Gnome world that is 5% to 70% of a Hazel call&#x27;s time. A hybrid from 11-23 (cells for ::, array segments for a page&#x27;s arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. Since: Gnome world&#x27;s creatures in Floats, an insect 4.7 µs to 0.37; lists as segments built on a trial, a water step 2.38 ms to 1.60, every answer the same.">
 <style>  :root {
     --bg: #fbfaf7; --paper: #ffffff; --ink: #1f2328; --muted: #5b6470; --line: #e3e0d8;
     --accent: #6d28d9; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --link: #1d4ed8; --accent2: #0e7490; --cx: #d6d1c6;
@@ -149,7 +149,7 @@ h2:hover .copyanchor, h3:hover .copyanchor, .lh:hover .copyanchor, .copyanchor:f
 </style>
 </head>
 <body><main>
-<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>71<b>)</b></code> · Lists as arrays in hazel-jit · 2026-11-28, revised 2026-11-28 10:22 MST · <span class="wip">work in progress</span> · after <a href="../070/"><code class="ref"><b>^report(</b>70<b>)</b></code></a></p>
+<p class="series"><a href="../">Hazel reports</a> · <code class="ref"><b>^report(</b>71<b>)</b></code> · Lists as arrays in hazel-jit · 2026-11-28, revised 2026-11-28 10:47 MST · <span class="wip">work in progress</span> · after <a href="../070/"><code class="ref"><b>^report(</b>70<b>)</b></code></a></p>
 <!-- listen: begin -->
 <style>
   .listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 10px; font: 13px system-ui, sans-serif; color: var(--muted, GrayText); }
@@ -245,11 +245,15 @@ document.addEventListener("DOMContentLoaded", () => {
 <li><a href="#rest">The rest of the gap</a>: exact integers are most of it in the creatures; fuel checks are not.</li>
 <li><a href="#hybrid">The hybrid, as prototyped</a>: cells for <code>::</code>, array segments for literals and a page’s arrays (11-23, not merged).</li>
 <li><a href="#since">What has changed since</a>: the converters cross by declared type, so a list’s conversion is now the cost left at the edge.</li>
-<li><a href="#next">Next steps</a>, and <a href="#method">how this was put together</a>.</li>
+<li><a href="#floats">Exact integers, taken out</a>: Gnome world’s creatures, way and rivers in Floats; an insect’s step 4.7 µs → 0.37 µs.</li>
+<li><a href="#trial">Lists as segments, built and measured</a>: a water step 2.38 → 1.60 ms, a search for the way 4.3 → 2.6 ms, every answer the same; the squirrels still slower.</li>
+<li><a href="#remaining">The conversion that is left, and how to take it out</a>: type checks, not copies.</li>
+<li><a href="#next">Next steps</a>, each marked done or open, and <a href="#method">how this was put together</a>.</li>
 </ol>
 
 <div class="summary">
-<p><b>In short.</b> In hazel-jit’s compiled code a record is already a plain JavaScript object, and one whose fields are all plain values crosses as the page’s own object, with nothing copied. A list is not: compiled code holds it as a chain of cells, <code>{$h, $t}</code>, so each call turns the page’s array into cells and the answer’s cells back into an array. In Gnome world that crossing is 5% to 70% of a Hazel call’s time: most for the water’s and the rivers’ short calls (53% of Water.down, 70% of Rivers.hold), and a third of the calls over the 897 columns. A hybrid built on 11-23 (branch <code>hazel-jit-lists</code>) lets a list be an array segment as well as cells: a page’s array goes in as a segment with no copy, and <code>::</code> still makes cells. It was 4% to 8% slower on the games then, when every value still crossed through Hazel’s own values and the arrays saved little. Since then, crossing goes by declared type, which leaves the lists’ conversion as the cost at the edge. The next steps are to bring the hybrid up to date, let the converters hand segments over, and measure it on Gnome world. The other big cost is exact integers. With Folk.hz’s integer operations replaced by plain JavaScript arithmetic, an insect’s step takes 2.3 µs instead of 5.9. Matthew and Cyrus’s JSNum type (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>) answers that one.</p>
+<p><b>In short.</b> In hazel-jit’s compiled code a record is already a plain JavaScript object, and one whose fields are all plain values crosses as the page’s own object, with nothing copied. A list is not: compiled code holds it as a chain of cells, <code>{$h, $t}</code>, so each call turns the page’s array into cells and the answer’s cells back into an array. In Gnome world that crossing is 5% to 70% of a Hazel call’s time: most for the water’s and the rivers’ short calls (53% of Water.down, 70% of Rivers.hold), and a third of the calls over the 897 columns. A hybrid built on 11-23 (branch <code>hazel-jit-lists</code>) lets a list be an array segment as well as cells: a page’s array goes in as a segment with no copy, and <code>::</code> still makes cells. It was 4% to 8% slower on the games then, when every value still crossed through Hazel’s own values and the arrays saved little. Since then, crossing goes by declared type, which leaves the lists’ conversion as the cost at the edge. The next steps are to bring the hybrid up to date, let the converters hand segments over, and measure it on Gnome world. The other big cost is exact integers. With Folk.hz’s integer operations replaced by plain JavaScript arithmetic, an insect’s step takes 2.3 µs instead of 5.9. Matthew and Cyrus’s JSNum type (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>) was to answer that one.</p>
+<p><b>Since, the same day (revised 2026-11-28 10:47).</b> Matthew chose plain Floats instead of a new type (“Float, use Float in”). Gnome world’s creatures, way and rivers now write their numbers as Floats under <code>use Float in</code>, with every answer the same. An insect’s step in Hazel takes 0.37 µs where it took 4.7, against about 0.11 µs in JavaScript. Lists as segments are built on a trial branch of hazel-jit with the converters to match (steps 1 to 3 below). In one browser, against the build the page loads, a water step takes 1.60 ms instead of 2.38, a search for the way 2.6 ms instead of 4.3, and the order of the things 76 ms instead of 93; every twin’s answers are the same. The squirrels, which walk the same short lists again and again, are still slower (0.052 ms a step against 0.031). What crossing is left is checking each value’s type, not copying.</p>
 </div>
 
 <h2 id="today">How a list crosses today<a class="anchor" href="#today" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="today" title="copy this section's address">copy link</button></h2>
@@ -282,15 +286,39 @@ document.addEventListener("DOMContentLoaded", () => {
 <p><b>Two things make lists as arrays worth taking up again. The library now crosses by declared type, with converters generated once for each function (<a href="../054/"><code class="ref"><b>^report(</b>54<b>)</b></code></a>’s converters), so nothing goes through Hazel’s own values. And Gnome world hands its Hazel code long lists fresh every step.</b> With the old crossing gone, a list’s conversion to cells and back is what is left at the edge, and the table above shows it at a third to three quarters of a call. Records already cross as the page’s own objects (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-847"><code class="ref"><b>^ticket(</b>847<b>)</b></code></a>). Lists are the one shape that still has to be rebuilt.</p>
 <p>The prototype is five days behind <code>hazel-jit</code>. Since then <code>hazel-jit</code> has gained the converters by declared type, calls with their arguments written out (<code>$d</code>, <a href="https://matthewhammer.org/hazel/dashboard/#ticket-853"><code class="ref"><b>^ticket(</b>853<b>)</b></code></a>), exact Int division by <code>Math.trunc</code> and integer arithmetic folded when compiled (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-891"><code class="ref"><b>^ticket(</b>891<b>)</b></code></a>), and the agreement tests against the interpreter (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-903"><code class="ref"><b>^ticket(</b>903<b>)</b></code></a>). The prototype’s cells are <code>{h, t}</code>; today’s are <code>{$h, $t}</code>. And the converters, which are new, know nothing of segments.</p>
 
+<h2 id="floats">Exact integers, taken out<a class="anchor" href="#floats" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="floats" title="copy this section's address">copy link</button></h2>
+<p><b>A Hazel Float is a JavaScript number in compiled code, with JavaScript’s own <code>+ - * /</code> and no checks. Under <code>use Float in</code>, a scope’s whole-number literals and plain operators are Float’s too. Gnome world’s <code>Folk.hz</code> (0.0.157), <code>Path.hz</code> and <code>Rivers.hz</code> (0.0.158) are written that way now, with every answer the same as the page’s.</b> Matthew’s choice, 2026-11-28: “Float, use Float in”, over a new JSNum type (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>). The page’s random numbers in Floats are its own steps in doubles, <code>float_mod(s * 1103515245 + 12345, 2147483648)</code>: the same numbers, with no BigInts.</p>
+<div class="wrap"><table class="nums"><thead><tr><th class="l">in the browser pane, through the page</th><th>Ints (0.0.156)</th><th>Floats (0.0.157, 0.0.158)</th><th>the page’s JavaScript</th></tr></thead><tbody><tr><td class="l">Folk.bug, an insect drawing its chances</td><td>4.73 µs</td><td>0.37 µs</td><td>about 0.11 µs</td></tr><tr><td class="l">Folk.bug, an insect waiting</td><td>1.74 µs</td><td>0.19 µs</td><td></td></tr><tr><td class="l">all 166 creatures, a step (folkSame)</td><td>0.24 ms</td><td>0.09 ms</td><td>0.02 to 0.03 ms</td></tr><tr><td class="l">Path.hz, 20 searches (105,834 tiles)</td><td>58 ms</td><td>49 ms</td><td>about 5 ms</td></tr></tbody></table></div>
+<p>The creatures gained the most: their chances drew BigInts through the same helpers that their counters used. <code>Path.hz</code> gained 15%: whole numbers that stay small cost little as Ints, and its time is in its trees. Every value in these modules stays a whole number far under 2<sup>53</sup>, so Float arithmetic on them is exact, and an integer division becomes the floor of the quotient, exact for numbers of that size (as <a href="https://matthewhammer.org/hazel/dashboard/#ticket-891"><code class="ref"><b>^ticket(</b>891<b>)</b></code></a>’s <code>Math.trunc</code> is).</p>
+
+<h2 id="trial">Lists as segments, built and measured<a class="anchor" href="#trial" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="trial" title="copy this section's address">copy link</button></h2>
+<p><b>Steps 1 to 3 are built: <code>trial/909-segments</code> on <code>hazel-jit</code> (the compiler and runtime), and <code>trial/909-segments-pkg</code> on <code>hazeljs</code> (that, and the converters), deployed to build.hazel.org. In one browser on one Gnome world, every twin gives the same answers under it, and most pieces take a quarter to two fifths less time.</b> A list is <code>null</code>, a cell <code>{$h, $t}</code>, or a segment <code>{$a, $i, $n}</code>. A literal, a builtin’s list and a page’s array are segments; <code>::</code> still makes a cell. <code>length</code>, <code>nth</code>, <code>map</code>, <code>filter</code>, <code>fold_left</code> and <code>reverse</code>, called by name, run as JavaScript loops. A page’s array whose elements cross as themselves goes in as a segment over that very array, and a segment from 0 comes out as its own array.</p>
+<div class="wrap"><table class="nums"><thead><tr><th class="l">ms, in one browser, one Gnome world</th><th>the page’s JavaScript</th><th>Hazel, cells (hazeljs 0f24cea171)</th><th>segments, first (50358e21b7)</th><th>segments, tails kept (8fe73e4322)</th></tr></thead><tbody><tr><td class="l">the water, a step</td><td>0.102</td><td>2.384</td><td>1.8</td><td><b>1.601</b></td></tr><tr><td class="l">the way to a gem, a search</td><td>0.245</td><td>4.335</td><td>3.025</td><td><b>2.6</b></td></tr><tr><td class="l">the rivers, a dry step</td><td></td><td>0.053</td><td>0.037</td><td><b>0.035</b></td></tr><tr><td class="l">the rivers, a rainy step</td><td></td><td>0.057</td><td>0.052</td><td><b>0.04</b></td></tr><tr><td class="l">80 villagers, a step</td><td></td><td>0.034</td><td>0.022</td><td><b>0.027</b></td></tr><tr><td class="l">14 squirrels, a step</td><td></td><td>0.031</td><td>0.121</td><td><b>0.052</b></td></tr><tr><td class="l">70 insects, a step</td><td></td><td>0.049</td><td>0.033</td><td><b>0.034</b></td></tr><tr><td class="l">2 hawks, a step</td><td></td><td>0.005</td><td>0.006</td><td><b>0.002</b></td></tr><tr><td class="l">the order of the 12 things, once</td><td>5.0</td><td>92.9</td><td>151.1</td><td><b>76</b></td></tr><tr><td class="l">the dig’s next chunk, 15 times</td><td></td><td>1.3</td><td>3.3</td><td><b>4.2</b></td></tr></tbody></table></div><p class="note">The page’s own twin tests (waterSame, waySame, riversSame, folkSame, planSame), each the least of two to four runs on a fresh page; every answer the same on every build. The JavaScript beside the water and the way is the same page’s twin; the creatures’ and the rivers’ JavaScript take 0.002 to 0.014 ms.</p>
+<p>The first build made a segment’s tail anew each time it was read. The squirrels walk the same chunk lists of their tree’s graph every step, so they took four times as long as with cells, and the planning half again. The second build keeps a segment’s tail once made (<code>$n</code>), so a list walked again makes nothing, as cells do. It also reads a head or tail in place when the list is a plain variable. That brought the planning below cells, and the squirrels to 0.052 ms, still above cells’ 0.031: their lists are short, and every head and tail now has one more test.</p>
+
+<h2 id="remaining">The conversion that is left, and how to take it out<a class="anchor" href="#remaining" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="remaining" title="copy this section's address">copy link</button></h2>
+<p><b>With segments, a page’s list of plain values crosses with no copy and no cells. What is left is checking: each number’s, string’s and boolean’s kind, and each field of each record. Rivers.dry’s 897 records still take 15.5 µs to cross, about 17 ns each, though its compiled work halved.</b> Measured the same way as above, the same 400 recorded steps, on each build:</p>
+<div class="wrap"><table class="nums"><thead><tr><th class="l">a call, µs</th><th>crossing, cells</th><th>compiled, cells</th><th>crossing, segments</th><th>compiled, segments</th></tr></thead><tbody><tr><td class="l">Water.down</td><td>0.68</td><td>0.18</td><td>0.50</td><td>0.35</td></tr><tr><td class="l">Water.across</td><td>0.35</td><td>0.89</td><td>0.43</td><td>0.92</td></tr><tr><td class="l">Rivers.hold</td><td>1.51</td><td>1.49</td><td>3.69</td><td>1.69</td></tr><tr><td class="l">Rivers.rain</td><td>1.03</td><td>2.51</td><td>1.52</td><td>2.12</td></tr><tr><td class="l">Rivers.pump</td><td>6.41</td><td>25.3</td><td>2.55</td><td>5.55</td></tr><tr><td class="l">Rivers.dry</td><td>15.1</td><td>30.4</td><td>15.5</td><td>14.9</td></tr><tr><td class="l">Folk.walk</td><td>0.16</td><td>0.18</td><td>0.18</td><td>0.12</td></tr><tr><td class="l">Folk.hawk</td><td>0.46</td><td>0.37</td><td>0.51</td><td>0.57</td></tr><tr><td class="l">Folk.squirrel</td><td>0.19</td><td>0.57</td><td>0.48</td><td>0.87</td></tr><tr><td class="l">Folk.bug</td><td>0.29</td><td>0.91</td><td>0.29</td><td>1.06</td></tr><tr><td class="l">Path.way</td><td>40.0</td><td>1,780</td><td>20.0</td><td>1,540</td></tr></tbody></table></div><p class="note">The rules of 0.0.158 (Folk, Path and Rivers in Floats), so these differ from the first table’s, which were Ints. One run each in a hidden pane: a difference under a third is within its noise.</p>
+<p>So the conversion left has four parts, and each has a way out:</p>
+<ul>
+<li><b>Checks on what comes in.</b> They catch a page that passes the wrong kind of value, and send the call to the interpreter. A page whose values are known to fit could skip them: a trusted call, or the checks made only under <code>Hazel.development(true)</code>, as freezing is. Then a page’s array of plain records would cross in one step.</li>
+<li><b>Lists built by <code>::</code>.</b> A list compiled code builds cell by cell is copied into an array on the way out. Built by <code>map</code> or <code>filter</code>, it is a segment and goes out as it is. A Hazel program that returns long lists can build them with the builtins.</li>
+<li><b>Records that hold lists or sums.</b> These are new objects each way. With lists as segments and plain records as themselves, a record’s fields cross as they are, so the record itself could too.</li>
+<li><b>Constructors.</b> A page writes <code>{tag, value}</code> and compiled code <code>{$c, $v}</code>. None of Gnome world’s 42 Hazel functions passes a sum, so this costs Gnome world nothing; for other apps, one shape both sides would.</li>
+</ul>
+<p>With all four, a game’s state could stay in the form compiled code holds it, the page reading and writing the same objects, Matthew’s “post JIT form”: arrays for lists, objects for records.</p>
+
 <h2 id="next">Next steps<a class="anchor" href="#next" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="next" title="copy this section's address">copy link</button></h2>
 <ol>
-<li><b>Bring the hybrid up to date</b>: merge <code>hazel-jit</code> into <code>hazel-jit-lists</code> (or replay its two commits on a new trial, <code>trial/909-lists</code>), with today’s <code>{$h, $t}</code>, and run CI: the static, fast and full tests, and the agreement tests with segments in them.</li>
-<li><b>Let the converters hand segments over.</b> A page’s array goes in as a segment <code>{a, i: 0}</code> with no copy when its elements need no conversion: numbers, strings, booleans, and records of plain values, each checked but not copied. Otherwise it is one mapped array, still no cells. Going out, a segment over the whole of a page’s array is that array, a segment from a later index is a slice, and cells become an array as now. This is the change that keeps a game’s lists in the form the page holds.</li>
-<li><b>Builtins over segments</b>: <code>length</code> and <code>nth</code> in one step, and <code>map</code>, <code>filter</code>, <code>fold_left</code>, <code>reverse</code> and <code>append</code> as JavaScript loops that make arrays, not cells.</li>
-<li><b>Measure on Gnome world</b> with <code>?libat=trial/909-lists</code>: this report’s crossing table again in the pane, and the speed run with every Hazel option on in the GitHub frames job. Then the 17 games of <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> (<code>bench/4way</code>), to see what the hybrid costs where lists are short.</li>
-<li><b>Bring the hybrid’s in-loop cost toward zero</b>: give cells and segments one shape (the same fields, so each match site sees one hidden class), and, later, compile a function that walks a segment through <code>x :: rest</code> to a loop over its index.</li>
+<li><b>Done on the trial.</b> <b>Bring the hybrid up to date</b>: merge <code>hazel-jit</code> into <code>hazel-jit-lists</code> (or replay its two commits on a new trial, <code>trial/909-lists</code>), with today’s <code>{$h, $t}</code>, and run CI: the static, fast and full tests, and the agreement tests with segments in them.</li>
+<li><b>Done on the trial.</b> <b>Let the converters hand segments over.</b> A page’s array goes in as a segment <code>{a, i: 0}</code> with no copy when its elements need no conversion: numbers, strings, booleans, and records of plain values, each checked but not copied. Otherwise it is one mapped array, still no cells. Going out, a segment over the whole of a page’s array is that array, a segment from a later index is a slice, and cells become an array as now. This is the change that keeps a game’s lists in the form the page holds.</li>
+<li><b>Done on the trial.</b> <b>Builtins over segments</b>: <code>length</code> and <code>nth</code> in one step, and <code>map</code>, <code>filter</code>, <code>fold_left</code>, <code>reverse</code> and <code>append</code> as JavaScript loops that make arrays, not cells.</li>
+<li><b>Gnome world done, in one browser (above); the 17 games open.</b> <b>Measure on Gnome world</b> with <code>?libat=trial/909-lists</code>: this report’s crossing table again in the pane, and the speed run with every Hazel option on in the GitHub frames job. Then the 17 games of <a href="../063/"><code class="ref"><b>^report(</b>63<b>)</b></code></a> (<code>bench/4way</code>), to see what the hybrid costs where lists are short.</li>
+<li><b>Begun: a segment keeps its tail.</b> <b>Bring the hybrid’s in-loop cost toward zero</b>: give cells and segments one shape (the same fields, so each match site sees one hidden class), and, later, compile a function that walks a segment through <code>x :: rest</code> to a loop over its index.</li>
 <li><b>Constructors</b>: a page writes <code>{tag, value}</code> and compiled code <code>{$c, $v}</code>, so a sum is renamed both ways. If compiled code read and wrote the page’s shape, sums would cross as they are too, and a game’s whole state could stay in one form.</li>
-<li><b>JSNum</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>), for the other half of the gap: a PR against dev for the type, and hazel-jit extended on a trial as if it were merged. Gnome world’s drawing (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-908"><code class="ref"><b>^ticket(</b>908<b>)</b></code></a>) and physics will be written in it.</li>
+<li><b>Decided: Floats, not a new type</b> (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-910"><code class="ref"><b>^ticket(</b>910<b>)</b></code></a>, “Float, use Float in”). Done for Folk, Path and Rivers; open for World.hz (the gnome’s step, 198 Ints) and Plan.hz. Gnome world’s drawing (<a href="https://matthewhammer.org/hazel/dashboard/#ticket-908"><code class="ref"><b>^ticket(</b>908<b>)</b></code></a>) and physics will be written in Floats.</li>
+<li><b>Open:</b> CI’s full tests on both trial branches, then Matthew’s word on merging <code>trial/909-segments</code> into <code>hazel-jit</code> (<a href="https://github.com/hazelgrove/hazel/pull/2859">#2859</a>) and the package branch into <code>hazeljs</code> (<a href="https://github.com/hazelgrove/hazel/pull/2857">#2857</a>).</li>
+<li><b>Open:</b> <code>Path.hz</code> by <code>nth</code> over the page’s window (written and checked, <code>_path_nth.hz</code>), its tree of tiles gone, once segments are in the page’s build; and the trusted call, to measure crossing with no checks.</li>
 </ol>
 
 <h2 id="method">How this was put together<a class="anchor" href="#method" aria-label="a link to this section">#</a><button type="button" class="copyanchor" data-id="method" title="copy this section's address">copy link</button></h2>
@@ -430,6 +458,100 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 <!-- ref-cards: end -->
+<!-- pr-cards: begin -->
+<style>
+  /* above the nav bar (nav.js draws it at z-index 2147483000-2147483002), or a card on a link in it opens underneath */
+  .pr-card { position: absolute; z-index: 2147483003; width: max-content; max-width: min(380px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line, #d0d7de); background: var(--paper, var(--bg, Canvas));
+    color: var(--ink, CanvasText); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+  .pr-card .pr-head { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-title { font-weight: 600; margin: 3px 0 4px; }
+  .pr-card .pr-meta { color: var(--muted, GrayText); font-size: 12px; }
+  .pr-card .pr-note { color: var(--muted, GrayText); font-size: 11px; margin-top: 5px; font-style: italic; }
+  .pr-state { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; margin-left: 6px; vertical-align: 1px; }
+  .pr-base { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pr-base.dev { background: #dafbe1; color: #116329; } .pr-base.other { background: #fff1c2; color: #7a4b00; }
+  @media (prefers-color-scheme: dark) { .pr-base.dev { background: #12361f; color: #6fdd8b; } .pr-base.other { background: #3d2e00; color: #f2cc60; } }
+  .pr-state.open { background: #1f883d; } .pr-state.merged { background: #8250df; } .pr-state.closed { background: #cf222e; } .pr-state.draft { background: #6e7781; }
+</style>
+<script>
+/* A card for each link to a GitHub PR or issue, on hover or focus: its
+   title, state, the branch a PR targets (dev or not: the distinction that
+   matters, ^ticket(478)), author, dates and comments, asked of GitHub live, once per
+   number per page load; if GitHub does not answer, what it said when the
+   page was built (tools/link_prs.py writes this block). */
+(() => {
+  const CACHED = {"hazelgrove/hazel#2857": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T16:18:27Z", "kind": "pull", "state": "draft", "title": "hazeljs: what the npm package is built from (the library, the editable embed, the font and icons, hazel-jit)", "updated": "2026-11-27T23:12:36Z", "base": "dev"}, "hazelgrove/hazel#2859": {"author": "matthewhammer", "comments": 1, "created": "2026-11-23T20:00:30Z", "kind": "pull", "state": "draft", "title": "hazel-jit: Hazel compiled to JavaScript, its values across, and mixed mode, with agreement tests", "updated": "2026-11-28T15:51:43Z", "base": "dev"}}, BUILT = "2026-11-28";
+  const RX = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/(pull|issues)\/(\d+)$/;
+  const asked = new Map();
+  /* a PR from the pulls endpoint, which has its base branch; an issue from the issues one */
+  const ask = (key, kind) => {
+    if (!asked.has(key)) {
+      const [repo, n] = key.split("#"), pull = kind === "pull";
+      asked.set(key, fetch(`https://api.github.com/repos/${repo}/${pull ? "pulls" : "issues"}/${n}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(j => ({ title: j.title, author: j.user && j.user.login, created: j.created_at, updated: j.updated_at,
+                      comments: j.comments, kind: pull || j.pull_request ? "pull" : "issues", base: j.base && j.base.ref,
+                      state: j.merged_at || (j.pull_request && j.pull_request.merged_at) ? "merged" : j.draft ? "draft" : j.state }))
+        .catch(() => null));
+    }
+    return asked.get(key);
+  };
+  const baseChip = d => !d.base ? "" : d.base === "dev"
+    ? `<span class="pr-base dev" title="this PR merges into dev">into dev</span>`
+    : `<span class="pr-base other" title="this PR merges into ${esc(d.base)}, not dev">into ${esc(d.base)}, not dev</span>`;
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const ago = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    for (const [u, k] of [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]])
+      if (s >= k) { const v = Math.floor(s / k); return `${v} ${u}${v === 1 ? "" : "s"} ago`; }
+    return "just now";
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fill = (key, d, note) => {
+    const [repo, n] = key.split("#"), what = d.kind === "pull" ? "Pull request" : "Issue";
+    return `<div class="pr-head">${esc(repo)} #${n} · ${what}<span class="pr-state ${esc(d.state)}">${esc(d.state)}</span>${baseChip(d)}</div>` +
+      `<div class="pr-title">${esc(d.title)}</div>` +
+      `<div class="pr-meta">by ${esc(d.author)} · opened ${day(d.created)} · updated ${ago(d.updated)} · ${d.comments} comment${d.comments === 1 ? "" : "s"}</div>` +
+      (note ? `<div class="pr-note">${note}</div>` : "");
+  };
+  let card = null, over = null, timer = null;
+  const place = a => {
+    const r = a.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, document.documentElement.clientWidth - w - 16));
+    const below = r.bottom + 6 + h < innerHeight;
+    card.style.left = (left + scrollX) + "px";
+    card.style.top = ((below ? r.bottom + 6 : r.top - 6 - h) + scrollY) + "px";
+  };
+  const hide = () => { clearTimeout(timer); over = null; if (card) card.hidden = true; };
+  const show = a => {
+    const m = RX.exec(a.href);
+    if (!m) return;
+    const key = m[1] + "#" + m[3];
+    over = a; clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (!card) { card = document.createElement("div"); card.className = "pr-card"; card.setAttribute("role", "tooltip"); document.body.append(card); }
+      const cached = CACHED[key];
+      card.innerHTML = cached ? fill(key, cached, "asking GitHub…") : `<div class="pr-head">${esc(key)}</div><div class="pr-note">asking GitHub…</div>`;
+      card.hidden = false; place(a);
+      const d = await ask(key, m[2]);
+      if (over !== a) return;
+      card.innerHTML = d ? fill(key, d, "")
+        : cached ? fill(key, cached, `GitHub didn't answer just now (its limit is 60 lookups an hour per network): as of ${BUILT}`)
+        : `<div class="pr-head">${esc(key)}</div><div class="pr-note">GitHub didn't answer just now.</div>`;
+      place(a);
+    }, 250);
+  };
+  const linkOf = t => t && t.closest && t.closest("a[href]");
+  document.addEventListener("mouseover", e => { const a = linkOf(e.target); if (a && a !== over && RX.test(a.href)) show(a); });
+  document.addEventListener("mouseout", e => { const a = linkOf(e.target); if (a && a === over && !a.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("focusin", e => { const a = linkOf(e.target); if (a && RX.test(a.href)) show(a); });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (over && card && !card.hidden) place(over); }, { passive: true });
+})();
+</script>
+<!-- pr-cards: end -->
 
 <!-- steps: begin -->
 <style>
@@ -493,7 +615,7 @@ document.addEventListener("DOMContentLoaded", () => {
 {
  "report": 71,
  "title": "Lists as Arrays in hazel-jit",
- "blurb": "Compiled Hazel keeps a list as cells, so every call converts a page's arrays to cells and back: in Gnome world that is 5% to 70% of a Hazel call's time. A hybrid from 11-23 (cells for ::, array segments for a page's arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. Status and next steps; and the rest of the gap: exact Ints (5.9 µs an insect, 2.3 with plain numbers), for JSNum.",
+ "blurb": "Compiled Hazel keeps a list as cells, so every call converts a page's arrays to cells and back: in Gnome world that is 5% to 70% of a Hazel call's time. A hybrid from 11-23 (cells for ::, array segments for a page's arrays) was not merged; since then crossing goes by declared type, and the lists are what is left. Since: Gnome world's creatures in Floats, an insect 4.7 µs to 0.37; lists as segments built on a trial, a water step 2.38 ms to 1.60, every answer the same.",
  "builds": {
   "Gnome world": "0.0.156 (hazeljs-examples 97fccb2)",
   "hazel-jit": "hazeljs branch 0f24cea171 (the page); trial/1126-night abf653a21d (the AOT file)",
@@ -512,6 +634,7 @@ document.addEventListener("DOMContentLoaded", () => {
   "data/lists-bench-054.json",
   "data/meta.json",
   "data/pane.json",
+  "data/segments.json",
   "data/tables.json"
  ],
  "tables_note": "Every table in the page, cell by cell, as printed (units in the column names or the cells); columns are the header row where the table has one.",
@@ -732,6 +855,215 @@ document.addEventListener("DOMContentLoaded", () => {
      "22.3 µs",
      "758 µs",
      "21.0 µs"
+    ]
+   ]
+  },
+  {
+   "section": "Exact integers, taken out",
+   "section_id": "floats",
+   "columns": [
+    "in the browser pane, through the page",
+    "Ints (0.0.156)",
+    "Floats (0.0.157, 0.0.158)",
+    "the page’s JavaScript"
+   ],
+   "rows": [
+    [
+     "Folk.bug, an insect drawing its chances",
+     "4.73 µs",
+     "0.37 µs",
+     "about 0.11 µs"
+    ],
+    [
+     "Folk.bug, an insect waiting",
+     "1.74 µs",
+     "0.19 µs",
+     ""
+    ],
+    [
+     "all 166 creatures, a step (folkSame)",
+     "0.24 ms",
+     "0.09 ms",
+     "0.02 to 0.03 ms"
+    ],
+    [
+     "Path.hz, 20 searches (105,834 tiles)",
+     "58 ms",
+     "49 ms",
+     "about 5 ms"
+    ]
+   ]
+  },
+  {
+   "section": "Lists as segments, built and measured",
+   "section_id": "trial",
+   "columns": [
+    "ms, in one browser, one Gnome world",
+    "the page’s JavaScript",
+    "Hazel, cells (hazeljs 0f24cea171)",
+    "segments, first (50358e21b7)",
+    "segments, tails kept (8fe73e4322)"
+   ],
+   "rows": [
+    [
+     "the water, a step",
+     "0.102",
+     "2.384",
+     "1.8",
+     "1.601"
+    ],
+    [
+     "the way to a gem, a search",
+     "0.245",
+     "4.335",
+     "3.025",
+     "2.6"
+    ],
+    [
+     "the rivers, a dry step",
+     "",
+     "0.053",
+     "0.037",
+     "0.035"
+    ],
+    [
+     "the rivers, a rainy step",
+     "",
+     "0.057",
+     "0.052",
+     "0.04"
+    ],
+    [
+     "80 villagers, a step",
+     "",
+     "0.034",
+     "0.022",
+     "0.027"
+    ],
+    [
+     "14 squirrels, a step",
+     "",
+     "0.031",
+     "0.121",
+     "0.052"
+    ],
+    [
+     "70 insects, a step",
+     "",
+     "0.049",
+     "0.033",
+     "0.034"
+    ],
+    [
+     "2 hawks, a step",
+     "",
+     "0.005",
+     "0.006",
+     "0.002"
+    ],
+    [
+     "the order of the 12 things, once",
+     "5.0",
+     "92.9",
+     "151.1",
+     "76"
+    ],
+    [
+     "the dig’s next chunk, 15 times",
+     "",
+     "1.3",
+     "3.3",
+     "4.2"
+    ]
+   ]
+  },
+  {
+   "section": "The conversion that is left, and how to take it out",
+   "section_id": "remaining",
+   "columns": [
+    "a call, µs",
+    "crossing, cells",
+    "compiled, cells",
+    "crossing, segments",
+    "compiled, segments"
+   ],
+   "rows": [
+    [
+     "Water.down",
+     "0.68",
+     "0.18",
+     "0.50",
+     "0.35"
+    ],
+    [
+     "Water.across",
+     "0.35",
+     "0.89",
+     "0.43",
+     "0.92"
+    ],
+    [
+     "Rivers.hold",
+     "1.51",
+     "1.49",
+     "3.69",
+     "1.69"
+    ],
+    [
+     "Rivers.rain",
+     "1.03",
+     "2.51",
+     "1.52",
+     "2.12"
+    ],
+    [
+     "Rivers.pump",
+     "6.41",
+     "25.3",
+     "2.55",
+     "5.55"
+    ],
+    [
+     "Rivers.dry",
+     "15.1",
+     "30.4",
+     "15.5",
+     "14.9"
+    ],
+    [
+     "Folk.walk",
+     "0.16",
+     "0.18",
+     "0.18",
+     "0.12"
+    ],
+    [
+     "Folk.hawk",
+     "0.46",
+     "0.37",
+     "0.51",
+     "0.57"
+    ],
+    [
+     "Folk.squirrel",
+     "0.19",
+     "0.57",
+     "0.48",
+     "0.87"
+    ],
+    [
+     "Folk.bug",
+     "0.29",
+     "0.91",
+     "0.29",
+     "1.06"
+    ],
+    [
+     "Path.way",
+     "40.0",
+     "1,780",
+     "20.0",
+     "1,540"
     ]
    ]
   }
