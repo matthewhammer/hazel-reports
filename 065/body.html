@@ -10,6 +10,7 @@
 <li><a href="#eng">Engineering summary</a>: what goes in and comes out, how the code is written, its values, what it leaves to the interpreter, mixed mode, and its speed on the tests.</li>
 <li><a href="#holds">What it holds</a>, <a href="#values">how compiled values look</a>, <a href="#beside">beside other compilers</a>, <a href="#origin">where it comes from</a>, <a href="#differs">where it differs from the interpreter</a> and <a href="#pr-next">what is next</a>: the PR’s details.</li>
 <li><a href="#mixed">Mixed mode, at its boundary</a> and <a href="#types">types: errors, type holes and unknowns</a> (2026-11-27, from Matthew and Cyrus’s meeting): what a call into compiled code converts, costs and falls back on; that compiled code never calls interpreted code; holes, functions and polymorphic functions across; and where a cast through an unknown type nobody wrote lets compiled code part from the interpreter (^ticket(898)).</li>
+<li><a href="#agree">Checked against the interpreter, in CI</a> (2026-11-27, Cyrus’s question at the meeting): the interpreter is the specification; every evaluator program is also run compiled where it compiles and compared, and a different answer fails the build (289 checks, 234 compiled, none different); what it does not hold the jit to yet, and five steps to make the check systematic.</li>
 <li><a href="#compare">Representations, then and now</a>: three of report 046’s five suggestions for hazel-jit’s output are done and the other two in part; records, calls of named functions and loops now look as ReScript’s and Melange’s do.</li>
 <li><a href="#today">Loops and JS arguments, made on 2026-11-25</a>: the games take {{g853_gm}} of the jit’s time, report 046’s rule {{p853_ratio}}, every answer the same; nearly all of it from the JS arguments.</li>
 <li><a href="#fourway">Four ways, on the games</a>: hazel-jit now is {{fw_ij}} times as fast as the interpreter, {{fw_cj}} times as fast as on 2026-11-19, and {{fw_jp}} times plain JS’s time.</li>
@@ -42,6 +43,8 @@
 {{pr_mixed}}
 
 {{pr_types}}
+
+{{pr_agree}}
 
 {{pr_differs}}
 

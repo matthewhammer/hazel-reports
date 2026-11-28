@@ -66,6 +66,7 @@ PREAMBLE, SECTIONS = chunks[0], list(zip(chunks[1::2], chunks[2::2]))
 IDS = {"Executive summary": "exec", "Engineering summary": "eng", "What it holds": "holds", "How compiled values look": "values",
        "Beside other compilers to JavaScript": "beside", "Where it comes from": "origin",
        "Mixed mode, at its boundary": "mixed", "Types: errors, type holes and unknowns": "types",   # (2026-11-27, from Matthew and Cyrus's meeting)
+       "Checked against the interpreter, in CI": "agree",   # (2026-11-27, ^ticket(903): Cyrus, at the meeting, on the interpreter as the spec)
        "Where it differs from the interpreter on `dev`": "differs", "Next, on this branch": "pr-next"}
 assert [h for h, _ in SECTIONS] == list(IDS), [h for h, _ in SECTIONS]
 # the closing line (the Claude Code credit) stays in the Markdown to copy, not in the report's sections
